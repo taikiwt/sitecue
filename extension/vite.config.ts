@@ -1,33 +1,50 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { crx, defineManifest } from '@crxjs/vite-plugin'
+import { crx } from '@crxjs/vite-plugin'
 import manifestJson from './manifest.json'
 import tailwindcss from '@tailwindcss/vite'
 
-const manifest = defineManifest((env) => {
-  const baseManifest = { ...manifestJson } as any
+export default defineConfig(({ mode, command }) => {
+  const dynamicManifest = { ...manifestJson } as any
 
-  if (env.command === 'build' && baseManifest.host_permissions) {
-    baseManifest.host_permissions = baseManifest.host_permissions.filter(
+  if (command === 'build' && dynamicManifest.host_permissions) {
+    dynamicManifest.host_permissions = dynamicManifest.host_permissions.filter(
       (url: string) => !url.includes('localhost') && !url.includes('127.0.0.1')
     )
   }
 
-  return baseManifest
-})
+  if (mode === 'development') {
+    dynamicManifest.name = '[DEV] sitecue'
+    dynamicManifest.icons = {
+      '16': 'sitecue_icon_dev_16.png',
+      '32': 'sitecue_icon_dev_32.png',
+      '48': 'sitecue_icon_dev_48.png',
+      '128': 'sitecue_icon_dev_128.png',
+    }
+    dynamicManifest.action = {
+      ...dynamicManifest.action,
+      default_icon: {
+        '16': 'sitecue_icon_dev_16.png',
+        '32': 'sitecue_icon_dev_32.png',
+        '48': 'sitecue_icon_dev_48.png',
+        '128': 'sitecue_icon_dev_128.png',
+      },
+    }
+  }
 
-export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-    crx({ manifest }),
-  ],
-  server: {
-    port: 5173,
-    strictPort: true,
-    hmr: {
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      crx({ manifest: dynamicManifest }),
+    ],
+    server: {
       port: 5173,
+      strictPort: true,
+      hmr: {
+        port: 5173,
+      },
+      cors: true,
     },
-    cors: true,
-  },
+  }
 })
