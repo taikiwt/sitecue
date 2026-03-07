@@ -13,6 +13,9 @@ type Note = {
 export default function WeaveUI({ initialNotes }: { initialNotes: Note[] }) {
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [prompt, setPrompt] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [resultMarkdown, setResultMarkdown] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleNoteToggle = (noteId: string) => {
     setSelectedNoteIds((prev) => {
@@ -26,11 +29,42 @@ export default function WeaveUI({ initialNotes }: { initialNotes: Note[] }) {
     });
   };
 
-  const handleGenerate = () => {
-    console.log('--- Weaver Generation Initiated ---');
-    console.log('Selected Note IDs:', Array.from(selectedNoteIds));
-    console.log('Prompt:', prompt);
-    console.log('-----------------------------------');
+  const handleGenerate = async () => {
+    if (selectedNoteIds.size === 0 || !prompt.trim()) return;
+
+    setIsLoading(true);
+    setError(null);
+    setResultMarkdown('');
+
+    const contexts = initialNotes
+      .filter((note) => selectedNoteIds.has(note.id))
+      .map((note) => ({
+        url: note.url_pattern,
+        content: note.content,
+      }));
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+      const response = await fetch(`${apiUrl}/ai/weave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contexts, prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setResultMarkdown(data.result || '');
+    } catch (err: any) {
+      console.error('Failed to weave ideas:', err);
+      setError('アイデアの錬成に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -100,17 +134,49 @@ export default function WeaveUI({ initialNotes }: { initialNotes: Note[] }) {
           
           <button
             onClick={handleGenerate}
-            disabled={selectedNoteIds.size === 0 || !prompt.trim()}
+            disabled={selectedNoteIds.size === 0 || !prompt.trim() || isLoading}
             className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mb-6"
           >
-            ✨ 錬成する（Generate）
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                ✨ 錬成中... (Generating...)
+              </>
+            ) : (
+              '✨ 錬成する（Generate）'
+            )}
           </button>
 
-          {/* Results Area (Mock) */}
+          {/* Results Area */}
           <div className="flex-1 bg-gray-50 rounded-md border border-gray-100 p-4 overflow-y-auto">
-             <p className="text-sm text-gray-500 text-center mt-8">
-                生成結果がここに表示されます。
-             </p>
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-3">
+                <svg className="animate-spin h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p className="text-sm">アイデアを錬成しています...</p>
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-red-500 text-center px-4">
+                  {error}
+                </p>
+              </div>
+            ) : resultMarkdown ? (
+              <div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none">
+                {resultMarkdown}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-gray-400 text-center">
+                  生成結果がここに表示されます。
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
