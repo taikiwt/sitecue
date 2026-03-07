@@ -178,24 +178,24 @@ app.post("/ai/weave", async (c) => {
       return c.json({ error: "Invalid request body" }, 400);
     }
 
-    // 各URLからHTMLをフェッチして一意にまとめる
+    // 各URLからMarkdownをフェッチして一意にまとめる
     const uniqueUrls = [...new Set(contexts.map((c) => c.url))];
-    const fetchedHtmls = await Promise.all(
+    const fetchedTexts = await Promise.all(
       uniqueUrls.map(async (url) => {
         try {
-          const res = await fetch(url);
+          const res = await fetch(`https://r.jina.ai/${url}`);
           if (!res.ok) {
             return `URL: ${url}\nContent: [Failed to fetch content: ${res.status}]`;
           }
-          const html = await res.text();
-          return `URL: ${url}\nContent:\n${html}`;
+          const text = await res.text();
+          return `URL: ${url}\nContent:\n${text}`;
         } catch (error) {
           return `URL: ${url}\nContent: [Failed to fetch content]`;
         }
       }),
     );
 
-    const referenceContent = fetchedHtmls.join("\n\n---\n\n");
+    const referenceContent = fetchedTexts.join("\n\n---\n\n");
 
     const userNotesList = contexts
       .map((ctx, index) => {
@@ -211,6 +211,7 @@ app.post("/ai/weave", async (c) => {
 - 前置き（「ご提示いただいたメモに基づき…」「〜を作成しました」等の挨拶や説明）は一切不要です。
 - 結論後の補足や締めくくりの言葉も不要です。
 - 要求されたドキュメント（成果物）のテキストのみを、いきなり出力してください。
+- 見出し1（#）はドキュメントのタイトルとして冒頭で1回のみ使用し、以降のセクションは必ず見出し2（##）以下を使用してください。
 
 # 思考のガイドライン
 - メモの種類から、ユーザーの意図を以下のように解釈してください。
