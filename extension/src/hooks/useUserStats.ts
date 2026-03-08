@@ -19,7 +19,7 @@ export function useUserStats(session: Session | null) {
                 .single();
 
             if (profile) {
-                setUserPlan(profile.plan);
+                setUserPlan((profile.plan as "free" | "pro") || "free");
             }
 
             // Fetch Count
