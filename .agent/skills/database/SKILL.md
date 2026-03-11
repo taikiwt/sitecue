@@ -18,6 +18,8 @@ description: Supabase、RLS、各テーブルのスキーマ戦略のルール
   - **Local Context**: そのページ（URL）に関連する重要なメモとして、リスト最上位に固定表示する。
 - `is_favorite`: `boolean` (Default: `false`)
   - **Global Context**: どのページを開いていても参照できるよう、専用の「Favorites」セクションに常時表示する。
+- `sort_order`: `integer` (Default: `0`)
+  - **Ordering**: ユーザーによる任意の並び替え（▲/▼などのSwap）を管理するための連続値。
 - `url_pattern`:
   - **Normalization Rules**:
     - Protocol (`https://`, `http://`) は必ず除去する。
