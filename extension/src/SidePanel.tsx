@@ -131,6 +131,7 @@ function NotesUI({
         setViewScope={setViewScope}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        filteredNotes={filteredNotesByScope}
       />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">

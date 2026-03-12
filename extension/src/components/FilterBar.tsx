@@ -1,5 +1,17 @@
-import { Info, AlertTriangle, Lightbulb, CheckSquare, Search, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";interface FilterBarProps {
+import {
+  Info,
+  AlertTriangle,
+  Lightbulb,
+  CheckSquare,
+  Search,
+  X,
+  Copy,
+  Check,
+} from "lucide-react";
+import type { Note } from "../hooks/useNotes";
+import { useState, useRef, useEffect } from "react";
+
+interface FilterBarProps {
   filterType: "all" | "info" | "alert" | "idea";
   setFilterType: (type: "all" | "info" | "alert" | "idea") => void;
   showResolved: boolean;
@@ -8,6 +20,7 @@ import { useState, useRef, useEffect } from "react";interface FilterBarProps {
   setViewScope: (scope: "exact" | "domain") => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  filteredNotes: Note[];
 }
 
 export default function FilterBar({
@@ -19,9 +32,22 @@ export default function FilterBar({
   setViewScope,
   searchQuery,
   setSearchQuery,
+  filteredNotes,
 }: FilterBarProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopy = async () => {
+    const text = filteredNotes.map((n) => n.content ?? "").join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      // clipboard write failed silently
+    }
+  };
 
   // Close search when pressing Escape
   useEffect(() => {
@@ -67,7 +93,7 @@ export default function FilterBar({
         </button>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 w-full">
         {/* Note Type Filter */}
         <div className="flex bg-neutral-800 p-1 rounded-lg shrink-0">
           <button
@@ -115,12 +141,12 @@ export default function FilterBar({
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
           {/* Search Bar */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center shrink min-w-0">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className={`cursor-pointer p-1.5 rounded transition-colors ${
+              className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
                 isSearchOpen || searchQuery
                   ? "bg-neutral-100 text-neutral-800"
                   : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
@@ -129,11 +155,11 @@ export default function FilterBar({
               <Search className="w-3.5 h-3.5" />
             </button>
             <div
-              className={`overflow-hidden transition-all duration-200 ease-in-out ${
+              className={`overflow-hidden transition-all duration-200 ease-in-out shrink min-w-0 ${
                 isSearchOpen || searchQuery ? "w-32 ml-1" : "w-0 ml-0"
               }`}
             >
-              <div className="relative flex items-center w-full">
+              <div className="relative flex items-center w-full min-w-0">
                 <input
                   ref={inputRef}
                   type="text"
@@ -143,7 +169,7 @@ export default function FilterBar({
                   onBlur={() => {
                     if (!searchQuery) setIsSearchOpen(false);
                   }}
-                  className="w-full text-xs pl-2 pr-6 py-1 bg-neutral-100 border-none rounded focus:outline-none focus:ring-1 focus:ring-neutral-300 placeholder:text-neutral-400"
+                  className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-neutral-100 border-none rounded focus:outline-none focus:ring-1 focus:ring-neutral-300 placeholder:text-neutral-400"
                 />
                 {searchQuery && (
                   <button
@@ -155,7 +181,7 @@ export default function FilterBar({
                       setSearchQuery("");
                       inputRef.current?.focus();
                     }}
-                    className="absolute right-1 cursor-pointer p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors"
+                    className="absolute right-1 cursor-pointer p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
                     title="Clear search"
                   >
                     <X className="w-3 h-3" />
@@ -164,6 +190,24 @@ export default function FilterBar({
               </div>
             </div>
           </div>
+
+          {/* Copy All Button */}
+          <button
+            onClick={handleCopy}
+            className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
+              isCopied
+                ? "text-green-600 bg-green-50"
+                : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
+            }`}
+            title={isCopied ? "Copied!" : "Copy all notes"}
+            aria-label={isCopied ? "Copied!" : "Copy all notes to clipboard"}
+          >
+            {isCopied ? (
+              <Check className="w-3.5 h-3.5" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+          </button>
 
           {/* Resolved Toggle */}
           <button
