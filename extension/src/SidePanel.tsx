@@ -80,18 +80,22 @@ function NotesUI({
     "all" | "info" | "alert" | "idea"
   >("all");
   const [showResolved, setShowResolved] = useState(false);
-  const [viewScope, setViewScope] = useState<"exact" | "domain">("exact");
+  const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">("exact");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredNotesByScope = notes.filter((n) => {
-    if (n.scope !== viewScope) return false;
-    
+    if (viewScope === "inbox") {
+      if (n.scope !== "inbox") return false;
+    } else {
+      if (n.scope !== viewScope) return false;
+    }
+
     if (searchQuery && n.content) {
       if (!n.content.toLowerCase().includes(searchQuery.toLowerCase())) {
         return false;
       }
     }
-    
+
     return true;
   });
 
@@ -142,6 +146,7 @@ function NotesUI({
           filterType={filterType}
           showResolved={showResolved}
           currentFullUrl={currentFullUrl}
+          viewScope={viewScope}
           onUpdate={updateNote}
           onDelete={deleteNote}
           onToggleResolved={toggleResolved}
