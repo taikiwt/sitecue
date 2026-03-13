@@ -10,6 +10,7 @@ interface NoteListProps {
     filterType: "all" | "info" | "alert" | "idea";
     showResolved: boolean;
     currentFullUrl: string;
+    viewScope: "exact" | "domain" | "inbox";
     onUpdate: (id: string, content: string, type: NoteType) => Promise<boolean>;
     onDelete: (id: string) => Promise<boolean>;
     onToggleResolved: (id: string, status: boolean | undefined) => Promise<boolean>;
@@ -25,6 +26,7 @@ export default function NoteList({
     filterType,
     showResolved,
     currentFullUrl,
+    viewScope,
     onUpdate,
     onDelete,
     onToggleResolved,
@@ -57,10 +59,15 @@ export default function NoteList({
 
     const currentScopeNotes = filteredNotes
         .filter(
-            (n) =>
-                !n.is_favorite &&
-                ((n.scope === "domain" && n.url_pattern === scopeUrls.domain) ||
-                    (n.scope === "exact" && n.url_pattern === scopeUrls.exact)),
+            (n) => {
+                if (n.is_favorite) return false;
+                // inbox タブの場合はURLパターン判定をバイパスし、scope === "inbox" のメモをそのまま表示
+                if (viewScope === "inbox") return n.scope === "inbox";
+                return (
+                    (n.scope === "domain" && n.url_pattern === scopeUrls.domain) ||
+                    (n.scope === "exact" && n.url_pattern === scopeUrls.exact)
+                );
+            }
         )
         .sort((a, b) => {
             // 1. Pinned items first (Local Pin)

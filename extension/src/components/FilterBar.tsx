@@ -16,8 +16,8 @@ interface FilterBarProps {
   setFilterType: (type: "all" | "info" | "alert" | "idea") => void;
   showResolved: boolean;
   setShowResolved: (show: boolean) => void;
-  viewScope: "exact" | "domain";
-  setViewScope: (scope: "exact" | "domain") => void;
+  viewScope: "exact" | "domain" | "inbox";
+  setViewScope: (scope: "exact" | "domain" | "inbox") => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   filteredNotes: Note[];
@@ -90,6 +90,16 @@ export default function FilterBar({
           }`}
         >
           Domain
+        </button>
+        <button
+          onClick={() => setViewScope("inbox")}
+          className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            viewScope === "inbox"
+              ? "border-neutral-800 text-neutral-800"
+              : "border-transparent text-neutral-400 hover:text-neutral-600 hover:border-neutral-300"
+          }`}
+        >
+          Inbox
         </button>
       </div>
 
