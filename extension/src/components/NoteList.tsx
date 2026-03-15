@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Loader2, Ghost } from "lucide-react";
 import type { Note, NoteType, NoteScope } from "../hooks/useNotes";
 import NoteItem from "./NoteItem";
@@ -23,9 +24,7 @@ interface NoteListProps {
   ) => Promise<boolean>;
   onToggleFavorite: (note: Note) => Promise<boolean>;
   onTogglePinned: (note: Note) => Promise<boolean>;
-  onBulkUpdateNotesOrder: (
-    updates: { id: string; sort_order: number }[],
-  ) => Promise<boolean>;
+  onUpdateNoteOrder: (id: string, newSortOrder: number) => Promise<boolean>;
   onToggleExpansion: (id: string, current: boolean) => Promise<boolean>;
 }
 
@@ -41,9 +40,11 @@ export default function NoteList({
   onToggleResolved,
   onToggleFavorite,
   onTogglePinned,
-  onBulkUpdateNotesOrder,
+  onUpdateNoteOrder,
   onToggleExpansion,
 }: NoteListProps) {
+  const [isSorting, setIsSorting] = useState(false);
+
   const filteredNotes = notes.filter((note) => {
     if (filterType !== "all") {
       const type = note.note_type || "info";
@@ -143,28 +144,40 @@ export default function NoteList({
     // 3. 移動ハンドラー（一時変数を用いた安全なSwapとガード処理）
     const handleMoveUp = async () => {
       if (groupIndex <= 0) return;
-      const newGroup = [...validGroup];
-      const temp = newGroup[groupIndex];
-      newGroup[groupIndex] = newGroup[groupIndex - 1];
-      newGroup[groupIndex - 1] = temp;
-
-      const updates = newGroup
-        .filter((n) => n && n.id) // undefinedを絶対に弾く
-        .map((n, i) => ({ id: n.id, sort_order: i }));
-      await onBulkUpdateNotesOrder(updates);
+      setIsSorting(true);
+      try {
+        let newOrder: number;
+        if (groupIndex === 1) {
+          newOrder = (validGroup[0].sort_order || 0) - 1;
+        } else {
+          newOrder =
+            ((validGroup[groupIndex - 2].sort_order || 0) +
+              (validGroup[groupIndex - 1].sort_order || 0)) /
+            2;
+        }
+        await onUpdateNoteOrder(note.id, newOrder);
+      } finally {
+        setIsSorting(false);
+      }
     };
 
     const handleMoveDown = async () => {
       if (groupIndex === -1 || groupIndex >= validGroup.length - 1) return;
-      const newGroup = [...validGroup];
-      const temp = newGroup[groupIndex];
-      newGroup[groupIndex] = newGroup[groupIndex + 1];
-      newGroup[groupIndex + 1] = temp;
-
-      const updates = newGroup
-        .filter((n) => n && n.id) // undefinedを絶対に弾く
-        .map((n, i) => ({ id: n.id, sort_order: i }));
-      await onBulkUpdateNotesOrder(updates);
+      setIsSorting(true);
+      try {
+        let newOrder: number;
+        if (groupIndex === validGroup.length - 2) {
+          newOrder = (validGroup[validGroup.length - 1].sort_order || 0) + 1;
+        } else {
+          newOrder =
+            ((validGroup[groupIndex + 1].sort_order || 0) +
+              (validGroup[groupIndex + 2].sort_order || 0)) /
+            2;
+        }
+        await onUpdateNoteOrder(note.id, newOrder);
+      } finally {
+        setIsSorting(false);
+      }
     };
 
     return (
@@ -183,6 +196,7 @@ export default function NoteList({
         onToggleFavorite={onToggleFavorite}
         onTogglePinned={onTogglePinned}
         onToggleExpansion={onToggleExpansion}
+        isSorting={isSorting}
       />
     );
   };

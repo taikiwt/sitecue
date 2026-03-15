@@ -1,57 +1,28 @@
 ---
 name: Database Rules
-description: Supabase、RLS、各テーブルのスキーマ戦略のルール
+description: Supabase、RLS、マイグレーション、およびデータ操作に関する絶対ルール
 ---
 
-# Database Schema Strategy
+# Database Operations & Rules
 
-- **Database**: Supabase (PostgreSQL)
-  - RLS (Row Level Security): 必須。`user_id` に基づくアクセス制御を徹底する。
+## 1. SSOT (Single Source of Truth) の原則
+- **スキーマと型の参照**: データベースの構造、テーブル名、カラム名、および `scope` や `note_type` などの Enum値（列挙値）について、このドキュメントや他のMarkdownファイルに具体的な値をハードコードしてはならない。
+- **行動規範**: データの構造や型を確認する必要がある場合は、必ず `types/supabase.ts` および `types/app.ts` を絶対的な正として直接読みに行くこと。
 
-### `sitecue_notes`
+## 2. データ操作の実装方針
+- **リストの並び替え (Fractional Indexing)**:
+  - ユーザーが手動で並び替えるリスト（`sitecue_notes.sort_order` 等）において、整数の再割り当てによる配列の一括更新は行わないこと。
+  - 少数（`double precision`）を用いた Fractional Indexing を標準とし、単一レコードの `update` のみで並び替えを完結させる。
+- **一括更新における `upsert` の回避**:
+  - PostgreSQLの制約上、`upsert` は部分的なデータのみを渡すとNOT NULL制約でエラーになる。
+  - そのため、部分的なカラムの更新には必ず個別の `update` を使用すること。
 
-- メモのメインテーブル。`user_id` (Auth, **ON DELETE CASCADE**), `content` などを保持。
-- `scope`: `'domain'` | `'exact'` (Check Constraint)
-- `note_type`: `'info'` | `'alert'` | `'idea'` (Check Constraint, Default: 'info')
-- `is_resolved`: `boolean` (Default: `false`)
-- `is_pinned`: `boolean` (Default: `false`)
-  - **Local Context**: そのページ（URL）に関連する重要なメモとして、リスト最上位に固定表示する。
-- `is_favorite`: `boolean` (Default: `false`)
-  - **Global Context**: どのページを開いていても参照できるよう、専用の「Favorites」セクションに常時表示する。
-- `sort_order`: `integer` (Default: `0`)
-  - **Ordering**: ユーザーによる任意の並び替え（▲/▼などのSwap）を管理するための連続値。
-- `url_pattern`:
-  - **Normalization Rules**:
-    - Protocol (`https://`, `http://`) は必ず除去する。
-    - **Scope = 'domain'**: Hostnameのみ保存する (例: `github.com`)。
-    - **Scope = 'exact'**: Hostname + Path + Queryを保存する (例: `github.com/user/repo?q=1`)。
-- **Migrations**: DB変更は必ず `supabase/migrations` 内のSQLファイルで行うこと。
+## 3. 開発・マイグレーション・ワークフロー
+- **マイグレーション絶対主義**: 本番のダッシュボードで直接テーブルを変更することは厳禁。変更は必ずローカルでテストし、`supabase/migrations` 内にSQLファイルを作成すること。
+- **ローカルDBのリセット (`db reset`)**:
+  - マイグレーションのテストとして `bunx supabase db reset` を実行すると、`auth.users`（ログインユーザー情報）も初期化される。
+  - そのため、リセット後の動作確認で「外部キー制約エラー」が発生した場合は、フロントエンド（拡張機能等）側で一度ログアウトし、再ログインしてユーザーを再作成すること。
 
-### `sitecue_profiles`
-
-- ユーザーのプランと利用制限を管理するテーブル。
-- `id`: uuid (FK to `auth.users.id`, **ON DELETE CASCADE**) - RLS必須
-- `plan`: `'free'` | `'pro'` (Default: `'free'`)
-- `ai_usage_count`: integer (default 0) - コンテキスト・ウィーバー（AI機能）の月間利用回数を記録する
-- **Access Control & Triggers**:
-  - `handle_new_user`: 新規ユーザー登録時に自動で `free` プランのレコードを作成する。
-  - `check_note_limit`: `sitecue_notes` への INSERT 時に発火し、ユーザーの `plan` が `'free'` かつメモ件数が200件以上の場合は例外（エラー）を投げて保存をブロックする。
-
-### `sitecue_domain_settings`
-
-- ドメインごとの環境設定（ラベル・色）を保持。
-- `user_id`: uuid (FK) - RLS必須
-- `domain`: text (Unique per user)
-- `label`: text (例: 'DEV', 'PROD')
-- `color`: text (例: 'red', 'blue' - Tailwindクラス用マッピングキー)
-
-### `sitecue_links`
-
-- ドメインごとの「Quick Links」（関連リンク・環境切り替え）を保持するテーブル。
-- `user_id`: uuid (FK) - RLS必須
-- `domain`: text (リンクを表示する元のドメイン。ポート番号を含む `host` 形式。例: `localhost:3000`)
-- `target_url`: text (遷移先のURL)
-- `label`: text (リンクの表示名)
-- `type`: `'related'` | `'env'` (Check Constraint)
-  - `'related'`: 関連リンク。別タブ (`target="_blank"`) で開く。
-  - `'env'`: 環境切り替えリンク。現在のタブで開き、パス (`pathname` + `search`) を維持してドメインのみ差し替える。
+## 4. セキュリティ (RLS)
+- すべてのテーブルにおいて RLS (Row Level Security) の有効化を必須とする。
+- 原則として `user_id` カラムを設け、アクセスしてきたユーザー自身のデータのみを操作可能にするポリシーを記述すること。
