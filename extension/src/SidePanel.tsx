@@ -71,7 +71,7 @@ function NotesUI({
     toggleResolved,
     toggleFavorite,
     togglePinned,
-    bulkUpdateNotesOrder,
+    updateNoteOrder,
     toggleNoteExpansion,
   } = useNotes(session, currentFullUrl, setTotalNoteCount);
 
@@ -154,7 +154,7 @@ function NotesUI({
           onToggleResolved={toggleResolved}
           onToggleFavorite={toggleFavorite}
           onTogglePinned={togglePinned}
-          onBulkUpdateNotesOrder={bulkUpdateNotesOrder}
+          onUpdateNoteOrder={updateNoteOrder}
           onToggleExpansion={toggleNoteExpansion}
         />
 

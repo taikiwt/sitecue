@@ -288,35 +288,29 @@ export function useNotes(
     }
   };
 
-  const bulkUpdateNotesOrder = async (updates: { id: string; sort_order: number }[]) => {
-    // 1. updatesの情報を元に、現在の notes の sort_order を更新して setNotes を呼び出す (Optimistic UI Update)
-    let newNotes = [...notes];
-    updates.forEach((update) => {
-      const index = newNotes.findIndex((n) => n.id === update.id);
-      if (index !== -1) {
-        newNotes[index] = { ...newNotes[index], sort_order: update.sort_order };
-      }
+  const updateNoteOrder = async (id: string, newSortOrder: number) => {
+    // Optimistic UI Update
+    setNotes((prevNotes) => {
+      const newNotes = prevNotes.map((n) =>
+        n.id === id ? { ...n, sort_order: newSortOrder } : n,
+      );
+      newNotes.sort(
+        (a, b) =>
+          (a.sort_order || 0) - (b.sort_order || 0) ||
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+      return newNotes;
     });
 
-    // 2. ソートは現状の created_at も加味して並び替えておく
-    newNotes.sort(
-      (a, b) =>
-        (a.sort_order || 0) - (b.sort_order || 0) ||
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-    setNotes(newNotes);
-
     try {
-      // 3. supabase の upsert を使って一括更新を行う
-      const fullUpdates = updates.map((update) => {
-        const originalNote = notes.find((n) => n.id === update.id);
-        return { ...originalNote, sort_order: update.sort_order } as Note;
-      });
-      const { error } = await supabase.from("sitecue_notes").upsert(fullUpdates);
+      const { error } = await supabase
+        .from("sitecue_notes")
+        .update({ sort_order: newSortOrder })
+        .eq("id", id);
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Failed to bulk update note orders", error);
+      console.error("Failed to update note order", error);
       toast.error("Failed to reorder notes");
       // Revert changes by refetching
       fetchNotes();
@@ -362,7 +356,7 @@ export function useNotes(
     toggleResolved,
     toggleFavorite,
     togglePinned,
-    bulkUpdateNotesOrder,
+    updateNoteOrder,
     toggleNoteExpansion,
   };
 }

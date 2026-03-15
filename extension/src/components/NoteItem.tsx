@@ -47,6 +47,7 @@ interface NoteItemProps {
   isFavoriteList?: boolean;
   isFirst?: boolean;
   isLast?: boolean;
+  isSorting?: boolean;
 }
 
 export default function NoteItem({
@@ -63,6 +64,7 @@ export default function NoteItem({
   isFavoriteList = false,
   isFirst = false,
   isLast = false,
+  isSorting = false,
 }: NoteItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
@@ -273,16 +275,16 @@ export default function NoteItem({
               <div className="flex flex-col items-center gap-0 mt-auto pt-4">
                 <button
                   onClick={handleMoveUp}
-                  disabled={!onMoveUp || isSwapping || isFirst}
-                  className={`transition-colors ${!onMoveUp || isSwapping || isFirst ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+                  disabled={!onMoveUp || isSwapping || isFirst || isSorting}
+                  className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
                   title="Move up"
                 >
                   <ChevronUp className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleMoveDown}
-                  disabled={!onMoveDown || isSwapping || isLast}
-                  className={`transition-colors ${!onMoveDown || isSwapping || isLast ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+                  disabled={!onMoveDown || isSwapping || isLast || isSorting}
+                  className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
                   title="Move down"
                 >
                   <ChevronDown className="w-4 h-4" />
