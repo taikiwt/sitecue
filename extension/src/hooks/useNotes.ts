@@ -288,28 +288,17 @@ export function useNotes(
     }
   };
 
-  const swapNoteOrder = async (noteId: string, direction: "up" | "down") => {
-    const currentIndex = notes.findIndex((n) => n.id === noteId);
-    if (currentIndex === -1) return false;
+  const bulkUpdateNotesOrder = async (updates: { id: string; sort_order: number }[]) => {
+    // 1. updatesの情報を元に、現在の notes の sort_order を更新して setNotes を呼び出す (Optimistic UI Update)
+    let newNotes = [...notes];
+    updates.forEach((update) => {
+      const index = newNotes.findIndex((n) => n.id === update.id);
+      if (index !== -1) {
+        newNotes[index] = { ...newNotes[index], sort_order: update.sort_order };
+      }
+    });
 
-    const targetIndex =
-      direction === "up" ? currentIndex - 1 : currentIndex + 1;
-    if (targetIndex < 0 || targetIndex >= notes.length) return false;
-
-    const currentNote = notes[currentIndex];
-    const targetNote = notes[targetIndex];
-
-    // Optimistic UI update
-    const newNotes = [...notes];
-    const tempOrder = currentNote.sort_order;
-
-    newNotes[currentIndex] = {
-      ...currentNote,
-      sort_order: targetNote.sort_order,
-    };
-    newNotes[targetIndex] = { ...targetNote, sort_order: tempOrder };
-
-    // Sort the array according to the new sort_order so it reflects immediately
+    // 2. ソートは現状の created_at も加味して並び替えておく
     newNotes.sort(
       (a, b) =>
         (a.sort_order || 0) - (b.sort_order || 0) ||
@@ -318,23 +307,16 @@ export function useNotes(
     setNotes(newNotes);
 
     try {
-      // Update both notes in parallel
-      const [res1, res2] = await Promise.all([
-        supabase
-          .from("sitecue_notes")
-          .update({ sort_order: targetNote.sort_order })
-          .eq("id", currentNote.id),
-        supabase
-          .from("sitecue_notes")
-          .update({ sort_order: tempOrder })
-          .eq("id", targetNote.id),
-      ]);
-
-      if (res1.error) throw res1.error;
-      if (res2.error) throw res2.error;
+      // 3. supabase の upsert を使って一括更新を行う
+      const fullUpdates = updates.map((update) => {
+        const originalNote = notes.find((n) => n.id === update.id);
+        return { ...originalNote, sort_order: update.sort_order } as Note;
+      });
+      const { error } = await supabase.from("sitecue_notes").upsert(fullUpdates);
+      if (error) throw error;
       return true;
     } catch (error) {
-      console.error("Failed to swap notes", error);
+      console.error("Failed to bulk update note orders", error);
       toast.error("Failed to reorder notes");
       // Revert changes by refetching
       fetchNotes();
@@ -380,7 +362,7 @@ export function useNotes(
     toggleResolved,
     toggleFavorite,
     togglePinned,
-    swapNoteOrder,
+    bulkUpdateNotesOrder,
     toggleNoteExpansion,
   };
 }

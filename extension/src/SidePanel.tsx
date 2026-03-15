@@ -71,7 +71,7 @@ function NotesUI({
     toggleResolved,
     toggleFavorite,
     togglePinned,
-    swapNoteOrder,
+    bulkUpdateNotesOrder,
     toggleNoteExpansion,
   } = useNotes(session, currentFullUrl, setTotalNoteCount);
 
@@ -80,7 +80,9 @@ function NotesUI({
     "all" | "info" | "alert" | "idea"
   >("all");
   const [showResolved, setShowResolved] = useState(false);
-  const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">("exact");
+  const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">(
+    "exact",
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredNotesByScope = notes.filter((n) => {
@@ -152,7 +154,7 @@ function NotesUI({
           onToggleResolved={toggleResolved}
           onToggleFavorite={toggleFavorite}
           onTogglePinned={togglePinned}
-          onSwapOrder={swapNoteOrder}
+          onBulkUpdateNotesOrder={bulkUpdateNotesOrder}
           onToggleExpansion={toggleNoteExpansion}
         />
 
@@ -165,7 +167,7 @@ function NotesUI({
                 const cleanUrl = currentFullUrl.replace(/^https?:\/\//, "");
                 window.open(
                   `${dashboardUrl}/weave?url=${encodeURIComponent(cleanUrl)}`,
-                  "_blank"
+                  "_blank",
                 );
               }}
               className="cursor-pointer flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-neutral-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-neutral-900 transition-colors shadow-sm w-full justify-center"
