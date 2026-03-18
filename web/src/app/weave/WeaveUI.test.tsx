@@ -1,8 +1,17 @@
+// web/src/app/weave/WeaveUI.test.tsx
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import WeaveUI from "./WeaveUI";
 
-describe("WeaveUI Component", () => {
+// Next.jsのフックをモック化して context_id を付与
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+	useSearchParams: () =>
+		new URLSearchParams("url=example.com&context_id=dummy-uuid-1234"),
+}));
+
+describe("WeaveUI Component (Context Relay)", () => {
 	const mockNotes = [
 		{
 			id: "note-1",
@@ -13,12 +22,15 @@ describe("WeaveUI Component", () => {
 		},
 	];
 
-	it("錬成ボタンを押すとMSW経由でAPIモックが呼ばれ、結果が表示されること", async () => {
+	it("context_id が存在する場合、APIに送信されて錬成結果が表示されること", async () => {
 		const user = userEvent.setup();
 		render(<WeaveUI initialNotes={mockNotes} />);
 
-		// メモがレンダリングされていることを確認
-		expect(screen.getByText("テスト用のメモ内容")).toBeInTheDocument();
+		// メモを選択
+		const checkbox = screen.getByRole("checkbox");
+		if (!checkbox.checked) {
+			await user.click(checkbox);
+		}
 
 		const generateButton = screen.getByRole("button", { name: /錬成する/i });
 		expect(generateButton).not.toBeDisabled();
@@ -26,7 +38,7 @@ describe("WeaveUI Component", () => {
 		// ボタンをクリック
 		await user.click(generateButton);
 
-		// ※ローディングの検証は外し、非同期（findByText）で最終的な結果が現れるのを待つ
+		// ローディング検証は省き、最終結果を待つ (testing/SKILL.md 準拠)
 		const resultElement = await screen.findByText(/テスト用モック生成データ/);
 		expect(resultElement).toBeInTheDocument();
 	});

@@ -180,29 +180,30 @@ app.post("/ai/weave", async (c) => {
 			type?: string;
 		}[] = body.contexts;
 		const format: string = body.format;
+		const context_id: string | undefined = body.context_id;
 
 		if (!Array.isArray(contexts) || typeof format !== "string") {
 			return c.json({ error: "Invalid request body" }, 400);
 		}
 
-		// 各URLからMarkdownをフェッチして一意にまとめる
-		const uniqueUrls = [...new Set(contexts.map((c) => c.url))];
-		const fetchedTexts = await Promise.all(
-			uniqueUrls.map(async (url) => {
-				try {
-					const res = await fetch(`https://r.jina.ai/${url}`);
-					if (!res.ok) {
-						return `URL: ${url}\nContent: [Failed to fetch content: ${res.status}]`;
-					}
-					const text = await res.text();
-					return `URL: ${url}\nContent:\n${text}`;
-				} catch (_err) {
-					return `URL: ${url}\nContent: [Failed to fetch content]`;
-				}
-			}),
-		);
+		let referenceContent = "";
+		if (context_id) {
+			const { data: pageData, error: pageError } = await supabase
+				.from("sitecue_page_contents")
+				.select("content")
+				.eq("id", context_id)
+				.single();
 
-		const referenceContent = fetchedTexts.join("\n\n---\n\n");
+			if (!pageError && pageData) {
+				referenceContent = `【現在のページ内容】\n${pageData.content}`;
+
+				// 使い捨てを保証するため直ちに削除
+				await supabase
+					.from("sitecue_page_contents")
+					.delete()
+					.eq("id", context_id);
+			}
+		}
 
 		const userNotesList = contexts
 			.map((ctx, index) => {
