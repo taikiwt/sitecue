@@ -71,7 +71,7 @@ export default async function Dashboard() {
 												{note.url_pattern}
 											</span>
 											<span className="text-xs text-gray-400">
-												{new Date(note.created_at).toLocaleDateString()}
+												{note.created_at.substring(0, 10).replace(/-/g, "/")}
 											</span>
 										</div>
 										<p className="text-sm text-gray-900 whitespace-pre-wrap">

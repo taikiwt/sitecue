@@ -19,7 +19,15 @@
 	"side_panel": {
 		"default_path": "sidepanel.html"
 	},
-	"permissions": ["sidePanel", "activeTab", "storage", "tabs", "identity"],
+	"permissions": [
+		"sidePanel",
+		"activeTab",
+		"storage",
+		"tabs",
+		"identity",
+		"scripting"
+	],
+	"optional_host_permissions": ["<all_urls>"],
 	"host_permissions": ["http://localhost:8787/*", "http://127.0.0.1:54321/*"],
 	"commands": {
 		"_execute_action": {

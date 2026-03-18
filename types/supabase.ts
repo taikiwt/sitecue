@@ -142,6 +142,30 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			sitecue_page_contents: {
+				Row: {
+					content: string;
+					created_at: string;
+					id: string;
+					url: string;
+					user_id: string;
+				};
+				Insert: {
+					content: string;
+					created_at?: string;
+					id?: string;
+					url: string;
+					user_id: string;
+				};
+				Update: {
+					content?: string;
+					created_at?: string;
+					id?: string;
+					url?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 			sitecue_profiles: {
 				Row: {
 					ai_usage_count: number;

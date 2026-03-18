@@ -15,6 +15,7 @@ type Note = {
 function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 	const searchParams = useSearchParams();
 	const urlParam = searchParams.get("url");
+	const contextId = searchParams.get("context_id");
 
 	const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(() => {
 		if (!urlParam) return new Set();
@@ -106,14 +107,14 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 				return;
 			}
 
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8788";
+			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
 			const response = await fetch(`${apiUrl}/ai/weave`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${session.access_token}`,
 				},
-				body: JSON.stringify({ contexts, format }),
+				body: JSON.stringify({ contexts, format, context_id: contextId }),
 			});
 
 			if (response.status === 403) {
@@ -211,7 +212,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 												{(note.note_type || "info").toUpperCase()}
 											</span>
 											<span className="text-xs text-gray-400">
-												{new Date(note.created_at).toLocaleDateString()}
+												{note.created_at.substring(0, 10).replace(/-/g, "/")}
 											</span>
 										</div>
 										<p className="text-sm text-gray-700 whitespace-pre-wrap">
