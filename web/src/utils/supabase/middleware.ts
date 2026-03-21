@@ -41,11 +41,21 @@ export async function updateSession(request: NextRequest) {
 		!request.nextUrl.pathname.startsWith("/auth")
 	) {
 		// no user, potentially respond by redirecting the user to the login page
-		const url = request.nextUrl.clone();
-		const nextPath = request.nextUrl.pathname + request.nextUrl.search;
-		url.pathname = "/login";
-		url.search = `?next=${encodeURIComponent(nextPath)}`;
-		return NextResponse.redirect(url);
+		let baseUrl = request.url;
+		const host =
+			request.headers.get("x-forwarded-host") || request.headers.get("host");
+		if (host) {
+			const protocol = request.headers.get("x-forwarded-proto") || "http";
+			baseUrl = `${protocol}://${host}`;
+		}
+
+		const redirectUrl = new URL("/login", baseUrl);
+		if (redirectUrl.hostname === "localhost") {
+			redirectUrl.hostname = "127.0.0.1";
+		}
+		// biome-ignore format: User preference for single line
+		redirectUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+		return NextResponse.redirect(redirectUrl);
 	}
 
 	return supabaseResponse;

@@ -4,7 +4,12 @@ import WeaveUI from "./WeaveUI";
 
 export const runtime = "edge";
 
-export default async function WeavePage() {
+export default async function WeavePage({
+	searchParams,
+}: {
+	searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+	const resolvedSearchParams = await searchParams;
 	const supabase = await createClient();
 
 	const {
@@ -12,7 +17,11 @@ export default async function WeavePage() {
 	} = await supabase.auth.getUser();
 
 	if (!user) {
-		return redirect("/login");
+		const queryString = new URLSearchParams(
+			resolvedSearchParams as Record<string, string>,
+		).toString();
+		const nextUrl = `/weave${queryString ? `?${queryString}` : ""}`;
+		return redirect(`/login?next=${encodeURIComponent(nextUrl)}`);
 	}
 
 	const { data: notes } = await supabase

@@ -13,10 +13,12 @@ export default function LoginPage() {
 		setIsLoading(true);
 		const supabase = createClient();
 
+		const origin = location.origin.replace("localhost", "127.0.0.1");
+
 		await supabase.auth.signInWithOAuth({
 			provider: "google",
 			options: {
-				redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+				redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
 			},
 		});
 	};
