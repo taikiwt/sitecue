@@ -2,7 +2,7 @@ import type { Session } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
 import LoginScreen from "./components/LoginScreen";
@@ -245,6 +245,7 @@ function NotesUI({
 										targetUrl += `&context_id=${contextId}`;
 									}
 									window.open(targetUrl, "_blank");
+									window.close();
 								} catch (err: unknown) {
 									console.warn(
 										"Weave aborted:",
@@ -257,7 +258,9 @@ function NotesUI({
 										`${dashboardUrl}/weave?url=${encodeURIComponent(cleanUrl)}`,
 										"_blank",
 									);
-									window.close();
+									toast.error(
+										"Failed to prepare context. Opening standard weave.",
+									);
 								} finally {
 									setIsWeaving(false);
 								}

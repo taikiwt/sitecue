@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
 	const searchParams = useSearchParams();
-	const _nextPath = searchParams.get("next") || "/";
+	const nextPath = searchParams.get("next") || "/";
 	const [isLoading, setIsLoading] = useState(false);
 
 	const handleGoogleLogin = async () => {
@@ -16,7 +16,7 @@ export default function LoginPage() {
 		await supabase.auth.signInWithOAuth({
 			provider: "google",
 			options: {
-				redirectTo: `${location.origin}/auth/callback`,
+				redirectTo: `${location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
 			},
 		});
 	};
