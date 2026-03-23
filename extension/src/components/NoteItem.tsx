@@ -275,7 +275,7 @@ export default function NoteItem({
 
 						{/* 左下固定の並び替えボタン（Pinがない時のみ表示） */}
 						{!note.is_pinned && (
-							<div className="flex flex-col items-center gap-0 mt-auto pt-4">
+							<div className="flex flex-col items-center gap-0 mt-auto pt-2">
 								<button
 									type="button"
 									onClick={handleMoveUp}
