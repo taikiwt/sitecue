@@ -20,7 +20,7 @@ interface QuickLinksProps {
 export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 	const { links, loading, addLink, updateLink, deleteLink } =
 		useQuickLinks(currentDomain);
-	const [isOpen, setIsOpen] = useState(true);
+	const [isOpen, setIsOpen] = useState(false);
 	const [isAdding, setIsAdding] = useState(false);
 	const [editingLink, setEditingLink] = useState<(typeof links)[0] | null>(
 		null,
@@ -141,11 +141,25 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 						</span>
 					)}
 				</div>
-				{isOpen ? (
-					<ChevronDown className="w-3.5 h-3.5" />
-				) : (
-					<ChevronRight className="w-3.5 h-3.5" />
-				)}
+				<div className="flex items-center gap-1">
+					{!isOpen &&
+						links
+							.filter((l) => l.type === "related")
+							.slice(0, 4)
+							.map((link) => (
+								<img
+									key={link.id}
+									src={`https://www.google.com/s2/favicons?domain=${new URL(link.target_url).hostname}`}
+									alt=""
+									className="w-3 h-3 rounded-sm shrink-0"
+								/>
+							))}
+					{isOpen ? (
+						<ChevronDown className="w-3.5 h-3.5" />
+					) : (
+						<ChevronRight className="w-3.5 h-3.5" />
+					)}
+				</div>
 			</button>
 
 			{isOpen && (

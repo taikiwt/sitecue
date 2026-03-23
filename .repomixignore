@@ -21,3 +21,7 @@ supabase/migrations/
 
 # 7. 不明なシンボリックリンク（再帰的な読み込みループ防止）
 web/web
+
+# 8. Playwrightのテスト出力・レポート（大容量ファイル除外）
+web/playwright-report/
+web/test-results/
