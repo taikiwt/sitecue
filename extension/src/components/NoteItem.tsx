@@ -242,7 +242,7 @@ export default function NoteItem({
 					</div>
 				</div>
 			) : (
-				<div className="flex flex-col flex-1 gap-2">
+				<div className="flex flex-col flex-1 gap-1">
 					{/* 1層目：ヘッダー（メタデータとピン/スター） */}
 					<div className="flex items-center justify-between">
 						{/* 左側：アイコン統合（Typeアイコン＋完了/未完了トグル） */}
@@ -251,13 +251,18 @@ export default function NoteItem({
 								type="button"
 								onClick={() => onToggleResolved(note.id, note.is_resolved)}
 								className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80`}
-								title={note.is_resolved ? "Mark as unresolved" : "Mark as resolved"}
+								title={
+									note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
+								}
 							>
 								{/* アイコン部分 (通常時とホバー時で透過度を切り替え) */}
 								<div className="relative w-3.5 h-3.5 shrink-0">
 									<div className="absolute inset-0 transition-opacity group-hover/icon:opacity-0">
 										{note.note_type === "alert" && (
-											<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+											<AlertTriangle
+												className="w-3.5 h-3.5"
+												aria-hidden="true"
+											/>
 										)}
 										{note.note_type === "idea" && (
 											<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
@@ -327,7 +332,7 @@ export default function NoteItem({
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm mb-1 ${note.is_resolved ? "line-through text-neutral-400" : "text-neutral-800"}`}
+								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-neutral-400" : "text-neutral-800"}`}
 							>
 								<MarkdownRenderer content={note.content} />
 							</div>
@@ -350,7 +355,7 @@ export default function NoteItem({
 					</div>
 
 					{/* 3層目：フッター（操作ボタン、ホバー時のみ出現） */}
-										<div className="mt-1 pt-1 border-t border-transparent group-hover:border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
+					<div className="mt-1 pt-1 border-t border-transparent group-hover:border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
 						{/* 左側：並び替え（Pinがない時のみ表示） */}
 						<div className="flex items-center gap-1">
 							{!note.is_pinned ? (
@@ -375,7 +380,9 @@ export default function NoteItem({
 									</button>
 								</>
 							) : (
-								<span className="text-[10px] text-neutral-300 ml-1">Pinned</span>
+								<span className="text-[10px] text-neutral-300 ml-1">
+									Pinned
+								</span>
 							)}
 						</div>
 
