@@ -16,8 +16,6 @@ import { useUserStats } from "./hooks/useUserStats";
 
 import { getScopeUrls } from "./utils/url";
 
-
-
 const MAX_FREE_NOTES = 200;
 
 export default function SidePanel() {
@@ -161,8 +159,6 @@ function NotesUI({
 					onUpdateNoteOrder={updateNoteOrder}
 					onToggleExpansion={toggleNoteExpansion}
 				/>
-
-
 			</div>
 
 			{userStatsLoading ? (
