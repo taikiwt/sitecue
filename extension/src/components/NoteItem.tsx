@@ -1,17 +1,15 @@
 import {
 	AlertTriangle,
 	Check,
-	CheckSquare,
 	ChevronDown,
 	ChevronUp,
 	Copy,
 	Edit2,
-	ExternalLink,
 	Info,
 	Lightbulb,
 	Loader2,
 	Pin,
-	Square,
+	RotateCcw,
 	Star,
 	Trash2,
 	X,
@@ -242,69 +240,60 @@ export default function NoteItem({
 					</div>
 				</div>
 			) : (
-				<div className="flex items-stretch gap-3 flex-1">
-					{/* 左側：アイコン＆アクション列 */}
-					<div className="flex flex-col items-center min-w-6">
-						<div className="flex flex-col items-center gap-2">
-							<div className={`shrink-0 ${iconBgColor} p-0.5 rounded`}>
-								{note.note_type === "alert" && (
-									<AlertTriangle className={`w-4 h-4 ${iconTextColor}`} />
-								)}
-								{note.note_type === "idea" && (
-									<Lightbulb className={`w-4 h-4 ${iconTextColor}`} />
-								)}
-								{(note.note_type === "info" || !note.note_type) && (
-									<Info className={`w-4 h-4 ${iconTextColor}`} />
-								)}
-							</div>
+								<div className="flex flex-col flex-1 gap-1">
+					{/* 1層目：ヘッダー（メタデータとピン/スター） */}
+					<div className="flex items-center justify-between">
+						{/* 左側：アイコン統合（Typeアイコン＋完了/未完了トグル） */}
+						<div className="flex items-center gap-2">
 							<button
 								type="button"
 								onClick={() => onToggleResolved(note.id, note.is_resolved)}
-								className={`cursor-pointer shrink-0 transition-colors ${note.is_resolved ? "text-neutral-500" : "text-neutral-300 hover:text-neutral-400"}`}
+								className="group/icon relative flex items-center justify-center w-6 h-6 cursor-pointer"
 								title={
 									note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
 								}
 							>
-								{note.is_resolved ? (
-									<CheckSquare className="w-5 h-5" />
-								) : (
-									<Square className="w-5 h-5" />
-								)}
+								{/* 通常時の表示：種類アイコン */}
+								<div
+									className={`shrink-0 ${iconBgColor} p-0.5 rounded transition-all group-hover/icon:opacity-0`}
+								>
+									{note.note_type === "alert" && (
+										<AlertTriangle className={`w-4 h-4 ${iconTextColor}`} />
+									)}
+									{note.note_type === "idea" && (
+										<Lightbulb className={`w-4 h-4 ${iconTextColor}`} />
+									)}
+									{(note.note_type === "info" || !note.note_type) && (
+										<Info className={`w-4 h-4 ${iconTextColor}`} />
+									)}
+								</div>
+
+								{/* ホバー時の表示：チェック / 戻すアイコン */}
+								<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/icon:opacity-100 transition-opacity">
+									{note.is_resolved ? (
+										<RotateCcw className="w-5 h-5 text-neutral-400" />
+									) : (
+										<Check className="w-5 h-5 text-green-500" />
+									)}
+								</div>
 							</button>
+
+							<span
+								className={`text-xs font-medium capitalize cursor-default ${
+									note.is_resolved
+										? "text-neutral-300 line-through"
+										: "text-neutral-400"
+								}`}
+							>
+								{note.note_type || "info"}
+							</span>
 						</div>
 
-						{/* 左下固定の並び替えボタン（Pinがない時のみ表示） */}
-						{!note.is_pinned && (
-							<div className="flex flex-col items-center gap-0 mt-auto pt-2">
-								<button
-									type="button"
-									onClick={handleMoveUp}
-									disabled={!onMoveUp || isSwapping || isFirst || isSorting}
-									className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
-									title="Move up"
-								>
-									<ChevronUp className="w-4 h-4" />
-								</button>
-								<button
-									type="button"
-									onClick={handleMoveDown}
-									disabled={!onMoveDown || isSwapping || isLast || isSorting}
-									className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-gray-200 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
-									title="Move down"
-								>
-									<ChevronDown className="w-4 h-4" />
-								</button>
-							</div>
-						)}
-					</div>
-
-					{/* 右側：メインコンテンツ列 */}
-					<div className="flex-1 min-w-0 flex flex-col relative">
-						{/* 右上絶対配置ボタン（背景白で被りを防止） */}
-						<div className="absolute -top-1 right-0 flex items-center gap-1.5 bg-white/90 pl-2 pb-1 rounded-bl-md z-10">
+						{/* 右側：固定アクション（Info/Star/Pin） */}
+						<div className="flex items-center gap-1.5">
 							<div
-								className="flex items-center mr-1 outline-none"
-								title={`Scope: ${note.scope === "exact" ? "Page" : note.scope === "inbox" ? "Inbox" : "Domain"}, Date: ${new Date(note.created_at).toLocaleDateString()}`}
+								className="flex items-center mr-0.5 outline-none cursor-default"
+								title={`Scope: ${note.scope === "exact" ? "Page" : note.scope === "inbox" ? "Inbox" : "Domain"}\nCreated: ${Intl.DateTimeFormat("sv-SE").format(new Date(note.created_at))}`}
 							>
 								<Info className="w-3.5 h-3.5 text-neutral-300 hover:text-neutral-500" />
 							</div>
@@ -334,92 +323,124 @@ export default function NoteItem({
 								/>
 							</button>
 						</div>
+					</div>
 
-						{/* テキストコンテンツ（右側に十分なパディングを確保） */}
+					{/* 2層目：本文 */}
+					<div className="flex-1 min-w-0">
 						<div
-							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} pr-14`}
+							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} w-full`}
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm mb-2 ${note.is_resolved ? "line-through text-neutral-500" : "text-neutral-800"}`}
+								className={`text-sm mb-1 ${note.is_resolved ? "line-through text-neutral-400" : "text-neutral-800"}`}
 							>
 								<MarkdownRenderer content={note.content} />
 							</div>
 						</div>
 
-						{/* フッター：Read more / Show less ボタン */}
+						{/* 展開ボタン */}
 						{(isCollapsed || (note.is_expanded && isOverflowing)) && (
-							<div className="mt-auto pt-2 flex justify-center">
+							<div className="mt-1 flex justify-center">
 								<button
 									type="button"
 									onClick={() =>
 										onToggleExpansion(note.id, note.is_expanded ?? false)
 									}
-									className="cursor-pointer text-[11px] text-neutral-500 hover:text-neutral-800 transition-colors font-medium bg-neutral-50 px-3 py-1.5 rounded-full hover:bg-neutral-100"
+									className="cursor-pointer text-[10px] text-neutral-400 hover:text-neutral-700 transition-colors bg-neutral-50 hover:bg-neutral-100 px-2 py-0.5 rounded"
 								>
 									{isCollapsed ? "Read more" : "Show less"}
 								</button>
 							</div>
 						)}
+					</div>
 
-						{/* フッター：Favoriteリスト時のみScope等のメタデータを表示 */}
-						{isFavoriteList && note.scope !== "inbox" && (
-							<div className="text-[10px] text-neutral-400 flex items-center gap-2 mt-3 pt-2 border-t border-gray-50">
-								<span
-									className={`px-1.5 py-0.5 rounded border ${note.scope === "exact" ? "bg-white border-neutral-200 text-neutral-600" : "bg-neutral-50 border-neutral-200 text-neutral-500"}`}
-								>
-									{note.scope === "exact" ? "Page" : "Domain"}
-								</span>
-								{note.url_pattern !==
-									(note.scope === "domain"
-										? getScopeUrls(currentFullUrl).domain
-										: getScopeUrls(currentFullUrl).exact) && (
-									<a
-										href={`https://${note.url_pattern}`}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 ml-1"
-										title={`Open ${note.url_pattern}`}
+					{/* 3層目：フッター（操作ボタン、ホバー時のみ出現） */}
+										<div className="mt-1 pt-1 border-t border-transparent group-hover:border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
+						{/* 左側：並び替え（Pinがない時のみ表示） */}
+						<div className="flex items-center gap-1">
+							{!note.is_pinned ? (
+								<>
+									<button
+										type="button"
+										onClick={handleMoveUp}
+										disabled={!onMoveUp || isSwapping || isFirst || isSorting}
+										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-gray-100 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+										title="Move up"
 									>
-										<ExternalLink className="w-3 h-3 shrink-0" />
-										<span className="truncate">{note.url_pattern}</span>
-									</a>
+										<ChevronUp className="w-4 h-4" />
+									</button>
+									<button
+										type="button"
+										onClick={handleMoveDown}
+										disabled={!onMoveDown || isSwapping || isLast || isSorting}
+										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-gray-100 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+										title="Move down"
+									>
+										<ChevronDown className="w-4 h-4" />
+									</button>
+								</>
+							) : (
+								<span className="text-[10px] text-neutral-300 ml-1">Pinned</span>
+							)}
+						</div>
+
+						{/* 右側：共通アクション */}
+						<div className="flex items-center gap-3">
+							<button
+								type="button"
+								onClick={handleCopyNote}
+								className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
+								title="Copy note"
+							>
+								{copiedNoteId === note.id ? (
+									<Check className="w-3.5 h-3.5 text-green-500" />
+								) : (
+									<Copy className="w-3.5 h-3.5" />
 								)}
-							</div>
-						)}
+							</button>
+							<button
+								type="button"
+								onClick={startEditing}
+								className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
+								title="Edit"
+							>
+								<Edit2 className="w-3.5 h-3.5" />
+							</button>
+							<button
+								type="button"
+								onClick={() => onDelete(note.id)}
+								className="cursor-pointer text-neutral-300 hover:text-rose-400 transition-colors"
+								title="Delete"
+							>
+								<Trash2 className="w-3.5 h-3.5" />
+							</button>
+						</div>
 					</div>
 
-					{/* ホバーメニュー（コピー、編集、削除） */}
-					<div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white/90 pl-2 rounded-l-md z-10">
-						<button
-							type="button"
-							onClick={handleCopyNote}
-							className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
-							title="Copy note"
-						>
-							{copiedNoteId === note.id ? (
-								<Check className="w-3.5 h-3.5 text-green-500" />
-							) : (
-								<Copy className="w-3.5 h-3.5" />
+					{/* Favoriteリスト時のみのメタデータ（必要なら引き続き表示） */}
+					{isFavoriteList && note.scope !== "inbox" && (
+						<div className="text-[10px] text-neutral-400 flex items-center gap-2 mt-1">
+							<span
+								className={`px-1 rounded border ${note.scope === "exact" ? "bg-white border-neutral-200 text-neutral-500" : "bg-neutral-50 border-neutral-200 text-neutral-400"}`}
+							>
+								{note.scope === "exact" ? "Page" : "Domain"}
+							</span>
+							{note.url_pattern !==
+								(note.scope === "domain"
+									? getScopeUrls(currentFullUrl).domain
+									: getScopeUrls(currentFullUrl).exact) && (
+								<a
+									href={`https://${note.url_pattern}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 truncate"
+									title={`Open ${note.url_pattern}`}
+								>
+									<span className="truncate">{note.url_pattern}</span>
+								</a>
 							)}
-						</button>
-						<button
-							type="button"
-							onClick={startEditing}
-							className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
-							title="Edit"
-						>
-							<Edit2 className="w-3.5 h-3.5" />
-						</button>
-						<button
-							type="button"
-							onClick={() => onDelete(note.id)}
-							className="cursor-pointer text-neutral-300 hover:text-rose-400 transition-colors"
-							title="Delete"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-						</button>
-					</div>
+						</div>
+					)}
 				</div>
 			)}
 		</div>
