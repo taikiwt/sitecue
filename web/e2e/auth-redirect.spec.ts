@@ -69,8 +69,7 @@ test.describe("Core Redirect and Auth Flow", () => {
 		const sessionStr = JSON.stringify(authData);
 
 		// @supabase/ssr base64url encodes the session object with a 'base64-' prefix
-		const base64UrlSession =
-			"base64-" + Buffer.from(sessionStr, "utf-8").toString("base64url");
+		const base64UrlSession = `base64-${Buffer.from(sessionStr, "utf-8").toString("base64url")}`;
 
 		const chunkSize = 3180;
 		const chunks = Math.ceil(base64UrlSession.length / chunkSize);

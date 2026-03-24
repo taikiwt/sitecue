@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
 import type { Session } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
