@@ -50,3 +50,9 @@ dist/
 
 # AI context files
 repomix-*.xml
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+.playwright/
