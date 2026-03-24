@@ -126,13 +126,15 @@ export default function NoteItem({
 		setIsSwapping(false);
 	};
 
-	let iconBgColor = "bg-blue-400";
-	const iconTextColor = "text-white";
+	let badgeBgColor = "bg-blue-50";
+	let badgeTextColor = "text-blue-500";
 
 	if (note.note_type === "alert") {
-		iconBgColor = "bg-rose-400";
+		badgeBgColor = "bg-rose-50";
+		badgeTextColor = "text-rose-500";
 	} else if (note.note_type === "idea") {
-		iconBgColor = "bg-amber-400";
+		badgeBgColor = "bg-amber-50";
+		badgeTextColor = "text-amber-500";
 	}
 
 	const resolvedClasses = note.is_resolved ? "opacity-60 grayscale-[0.5]" : "";
@@ -240,7 +242,7 @@ export default function NoteItem({
 					</div>
 				</div>
 			) : (
-								<div className="flex flex-col flex-1 gap-1">
+				<div className="flex flex-col flex-1 gap-2">
 					{/* 1層目：ヘッダー（メタデータとピン/スター） */}
 					<div className="flex items-center justify-between">
 						{/* 左側：アイコン統合（Typeアイコン＋完了/未完了トグル） */}
@@ -248,45 +250,38 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => onToggleResolved(note.id, note.is_resolved)}
-								className="group/icon relative flex items-center justify-center w-6 h-6 cursor-pointer"
-								title={
-									note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
-								}
+								className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80`}
+								title={note.is_resolved ? "Mark as unresolved" : "Mark as resolved"}
 							>
-								{/* 通常時の表示：種類アイコン */}
-								<div
-									className={`shrink-0 ${iconBgColor} p-0.5 rounded transition-all group-hover/icon:opacity-0`}
+								{/* アイコン部分 (通常時とホバー時で透過度を切り替え) */}
+								<div className="relative w-3.5 h-3.5 shrink-0">
+									<div className="absolute inset-0 transition-opacity group-hover/icon:opacity-0">
+										{note.note_type === "alert" && (
+											<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+										)}
+										{note.note_type === "idea" && (
+											<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
+										)}
+										{(note.note_type === "info" || !note.note_type) && (
+											<Info className="w-3.5 h-3.5" aria-hidden="true" />
+										)}
+									</div>
+									<div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/icon:opacity-100">
+										{note.is_resolved ? (
+											<RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+										) : (
+											<Check className="w-3.5 h-3.5" aria-hidden="true" />
+										)}
+									</div>
+								</div>
+
+								{/* テキスト部分 */}
+								<span
+									className={`text-[11px] font-bold tracking-wide uppercase ${note.is_resolved ? "line-through opacity-70" : ""}`}
 								>
-									{note.note_type === "alert" && (
-										<AlertTriangle className={`w-4 h-4 ${iconTextColor}`} />
-									)}
-									{note.note_type === "idea" && (
-										<Lightbulb className={`w-4 h-4 ${iconTextColor}`} />
-									)}
-									{(note.note_type === "info" || !note.note_type) && (
-										<Info className={`w-4 h-4 ${iconTextColor}`} />
-									)}
-								</div>
-
-								{/* ホバー時の表示：チェック / 戻すアイコン */}
-								<div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/icon:opacity-100 transition-opacity">
-									{note.is_resolved ? (
-										<RotateCcw className="w-5 h-5 text-neutral-400" />
-									) : (
-										<Check className="w-5 h-5 text-green-500" />
-									)}
-								</div>
+									{note.note_type || "info"}
+								</span>
 							</button>
-
-							<span
-								className={`text-xs font-medium capitalize cursor-default ${
-									note.is_resolved
-										? "text-neutral-300 line-through"
-										: "text-neutral-400"
-								}`}
-							>
-								{note.note_type || "info"}
-							</span>
 						</div>
 
 						{/* 右側：固定アクション（Info/Star/Pin） */}
