@@ -36,10 +36,11 @@ export default function FilterBar({
 }: FilterBarProps) {
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
+	const [isCopyMenuOpen, setIsCopyMenuOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
 
-	const handleCopy = async () => {
-		const text = filteredNotes.map((n) => n.content ?? "").join("\n\n");
+	const copyToClipboard = async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
 			setIsCopied(true);
@@ -49,17 +50,48 @@ export default function FilterBar({
 		}
 	};
 
-	// Close search when pressing Escape
+	const handleCopyText = async () => {
+		const text = filteredNotes.map((n) => n.content ?? "").join("\n\n");
+		await copyToClipboard(text);
+		setIsCopyMenuOpen(false);
+	};
+
+	const handleCopyJson = async () => {
+		const json = filteredNotes.map((n) => ({
+			type: n.note_type || "info",
+			content: n.content,
+		}));
+		await copyToClipboard(JSON.stringify(json, null, 2));
+		setIsCopyMenuOpen(false);
+	};
+
+	// Close search and menu when pressing Escape
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
 				if (!searchQuery) setIsSearchOpen(false);
 				inputRef.current?.blur();
+				setIsCopyMenuOpen(false);
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [searchQuery]);
+
+	// Close menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setIsCopyMenuOpen(false);
+			}
+		};
+		if (isCopyMenuOpen) {
+			document.addEventListener("mousedown", handleClickOutside);
+		}
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [isCopyMenuOpen]);
 
 	useEffect(() => {
 		if (isSearchOpen && inputRef.current) {
@@ -210,24 +242,47 @@ export default function FilterBar({
 						</div>
 					</div>
 
-					{/* Copy All Button */}
-					<button
-						type="button"
-						onClick={handleCopy}
-						className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
-							isCopied
-								? "text-green-600 bg-green-50"
-								: "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
-						}`}
-						title={isCopied ? "Copied!" : "Copy all notes"}
-						aria-label={isCopied ? "Copied!" : "Copy all notes to clipboard"}
-					>
-						{isCopied ? (
-							<Check className="w-3.5 h-3.5" />
-						) : (
-							<Copy className="w-3.5 h-3.5" />
+					{/* Copy All Dropdown */}
+					<div className="relative" ref={menuRef}>
+						<button
+							type="button"
+							onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
+							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
+								isCopied
+									? "text-green-600 bg-green-50"
+									: isCopyMenuOpen
+										? "text-neutral-800 bg-neutral-100"
+										: "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
+							}`}
+							title={isCopied ? "Copied!" : "Copy options"}
+							aria-label={isCopied ? "Copied!" : "Open copy options menu"}
+						>
+							{isCopied ? (
+								<Check className="w-3.5 h-3.5" />
+							) : (
+								<Copy className="w-3.5 h-3.5" />
+							)}
+						</button>
+
+						{isCopyMenuOpen && (
+							<div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md z-20 py-1 min-w-[120px]">
+								<button
+									type="button"
+									onClick={handleCopyText}
+									className="w-full text-left px-3 py-1.5 text-xs text-neutral-600 hover:bg-gray-50 transition-colors"
+								>
+									Copy as Text
+								</button>
+								<button
+									type="button"
+									onClick={handleCopyJson}
+									className="w-full text-left px-3 py-1.5 text-xs text-neutral-600 hover:bg-gray-50 transition-colors"
+								>
+									Copy as JSON
+								</button>
+							</div>
 						)}
-					</button>
+					</div>
 
 					{/* Resolved Toggle */}
 					<button
