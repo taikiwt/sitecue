@@ -17,7 +17,7 @@ import toml from "react-syntax-highlighter/dist/esm/languages/prism/toml";
 import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx";
 import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 
@@ -195,17 +195,18 @@ export default function MarkdownRenderer({
 								<div className="rounded-lg overflow-hidden text-xs font-mono leading-relaxed relative">
 									<SyntaxHighlighter
 										{...rest}
-										style={vscDarkPlus}
+										style={oneLight}
 										language={language}
 										PreTag="div"
 										customStyle={{
 											margin: 0,
 											padding: "0.75rem",
-											backgroundColor: "#1e1e1e", // Match vscDarkPlus bg
+											// backgroundColor: "#1e1e1e", // Match vscDarkPlus bg
 										}}
 										codeTagProps={{
 											style: { fontFamily: "inherit" },
 										}}
+										wrapLongLines={true}
 									>
 										{codeString}
 									</SyntaxHighlighter>
