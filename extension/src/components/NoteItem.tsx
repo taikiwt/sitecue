@@ -17,6 +17,7 @@ import {
 import { useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
+import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import { getScopeUrls } from "../utils/url";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -72,6 +73,7 @@ export default function NoteItem({
 	const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const [isSwapping, setIsSwapping] = useState(false);
+	const handleAutoIndent = useAutoIndent();
 
 	const contentRef = useRef<HTMLDivElement>(null);
 
@@ -216,6 +218,8 @@ export default function NoteItem({
 							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 								e.preventDefault();
 								handleUpdate();
+							} else {
+								handleAutoIndent(e);
 							}
 						}}
 					/>

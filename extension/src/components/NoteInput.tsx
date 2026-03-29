@@ -1,6 +1,7 @@
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { NoteScope, NoteType } from "../hooks/useNotes";
 
 interface NoteInputProps {
@@ -24,6 +25,7 @@ export default function NoteInput({
 	const [selectedType, setSelectedType] = useState<NoteType>("info");
 	const [newNote, setNewNote] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const handleAutoIndent = useAutoIndent();
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -137,6 +139,8 @@ export default function NoteInput({
 								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 									e.preventDefault();
 									handleSubmit(e);
+								} else {
+									handleAutoIndent(e);
 								}
 							}}
 						/>
