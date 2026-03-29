@@ -153,10 +153,10 @@ app.post("/ai/weave", async (c) => {
 			},
 		});
 
-		// Check usage limit
+		// Check usage limit and handle reset
 		const { data: profile, error: profileError } = await supabase
 			.from("sitecue_profiles")
-			.select("ai_usage_count")
+			.select("plan, ai_usage_count, ai_usage_reset_at")
 			.eq("id", user.id)
 			.single();
 
@@ -165,9 +165,35 @@ app.post("/ai/weave", async (c) => {
 			return c.json({ error: "Failed to fetch user profile" }, 500);
 		}
 
-		if (profile && profile.ai_usage_count >= 3) {
+		const now = new Date();
+		let currentCount = profile?.ai_usage_count ?? 0;
+		let currentResetAt = profile?.ai_usage_reset_at;
+
+		// Handle reset if the period has passed
+		if (currentResetAt && now > new Date(currentResetAt)) {
+			currentCount = 0;
+			const nextMonth = new Date();
+			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			currentResetAt = nextMonth.toISOString();
+		}
+
+		// Ensure we have a reset date (defensive)
+		if (!currentResetAt) {
+			const nextMonth = new Date();
+			nextMonth.setMonth(nextMonth.getMonth() + 1);
+			currentResetAt = nextMonth.toISOString();
+		}
+
+		const plan = profile?.plan || "free";
+		const limit = plan === "pro" ? 100 : 3;
+
+		if (currentCount >= limit) {
 			return c.json(
-				{ error: "Free tier limit reached. You can only use Weave 3 times." },
+				{
+					error: `${plan.toUpperCase()} tier limit reached (${limit} times). Your usage will reset on ${new Date(
+						currentResetAt,
+					).toLocaleDateString()}.`,
+				},
 				403,
 			);
 		}
@@ -251,15 +277,17 @@ ${userNotesList}
 		const response = await result.response;
 		const text = response.text();
 
-		// Increment ai_usage_count upon successful generation
-		const currentCount = profile ? profile.ai_usage_count : 0;
+		// Update usage count and reset date upon successful generation
 		const { error: updateError } = await supabase
 			.from("sitecue_profiles")
-			.update({ ai_usage_count: currentCount + 1 })
+			.update({
+				ai_usage_count: currentCount + 1,
+				ai_usage_reset_at: currentResetAt,
+			})
 			.eq("id", user.id);
 
 		if (updateError) {
-			console.error("Failed to update ai_usage_count:", updateError);
+			console.error("Failed to update profile usage:", updateError);
 		}
 
 		return c.json({ result: text });

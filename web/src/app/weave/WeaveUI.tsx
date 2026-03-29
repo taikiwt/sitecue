@@ -33,6 +33,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 	const [resultMarkdown, setResultMarkdown] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [usageCount, setUsageCount] = useState<number | null>(null);
+	const [plan, setPlan] = useState<string>("free");
 
 	useEffect(() => {
 		async function fetchUsageCount() {
@@ -44,14 +45,16 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 
 			const { data, error } = await supabase
 				.from("sitecue_profiles")
-				.select("ai_usage_count")
+				.select("ai_usage_count, plan")
 				.eq("id", session.user.id)
 				.single();
 
 			if (!error && data) {
 				setUsageCount(data.ai_usage_count || 0);
+				setPlan(data.plan || "free");
 			} else {
 				setUsageCount(0);
+				setPlan("free");
 			}
 		}
 		fetchUsageCount();
@@ -118,7 +121,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			});
 
 			if (response.status === 403) {
-				setError("無料枠の上限（3回）に達しました。");
+				const errorData = await response.json();
+				setError(errorData.error || "利用制限に達しました。");
 				return;
 			}
 
@@ -275,7 +279,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 							disabled={
 								selectedNoteIds.size === 0 ||
 								isLoading ||
-								(usageCount !== null && usageCount >= 3)
+								(usageCount !== null &&
+									usageCount >= (plan === "pro" ? 100 : 3))
 							}
 							className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
 						>
@@ -311,7 +316,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 						<div className="mt-2 h-4 flex items-center justify-center">
 							{usageCount !== null && !isLoading && (
 								<p className="text-xs text-gray-400 font-light">
-									Free tier: {usageCount} / 3 uses
+									{plan === "pro" ? "Pro" : "Free"} tier: {usageCount} /{" "}
+									{plan === "pro" ? 100 : 3} uses
 								</p>
 							)}
 						</div>
