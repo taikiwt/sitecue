@@ -133,6 +133,7 @@ export function useNotes(
 	) => {
 		if (!editContent.trim()) return false;
 		try {
+			const currentNote = notes.find((n) => n.id === id);
 			let targetUrlPattern: string | undefined;
 			const updatePayload: {
 				content: string;
@@ -144,7 +145,7 @@ export function useNotes(
 				note_type: editType,
 			};
 
-			if (editScope) {
+			if (editScope && editScope !== currentNote?.scope) {
 				updatePayload.scope = editScope;
 				const scopeUrls = getScopeUrls(currentFullUrl);
 				targetUrlPattern =
