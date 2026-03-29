@@ -33,6 +33,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 	const [resultMarkdown, setResultMarkdown] = useState("");
 	const [error, setError] = useState<string | null>(null);
 	const [usageCount, setUsageCount] = useState<number | null>(null);
+	const [plan, setPlan] = useState<string>("free");
 
 	useEffect(() => {
 		async function fetchUsageCount() {
@@ -44,14 +45,16 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 
 			const { data, error } = await supabase
 				.from("sitecue_profiles")
-				.select("ai_usage_count")
+				.select("ai_usage_count, plan")
 				.eq("id", session.user.id)
 				.single();
 
 			if (!error && data) {
 				setUsageCount(data.ai_usage_count || 0);
+				setPlan(data.plan || "free");
 			} else {
 				setUsageCount(0);
+				setPlan("free");
 			}
 		}
 		fetchUsageCount();
@@ -118,7 +121,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			});
 
 			if (response.status === 403) {
-				setError("無料枠の上限（3回）に達しました。");
+				const errorData = await response.json();
+				setError(errorData.error || "利用制限に達しました。");
 				return;
 			}
 
@@ -138,6 +142,53 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			setIsLoading(false);
 		}
 	};
+
+	// Guard: If mandatory parameters are missing, show a friendly error UI
+	// This is placed after all hooks to comply with React's Rule of Hooks
+	if (!urlParam || !contextId) {
+		return (
+			<div className="flex flex-col items-center justify-center py-16 px-4">
+				<div className="bg-white border border-red-100 rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-6 transform transition-all hover:scale-[1.01]">
+					<div className="flex justify-center">
+						<div className="bg-red-50 p-4 rounded-full">
+							<svg
+								className="h-10 w-10 text-red-500"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								strokeWidth="2"
+								aria-hidden="true"
+							>
+								<circle cx="12" cy="12" r="10" />
+								<line x1="12" y1="8" x2="12" y2="12" />
+								<line x1="12" y1="16" x2="12.01" y2="16" />
+							</svg>
+						</div>
+					</div>
+					<div className="space-y-2">
+						<h3 className="text-xl font-semibold text-gray-900 leading-tight">
+							Missing Parameters
+						</h3>
+						<p className="text-sm text-gray-500 leading-relaxed">
+							URL information is missing. Data might have been lost during the
+							authentication redirect. Please reopen this page from the Weave
+							button in the extension.
+						</p>
+					</div>
+					<div className="pt-2">
+						<button
+							type="button"
+							onClick={() => window.location.reload()}
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all"
+						>
+							Retry Sync
+						</button>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="flex flex-col lg:flex-row gap-8">
@@ -275,7 +326,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 							disabled={
 								selectedNoteIds.size === 0 ||
 								isLoading ||
-								(usageCount !== null && usageCount >= 3)
+								(usageCount !== null &&
+									usageCount >= (plan === "pro" ? 100 : 3))
 							}
 							className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
 						>
@@ -311,7 +363,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 						<div className="mt-2 h-4 flex items-center justify-center">
 							{usageCount !== null && !isLoading && (
 								<p className="text-xs text-gray-400 font-light">
-									Free tier: {usageCount} / 3 uses
+									{plan === "pro" ? "Pro" : "Free"} tier: {usageCount} /{" "}
+									{plan === "pro" ? 100 : 3} uses
 								</p>
 							)}
 						</div>
