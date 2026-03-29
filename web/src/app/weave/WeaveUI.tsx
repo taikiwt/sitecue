@@ -143,6 +143,53 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 		}
 	};
 
+	// Guard: If mandatory parameters are missing, show a friendly error UI
+	// This is placed after all hooks to comply with React's Rule of Hooks
+	if (!urlParam || !contextId) {
+		return (
+			<div className="flex flex-col items-center justify-center py-16 px-4">
+				<div className="bg-white border border-red-100 rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-6 transform transition-all hover:scale-[1.01]">
+					<div className="flex justify-center">
+						<div className="bg-red-50 p-4 rounded-full">
+							<svg
+								className="h-10 w-10 text-red-500"
+								xmlns="http://www.w3.org/2000/svg"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+								strokeWidth="2"
+								aria-hidden="true"
+							>
+								<circle cx="12" cy="12" r="10" />
+								<line x1="12" y1="8" x2="12" y2="12" />
+								<line x1="12" y1="16" x2="12.01" y2="16" />
+							</svg>
+						</div>
+					</div>
+					<div className="space-y-2">
+						<h3 className="text-xl font-semibold text-gray-900 leading-tight">
+							Missing Parameters
+						</h3>
+						<p className="text-sm text-gray-500 leading-relaxed">
+							URL information is missing. Data might have been lost during the
+							authentication redirect. Please reopen this page from the Weave
+							button in the extension.
+						</p>
+					</div>
+					<div className="pt-2">
+						<button
+							type="button"
+							onClick={() => window.location.reload()}
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all"
+						>
+							Retry Sync
+						</button>
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex flex-col lg:flex-row gap-8">
 			{/* Left Pane: Notes List */}
