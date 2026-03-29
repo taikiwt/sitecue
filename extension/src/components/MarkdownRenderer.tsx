@@ -146,10 +146,10 @@ export default function MarkdownRenderer({
 							href={href}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-blue-500 hover:text-blue-600 hover:underline inline-flex items-center gap-0.5"
+							className="text-blue-500 hover:text-blue-600 hover:underline break-all"
 						>
 							{children}
-							<ExternalLink className="w-3 h-3 inline-block" />
+							<ExternalLink className="w-3 h-3 inline-block ml-1 align-text-bottom" />
 						</a>
 					),
 
