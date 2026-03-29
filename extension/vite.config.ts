@@ -35,6 +35,9 @@ export default defineConfig(({ mode, command }) => {
 
 	return {
 		plugins: [react(), tailwindcss(), crx({ manifest: dynamicManifest })],
+		build: {
+			chunkSizeWarningLimit: 1500,
+		},
 		server: {
 			port: 5173,
 			strictPort: true,
