@@ -118,26 +118,8 @@ export default function NoteList({
 		const isFirstNormal = !note.is_pinned && index === pinnedCount;
 		const isLastNormal = !note.is_pinned && index === list.length - 1;
 
-		// 2. フィルター適用前の「真の並び替え対象グループ」を抽出
-		const validGroup = notes
-			.filter((n) => {
-				if (isFavorite) return n.is_favorite;
-				if (n.is_favorite) return false;
-				if (n.is_pinned !== note.is_pinned) return false;
-
-				if (viewScope === "inbox") return n.scope === "inbox";
-				return (
-					(n.scope === "domain" && n.url_pattern === scopeUrls.domain) ||
-					(n.scope === "exact" && n.url_pattern === scopeUrls.exact)
-				);
-			})
-			.sort((a, b) => {
-				if ((a.sort_order || 0) !== (b.sort_order || 0))
-					return (a.sort_order || 0) - (b.sort_order || 0);
-				return (
-					new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-				);
-			});
+		// 2. 現在の表示リストから同一ピン状態のグループを抽出（フィルター適用後を基準にする）
+		const validGroup = list.filter((n) => n.is_pinned === note.is_pinned);
 
 		const groupIndex = validGroup.findIndex((n) => n.id === note.id);
 
