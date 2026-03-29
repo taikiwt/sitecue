@@ -77,11 +77,12 @@ export default function NoteItem({
 
 	const contentRef = useRef<HTMLDivElement>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed to recalculate height on content change
 	useLayoutEffect(() => {
 		if (contentRef.current) {
 			setIsOverflowing(contentRef.current.scrollHeight > COLLAPSE_THRESHOLD);
 		}
-	}, []);
+	}, [note.content]);
 
 	const startEditing = () => {
 		setIsEditing(true);
@@ -358,6 +359,31 @@ export default function NoteItem({
 						)}
 					</div>
 
+					{/* Favoriteリスト時のみのメタデータ（必要なら引き続き表示） */}
+					{isFavoriteList && note.scope !== "inbox" && (
+						<div className="text-[10px] text-neutral-400 flex items-center gap-2 mt-1">
+							<span
+								className={`px-1 rounded border ${note.scope === "exact" ? "bg-white border-neutral-200 text-neutral-500" : "bg-neutral-50 border-neutral-200 text-neutral-400"}`}
+							>
+								{note.scope === "exact" ? "Page" : "Domain"}
+							</span>
+							{note.url_pattern !==
+								(note.scope === "domain"
+									? getScopeUrls(currentFullUrl).domain
+									: getScopeUrls(currentFullUrl).exact) && (
+								<a
+									href={`https://${note.url_pattern}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 truncate"
+									title={`Open ${note.url_pattern}`}
+								>
+									<span className="truncate">{note.url_pattern}</span>
+								</a>
+							)}
+						</div>
+					)}
+
 					{/* 3層目：フッター（操作ボタン、ホバー時のみ出現） */}
 					<div className="mt-1 pt-1 border-t border-transparent group-hover:border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
 						{/* 左側：並び替え（Pinがない時のみ表示） */}
@@ -422,31 +448,6 @@ export default function NoteItem({
 							</button>
 						</div>
 					</div>
-
-					{/* Favoriteリスト時のみのメタデータ（必要なら引き続き表示） */}
-					{isFavoriteList && note.scope !== "inbox" && (
-						<div className="text-[10px] text-neutral-400 flex items-center gap-2 mt-1">
-							<span
-								className={`px-1 rounded border ${note.scope === "exact" ? "bg-white border-neutral-200 text-neutral-500" : "bg-neutral-50 border-neutral-200 text-neutral-400"}`}
-							>
-								{note.scope === "exact" ? "Page" : "Domain"}
-							</span>
-							{note.url_pattern !==
-								(note.scope === "domain"
-									? getScopeUrls(currentFullUrl).domain
-									: getScopeUrls(currentFullUrl).exact) && (
-								<a
-									href={`https://${note.url_pattern}`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 truncate"
-									title={`Open ${note.url_pattern}`}
-								>
-									<span className="truncate">{note.url_pattern}</span>
-								</a>
-							)}
-						</div>
-					)}
 				</div>
 			)}
 		</div>

@@ -1,4 +1,4 @@
-import { Ghost, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Ghost, Loader2 } from "lucide-react";
 import { useState } from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import { getScopeUrls } from "../utils/url";
@@ -44,6 +44,7 @@ export default function NoteList({
 	onToggleExpansion,
 }: NoteListProps) {
 	const [isSorting, setIsSorting] = useState(false);
+	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 
 	const filteredNotes = notes.filter((note) => {
 		if (filterType !== "all") {
@@ -187,12 +188,23 @@ export default function NoteList({
 		<>
 			{favoriteNotes.length > 0 && (
 				<div className="space-y-3">
-					<div className="flex items-center gap-2 text-xs font-semibold text-neutral-500 uppercase tracking-wider px-1">
-						<span>Favorites</span>
-					</div>
-					<div className="space-y-3">
-						{favoriteNotes.map((note) => renderItem(note, true))}
-					</div>
+					<button
+						type="button"
+						onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
+						className="flex items-center gap-1 text-xs font-semibold text-neutral-500 uppercase tracking-wider px-1 hover:text-neutral-800 transition-colors cursor-pointer"
+					>
+						{isFavoritesOpen ? (
+							<ChevronDown className="w-3 h-3" />
+						) : (
+							<ChevronRight className="w-3 h-3" />
+						)}
+						<span>FAVORITES ({favoriteNotes.length})</span>
+					</button>
+					{isFavoritesOpen && (
+						<div className="space-y-3">
+							{favoriteNotes.map((note) => renderItem(note, true))}
+						</div>
+					)}
 					{currentScopeNotes.length > 0 && <hr className="border-gray-200" />}
 				</div>
 			)}
