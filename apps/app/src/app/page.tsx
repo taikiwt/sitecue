@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
-export const runtime = "edge";
-
 export default async function Dashboard() {
 	const supabase = await createClient();
 

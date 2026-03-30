@@ -2,8 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import WeaveUI from "./WeaveUI";
 
-export const runtime = "edge";
-
 export default async function WeavePage({
 	searchParams,
 }: {
