@@ -1,18 +1,22 @@
 {
 	"name": "sitecue",
+	"packageManager": "bun@1.2.2",
 	"version": "1.0.0",
 	"scripts": {
-		"dev": "concurrently \"cd web && bun run dev\" \"cd extension && bun run dev\" \"cd api && bun run dev\"",
+		"dev": "turbo dev",
+		"build": "turbo build",
 		"db:start": "bun x supabase start",
 		"db:stop": "bun x supabase stop",
 		"stop": "bun x supabase stop"
 	},
 	"workspaces": [
-		"web",
+		"apps/*",
 		"api",
-		"extension"
+		"extension",
+		"packages/*"
 	],
-	"dependencies": {
-		"concurrently": "^9.2.1"
+	"dependencies": {},
+	"devDependencies": {
+		"turbo": "^2.8.21"
 	}
 }

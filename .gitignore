@@ -1,5 +1,6 @@
 # --- Global / General ---
 node_modules
+.turbo/
 
 # Macのシステムファイル
 .DS_Store
@@ -26,6 +27,7 @@ bun.debug.log*
 out/
 build/
 .vercel
+.open-next/
 
 # TypeScript definition
 next-env.d.ts

@@ -1,10 +1,11 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-export default function LoginPage() {
+// 👇 useSearchParams を使う部分を一つのコンポーネントに切り出します
+function LoginContent() {
 	const searchParams = useSearchParams();
 	const nextPath = searchParams.get("next") || "/";
 	const [isLoading, setIsLoading] = useState(false);
@@ -77,5 +78,20 @@ export default function LoginPage() {
 				</div>
 			</div>
 		</div>
+	);
+}
+
+// 👇 大元のページは、中身をSuspenseで囲むだけにする
+export default function LoginPage() {
+	return (
+		<Suspense
+			fallback={
+				<div className="flex min-h-screen items-center justify-center">
+					Loading...
+				</div>
+			}
+		>
+			<LoginContent />
+		</Suspense>
 	);
 }
