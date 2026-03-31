@@ -45,11 +45,6 @@ next-env.d.ts
 !.vscode/settings.json
 .idea/
 
-# --- Extension (Vite) ---
-dist/
-.vite/
-*.local
-
 # AI context files
 repomix-*.xml
 
@@ -58,3 +53,14 @@ playwright-report/
 test-results/
 blob-report/
 .playwright/
+
+# --- Extension (Vite / WXT) ---
+dist/
+.vite/
+*.local
+# WXTの自動生成型定義・キャッシュ
+.wxt/
+# WXTのビルド出力先
+.output/
+# WXTで生成されるストア提出用ZIPファイル
+*.zip
