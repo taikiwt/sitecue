@@ -20,3 +20,8 @@ supabase/snippets/
 # 5. DBのマイグレーションファイル(履歴)
 # ※AIにDB構造を伝えるなら最新の schema.sql だけで十分なため、過去の差分履歴は除外
 supabase/migrations/
+
+# 6. WXTの自動生成ファイル・ビルド出力
+# ※.gitignoreにも記載しているが、AIのコンテキストを無駄に消費しないよう念押しで除外
+.wxt/
+.output/
