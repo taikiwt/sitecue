@@ -1,4 +1,4 @@
-// 対象: web/src/app/login/page.test.tsx
+// 対象: apps/app/src/app/login/page.test.tsx
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
