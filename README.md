@@ -27,14 +27,14 @@ This project is a monorepo managed with Turborepo, containing the extension, a w
 
 ## 📁 Project Structure
 
-| Directory    | Description                                                                      |
-| :----------- | :------------------------------------------------------------------------------- |
-| `extension/` | Chrome Extension built with Vite and React.                                      |
-| `apps/app/`  | Web dashboard built with Next.js, optimized for Cloudflare Workers via OpenNext. |
-| `api/`       | Backend API built with Cloudflare Workers and Hono.                              |
-| `supabase/`  | Database migrations, RLS policies, and tests.                                    |
-| `docs/`      | Project documentation and AI-driven development context.                         |
-| `.agent/`    | Strict rules and constraints for AI-driven development.                          |
+| Directory         | Description                                                                      |
+| :---------------- | :------------------------------------------------------------------------------- |
+| `apps/extension/` | Chrome Extension built with Vite and React.                                      |
+| `apps/app/`       | Web dashboard built with Next.js, optimized for Cloudflare Workers via OpenNext. |
+| `apps/api/`       | Backend API built with Cloudflare Workers and Hono.                              |
+| `supabase/`       | Database migrations, RLS policies, and tests.                                    |
+| `docs/`           | Project documentation and AI-driven development context.                         |
+| `.agent/`         | Strict rules and constraints for AI-driven development.                          |
 
 ## 🚀 Local Development
 
@@ -45,10 +45,10 @@ To run this project locally, you need [Bun](https://bun.sh/) and [Docker](https:
 Copy the example env files and fill in your keys:
 
 ```bash
-cp extension/.env.example extension/.env.development
+cp apps/extension/.env.example apps/extension/.env.development
 cp apps/app/.env.example apps/app/.env.local
 cp apps/app/.env.example apps/app/.dev.vars # Required for Wrangler local preview
-cp api/.dev.vars.example api/.dev.vars
+cp apps/api/.dev.vars.example apps/api/.dev.vars
 ```
 
 ### 2. Start Local Database
@@ -72,7 +72,7 @@ bun run dev
 
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `extension/dist` directory.
+3. Click "Load unpacked" and select the `apps/extension/dist` directory.
 
 ## 🛡️ Security
 

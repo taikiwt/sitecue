@@ -11,12 +11,11 @@
 	},
 	"workspaces": [
 		"apps/*",
-		"api",
-		"extension",
 		"packages/*"
 	],
 	"dependencies": {},
 	"devDependencies": {
+		"@biomejs/biome": "^2.4.10",
 		"turbo": "^2.8.21"
 	}
 }

@@ -20,7 +20,6 @@
 		"react-dom": "^19.2.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.3.13",
 		"@opennextjs/cloudflare": "^1.18.0",
 		"@playwright/test": "^1.58.2",
 		"@tailwindcss/postcss": "^4",

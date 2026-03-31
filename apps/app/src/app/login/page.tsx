@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { Suspense, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 // 👇 useSearchParams を使う部分を一つのコンポーネントに切り出します
