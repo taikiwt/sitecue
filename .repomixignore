@@ -1,27 +1,22 @@
-# 1. 自動生成される型定義ファイル・ビルドキャッシュ
-api/worker-configuration.d.ts
-web/next-env.d.ts
-web/tsconfig.tsbuildinfo
+# 1. 自動生成される型定義ファイル（Git管理下だがAIには不要なもの）
+**/worker-configuration.d.ts
 
-# 2. パッケージマネージャーのロックファイル
+# 2. パッケージマネージャーのロックファイル（Git管理下だが文字数が膨大なため除外）
 bun.lock
+bun.lockb
 
-# 3. メディアファイル（画像・アイコン）
-extension/public/*.png
-web/public/*.svg
+# 3. メディアファイル（画像・アイコン等のバイナリ、Git管理下）
+**/*.png
+**/*.svg
+**/*.ico
+**/*.jpg
+**/*.jpeg
+**/*.webp
+**/*.gif
 
-# 4. repomixの出力結果自体（重複読み込み防止）
-repomix-*.xml
-
-# 5. 一時的なスクラッチパッド・不要ファイル
+# 4. 一時的なスクラッチパッド・不要ファイル（Git管理下だがコンテキスト不要）
 supabase/snippets/
 
-# 6. DBのマイグレーションファイル(履歴)
+# 5. DBのマイグレーションファイル(履歴)
+# ※AIにDB構造を伝えるなら最新の schema.sql だけで十分なため、過去の差分履歴は除外
 supabase/migrations/
-
-# 7. 不明なシンボリックリンク（再帰的な読み込みループ防止）
-web/web
-
-# 8. Playwrightのテスト出力・レポート（大容量ファイル除外）
-web/playwright-report/
-web/test-results/
