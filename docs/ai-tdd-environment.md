@@ -4,7 +4,7 @@
 
 Gemini 3.1 Pro（頭脳・設計）とGemini 3 Flash（手足・コーディング）を組み合わせた**「AI主導のテスト駆動開発（AI-TDD）」**を最高速で回すため、各ワークスペースに最適なテスト環境を構築した。
 
-- **`apps/extension/` (Vite/React):** `Vitest` + `React Testing Library` + `happy-dom`
+- **`apps/extension/` (WXT/React):** `Vitest` + `React Testing Library` + `happy-dom`
   - Chrome API (`chrome.runtime` 等) をモック化し、UIコンポーネントを高速テスト。
 - **`apps/app/` (Next.js):** `Vitest` + `React Testing Library` + `jsdom` + `MSW`
   - バックエンド（Hono）を立ち上げずとも、MSWでAPI通信を傍受・モック化し、Next.jsのClient Componentを独立してテスト。

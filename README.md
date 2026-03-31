@@ -19,7 +19,7 @@ Leave your distilled thoughts, to-dos, or AI-generated summaries anchored direct
 
 This project is a monorepo managed with Turborepo, containing the extension, a web dashboard, and an API.
 
-- **Extension:** React, Vite, Tailwind CSS
+- **Extension:** React, WXT, Tailwind CSS
 - **Web Dashboard:** Next.js (App Router), OpenNext, Cloudflare Workers
 - **API:** Cloudflare Workers, Hono
 - **Database & Auth:** Supabase (PostgreSQL with RLS)
@@ -29,7 +29,7 @@ This project is a monorepo managed with Turborepo, containing the extension, a w
 
 | Directory         | Description                                                                      |
 | :---------------- | :------------------------------------------------------------------------------- |
-| `apps/extension/` | Chrome Extension built with Vite and React.                                      |
+| `apps/extension/` | Chrome Extension built with WXT and React.                                       |
 | `apps/app/`       | Web dashboard built with Next.js, optimized for Cloudflare Workers via OpenNext. |
 | `apps/api/`       | Backend API built with Cloudflare Workers and Hono.                              |
 | `supabase/`       | Database migrations, RLS policies, and tests.                                    |
@@ -70,9 +70,11 @@ bun run dev
 
 ### 4. Load the Extension
 
+WXT will automatically open a dedicated Chrome instance for development. If you want to load it into your main browser:
+
 1. Open Chrome and navigate to `chrome://extensions/`
 2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `apps/extension/dist` directory.
+3. Click "Load unpacked" and select the `apps/extension/.output/chrome-mv3-dev` directory (or `chrome-mv3` for production build).
 
 ## 🛡️ Security
 
