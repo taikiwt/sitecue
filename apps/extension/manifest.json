@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "sitecue",
-	"version": "1.0.3",
+	"version": "1.1.0",
 	"description": "Leave notes linked to websites in the side panel. A simple way to keep the notes you need exactly where you need them.",
 	"action": {
 		"default_title": "Open sitecue"
