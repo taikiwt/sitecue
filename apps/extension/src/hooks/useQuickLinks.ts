@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { Database } from "../../../types/supabase";
+import type { Database } from "../../../../types/supabase";
 import { supabase } from "../supabaseClient";
 
 type Link = Database["public"]["Tables"]["sitecue_links"]["Row"];

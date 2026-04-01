@@ -1,7 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import type { Note, NoteScope } from "../../../types/app";
+import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
 import { getScopeUrls } from "../utils/url";
 
