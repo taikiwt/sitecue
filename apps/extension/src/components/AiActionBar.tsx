@@ -21,11 +21,15 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
 interface AiActionBarProps {
 	currentFullUrl: string;
 	session: Session;
+	aiUsageCount: number;
+	userPlan: "free" | "pro";
 }
 
 export default function AiActionBar({
 	currentFullUrl,
 	session,
+	aiUsageCount,
+	userPlan,
 }: AiActionBarProps) {
 	const [isWeaving, setIsWeaving] = useState(false);
 
@@ -117,13 +121,20 @@ export default function AiActionBar({
 		}
 	};
 
+	const isLimitReached =
+		userPlan === "pro" ? aiUsageCount >= 100 : aiUsageCount >= 3;
+
 	return (
 		<div className="px-4 py-3 bg-white border-b border-gray-200 shrink-0">
 			<button
 				type="button"
-				disabled={isWeaving}
+				disabled={isWeaving || isLimitReached}
 				onClick={handleWeave}
-				title="Weave page content and notes into something new."
+				title={
+					isLimitReached
+						? "Plan limit reached."
+						: "Weave page content and notes into something new."
+				}
 				className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 rounded-md hover:bg-neutral-800 hover:text-white transition-all duration-200 shadow-sm w-full disabled:opacity-50 disabled:cursor-not-allowed group"
 			>
 				{isWeaving ? (
@@ -135,7 +146,9 @@ export default function AiActionBar({
 						✨ Preparing context...
 					</>
 				) : (
-					"✨ Weave"
+					`✨ Weave (${userPlan === "pro" ? "Pro" : "Free"}: ${aiUsageCount} / ${
+						userPlan === "pro" ? 100 : 3
+					})`
 				)}
 			</button>
 		</div>
