@@ -4,6 +4,7 @@ import { supabase } from "../supabaseClient";
 
 export function useUserStats(session: Session | null) {
 	const [userPlan, setUserPlan] = useState<"free" | "pro">("free");
+	const [aiUsageCount, setAiUsageCount] = useState<number>(0);
 	const [totalNoteCount, setTotalNoteCount] = useState<number>(0);
 	const [userStatsLoading, setUserStatsLoading] = useState(true);
 
@@ -14,12 +15,13 @@ export function useUserStats(session: Session | null) {
 			// Fetch Profile
 			const { data: profile } = await supabase
 				.from("sitecue_profiles")
-				.select("plan")
+				.select("plan, ai_usage_count")
 				.eq("id", session.user.id)
 				.single();
 
 			if (profile) {
 				setUserPlan((profile.plan as "free" | "pro") || "free");
+				setAiUsageCount(profile.ai_usage_count || 0);
 			}
 
 			// Fetch Count
@@ -41,6 +43,7 @@ export function useUserStats(session: Session | null) {
 
 	return {
 		userPlan,
+		aiUsageCount,
 		totalNoteCount,
 		setTotalNoteCount,
 		userStatsLoading,

@@ -9,6 +9,7 @@
 		"build:zip": "wxt zip",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest",
 		"test:ui": "vitest --ui"
 	},

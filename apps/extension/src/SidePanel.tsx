@@ -57,8 +57,13 @@ function NotesUI({
 	onLogout: () => void;
 }) {
 	const { currentFullUrl, url, title } = useCurrentTab();
-	const { userPlan, totalNoteCount, setTotalNoteCount, userStatsLoading } =
-		useUserStats(session);
+	const {
+		userPlan,
+		aiUsageCount,
+		totalNoteCount,
+		setTotalNoteCount,
+		userStatsLoading,
+	} = useUserStats(session);
 
 	const {
 		notes,
@@ -140,7 +145,12 @@ function NotesUI({
 			/>
 
 			{currentFullUrl && notes.length > 0 && (
-				<AiActionBar currentFullUrl={currentFullUrl} session={session} />
+				<AiActionBar
+					currentFullUrl={currentFullUrl}
+					session={session}
+					aiUsageCount={aiUsageCount}
+					userPlan={userPlan}
+				/>
 			)}
 
 			<div className="flex-1 overflow-y-auto p-4 space-y-6">

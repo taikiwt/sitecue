@@ -1,7 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import type { Note, NoteScope } from "../../../types/app";
+import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
 import { getScopeUrls } from "../utils/url";
 
@@ -165,21 +165,9 @@ export function useNotes(
 			if (error) throw error;
 
 			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === id
-						? {
-								...n,
-								content: editContent,
-								note_type: editType,
-								...(editScope
-									? { scope: editScope, url_pattern: targetUrlPattern ?? "" }
-									: {}),
-							}
-						: n,
-				),
+				prevNotes.map((n) => (n.id === id ? { ...n, ...updatePayload } : n)),
 			);
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
-			toast.success("Cue updated");
 			return true;
 		} catch (error) {
 			console.error("Failed to update note", error);
@@ -203,7 +191,6 @@ export function useNotes(
 			if (error) throw error;
 
 			setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
-			toast.success("Cue deleted");
 
 			// ★修正点: inboxのメモを削除した時は、バッジカウントを減らさない
 			if (noteToDelete?.scope !== "inbox") {
@@ -261,9 +248,6 @@ export function useNotes(
 					n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
 				),
 			);
-			toast.success(
-				nextStatus ? "Added to favorites" : "Removed from favorites",
-			);
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
@@ -287,7 +271,6 @@ export function useNotes(
 					n.id === note.id ? { ...n, is_pinned: nextStatus } : n,
 				),
 			);
-			toast.success(nextStatus ? "Pinned note" : "Unpinned note");
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle pinned status", error);
