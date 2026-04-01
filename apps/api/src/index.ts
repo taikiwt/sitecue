@@ -16,7 +16,15 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-app.use("/*", cors());
+app.use(
+	"/*",
+	cors({
+		origin: ["http://127.0.0.1:3000", "https://app.sitecue.app"],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization"],
+		credentials: true,
+	}),
+);
 
 app.get("/", (c) => {
 	return c.text("SiteCue API is running.");
