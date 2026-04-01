@@ -11,4 +11,4 @@ binding = "ASSETS"
 
 [vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://jmoqxrsclhhdhswneyga.supabase.co"
-NEXT_PUBLIC_API_URL = "https://sitecue-api.taikiwt.workers.dev"
+NEXT_PUBLIC_API_URL = "https://api.sitecue.app"
