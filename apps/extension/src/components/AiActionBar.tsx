@@ -146,9 +146,8 @@ export default function AiActionBar({
 						✨ Preparing context...
 					</>
 				) : (
-					`✨ Weave (${userPlan === "pro" ? "Pro" : "Free"}: ${aiUsageCount} / ${
-						userPlan === "pro" ? 100 : 3
-					})`
+					// `✨ Weave (${userPlan === "pro" ? "Pro" : "Free"}: ${aiUsageCount} / ${
+					`✨ Weave (${aiUsageCount} / ${userPlan === "pro" ? 100 : 3})`
 				)}
 			</button>
 		</div>

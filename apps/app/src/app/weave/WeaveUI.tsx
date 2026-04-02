@@ -363,8 +363,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 						<div className="mt-2 h-4 flex items-center justify-center">
 							{usageCount !== null && !isLoading && (
 								<p className="text-xs text-gray-400 font-light">
-									{plan === "pro" ? "Pro" : "Free"} tier: {usageCount} /{" "}
-									{plan === "pro" ? 100 : 3} uses
+									{/* {plan === "pro" ? "Pro" : "Free"} tier: {usageCount} /{" "} */}
+									{usageCount} / {plan === "pro" ? 100 : 3} uses
 								</p>
 							)}
 						</div>
