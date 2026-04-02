@@ -4,6 +4,11 @@ import { defineConfig } from "wxt";
 export default defineConfig({
 	modules: ["@wxt-dev/module-react"],
 
+	// ZIP生成時の不要ファイル除外設定を追加
+	zip: {
+		exclude: ["*_dev_*.png"],
+	},
+
 	// Tailwind v4 用の Vite プラグイン設定
 	vite: () => ({
 		plugins: [tailwindcss()],

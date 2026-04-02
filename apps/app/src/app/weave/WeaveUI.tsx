@@ -104,9 +104,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			} = await supabase.auth.getSession();
 
 			if (sessionError || !session?.access_token) {
-				setError(
-					"ログインセッションの取得に失敗しました。再度ログインしてください。",
-				);
+				setError("Failed to retrieve login session. Please log in again.");
 				return;
 			}
 
@@ -122,7 +120,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 
 			if (response.status === 403) {
 				const errorData = await response.json();
-				setError(errorData.error || "利用制限に達しました。");
+				setError(errorData.error || "Usage limit reached.");
 				return;
 			}
 
@@ -135,9 +133,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			setUsageCount((prev) => (prev !== null ? prev + 1 : 1));
 		} catch (err: unknown) {
 			console.error("Failed to weave ideas:", err);
-			setError(
-				"アイデアの錬成に失敗しました。時間をおいて再度お試しください。",
-			);
+			setError("Failed to weave ideas. Please try again later.");
 		} finally {
 			setIsLoading(false);
 		}
@@ -228,7 +224,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 				<div className="bg-white border border-gray-200 rounded-lg shadow-sm flex-1 overflow-y-auto p-4 space-y-3">
 					{!urlParam ? (
 						<div className="text-center py-8 text-gray-500">
-							URLが指定されていません。拡張機能からWeaveページを開いてください。
+							URL is not specified. Please open the Weave page from the
+							extension.
 						</div>
 					) : displayNotes.length > 0 ? (
 						displayNotes.map((note) => (
@@ -275,7 +272,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 						))
 					) : (
 						<div className="text-center py-8 text-gray-500">
-							このURLに関連するメモがありません。
+							No notes found for this URL.
 						</div>
 					)}
 				</div>
@@ -354,10 +351,10 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 										></path>
 									</svg>
-									✨ 錬成中... (Generating...)
+									✨ Generating...
 								</>
 							) : (
-								"✨ 錬成する（Generate）"
+								"✨ Generate"
 							)}
 						</button>
 						<div className="mt-2 h-4 flex items-center justify-center">
@@ -395,7 +392,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 									></path>
 								</svg>
-								<p className="text-sm">アイデアを錬成しています...</p>
+								<p className="text-sm">Weaving ideas...</p>
 							</div>
 						) : error ? (
 							<div className="flex items-center justify-center h-full">
@@ -408,7 +405,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 						) : (
 							<div className="flex items-center justify-center h-full">
 								<p className="text-sm text-gray-400 text-center">
-									生成結果がここに表示されます。
+									The generated result will appear here.
 								</p>
 							</div>
 						)}
@@ -422,9 +419,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 export default function WeaveUI({ initialNotes }: { initialNotes: Note[] }) {
 	return (
 		<Suspense
-			fallback={
-				<div className="p-8 text-center text-gray-500">読み込み中...</div>
-			}
+			fallback={<div className="p-8 text-center text-gray-500">Loading...</div>}
 		>
 			<WeaveUIInner initialNotes={initialNotes} />
 		</Suspense>
