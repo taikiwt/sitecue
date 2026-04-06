@@ -8,3 +8,12 @@ export type Note = Omit<
 > & {
 	scope: NoteScope;
 };
+
+export type DraftPlatform = "x" | "zenn" | "generic";
+
+export type Draft = Omit<
+	Database["public"]["Tables"]["sitecue_drafts"]["Row"],
+	"target_platform"
+> & {
+	target_platform: DraftPlatform;
+};

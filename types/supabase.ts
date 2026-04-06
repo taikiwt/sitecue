@@ -64,6 +64,36 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			sitecue_drafts: {
+				Row: {
+					content: string | null;
+					created_at: string;
+					id: string;
+					target_platform: string;
+					title: string | null;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					content?: string | null;
+					created_at?: string;
+					id?: string;
+					target_platform: string;
+					title?: string | null;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Update: {
+					content?: string | null;
+					created_at?: string;
+					id?: string;
+					target_platform?: string;
+					title?: string | null;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 			sitecue_links: {
 				Row: {
 					created_at: string;
@@ -169,18 +199,21 @@ export type Database = {
 			sitecue_profiles: {
 				Row: {
 					ai_usage_count: number;
+					ai_usage_reset_at: string | null;
 					created_at: string;
 					id: string;
 					plan: string;
 				};
 				Insert: {
 					ai_usage_count?: number;
+					ai_usage_reset_at?: string | null;
 					created_at?: string;
 					id: string;
 					plan?: string;
 				};
 				Update: {
 					ai_usage_count?: number;
+					ai_usage_reset_at?: string | null;
 					created_at?: string;
 					id?: string;
 					plan?: string;
