@@ -66,18 +66,20 @@ export type Database = {
 			};
 			sitecue_drafts: {
 				Row: {
-					content: string | null;
-					created_at: string;
 					id: string;
+					content: string | null;
+					metadata: Json | null;
 					target_platform: string;
 					title: string | null;
-					updated_at: string;
 					user_id: string;
+					created_at: string;
+					updated_at: string;
 				};
 				Insert: {
 					content?: string | null;
 					created_at?: string;
 					id?: string;
+					metadata?: Json | null;
 					target_platform: string;
 					title?: string | null;
 					updated_at?: string;
@@ -87,6 +89,7 @@ export type Database = {
 					content?: string | null;
 					created_at?: string;
 					id?: string;
+					metadata?: Json | null;
 					target_platform?: string;
 					title?: string | null;
 					updated_at?: string;
