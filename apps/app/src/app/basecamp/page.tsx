@@ -4,13 +4,35 @@ export default function BaseCampPage() {
 	return (
 		<div className="min-h-screen bg-neutral-50 text-neutral-950 font-sans">
 			<header className="border-b border-neutral-200 bg-white">
-				<div className="mx-auto max-w-5xl px-6 py-8">
-					<h1 className="text-3xl font-bold tracking-tight">
-						SiteCue Base Camp
-					</h1>
-					<p className="mt-2 text-neutral-500">
-						あなたの情報の種を、ここから育てましょう。
-					</p>
+				<div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">
+							SiteCue Base Camp
+						</h1>
+						<p className="mt-2 text-neutral-500">
+							あなたの情報の種を、ここから育てましょう。
+						</p>
+					</div>
+					<nav className="flex items-center gap-6">
+						<Link
+							href="/basecamp"
+							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+						>
+							Home
+						</Link>
+						<Link
+							href="/basecamp/notes"
+							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+						>
+							Notes
+						</Link>
+						<Link
+							href="/basecamp/settings"
+							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+						>
+							Settings
+						</Link>
+					</nav>
 				</div>
 			</header>
 
@@ -75,6 +97,25 @@ export default function BaseCampPage() {
 							</p>
 							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
 								ノートを作る{" "}
+								<span className="ml-1 transition-transform group-hover:translate-x-1">
+									→
+								</span>
+							</div>
+						</Link>
+
+						<Link
+							href="/basecamp/notes"
+							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+						>
+							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 text-2xl transition-colors group-hover:bg-neutral-100">
+								🗂️
+							</div>
+							<h3 className="mb-2 font-bold text-neutral-900">ノート管理</h3>
+							<p className="text-sm text-neutral-500">
+								作成済みのノートや素材を一覧で管理します。
+							</p>
+							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
+								管理画面へ{" "}
 								<span className="ml-1 transition-transform group-hover:translate-x-1">
 									→
 								</span>
