@@ -16,4 +16,8 @@ export type Draft = Omit<
 	"target_platform"
 > & {
 	target_platform: DraftPlatform;
+	metadata: {
+		slug?: string;
+		[key: string]: unknown;
+	} | null;
 };
