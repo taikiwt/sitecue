@@ -2,45 +2,15 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import type { Draft, DraftPlatform } from "../../../../../../types/app.ts";
-import type { Tables } from "../../../../../../types/supabase.ts";
+import type {
+	Draft,
+	DraftPlatform,
+	Note,
+} from "../../../../../../types/app.ts";
 
-// モックデータの定義
-const MOCK_NOTES: Partial<Tables<"sitecue_notes">>[] = [
-	{
-		id: "1",
-		content: "TypeScript 5.0のリリースノートを確認する",
-		note_type: "Info",
-		created_at: "2026-04-06T10:00:00Z",
-	},
-	{
-		id: "2",
-		content: "APIの認証トークンが期限切れに近い可能性あり",
-		note_type: "Alert",
-		created_at: "2026-04-06T11:00:00Z",
-	},
-	{
-		id: "3",
-		content:
-			"新しいエディタのUIについて：より没入感を高めるために背景を暗くするのはどうか",
-		note_type: "Idea",
-		created_at: "2026-04-06T12:00:00Z",
-	},
-	{
-		id: "4",
-		content: "Next.js 15のParallel Routesの調査",
-		note_type: "Info",
-		created_at: "2026-04-06T13:00:00Z",
-	},
-	{
-		id: "5",
-		content: "パフォーマンス改善：画像の遅延読み込みを徹底する",
-		note_type: "Idea",
-		created_at: "2026-04-06T14:00:00Z",
-	},
-];
+// MOCK_NOTES was here
 
 interface DraftEditorProps {
 	targetPlatform?: DraftPlatform;
@@ -59,6 +29,32 @@ export default function DraftEditor({
 	const [content, setContent] = useState(initialDraft?.content || "");
 	const [title, setTitle] = useState(initialDraft?.title || "");
 	const [slug, setSlug] = useState(initialDraft?.metadata?.slug || "");
+
+	const [notes, setNotes] = useState<Note[]>([]);
+	const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+
+	useEffect(() => {
+		const fetchNotes = async () => {
+			try {
+				const { data, error } = await supabase
+					.from("sitecue_notes")
+					.select("*")
+					.order("created_at", { ascending: false });
+
+				if (error) throw error;
+				if (data) {
+					// sitecue_notes table row to Note type (with NoteScope casting)
+					setNotes(data as Note[]);
+				}
+			} catch (error) {
+				console.error("Failed to fetch notes:", error);
+			} finally {
+				setIsLoadingNotes(false);
+			}
+		};
+
+		fetchNotes();
+	}, [supabase]);
 
 	const charCount = content.length;
 
@@ -210,32 +206,50 @@ export default function DraftEditor({
 				</header>
 				<div className="flex-1 overflow-y-auto p-4">
 					<div className="grid gap-3">
-						{MOCK_NOTES.map((note) => (
-							<div
-								key={note.id}
-								className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400"
-							>
-								<div className="mb-2 flex items-center justify-between">
-									<span
-										className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-											note.note_type === "Info"
-												? "bg-blue-50 text-blue-600"
-												: note.note_type === "Alert"
-													? "bg-red-50 text-red-600"
-													: "bg-amber-50 text-amber-600"
-										}`}
-									>
-										{note.note_type}
-									</span>
-									<span className="text-[10px] text-neutral-400">
-										{note.created_at ? note.created_at.split("T")[0] : ""}
-									</span>
-								</div>
-								<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
-									{note.content}
+						{isLoadingNotes ? (
+							<div className="flex flex-col gap-3">
+								{[1, 2, 3].map((i) => (
+									<div
+										key={i}
+										className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
+									/>
+								))}
+							</div>
+						) : notes.length === 0 ? (
+							<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
+								<p className="text-sm">まだノートはありません。</p>
+								<p className="mt-1 text-[10px]">
+									Extensionから保存してください。
 								</p>
 							</div>
-						))}
+						) : (
+							notes.map((note) => (
+								<div
+									key={note.id}
+									className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400"
+								>
+									<div className="mb-2 flex items-center justify-between">
+										<span
+											className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+												note.note_type === "Info"
+													? "bg-blue-50 text-blue-600"
+													: note.note_type === "Alert"
+														? "bg-red-50 text-red-600"
+														: "bg-amber-50 text-amber-600"
+											}`}
+										>
+											{note.note_type}
+										</span>
+										<span className="text-[10px] text-neutral-400">
+											{note.created_at ? note.created_at.split("T")[0] : ""}
+										</span>
+									</div>
+									<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
+										{note.content}
+									</p>
+								</div>
+							))
+						)}
 					</div>
 				</div>
 				<div className="border-t border-neutral-200 p-6 text-center">
