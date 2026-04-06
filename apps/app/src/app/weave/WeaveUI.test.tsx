@@ -28,7 +28,7 @@ describe("WeaveUI Component (Context Relay)", () => {
 
 		// メモを選択
 		const checkbox = screen.getByRole("checkbox");
-		if (!checkbox.checked) {
+		if (!(checkbox as HTMLInputElement).checked) {
 			await user.click(checkbox);
 		}
 
