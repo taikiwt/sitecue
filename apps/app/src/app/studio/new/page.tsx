@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import type { DraftPlatform } from "../../../../../../../types/app.ts";
+import type { DraftPlatform } from "../../../../../../types/app.ts";
 import DraftEditor from "../../_components/DraftEditor";
 
 function FocusModeEditor() {

@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import type {
-	Draft,
-	DraftPlatform,
-	Note,
-} from "../../../../../../types/app.ts";
+import type { Draft, DraftPlatform, Note } from "../../../../../types/app.ts";
 
 // MOCK_NOTES was here
 
@@ -92,7 +88,7 @@ export default function DraftEditor({
 
 				if (error) throw error;
 				if (data) {
-					router.push(`/basecamp/draft/${data.id}`);
+					router.push(`/studio/${data.id}`);
 				}
 			}
 			setStatus("idle");
@@ -111,7 +107,7 @@ export default function DraftEditor({
 				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
 					<div className="flex items-center gap-4">
 						<Link
-							href="/basecamp"
+							href="/"
 							className="text-sm text-neutral-400 transition-colors hover:text-neutral-900"
 						>
 							← Launchpad

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import type { Draft } from "../../../../../../../types/app.ts";
-import { createClient } from "../../../../utils/supabase/server";
+import type { Draft } from "../../../../../../types/app.ts";
+import { createClient } from "../../../utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
 
 interface DraftPageProps {
