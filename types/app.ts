@@ -1,6 +1,6 @@
 import type { Database } from "./supabase";
 
-export type NoteScope = "exact" | "domain" | "inbox";
+export type NoteScope = "exact" | "domain" | "inbox" | "draft";
 
 export type Note = Omit<
 	Database["public"]["Tables"]["sitecue_notes"]["Row"],

@@ -142,6 +142,7 @@ export type Database = {
 					updated_at: string;
 					url_pattern: string;
 					user_id: string;
+					draft_id: string | null;
 				};
 				Insert: {
 					content: string;
@@ -157,6 +158,7 @@ export type Database = {
 					updated_at?: string;
 					url_pattern: string;
 					user_id: string;
+					draft_id?: string | null;
 				};
 				Update: {
 					content?: string;
@@ -172,6 +174,7 @@ export type Database = {
 					updated_at?: string;
 					url_pattern?: string;
 					user_id?: string;
+					draft_id?: string | null;
 				};
 				Relationships: [];
 			};
