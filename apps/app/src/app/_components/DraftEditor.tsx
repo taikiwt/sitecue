@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, DraftPlatform, Note } from "../../../../../types/app.ts";
+import NoteEditor from "./NoteEditor";
 
-// MOCK_NOTES was here
+type NoteType = "info" | "alert" | "idea";
 
 interface DraftEditorProps {
 	targetPlatform?: DraftPlatform;
@@ -18,39 +19,131 @@ export default function DraftEditor({
 	initialDraft,
 }: DraftEditorProps) {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const supabase = createClient();
 	const target = targetPlatform || initialDraft?.target_platform || "generic";
+	const activePane = searchParams.get("pane") || "review";
 
 	const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
 	const [content, setContent] = useState(initialDraft?.content || "");
 	const [title, setTitle] = useState(initialDraft?.title || "");
 	const [slug, setSlug] = useState(initialDraft?.metadata?.slug || "");
 
-	const [notes, setNotes] = useState<Note[]>([]);
-	const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+	// State for Self Review
+	const [reviewNotes, setReviewNotes] = useState<Note[]>([]);
+	const [isLoadingReview, setIsLoadingReview] = useState(true);
 
+	// State for Global Materials
+	const [searchKeyword, setSearchKeyword] = useState("");
+	const [searchResults, setSearchResults] = useState<Note[]>([]);
+	const [isSearching, setIsSearching] = useState(false);
+
+	// Fetch notes for Self Review (based on draft_id)
 	useEffect(() => {
-		const fetchNotes = async () => {
+		if (!initialDraft?.id) {
+			setIsLoadingReview(false);
+			return;
+		}
+
+		const fetchReviewNotes = async () => {
 			try {
 				const { data, error } = await supabase
 					.from("sitecue_notes")
 					.select("*")
+					.eq("draft_id", initialDraft.id)
 					.order("created_at", { ascending: false });
 
 				if (error) throw error;
 				if (data) {
-					// sitecue_notes table row to Note type (with NoteScope casting)
-					setNotes(data as Note[]);
+					setReviewNotes(data as Note[]);
 				}
 			} catch (error) {
-				console.error("Failed to fetch notes:", error);
+				console.error("Failed to fetch review notes:", error);
 			} finally {
-				setIsLoadingNotes(false);
+				setIsLoadingReview(false);
 			}
 		};
 
-		fetchNotes();
-	}, [supabase]);
+		fetchReviewNotes();
+	}, [supabase, initialDraft?.id]);
+
+	const handleSearch = async (e?: React.FormEvent) => {
+		e?.preventDefault();
+		if (!searchKeyword.trim()) return;
+
+		setIsSearching(true);
+		try {
+			const { data, error } = await supabase
+				.from("sitecue_notes")
+				.select("*")
+				.is("draft_id", null)
+				.or(
+					`content.ilike.%${searchKeyword}%,url_pattern.ilike.%${searchKeyword}%`,
+				)
+				.order("created_at", { ascending: false });
+
+			if (error) throw error;
+			setSearchResults((data as Note[]) || []);
+		} catch (error) {
+			console.error("Failed to search materials:", error);
+		} finally {
+			setIsSearching(false);
+		}
+	};
+
+	const handleAddNote = async (content: string, type: NoteType) => {
+		try {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+
+			if (!user) throw new Error("User not authenticated");
+
+			if (initialDraft?.id) {
+				// Pattern A: Existing draft -> Save to DB immediately
+				const { data, error } = await supabase
+					.from("sitecue_notes")
+					.insert({
+						content,
+						note_type: type,
+						draft_id: initialDraft.id,
+						scope: "draft",
+						url_pattern: `sitecue://draft/${initialDraft.id}`,
+						user_id: user.id,
+					})
+					.select()
+					.single();
+
+				if (error) throw error;
+				if (data) {
+					setReviewNotes((prev) => [data as Note, ...prev]);
+				}
+			} else {
+				// Pattern B: New draft -> Keep in memory
+				const now = new Date().toISOString();
+				const tempNote: Note = {
+					id: crypto.randomUUID(),
+					content,
+					note_type: type,
+					draft_id: null,
+					scope: "draft",
+					url_pattern: "", // Will be filled on sync
+					user_id: user.id,
+					created_at: now,
+					updated_at: now,
+					is_expanded: false,
+					is_favorite: false,
+					is_pinned: false,
+					is_resolved: false,
+					sort_order: 0,
+				};
+				setReviewNotes((prev) => [tempNote, ...prev]);
+			}
+		} catch (error) {
+			console.error("Failed to add note:", error);
+			throw error;
+		}
+	};
 
 	const charCount = content.length;
 
@@ -60,8 +153,9 @@ export default function DraftEditor({
 			const metadata =
 				target === "zenn" ? { slug } : initialDraft?.metadata || {};
 
-			if (initialDraft?.id) {
-				// UPDATE
+			let currentDraftId = initialDraft?.id;
+
+			if (currentDraftId) {
 				const { error } = await supabase
 					.from("sitecue_drafts")
 					.update({
@@ -70,11 +164,10 @@ export default function DraftEditor({
 						metadata,
 						updated_at: new Date().toISOString(),
 					})
-					.eq("id", initialDraft.id);
+					.eq("id", currentDraftId);
 
 				if (error) throw error;
 			} else {
-				// INSERT
 				const { data, error } = await supabase
 					.from("sitecue_drafts")
 					.insert({
@@ -88,6 +181,30 @@ export default function DraftEditor({
 
 				if (error) throw error;
 				if (data) {
+					currentDraftId = data.id;
+
+					// Sync In-Memory notes if any
+					const unsavedNotes = reviewNotes.filter((n) => !n.draft_id);
+					if (unsavedNotes.length > 0) {
+						const notesToInsert = unsavedNotes.map((n) => ({
+							content: n.content,
+							note_type: n.note_type,
+							draft_id: currentDraftId,
+							scope: n.scope,
+							url_pattern: `sitecue://draft/${currentDraftId}`,
+							user_id: n.user_id,
+						}));
+
+						const { error: notesError } = await supabase
+							.from("sitecue_notes")
+							.insert(notesToInsert);
+
+						if (notesError) {
+							console.error("Failed to sync notes:", notesError);
+							// Don't fail the whole save, but alert user?
+						}
+					}
+
 					router.push(`/studio/${data.id}`);
 				}
 			}
@@ -99,11 +216,16 @@ export default function DraftEditor({
 		}
 	};
 
+	const updatePane = (pane: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("pane", pane);
+		router.replace(`?${params.toString()}`);
+	};
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-neutral-50 text-neutral-950">
 			{/* 左ペイン: メインエディタ */}
 			<div className="flex flex-1 flex-col overflow-hidden border-r border-neutral-200 bg-white">
-				{/* エディタヘッダー */}
 				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
 					<div className="flex items-center gap-4">
 						<Link
@@ -134,7 +256,6 @@ export default function DraftEditor({
 					</button>
 				</header>
 
-				{/* 計器ボード / メタデータ入力 */}
 				<div className="border-b border-neutral-100 bg-neutral-50/50 px-8 py-6">
 					{target === "x" && (
 						<div className="flex items-center justify-between">
@@ -182,7 +303,6 @@ export default function DraftEditor({
 					)}
 				</div>
 
-				{/* 本文入力エリア */}
 				<main className="flex-1 overflow-y-auto px-8 py-10">
 					<textarea
 						placeholder="あなたの思考を書き留めてください..."
@@ -193,67 +313,157 @@ export default function DraftEditor({
 				</main>
 			</div>
 
-			{/* 右ペイン: コンテキストバー (モバイル時は非表示) */}
-			<aside className="hidden w-80 flex-col overflow-hidden bg-neutral-50 md:flex">
-				<header className="border-b border-neutral-200 px-6 py-5">
-					<h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400">
-						Materials
-					</h2>
-				</header>
-				<div className="flex-1 overflow-y-auto p-4">
-					<div className="grid gap-3">
-						{isLoadingNotes ? (
-							<div className="flex flex-col gap-3">
-								{[1, 2, 3].map((i) => (
-									<div
-										key={i}
-										className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
-									/>
-								))}
-							</div>
-						) : notes.length === 0 ? (
-							<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-								<p className="text-sm">まだノートはありません。</p>
-								<p className="mt-1 text-[10px]">
-									Extensionから保存してください。
-								</p>
-							</div>
-						) : (
-							notes.map((note) => (
-								<div
-									key={note.id}
-									className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400"
-								>
-									<div className="mb-2 flex items-center justify-between">
-										<span
-											className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-												note.note_type === "Info"
-													? "bg-blue-50 text-blue-600"
-													: note.note_type === "Alert"
-														? "bg-red-50 text-red-600"
-														: "bg-amber-50 text-amber-600"
-											}`}
-										>
-											{note.note_type}
-										</span>
-										<span className="text-[10px] text-neutral-400">
-											{note.created_at ? note.created_at.split("T")[0] : ""}
-										</span>
-									</div>
-									<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
-										{note.content}
-									</p>
-								</div>
-							))
-						)}
+			{/* 右ペイン: コンテキストバー */}
+			<aside className="hidden w-96 flex-col overflow-hidden bg-neutral-50 border-l border-neutral-200 md:flex">
+				<header className="border-b border-neutral-200 p-2">
+					<div className="flex rounded-lg bg-neutral-200/50 p-1">
+						<button
+							type="button"
+							onClick={() => updatePane("review")}
+							className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+								activePane === "review"
+									? "bg-white text-neutral-900 shadow-sm"
+									: "text-neutral-500 hover:text-neutral-700"
+							}`}
+						>
+							SELF REVIEW
+						</button>
+						<button
+							type="button"
+							onClick={() => updatePane("materials")}
+							className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+								activePane === "materials"
+									? "bg-white text-neutral-900 shadow-sm"
+									: "text-neutral-500 hover:text-neutral-700"
+							}`}
+						>
+							GLOBAL MATERIALS
+						</button>
 					</div>
+				</header>
+
+				{/* Tab Content */}
+				<div className="flex-1 overflow-y-auto">
+					{activePane === "review" ? (
+						<div className="flex flex-col h-full">
+							{/* Note Form */}
+							<div className="p-4 border-b border-neutral-200 bg-white/50">
+								<NoteEditor onSubmit={handleAddNote} />
+							</div>
+
+							{/* Note List */}
+							<div className="flex-1 p-4 overflow-y-auto">
+								<div className="grid gap-3">
+									{isLoadingReview ? (
+										[1, 2, 3].map((i) => (
+											<div
+												key={i}
+												className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
+											/>
+										))
+									) : reviewNotes.length === 0 ? (
+										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
+											<p className="text-sm">ドラフト専用メモはありません。</p>
+											<p className="mt-1 text-[10px]">
+												上のフォームから思考をメモしましょう。
+											</p>
+										</div>
+									) : (
+										reviewNotes.map((note) => (
+											<NoteCard key={note.id} note={note} />
+										))
+									)}
+								</div>
+							</div>
+						</div>
+					) : (
+						<div className="flex flex-col h-full">
+							{/* Search Bar */}
+							<div className="p-4 border-b border-neutral-200 bg-white/50">
+								<form onSubmit={handleSearch} className="relative">
+									<input
+										type="text"
+										placeholder="キーワードまたはドメインで検索..."
+										value={searchKeyword}
+										onChange={(e) => setSearchKeyword(e.target.value)}
+										className="w-full rounded-full border border-neutral-200 bg-white py-2 pl-4 pr-10 text-sm focus:border-neutral-400 focus:outline-none"
+									/>
+									<button
+										type="submit"
+										className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+									>
+										🔍
+									</button>
+								</form>
+							</div>
+
+							{/* Search Results */}
+							<div className="flex-1 p-4 overflow-y-auto">
+								<div className="grid gap-3">
+									{isSearching ? (
+										[1, 2, 3].map((i) => (
+											<div
+												key={i}
+												className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
+											/>
+										))
+									) : searchResults.length === 0 ? (
+										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
+											<p className="text-sm">素材が見つかりません。</p>
+											<p className="mt-1 text-[10px]">
+												キーワードを入力して過去のノートや
+												<br />
+												保存したページを検索してください。
+											</p>
+										</div>
+									) : (
+										searchResults.map((note) => (
+											<NoteCard key={note.id} note={note} />
+										))
+									)}
+								</div>
+							</div>
+						</div>
+					)}
 				</div>
-				<div className="border-t border-neutral-200 p-6 text-center">
+
+				<div className="border-t border-neutral-200 p-4 text-center">
 					<p className="text-xs text-neutral-400 italic">
 						ノートをクリックして素材として引用（将来機能）
 					</p>
 				</div>
 			</aside>
+		</div>
+	);
+}
+
+function NoteCard({ note }: { note: Note }) {
+	return (
+		<div className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400">
+			<div className="mb-2 flex items-center justify-between">
+				<span
+					className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+						note.note_type === "info" || !note.note_type
+							? "bg-blue-50 text-blue-600"
+							: note.note_type === "alert"
+								? "bg-red-50 text-red-600"
+								: "bg-amber-50 text-amber-600"
+					}`}
+				>
+					{note.note_type || "info"}
+				</span>
+				<span className="text-[10px] text-neutral-400">
+					{note.created_at ? note.created_at.split("T")[0] : ""}
+				</span>
+			</div>
+			<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
+				{note.content}
+			</p>
+			{note.url_pattern && !note.url_pattern.startsWith("sitecue://") && (
+				<p className="mt-2 text-[10px] text-neutral-400 truncate">
+					{note.url_pattern}
+				</p>
+			)}
 		</div>
 	);
 }
