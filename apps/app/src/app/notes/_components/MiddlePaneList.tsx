@@ -112,7 +112,7 @@ export function MiddlePaneList({
 									key={item.id}
 									href={`/notes?${params.toString()}`}
 									className={`block p-4 transition-colors ${
-										isActive ? "bg-indigo-50" : "hover:bg-gray-50"
+										isActive ? "bg-neutral-100" : "hover:bg-gray-50"
 									}`}
 								>
 									<div className="flex justify-between items-start mb-1">

@@ -50,7 +50,7 @@ export function LeftPaneNavigation({
 					href="/"
 					className="text-xl font-bold flex items-center gap-2 mb-4"
 				>
-					<span className="text-indigo-600">SiteCue</span>
+					<span className="text-neutral-900">SiteCue</span>
 				</Link>
 
 				{/* Search Area */}
@@ -62,7 +62,7 @@ export function LeftPaneNavigation({
 						type="search"
 						id="nav-search"
 						placeholder="URLやドメインを検索..."
-						className="w-full pl-8 pr-3 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-lg text-sm transition-all outline-none"
+						className="w-full pl-8 pr-3 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200 rounded-lg text-sm transition-all outline-none"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
@@ -76,7 +76,7 @@ export function LeftPaneNavigation({
 						href="/notes?domain=inbox"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isInboxActive
-								? "bg-indigo-50 text-indigo-700"
+								? "bg-neutral-100 text-neutral-900"
 								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
@@ -96,7 +96,7 @@ export function LeftPaneNavigation({
 						href="/notes?view=drafts"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isDraftsActive
-								? "bg-indigo-50 text-indigo-700"
+								? "bg-neutral-100 text-neutral-900"
 								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
@@ -132,7 +132,7 @@ export function LeftPaneNavigation({
 			<div className="p-4 border-t border-gray-200 bg-white">
 				<Link
 					href="/studio"
-					className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors"
+					className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors"
 				>
 					<span>Studio</span>
 				</Link>
@@ -180,7 +180,7 @@ function DomainAccordionItem({
 				aria-expanded={effectiveIsOpen}
 				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors ${
 					isUnderThisDomain && !currentExact
-						? "bg-indigo-50 text-indigo-700 font-medium"
+						? "bg-neutral-100 text-neutral-900 font-medium"
 						: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
 				}`}
 			>
@@ -220,7 +220,7 @@ function DomainAccordionItem({
 						href={`/notes?domain=${encodeURIComponent(domainName)}`}
 						className={`block px-2 py-1 text-xs rounded transition-colors truncate ${
 							isUnderThisDomain && !currentExact
-								? "bg-white text-indigo-600 font-medium shadow-sm"
+								? "bg-white text-neutral-900 font-medium shadow-sm"
 								: "text-gray-500 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
@@ -254,7 +254,7 @@ function DomainAccordionItem({
 								)}&exact=${encodeURIComponent(url)}`}
 								className={`block px-2 py-1 text-xs rounded transition-colors truncate ${
 									isActive
-										? "bg-white text-indigo-600 font-medium shadow-sm"
+										? "bg-white text-neutral-900 font-medium shadow-sm"
 										: "text-gray-500 hover:bg-gray-200 hover:text-gray-900"
 								}`}
 								title={url}
