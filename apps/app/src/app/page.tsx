@@ -1,3 +1,4 @@
+import { BookOpen, FileText, Library, MessageSquareText } from "lucide-react";
 import Link from "next/link";
 
 export default function LaunchpadPage() {
@@ -7,10 +8,10 @@ export default function LaunchpadPage() {
 				<div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
 					<div>
 						<h1 className="text-3xl font-bold tracking-tight">
-							SiteCue Base Camp
+							sitecue base camp
 						</h1>
 						<p className="mt-2 text-neutral-500">
-							あなたの情報の種を、ここから育てましょう。
+							Cultivate your thoughts right from here.
 						</p>
 					</div>
 					<nav className="flex items-center gap-6">
@@ -42,23 +43,23 @@ export default function LaunchpadPage() {
 					<div className="mb-8 flex items-center gap-2">
 						<span className="text-xl">🚀</span>
 						<h2 className="text-lg font-semibold text-neutral-800">
-							クイックスタート
+							Quick Start
 						</h2>
 					</div>
 					<div className="grid gap-6 sm:grid-cols-3">
 						<Link
 							href="/studio/new?target=x"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
 						>
-							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 text-2xl transition-colors group-hover:bg-neutral-100">
-								🐦
+							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+								<MessageSquareText className="w-6 h-6 text-neutral-600" />
 							</div>
 							<h3 className="mb-2 font-bold text-neutral-900">X (Twitter)</h3>
 							<p className="text-sm text-neutral-500">
-								思いついたアイデアをドラフトとして保存します。
+								Save your sudden ideas as drafts for X.
 							</p>
 							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
-								作成を開始する{" "}
+								Start Creating{" "}
 								<span className="ml-1 transition-transform group-hover:translate-x-1">
 									→
 								</span>
@@ -67,17 +68,17 @@ export default function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=zenn"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
 						>
-							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 text-2xl transition-colors group-hover:bg-neutral-100">
-								📘
+							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+								<BookOpen className="w-6 h-6 text-neutral-600" />
 							</div>
 							<h3 className="mb-2 font-bold text-neutral-900">Zenn</h3>
 							<p className="text-sm text-neutral-500">
-								技術記事の構成案やメモを執筆します。
+								Draft and organize your technical articles for Zenn.
 							</p>
 							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
-								執筆をはじめる{" "}
+								Start Writing{" "}
 								<span className="ml-1 transition-transform group-hover:translate-x-1">
 									→
 								</span>
@@ -86,17 +87,17 @@ export default function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=generic"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
 						>
-							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 text-2xl transition-colors group-hover:bg-neutral-100">
-								📝
+							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+								<FileText className="w-6 h-6 text-neutral-600" />
 							</div>
-							<h3 className="mb-2 font-bold text-neutral-900">汎用ノート</h3>
+							<h3 className="mb-2 font-bold text-neutral-900">Generic Note</h3>
 							<p className="text-sm text-neutral-500">
-								プラットフォームを限定しない自由なメモです。
+								Free-form notes not limited to any specific platform.
 							</p>
 							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
-								ノートを作る{" "}
+								Create Note{" "}
 								<span className="ml-1 transition-transform group-hover:translate-x-1">
 									→
 								</span>
@@ -105,17 +106,17 @@ export default function LaunchpadPage() {
 
 						<Link
 							href="/notes"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-8 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
 						>
-							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 text-2xl transition-colors group-hover:bg-neutral-100">
-								🗂️
+							<div className="mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+								<Library className="w-6 h-6 text-neutral-600" />
 							</div>
-							<h3 className="mb-2 font-bold text-neutral-900">ノート管理</h3>
+							<h3 className="mb-2 font-bold text-neutral-900">Manage Notes</h3>
 							<p className="text-sm text-neutral-500">
-								作成済みのノートや素材を一覧で管理します。
+								View and organize all your created notes and drafts.
 							</p>
 							<div className="mt-6 flex items-center text-xs font-semibold text-neutral-400 group-hover:text-neutral-900">
-								管理画面へ{" "}
+								Go to Dashboard{" "}
 								<span className="ml-1 transition-transform group-hover:translate-x-1">
 									→
 								</span>
@@ -128,31 +129,31 @@ export default function LaunchpadPage() {
 				<section>
 					<div className="mb-8 flex items-center gap-2">
 						<span className="text-xl">📊</span>
-						<h2 className="text-lg font-semibold text-neutral-800">活動状況</h2>
+						<h2 className="text-lg font-semibold text-neutral-800">Activity</h2>
 					</div>
 					<div className="grid gap-6 rounded-2xl border border-neutral-200 bg-white p-10 sm:grid-cols-3">
 						<div className="flex flex-col">
 							<span className="mb-1 text-sm font-medium text-neutral-400 uppercase tracking-tight">
-								総ノート数
+								Total Notes
 							</span>
 							<span className="text-4xl font-bold text-neutral-900">--</span>
 						</div>
 						<div className="flex flex-col">
 							<span className="mb-1 text-sm font-medium text-neutral-400 uppercase tracking-tight">
-								今週のドラフト
+								Weekly Drafts
 							</span>
 							<span className="text-4xl font-bold text-neutral-900">--</span>
 						</div>
 						<div className="flex flex-col">
 							<span className="mb-1 text-sm font-medium text-neutral-400 uppercase tracking-tight">
-								公開済みアイテム
+								Published Items
 							</span>
 							<span className="text-4xl font-bold text-neutral-900">--</span>
 						</div>
 					</div>
 					<div className="mt-8 flex items-center justify-center rounded-2xl border-2 border-dashed border-neutral-100 py-12">
 						<p className="text-sm text-neutral-400 italic">
-							活動データが集まると、ここに統計が表示されます。
+							Statistics will appear here as your activity data grows.
 						</p>
 					</div>
 				</section>

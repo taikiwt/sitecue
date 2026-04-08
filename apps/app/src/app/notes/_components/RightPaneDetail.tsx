@@ -1,11 +1,19 @@
 "use client";
 
-import type { Draft, Note } from "../types";
-import { useState, useEffect } from "react";
+import {
+	AlertTriangle,
+	Info,
+	Lightbulb,
+	MousePointerClick,
+	Pencil,
+	Pin,
+	Star,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
-import { MousePointerClick, Pencil, Pin, Star, Info, AlertTriangle, Lightbulb } from "lucide-react";
+import { useEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { createClient } from "@/utils/supabase/client";
+import type { Draft, Note } from "../types";
 
 type Props = {
 	note?: Note;
@@ -17,14 +25,16 @@ export function RightPaneDetail({ note, draft }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
-	const [optimisticContent, setOptimisticContent] = useState<string | null>(null);
+	const [optimisticContent, setOptimisticContent] = useState<string | null>(
+		null,
+	);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
 		setIsEditing(false);
 		setOptimisticContent(null);
 		setEditContent(note?.content || "");
-	}, [note?.id, draft?.id, note?.content]);
+	}, [note?.content]);
 
 	if (!note && !draft) {
 		return (
@@ -34,7 +44,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 					aria-hidden="true"
 				/>
 				<p className="text-lg font-medium">
-					左のリストからノートまたはドラフトを選択してください
+					Please select a note or draft from the list
 				</p>
 			</div>
 		);
@@ -42,7 +52,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 
 	const formatDate = (dateStr: string) => {
 		const date = new Date(dateStr);
-		return date.toLocaleString("ja-JP", {
+		return date.toLocaleString("en-US", {
 			year: "numeric",
 			month: "long",
 			day: "numeric",
@@ -51,7 +61,12 @@ export function RightPaneDetail({ note, draft }: Props) {
 		});
 	};
 
-	const content = optimisticContent !== null ? optimisticContent : (note ? note.content : draft?.content || "");
+	const content =
+		optimisticContent !== null
+			? optimisticContent
+			: note
+				? note.content
+				: draft?.content || "";
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";
 	const id = note ? note.id : draft?.id || "";
@@ -68,10 +83,10 @@ export function RightPaneDetail({ note, draft }: Props) {
 
 	const handleSave = async () => {
 		if (!note) return;
-		
+
 		setIsSaving(true);
 		const newContent = editContent.trim();
-		
+
 		// Optimistic update
 		setOptimisticContent(newContent);
 		setIsEditing(false);
@@ -88,7 +103,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 			router.refresh();
 		} catch (err) {
 			console.error("Failed to update note:", err);
-			alert("ノートの更新に失敗しました。");
+			alert("Failed to update the note.");
 			setOptimisticContent(null);
 			setIsEditing(true);
 		} finally {
@@ -136,7 +151,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 							<button
 								type="button"
 								onClick={handleEdit}
-								className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
+								className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors flex items-center gap-1.5 cursor-pointer"
 							>
 								<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
 								Edit
@@ -147,7 +162,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 								<button
 									type="button"
 									onClick={handleCancel}
-									className="text-sm font-medium px-3 py-1.5 rounded-md text-neutral-500 hover:text-neutral-900 transition-colors"
+									className="text-sm font-medium px-3 py-1.5 rounded-md text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
 									disabled={isSaving}
 								>
 									Cancel
@@ -155,7 +170,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 								<button
 									type="button"
 									onClick={handleSave}
-									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors disabled:opacity-50"
+									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors disabled:opacity-50 cursor-pointer"
 									disabled={isSaving}
 								>
 									{isSaving ? "Saving..." : "Save"}
@@ -239,7 +254,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 					<p>ID: {id}</p>
 					<p>Last updated: {formatDate(updatedAt)}</p>
 					<p className="mt-1 uppercase tracking-widest font-bold">
-						SiteCue Base Camp
+						sitecue base camp
 					</p>
 				</div>
 			</div>

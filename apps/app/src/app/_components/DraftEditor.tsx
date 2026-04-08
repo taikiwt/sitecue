@@ -211,7 +211,7 @@ export default function DraftEditor({
 			setStatus("idle");
 		} catch (error) {
 			console.error("Failed to save draft:", error);
-			alert("保存に失敗しました。詳細はコンソールを確認してください。");
+			alert("Failed to save the draft. Check the console for details.");
 			setStatus("error");
 		}
 	};
@@ -248,11 +248,11 @@ export default function DraftEditor({
 						type="button"
 						onClick={handleSave}
 						disabled={status === "saving"}
-						className={`rounded-full bg-neutral-900 px-6 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90 ${
+						className={`rounded-full bg-neutral-900 px-6 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer ${
 							status === "saving" ? "opacity-50 cursor-not-allowed" : ""
 						}`}
 					>
-						{status === "saving" ? "保存中..." : "保存"}
+						{status === "saving" ? "Saving..." : "Save"}
 					</button>
 				</header>
 
@@ -274,7 +274,7 @@ export default function DraftEditor({
 						<div className="grid gap-4">
 							<input
 								type="text"
-								placeholder="記事のタイトルを入力..."
+								placeholder="Enter article title..."
 								value={title}
 								onChange={(e) => setTitle(e.target.value)}
 								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
@@ -295,7 +295,7 @@ export default function DraftEditor({
 					{target === "generic" && (
 						<input
 							type="text"
-							placeholder="タイトル（任意）"
+							placeholder="Title (optional)"
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
 							className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
@@ -305,7 +305,7 @@ export default function DraftEditor({
 
 				<main className="flex-1 overflow-y-auto px-8 py-10">
 					<textarea
-						placeholder="あなたの思考を書き留めてください..."
+						placeholder="Write down your thoughts..."
 						value={content}
 						onChange={(e) => setContent(e.target.value)}
 						className="min-h-full w-full resize-none bg-transparent text-lg leading-relaxed placeholder:text-neutral-300 focus:outline-none"
@@ -363,9 +363,9 @@ export default function DraftEditor({
 										))
 									) : reviewNotes.length === 0 ? (
 										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-											<p className="text-sm">ドラフト専用メモはありません。</p>
+											<p className="text-sm">No notes for this draft yet.</p>
 											<p className="mt-1 text-[10px]">
-												上のフォームから思考をメモしましょう。
+												Use the form above to capture your thoughts.
 											</p>
 										</div>
 									) : (
@@ -383,7 +383,7 @@ export default function DraftEditor({
 								<form onSubmit={handleSearch} className="relative">
 									<input
 										type="text"
-										placeholder="キーワードまたはドメインで検索..."
+										placeholder="Search by keyword or domain..."
 										value={searchKeyword}
 										onChange={(e) => setSearchKeyword(e.target.value)}
 										className="w-full rounded-full border border-neutral-200 bg-white py-2 pl-4 pr-10 text-sm focus:border-neutral-400 focus:outline-none"
@@ -409,11 +409,11 @@ export default function DraftEditor({
 										))
 									) : searchResults.length === 0 ? (
 										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-											<p className="text-sm">素材が見つかりません。</p>
+											<p className="text-sm">No materials found.</p>
 											<p className="mt-1 text-[10px]">
-												キーワードを入力して過去のノートや
+												Enter keywords to search your past notes
 												<br />
-												保存したページを検索してください。
+												and saved pages.
 											</p>
 										</div>
 									) : (
@@ -429,7 +429,7 @@ export default function DraftEditor({
 
 				<div className="border-t border-neutral-200 p-4 text-center">
 					<p className="text-xs text-neutral-400 italic">
-						ノートをクリックして素材として引用（将来機能）
+						Click a note to cite it (Coming Soon)
 					</p>
 				</div>
 			</aside>

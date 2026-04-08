@@ -1,8 +1,15 @@
 "use client";
 
+import {
+	AlertTriangle,
+	ArrowLeft,
+	Inbox,
+	Info,
+	Lightbulb,
+	MapPin,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Inbox, Info, AlertTriangle, Lightbulb, MapPin } from "lucide-react";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
@@ -43,7 +50,7 @@ export function MiddlePaneList({
 
 	const formatDate = (dateStr: string) => {
 		const date = new Date(dateStr);
-		return date.toLocaleDateString("ja-JP", {
+		return date.toLocaleDateString("en-US", {
 			month: "short",
 			day: "numeric",
 			hour: "2-digit",
@@ -90,14 +97,17 @@ export function MiddlePaneList({
 			<div className="flex-1 overflow-y-auto">
 				{!isSelected ? (
 					<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
-						<ArrowLeft className="w-10 h-10 mb-4 text-gray-300" aria-hidden="true" />
+						<ArrowLeft
+							className="w-10 h-10 mb-4 text-gray-300"
+							aria-hidden="true"
+						/>
 						<p className="text-sm font-medium">
-							左のリストからカテゴリを選択してください
+							Please select a category from the list
 						</p>
 						<p className="text-xs mt-2">
-							Inbox、Drafts、ドメインを選択すると
+							Select Inbox, Drafts, or a Domain
 							<br />
-							一覧が表示されます
+							to see the list of items
 						</p>
 					</div>
 				) : items.length > 0 ? (
@@ -121,8 +131,8 @@ export function MiddlePaneList({
 								<Link
 									key={item.id}
 									href={`/notes?${params.toString()}`}
-									className={`block p-4 transition-colors ${
-										isActive ? "bg-neutral-100" : "hover:bg-gray-50"
+									className={`block p-4 transition-colors cursor-pointer ${
+										isActive ? "bg-neutral-100" : "hover:bg-neutral-100"
 									}`}
 								>
 									<div className="flex justify-between items-start mb-1">
@@ -134,7 +144,9 @@ export function MiddlePaneList({
 											>
 												{(() => {
 													const { Icon } = getNoteTypeStyles(item.note_type);
-													return <Icon className="w-3.5 h-3.5" aria-hidden="true" />;
+													return (
+														<Icon className="w-3.5 h-3.5" aria-hidden="true" />
+													);
 												})()}
 												{item.note_type}
 											</span>

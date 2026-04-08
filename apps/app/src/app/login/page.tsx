@@ -28,7 +28,7 @@ function LoginContent() {
 		<div className="flex min-h-screen flex-col items-center justify-center bg-white py-12 sm:px-6 lg:px-8">
 			<div className="sm:mx-auto sm:w-full sm:max-w-sm">
 				<h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-neutral-900">
-					SiteCue
+					sitecue
 				</h2>
 				<p className="mt-2 text-center text-sm text-neutral-600">
 					Sign in to access your dashboard
@@ -41,7 +41,7 @@ function LoginContent() {
 						type="button"
 						onClick={handleGoogleLogin}
 						disabled={isLoading}
-						className="flex w-full justify-center items-center gap-3 rounded-md bg-neutral-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-neutral-800 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
+						className="flex w-full justify-center items-center gap-3 rounded-md bg-neutral-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-neutral-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors"
 					>
 						{isLoading ? (
 							<div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />

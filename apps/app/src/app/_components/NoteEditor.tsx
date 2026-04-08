@@ -25,7 +25,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 			setContent("");
 		} catch (error) {
 			console.error("Failed to save note:", error);
-			alert("メモの保存に失敗しました。");
+			alert("Failed to save the note.");
 		} finally {
 			setIsSaving(false);
 		}
@@ -78,7 +78,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 				<TextareaAutosize
 					value={content}
 					onChange={(e) => setContent(e.target.value)}
-					placeholder="思考をメモしましょう..."
+					placeholder="Write down your thoughts..."
 					className="min-h-20 w-full resize-none rounded-lg border-2 border-neutral-100 bg-neutral-50/50 p-3 text-sm transition-all focus:border-neutral-900 focus:bg-white focus:outline-none"
 					onKeyDown={(e) => {
 						if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -90,13 +90,13 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 					type="button"
 					onClick={() => handleSave()}
 					disabled={!content.trim() || isSaving}
-					className="absolute right-2 bottom-2 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
+					className="absolute right-2 bottom-2 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
 					<Send className="h-4 w-4" />
 				</button>
 			</div>
 			<p className="text-[10px] text-neutral-400">
-				{isSaving ? "保存中..." : "Cmd + Enter で保存"}
+				{isSaving ? "Saving..." : "Cmd + Enter to save"}
 			</p>
 		</div>
 	);
