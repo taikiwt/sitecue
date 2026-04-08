@@ -1,8 +1,16 @@
 "use client";
 
+import {
+	FileText,
+	Folder,
+	FolderOpen,
+	Globe,
+	Inbox,
+	PenSquare,
+	Search,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { Search, Inbox, PenSquare, Globe, FileText } from "lucide-react";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 import type { DomainGroup, GroupedNotes } from "../types";
 
@@ -49,9 +57,9 @@ export function LeftPaneNavigation({
 			<div className="p-4 border-b border-gray-200 bg-white">
 				<Link
 					href="/"
-					className="text-xl font-bold flex items-center gap-2 mb-4"
+					className="text-xl font-bold flex items-center gap-2 mb-4 cursor-pointer"
 				>
-					<span className="text-neutral-900">SiteCue</span>
+					<span className="text-neutral-900">sitecue</span>
 				</Link>
 
 				{/* Search Area */}
@@ -63,7 +71,7 @@ export function LeftPaneNavigation({
 					<input
 						type="search"
 						id="nav-search"
-						placeholder="URLやドメインを検索..."
+						placeholder="Search URL or domain..."
 						className="w-full pl-8 pr-3 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200 rounded-lg text-sm transition-all outline-none"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
@@ -134,7 +142,7 @@ export function LeftPaneNavigation({
 			<div className="p-4 border-t border-gray-200 bg-white">
 				<Link
 					href="/studio"
-					className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-800 transition-colors"
+					className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-500 transition-colors cursor-pointer"
 				>
 					<span>Studio</span>
 				</Link>
@@ -178,17 +186,17 @@ function DomainAccordionItem({
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				aria-label={`${domainName} のアコーディオンを${effectiveIsOpen ? "閉じる" : "開く"}`}
+				aria-label={`${effectiveIsOpen ? "Close" : "Open"} accordion for ${domainName}`}
 				aria-expanded={effectiveIsOpen}
-				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors ${
+				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
 					isUnderThisDomain && !currentExact
 						? "bg-neutral-100 text-neutral-900 font-medium"
-						: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+						: "text-gray-600 hover:bg-neutral-200 hover:text-gray-900"
 				}`}
 			>
 				<span
 					aria-hidden="true"
-					className="p-1 text-gray-400 group-hover:text-gray-600 transition-transform"
+					className="p-0.5 text-gray-400 group-hover:text-gray-600 transition-transform"
 					style={{
 						transform: effectiveIsOpen ? "rotate(90deg)" : "rotate(0deg)",
 					}}
@@ -209,6 +217,14 @@ function DomainAccordionItem({
 						/>
 					</svg>
 				</span>
+				{effectiveIsOpen ? (
+					<FolderOpen
+						className="w-4 h-4 text-gray-400 mr-1"
+						aria-hidden="true"
+					/>
+				) : (
+					<Folder className="w-4 h-4 text-gray-400 mr-1" aria-hidden="true" />
+				)}
 				<span className="truncate flex-1 text-left" title={domainName}>
 					{domainName}
 				</span>
@@ -216,21 +232,21 @@ function DomainAccordionItem({
 
 			{/* Children: Domain Notes & Exact Pages */}
 			{effectiveIsOpen && (
-				<div className="ml-5 mt-1 space-y-0.5 border-l border-gray-200 pl-2">
+				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-gray-200 pl-3">
 					{/* Approach B: Domain Scope Notes (Always at top if open) */}
 					<Link
 						href={`/notes?domain=${encodeURIComponent(domainName)}`}
-						className={`block px-2 py-1 text-xs rounded transition-colors truncate ${
+						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 							isUnderThisDomain && !currentExact
 								? "bg-white text-neutral-900 font-medium shadow-sm"
-								: "text-gray-500 hover:bg-gray-200 hover:text-gray-900"
+								: "text-gray-500 hover:bg-neutral-200 hover:text-gray-900"
 						}`}
 					>
 						<Globe
-							className="w-3.5 h-3.5 opacity-60 mr-1"
+							className="w-3.5 h-3.5 opacity-60 shrink-0"
 							aria-hidden="true"
 						/>
-						{domainName} 全体のノート
+						<span className="truncate min-w-0">All notes in {domainName}</span>
 					</Link>
 
 					{/* Exact Pages */}
@@ -255,18 +271,18 @@ function DomainAccordionItem({
 								href={`/notes?domain=${encodeURIComponent(
 									domainName,
 								)}&exact=${encodeURIComponent(url)}`}
-								className={`block px-2 py-1 text-xs rounded transition-colors truncate ${
+								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 									isActive
 										? "bg-white text-neutral-900 font-medium shadow-sm"
-										: "text-gray-500 hover:bg-gray-200 hover:text-gray-900"
+										: "text-gray-500 hover:bg-neutral-200 hover:text-gray-900"
 								}`}
 								title={url}
 							>
 								<FileText
-									className="w-3.5 h-3.5 opacity-60 mr-1"
+									className="w-3.5 h-3.5 opacity-60 shrink-0"
 									aria-hidden="true"
 								/>
-								{path}
+								<span className="truncate min-w-0">{path}</span>
 							</Link>
 						);
 					})}
