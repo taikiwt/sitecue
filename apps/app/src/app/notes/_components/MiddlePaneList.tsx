@@ -2,34 +2,42 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import type { Note } from "../types";
+import { getSafeUrl } from "@/utils/url";
+import type { Draft, Note } from "../types";
 
 type Props = {
-	notes: Note[];
+	items: (Note | Draft)[];
+	currentView: string | null;
 	currentDomain: string | null;
 	currentExact: string | null;
 	selectedNoteId: string | null;
+	selectedDraftId: string | null;
 };
 
 export function MiddlePaneList({
-	notes,
+	items,
+	currentView,
 	currentDomain,
 	currentExact,
 	selectedNoteId,
+	selectedDraftId,
 }: Props) {
 	const searchParams = useSearchParams();
 
+	const isSelected = !!currentView || !!currentDomain || !!currentExact;
+
 	const getTitle = () => {
+		if (currentView === "drafts") return "Drafts";
 		if (currentExact) {
-			try {
-				const url = new URL(currentExact);
-				return url.pathname + url.search;
-			} catch {
-				return currentExact;
+			const safeUrl = getSafeUrl(currentExact);
+			if (safeUrl) {
+				return safeUrl.pathname + safeUrl.search;
 			}
+			return currentExact;
 		}
+		if (currentDomain === "inbox") return "Inbox";
 		if (currentDomain) return currentDomain;
-		return "Inbox";
+		return "Notes";
 	};
 
 	const formatDate = (dateStr: string) => {
@@ -62,20 +70,46 @@ export function MiddlePaneList({
 				>
 					{getTitle()}
 				</h2>
-				<p className="text-xs text-gray-500 mt-1">{notes.length} notes</p>
+				<p className="text-xs text-gray-500 mt-1">
+					{isSelected
+						? `${items.length} ${currentView === "drafts" ? "drafts" : "notes"}`
+						: "Waiting for selection"}
+				</p>
 			</div>
 
 			<div className="flex-1 overflow-y-auto">
-				{notes.length > 0 ? (
+				{!isSelected ? (
+					<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
+						<div className="text-4xl mb-4">👈</div>
+						<p className="text-sm font-medium">
+							左のリストからカテゴリを選択してください
+						</p>
+						<p className="text-xs mt-2">
+							Inbox、Drafts、ドメインを選択すると
+							<br />
+							一覧が表示されます
+						</p>
+					</div>
+				) : items.length > 0 ? (
 					<div className="divide-y divide-gray-100">
-						{notes.map((note) => {
-							const isActive = selectedNoteId === note.id;
+						{items.map((item) => {
+							const isNote = "note_type" in item;
+							const isActive = isNote
+								? selectedNoteId === item.id
+								: selectedDraftId === item.id;
+
 							const params = new URLSearchParams(searchParams.toString());
-							params.set("noteId", note.id);
+							if (isNote) {
+								params.set("noteId", item.id);
+								params.delete("draftId");
+							} else {
+								params.set("draftId", item.id);
+								params.delete("noteId");
+							}
 
 							return (
 								<Link
-									key={note.id}
+									key={item.id}
 									href={`/notes?${params.toString()}`}
 									className={`block p-4 transition-colors ${
 										isActive ? "bg-indigo-50" : "hover:bg-gray-50"
@@ -83,22 +117,31 @@ export function MiddlePaneList({
 								>
 									<div className="flex justify-between items-start mb-1">
 										<span
-											className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${getNoteTypeStyles(
-												note.note_type,
-											)}`}
+											className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
+												isNote
+													? getNoteTypeStyles(item.note_type)
+													: "bg-purple-100 text-purple-700"
+											}`}
 										>
-											{note.note_type}
+											{isNote
+												? item.note_type
+												: item.target_platform || "draft"}
 										</span>
 										<span className="text-[10px] text-gray-400">
-											{formatDate(note.created_at)}
+											{formatDate(isNote ? item.created_at : item.updated_at)}
 										</span>
 									</div>
+									<h3 className="text-sm font-bold text-gray-900 truncate mb-0.5">
+										{isNote ? "" : item.title || "Untitled Draft"}
+									</h3>
 									<p className="text-sm text-gray-900 line-clamp-2 wrap-break-word">
-										{note.content}
+										{isNote ? item.content : item.content}
 									</p>
-									{note.scope === "exact" && !currentExact && (
+									{isNote && item.scope === "exact" && !currentExact && (
 										<div className="mt-2 text-[10px] text-gray-400 truncate">
-											📍 {new URL(note.url_pattern).pathname}
+											📍{" "}
+											{getSafeUrl(item.url_pattern)?.pathname ??
+												item.url_pattern}
 										</div>
 									)}
 								</Link>
@@ -109,7 +152,8 @@ export function MiddlePaneList({
 					<div className="flex flex-col items-center justify-center h-64 p-8 text-center">
 						<div className="text-4xl mb-4">📭</div>
 						<p className="text-gray-500 text-sm">
-							No notes found for this category.
+							No {currentView === "drafts" ? "drafts" : "notes"} found for this
+							category.
 						</p>
 					</div>
 				)}

@@ -1,15 +1,17 @@
 import type { Tables } from "../../../../../types/supabase";
 
 export type Note = Tables<"sitecue_notes">;
+export type Draft = Tables<"sitecue_drafts">;
+
+export interface DomainGroup {
+	domainNotes: Note[]; // scope === 'domain' のノート
+	pages: {
+		[exactUrlPattern: string]: Note[]; // scope === 'exact' のノート
+	};
+}
 
 export type GroupedNotes = {
 	inbox: Note[];
-	domains: {
-		[domain: string]: {
-			domainNotes: Note[];
-			exactPages: {
-				[exactUrl: string]: Note[];
-			};
-		};
-	};
+	drafts: Draft[];
+	domains: Record<string, DomainGroup>;
 };
