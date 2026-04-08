@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Search, Inbox, PenSquare, Globe, FileText } from "lucide-react";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 import type { DomainGroup, GroupedNotes } from "../types";
 
@@ -55,9 +56,10 @@ export function LeftPaneNavigation({
 
 				{/* Search Area */}
 				<div className="relative">
-					<span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-						🔍
-					</span>
+					<Search
+						className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+						aria-hidden="true"
+					/>
 					<input
 						type="search"
 						id="nav-search"
@@ -80,7 +82,7 @@ export function LeftPaneNavigation({
 								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
-						<span aria-hidden="true">📥</span>
+						<Inbox className="w-4 h-4" aria-hidden="true" />
 						<span>Inbox</span>
 						{groupedNotes.inbox.length > 0 && (
 							<span className="ml-auto text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
@@ -100,7 +102,7 @@ export function LeftPaneNavigation({
 								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
-						<span aria-hidden="true">📝</span>
+						<PenSquare className="w-4 h-4" aria-hidden="true" />
 						<span>Drafts</span>
 						{groupedNotes.drafts.length > 0 && (
 							<span className="ml-auto text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
@@ -224,9 +226,10 @@ function DomainAccordionItem({
 								: "text-gray-500 hover:bg-gray-200 hover:text-gray-900"
 						}`}
 					>
-						<span aria-hidden="true" className="opacity-60 mr-1">
-							🌐
-						</span>
+						<Globe
+							className="w-3.5 h-3.5 opacity-60 mr-1"
+							aria-hidden="true"
+						/>
 						{domainName} 全体のノート
 					</Link>
 
@@ -259,9 +262,10 @@ function DomainAccordionItem({
 								}`}
 								title={url}
 							>
-								<span aria-hidden="true" className="opacity-60 mr-1">
-									📄
-								</span>
+								<FileText
+									className="w-3.5 h-3.5 opacity-60 mr-1"
+									aria-hidden="true"
+								/>
 								{path}
 							</Link>
 						);
