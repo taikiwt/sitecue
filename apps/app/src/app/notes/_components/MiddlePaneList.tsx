@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ArrowLeft, Inbox, Info, AlertTriangle, Lightbulb, MapPin } from "lucide-react";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
@@ -53,11 +54,20 @@ export function MiddlePaneList({
 	const getNoteTypeStyles = (type: string) => {
 		switch (type) {
 			case "alert":
-				return "bg-red-100 text-red-700";
+				return {
+					className: "bg-rose-50 text-rose-500",
+					Icon: AlertTriangle,
+				};
 			case "idea":
-				return "bg-yellow-100 text-yellow-700";
+				return {
+					className: "bg-amber-50 text-amber-500",
+					Icon: Lightbulb,
+				};
 			default:
-				return "bg-blue-100 text-blue-700";
+				return {
+					className: "bg-blue-50 text-blue-500",
+					Icon: Info,
+				};
 		}
 	};
 
@@ -80,7 +90,7 @@ export function MiddlePaneList({
 			<div className="flex-1 overflow-y-auto">
 				{!isSelected ? (
 					<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
-						<div className="text-4xl mb-4">👈</div>
+						<ArrowLeft className="w-10 h-10 mb-4 text-gray-300" aria-hidden="true" />
 						<p className="text-sm font-medium">
 							左のリストからカテゴリを選択してください
 						</p>
@@ -116,17 +126,23 @@ export function MiddlePaneList({
 									}`}
 								>
 									<div className="flex justify-between items-start mb-1">
-										<span
-											className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-												isNote
-													? getNoteTypeStyles(item.note_type)
-													: "bg-purple-100 text-purple-700"
-											}`}
-										>
-											{isNote
-												? item.note_type
-												: item.target_platform || "draft"}
-										</span>
+										{isNote ? (
+											<span
+												className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${
+													getNoteTypeStyles(item.note_type).className
+												}`}
+											>
+												{(() => {
+													const { Icon } = getNoteTypeStyles(item.note_type);
+													return <Icon className="w-3.5 h-3.5" aria-hidden="true" />;
+												})()}
+												{item.note_type}
+											</span>
+										) : (
+											<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+												{item.target_platform || "draft"}
+											</span>
+										)}
 										<span className="text-[10px] text-gray-400">
 											{formatDate(isNote ? item.created_at : item.updated_at)}
 										</span>
@@ -138,8 +154,8 @@ export function MiddlePaneList({
 										{isNote ? item.content : item.content}
 									</p>
 									{isNote && item.scope === "exact" && !currentExact && (
-										<div className="mt-2 text-[10px] text-gray-400 truncate">
-											📍{" "}
+										<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1">
+											<MapPin className="w-3 h-3" aria-hidden="true" />
 											{getSafeUrl(item.url_pattern)?.pathname ??
 												item.url_pattern}
 										</div>
@@ -149,9 +165,12 @@ export function MiddlePaneList({
 						})}
 					</div>
 				) : (
-					<div className="flex flex-col items-center justify-center h-64 p-8 text-center">
-						<div className="text-4xl mb-4">📭</div>
-						<p className="text-gray-500 text-sm">
+					<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
+						<Inbox
+							className="w-12 h-12 mb-4 text-gray-200"
+							aria-hidden="true"
+						/>
+						<p className="text-sm">
 							No {currentView === "drafts" ? "drafts" : "notes"} found for this
 							category.
 						</p>

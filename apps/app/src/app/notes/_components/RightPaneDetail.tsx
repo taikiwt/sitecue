@@ -3,6 +3,7 @@
 import type { Draft, Note } from "../types";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { MousePointerClick, Pencil, Pin, Star, Info, AlertTriangle, Lightbulb } from "lucide-react";
 import TextareaAutosize from "react-textarea-autosize";
 import { createClient } from "@/utils/supabase/client";
 
@@ -27,11 +28,12 @@ export function RightPaneDetail({ note, draft }: Props) {
 
 	if (!note && !draft) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-500 p-8">
-				<div className="text-6xl mb-6 animate-pulse" aria-hidden="true">
-					👈
-				</div>
-				<p className="text-lg font-medium text-gray-400">
+			<div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-8">
+				<MousePointerClick
+					className="w-12 h-12 text-gray-300 mb-6 animate-pulse"
+					aria-hidden="true"
+				/>
+				<p className="text-lg font-medium">
 					左のリストからノートまたはドラフトを選択してください
 				</p>
 			</div>
@@ -102,18 +104,25 @@ export function RightPaneDetail({ note, draft }: Props) {
 						<div className="flex items-center gap-2">
 							{note ? (
 								<span
-									className={`text-xs uppercase font-bold px-2 py-0.5 rounded ${
+									className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${
 										note.note_type === "alert"
-											? "bg-red-100 text-red-700"
+											? "bg-rose-50 text-rose-500"
 											: note.note_type === "idea"
-												? "bg-yellow-100 text-yellow-700"
-												: "bg-blue-100 text-blue-700"
+												? "bg-amber-50 text-amber-500"
+												: "bg-blue-50 text-blue-500"
 									}`}
 								>
+									{note.note_type === "alert" ? (
+										<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+									) : note.note_type === "idea" ? (
+										<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
+									) : (
+										<Info className="w-3.5 h-3.5" aria-hidden="true" />
+									)}
 									{note.note_type}
 								</span>
 							) : (
-								<span className="text-xs uppercase font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-700">
+								<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
 									{draft?.target_platform || "Draft"}
 								</span>
 							)}
@@ -127,11 +136,9 @@ export function RightPaneDetail({ note, draft }: Props) {
 							<button
 								type="button"
 								onClick={handleEdit}
-								className="text-xs font-medium px-3 py-1.5 rounded-md bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors flex items-center gap-1.5"
+								className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
 							>
-								<span aria-hidden="true" className="text-sm">
-									✏️
-								</span>
+								<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
 								Edit
 							</button>
 						)}
@@ -140,7 +147,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 								<button
 									type="button"
 									onClick={handleCancel}
-									className="text-xs font-medium px-3 py-1.5 rounded-md hover:bg-gray-100 text-gray-600 transition-colors"
+									className="text-sm font-medium px-3 py-1.5 rounded-md text-neutral-500 hover:text-neutral-900 transition-colors"
 									disabled={isSaving}
 								>
 									Cancel
@@ -148,7 +155,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 								<button
 									type="button"
 									onClick={handleSave}
-									className="text-xs font-medium px-4 py-1.5 rounded-md bg-neutral-900 text-white hover:bg-neutral-800 transition-colors disabled:opacity-50"
+									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors disabled:opacity-50"
 									disabled={isSaving}
 								>
 									{isSaving ? "Saving..." : "Save"}
@@ -157,24 +164,20 @@ export function RightPaneDetail({ note, draft }: Props) {
 						)}
 						<div className="flex gap-2 ml-2">
 							{note?.is_pinned && (
-								<span
-									role="img"
-									className="text-xl"
-									title="Pinned"
-									aria-label="Pinned"
-								>
-									📌
-								</span>
+								<div title="Pinned">
+									<Pin
+										className="w-4 h-4 fill-current text-neutral-800"
+										aria-label="Pinned"
+									/>
+								</div>
 							)}
 							{note?.is_favorite && (
-								<span
-									role="img"
-									className="text-xl"
-									title="Favorite"
-									aria-label="Favorite"
-								>
-									⭐
-								</span>
+								<div title="Favorite">
+									<Star
+										className="w-4 h-4 fill-current text-amber-400"
+										aria-label="Favorite"
+									/>
+								</div>
 							)}
 						</div>
 					</div>
@@ -188,7 +191,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 					</div>
 				)}
 
-				{note && (
+				{note && note.scope !== "inbox" && (
 					<div className="mb-10">
 						<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
 							Source URL
