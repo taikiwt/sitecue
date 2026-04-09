@@ -6,10 +6,13 @@ import {
 	Library,
 	MessageSquareText,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
+
+import { UserMenu } from "./_components/UserMenu";
 
 export default async function LaunchpadPage() {
 	const supabase = await createClient();
@@ -35,64 +38,75 @@ export default async function LaunchpadPage() {
 
 	return (
 		<div className="min-h-screen bg-neutral-50 text-neutral-950 font-sans">
-			<header className="border-b border-neutral-200 bg-white">
-				<div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-8">
-					<div>
-						<h1 className="text-3xl font-bold tracking-tight">
-							sitecue base camp
-						</h1>
-						<div className="mt-2 flex items-center gap-2 text-sm text-neutral-500 font-medium">
-							<span>Total Notes: {notesCount ?? 0}</span>
-							<span className="text-neutral-300">|</span>
-							<span>Total Drafts: {draftsCount ?? 0}</span>
+			<main className="mx-auto max-w-4xl px-6 py-12">
+				{/* ① Top Navigation */}
+				<div className="flex items-center justify-between mb-12">
+					<Link
+						href="/"
+						className="flex items-center gap-2 cursor-pointer group"
+					>
+						<Image
+							src="/logo.svg"
+							alt="sitecue logo"
+							width={28}
+							height={28}
+							className="drop-shadow-sm transition-transform group-hover:scale-105"
+						/>
+						<span className="text-xl font-bold tracking-tight text-neutral-900">
+							sitecue
+						</span>
+					</Link>
+					<UserMenu />
+				</div>
+
+				{/* ② Welcome & Activity Area */}
+				<div className="mb-20">
+					<h1 className="text-2xl font-light tracking-tight text-neutral-600 mb-8">
+						Cultivate your thoughts right from here.
+					</h1>
+					<div className="flex items-center gap-6 text-sm text-neutral-500">
+						<div className="flex items-center gap-3">
+							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
+								Total Notes
+							</span>
+							<span className="text-xl font-light text-neutral-900">
+								{notesCount || 0}
+							</span>
+						</div>
+						<div className="w-px h-6 bg-neutral-200" />
+						<div className="flex items-center gap-3">
+							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
+								Total Drafts
+							</span>
+							<span className="text-xl font-light text-neutral-900">
+								{draftsCount || 0}
+							</span>
 						</div>
 					</div>
-					<nav className="flex items-center gap-6">
-						<Link
-							href="/"
-							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
-						>
-							Home
-						</Link>
-						<Link
-							href="/notes"
-							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
-						>
-							Notes
-						</Link>
-						<Link
-							href="/settings"
-							className="text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
-						>
-							Settings
-						</Link>
-					</nav>
 				</div>
-			</header>
 
-			<main className="mx-auto max-w-5xl px-6 py-12">
 				{/* Pinned Sites */}
 				<PinnedSitesManager
 					initialSites={(pinnedSites as PinnedSite[]) ?? []}
 				/>
 
 				{/* Launchpad Section */}
-				<section className="mb-16">
-					<div className="mb-8 flex items-center gap-2">
-						<span className="text-xl">🚀</span>
-						<h2 className="text-lg font-semibold text-neutral-800">
+				<section className="mb-20">
+					<div className="mb-8 flex items-center gap-3">
+						<span className="text-2xl">🚀</span>
+						<h2 className="text-2xl font-light tracking-tight text-neutral-800">
 							Quick Start
 						</h2>
 					</div>
-					<div className="grid gap-6 sm:grid-cols-4">
+					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
 							href="/studio/new?target=x"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-6 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
 						>
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
 								<MessageSquareText className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">X (Twitter)</h3>
+							<h3 className="mb-1 font-bold text-neutral-900">Short Post</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Save your sudden ideas as drafts for X.
 							</p>
@@ -100,12 +114,12 @@ export default async function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=zenn"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-6 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
 						>
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
 								<BookOpen className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Zenn</h3>
+							<h3 className="mb-1 font-bold text-neutral-900">Article</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Draft and organize your technical articles for Zenn.
 							</p>
@@ -113,20 +127,31 @@ export default async function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=generic"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-6 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
 						>
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
 								<FileText className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Generic Note</h3>
+							<h3 className="mb-1 font-bold text-neutral-900">Blank Canvas</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Free-form notes not limited to any specific platform.
 							</p>
 						</Link>
+					</div>
+				</section>
 
+				{/* Your Library Section */}
+				<section className="mb-20">
+					<div className="mb-8 flex items-center gap-3">
+						<span className="text-2xl">📚</span>
+						<h2 className="text-2xl font-light tracking-tight text-neutral-800">
+							Your Library
+						</h2>
+					</div>
+					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
 							href="/notes"
-							className="group relative flex flex-col items-start rounded-2xl border border-neutral-200 bg-white p-6 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
 						>
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
 								<Library className="w-5 h-5 text-neutral-600" />
@@ -140,16 +165,16 @@ export default async function LaunchpadPage() {
 				</section>
 
 				{/* Recent Drafts Section */}
-				<section className="mb-16">
+				<section className="mb-20">
 					<div className="mb-8 flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<span className="text-xl">✍️</span>
-							<h2 className="text-lg font-semibold text-neutral-800">
+						<div className="flex items-center gap-3">
+							<span className="text-2xl">✍️</span>
+							<h2 className="text-2xl font-light tracking-tight text-neutral-800">
 								Recent Drafts
 							</h2>
 						</div>
 						<Link
-							href="/notes?domain=draft"
+							href="/notes?view=drafts"
 							className="text-sm font-medium text-neutral-400 hover:text-neutral-900 transition-colors"
 						>
 							View all drafts
@@ -168,7 +193,7 @@ export default async function LaunchpadPage() {
 							<Link
 								key={draft.id}
 								href={`/studio/${draft.id}`}
-								className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+								className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
 							>
 								<div className="flex items-center gap-4">
 									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-50 text-neutral-600 transition-colors group-hover:bg-neutral-100">

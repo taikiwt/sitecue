@@ -230,9 +230,9 @@ export default function DraftEditor({
 					<div className="flex items-center gap-4">
 						<Link
 							href="/"
-							className="text-sm text-neutral-400 transition-colors hover:text-neutral-900"
+							className="text-xl font-bold tracking-tight text-neutral-900 transition-colors hover:text-neutral-500 cursor-pointer block"
 						>
-							← Launchpad
+							sitecue
 						</Link>
 						<div className="h-4 w-px bg-neutral-200" />
 						<span className="text-sm font-medium text-neutral-900">
