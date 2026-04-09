@@ -1,4 +1,9 @@
+import * as matchers from "@testing-library/jest-dom/matchers";
+import { expect } from "vitest";
 import "@testing-library/jest-dom";
+expect.extend(matchers);
+
+import { cleanup } from "@testing-library/react";
 import { setupServer } from "msw/node";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { handlers } from "./src/mocks/handlers";
@@ -37,6 +42,8 @@ const server = setupServer(...handlers);
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
 	server.resetHandlers();
+	cleanup();
 	vi.clearAllMocks();
 });
+
 afterAll(() => server.close());

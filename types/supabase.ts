@@ -66,14 +66,14 @@ export type Database = {
 			};
 			sitecue_drafts: {
 				Row: {
-					id: string;
 					content: string | null;
+					created_at: string;
+					id: string;
 					metadata: Json | null;
 					target_platform: string;
 					title: string | null;
-					user_id: string;
-					created_at: string;
 					updated_at: string;
+					user_id: string;
 				};
 				Insert: {
 					content?: string | null;
@@ -131,6 +131,7 @@ export type Database = {
 				Row: {
 					content: string;
 					created_at: string;
+					draft_id: string | null;
 					id: string;
 					is_expanded: boolean;
 					is_favorite: boolean;
@@ -142,11 +143,11 @@ export type Database = {
 					updated_at: string;
 					url_pattern: string;
 					user_id: string;
-					draft_id: string | null;
 				};
 				Insert: {
 					content: string;
 					created_at?: string;
+					draft_id?: string | null;
 					id?: string;
 					is_expanded?: boolean;
 					is_favorite?: boolean;
@@ -158,11 +159,11 @@ export type Database = {
 					updated_at?: string;
 					url_pattern: string;
 					user_id: string;
-					draft_id?: string | null;
 				};
 				Update: {
 					content?: string;
 					created_at?: string;
+					draft_id?: string | null;
 					id?: string;
 					is_expanded?: boolean;
 					is_favorite?: boolean;
@@ -174,9 +175,16 @@ export type Database = {
 					updated_at?: string;
 					url_pattern?: string;
 					user_id?: string;
-					draft_id?: string | null;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: "sitecue_notes_draft_id_fkey";
+						columns: ["draft_id"];
+						isOneToOne: false;
+						referencedRelation: "sitecue_drafts";
+						referencedColumns: ["id"];
+					},
+				];
 			};
 			sitecue_page_contents: {
 				Row: {
@@ -197,6 +205,30 @@ export type Database = {
 					content?: string;
 					created_at?: string;
 					id?: string;
+					url?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			sitecue_pinned_sites: {
+				Row: {
+					created_at: string;
+					id: string;
+					title: string;
+					url: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					title: string;
+					url: string;
+					user_id?: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					title?: string;
 					url?: string;
 					user_id?: string;
 				};

@@ -21,3 +21,6 @@ export type Draft = Omit<
 		[key: string]: unknown;
 	} | null;
 };
+
+export type PinnedSite =
+	Database["public"]["Tables"]["sitecue_pinned_sites"]["Row"];
