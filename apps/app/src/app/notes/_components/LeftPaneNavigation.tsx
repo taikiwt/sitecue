@@ -9,9 +9,11 @@ import {
 	PenSquare,
 	Search,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
+import { UserMenu } from "../../_components/UserMenu";
 import type { DomainGroup, GroupedNotes } from "../types";
 
 type Props = {
@@ -57,9 +59,18 @@ export function LeftPaneNavigation({
 			<div className="p-4 border-b border-gray-200 bg-white">
 				<Link
 					href="/"
-					className="text-xl font-bold flex items-center gap-2 mb-4 cursor-pointer"
+					className="flex items-center gap-2 mb-8 cursor-pointer group w-fit"
 				>
-					<span className="text-neutral-900">sitecue</span>
+					<Image
+						src="/logo.svg"
+						alt="sitecue logo"
+						width={28}
+						height={28}
+						className="drop-shadow-sm transition-transform group-hover:scale-105"
+					/>
+					<span className="text-xl font-bold tracking-tight text-neutral-900">
+						sitecue
+					</span>
 				</Link>
 
 				{/* Search Area */}
@@ -139,13 +150,14 @@ export function LeftPaneNavigation({
 				</div>
 			</nav>
 
-			<div className="p-4 border-t border-gray-200 bg-white">
+			<div className="p-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
 				<Link
 					href="/studio"
-					className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-500 transition-colors cursor-pointer"
+					className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-500 transition-colors cursor-pointer"
 				>
 					<span>Studio</span>
 				</Link>
+				<UserMenu />
 			</div>
 		</div>
 	);

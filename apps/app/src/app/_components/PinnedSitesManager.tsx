@@ -75,9 +75,9 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 	return (
 		<section className="mb-16">
 			<div className="mb-8 flex items-center justify-between">
-				<div className="flex items-center gap-2">
-					<span className="text-xl">📌</span>
-					<h2 className="text-lg font-semibold text-neutral-800">
+				<div className="flex items-center gap-3">
+					<span className="text-2xl">📌</span>
+					<h2 className="text-2xl font-light tracking-tight text-neutral-800">
 						Pinned Sites
 					</h2>
 				</div>

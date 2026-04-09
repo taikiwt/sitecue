@@ -35,11 +35,12 @@ export async function updateSession(request: NextRequest) {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	if (
-		!user &&
-		!request.nextUrl.pathname.startsWith("/login") &&
-		!request.nextUrl.pathname.startsWith("/auth")
-	) {
+	const protectedRoutes = ["/", "/notes", "/studio"];
+	const isProtectedRoute =
+		protectedRoutes.includes(request.nextUrl.pathname) ||
+		request.nextUrl.pathname.startsWith("/studio/");
+
+	if (!user && isProtectedRoute) {
 		// no user, potentially respond by redirecting the user to the login page
 		let baseUrl = request.url;
 		const host =
@@ -55,6 +56,23 @@ export async function updateSession(request: NextRequest) {
 		}
 		// biome-ignore format: User preference for single line
 		redirectUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+		return NextResponse.redirect(redirectUrl);
+	}
+
+	if (user && request.nextUrl.pathname.startsWith("/login")) {
+		// logged in user should not see login page
+		let baseUrl = request.url;
+		const host =
+			request.headers.get("x-forwarded-host") || request.headers.get("host");
+		if (host) {
+			const protocol = request.headers.get("x-forwarded-proto") || "http";
+			baseUrl = `${protocol}://${host}`;
+		}
+
+		const redirectUrl = new URL("/", baseUrl);
+		if (redirectUrl.hostname === "localhost") {
+			redirectUrl.hostname = "127.0.0.1";
+		}
 		return NextResponse.redirect(redirectUrl);
 	}
 
