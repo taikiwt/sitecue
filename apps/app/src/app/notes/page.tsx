@@ -68,6 +68,17 @@ export default async function Dashboard(props: {
 		return redirect("/login");
 	}
 
+	// 追加: パラメータが何もない場合は Inbox へリダイレクト
+	if (
+		!searchParams.view &&
+		!searchParams.domain &&
+		!searchParams.exact &&
+		!searchParams.noteId &&
+		!searchParams.draftId
+	) {
+		redirect("/notes?domain=inbox");
+	}
+
 	const [notesRes, draftsRes] = await Promise.all([
 		supabase
 			.from("sitecue_notes")
