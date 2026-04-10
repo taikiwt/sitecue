@@ -39,15 +39,13 @@ export default defineBackground(() => {
 			// Since we can't easily do complex ORs with .eq() syntax on the same column in one go without raw filters,
 			// let's try the .or() syntax.
 
-			// Filter: (scope.eq.domain,url_pattern.eq.{domain}),(scope.eq.exact,url_pattern.eq.{exact})
-			// We MUST quote the values to handle special characters like commas.
-			const orQuery = `and(scope.eq.domain,url_pattern.eq."${domain}"),and(scope.eq.exact,url_pattern.eq."${exact}")`;
-
 			const { count, error } = await supabase
-				.from("sitecue_notes")
-				.select("*", { count: "exact", head: true }) // head: true means we only want count, not data
-				.eq("is_resolved", false)
-				.or(orQuery);
+				.rpc(
+					"get_matching_notes",
+					{ p_domain: domain, p_exact: exact },
+					{ count: "exact", head: true },
+				)
+				.eq("is_resolved", false);
 
 			if (error) {
 				console.error("Error fetching note count:", error);
