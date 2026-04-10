@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import { LeftPaneNavigation } from "./_components/LeftPaneNavigation";
 import { MiddlePaneList } from "./_components/MiddlePaneList";
+import { ResponsiveNotesLayout } from "./_components/ResponsiveNotesLayout";
 import { RightPaneDetail } from "./_components/RightPaneDetail";
 import type { Draft, GroupedNotes, Note } from "./types";
 
@@ -119,27 +120,28 @@ export default async function Dashboard(props: {
 		: undefined;
 
 	return (
-		<div className="flex h-screen overflow-hidden bg-white font-sans text-gray-900">
-			{/* Left Plane: Navigation */}
-			<LeftPaneNavigation
-				groupedNotes={groupedNotes}
-				currentView={effectiveView}
-				currentDomain={domain ?? null}
-				currentExact={exact ?? null}
-			/>
-
-			{/* Middle Pane: List */}
-			<MiddlePaneList
-				items={filteredItems}
-				currentView={effectiveView}
-				currentDomain={domain ?? null}
-				currentExact={exact ?? null}
-				selectedNoteId={searchParams.noteId ?? null}
-				selectedDraftId={searchParams.draftId ?? null}
-			/>
-
-			{/* Right Pane: Detail */}
-			<RightPaneDetail note={selectedNote} draft={selectedDraft} />
-		</div>
+		<ResponsiveNotesLayout
+			selectedNoteId={searchParams.noteId ?? null}
+			selectedDraftId={searchParams.draftId ?? null}
+			leftNode={
+				<LeftPaneNavigation
+					groupedNotes={groupedNotes}
+					currentView={effectiveView}
+					currentDomain={domain ?? null}
+					currentExact={exact ?? null}
+				/>
+			}
+			middleNode={
+				<MiddlePaneList
+					items={filteredItems}
+					currentView={effectiveView}
+					currentDomain={domain ?? null}
+					currentExact={exact ?? null}
+					selectedNoteId={searchParams.noteId ?? null}
+					selectedDraftId={searchParams.draftId ?? null}
+				/>
+			}
+			rightNode={<RightPaneDetail note={selectedNote} draft={selectedDraft} />}
+		/>
 	);
 }
