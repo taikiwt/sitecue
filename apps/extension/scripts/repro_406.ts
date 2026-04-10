@@ -62,13 +62,13 @@ async function run() {
 	console.log("Running query from background.ts...");
 
 	// Test 1: Normal match
-	const orQuery = `and(scope.eq.domain,url_pattern.eq.${hostname}),and(scope.eq.exact,url_pattern.eq.${fullPath})`;
-
 	const { count, error, status, statusText } = await supabase
-		.from("sitecue_notes")
-		.select("*", { count: "exact", head: true })
-		.eq("is_resolved", false)
-		.or(orQuery);
+		.rpc(
+			"get_matching_notes",
+			{ p_domain: hostname, p_exact: fullPath },
+			{ count: "exact", head: true },
+		)
+		.eq("is_resolved", false);
 
 	console.log("Query Result (Match):", { count, status, statusText });
 
@@ -81,8 +81,7 @@ async function run() {
 	const complexPath = "example.com/foo,bar"; // Comma might break .or() parser if not handled
 	// Notes logic usually normalizes URL first, but let's see if query breaks.
 
-	const orQueryComplex = `and(scope.eq.domain,url_pattern.eq.${complexHostname}),and(scope.eq.exact,url_pattern.eq.${complexPath})`;
-	console.log("Running query with complex path:", orQueryComplex);
+	console.log("Running query with complex path via RPC");
 
 	const {
 		count: count2,
@@ -90,10 +89,12 @@ async function run() {
 		status: status2,
 		statusText: statusText2,
 	} = await supabase
-		.from("sitecue_notes")
-		.select("*", { count: "exact", head: true })
-		.eq("is_resolved", false)
-		.or(orQueryComplex);
+		.rpc(
+			"get_matching_notes",
+			{ p_domain: complexHostname, p_exact: complexPath },
+			{ count: "exact", head: true },
+		)
+		.eq("is_resolved", false);
 
 	console.log("Query Result (Complex):", {
 		count: count2,
@@ -104,11 +105,8 @@ async function run() {
 		console.error("Query Error (Complex):", error2);
 	}
 
-	// Test 4: Comma in URL with Quoting
-	// PostgREST requires values with reserved characters to be double-quoted.
-	// However, since we are inside a string, we need to escape the quotes.
-	const orQueryComplexFixed = `and(scope.eq.domain,url_pattern.eq."${complexHostname}"),and(scope.eq.exact,url_pattern.eq."${complexPath}")`;
-	console.log("Running fixed query with complex path:", orQueryComplexFixed);
+	// Test 4: Comma in URL with Quoting (Now redundant but testing RPC safety)
+	console.log("Running RPC with complex path again");
 
 	const {
 		count: count4,
@@ -116,10 +114,12 @@ async function run() {
 		status: status4,
 		statusText: statusText4,
 	} = await supabase
-		.from("sitecue_notes")
-		.select("*", { count: "exact", head: true })
-		.eq("is_resolved", false)
-		.or(orQueryComplexFixed);
+		.rpc(
+			"get_matching_notes",
+			{ p_domain: complexHostname, p_exact: complexPath },
+			{ count: "exact", head: true },
+		)
+		.eq("is_resolved", false);
 
 	console.log("Query Result (Fixed):", {
 		count: count4,
@@ -133,7 +133,6 @@ async function run() {
 	// Test 3: No match
 	const noMatchHost = "nomatch.com";
 	const noMatchPath = "nomatch.com/foo";
-	const orQueryNoMatch = `and(scope.eq.domain,url_pattern.eq.${noMatchHost}),and(scope.eq.exact,url_pattern.eq.${noMatchPath})`;
 
 	const {
 		count: count3,
@@ -141,10 +140,12 @@ async function run() {
 		status: status3,
 		statusText: statusText3,
 	} = await supabase
-		.from("sitecue_notes")
-		.select("*", { count: "exact", head: true })
-		.eq("is_resolved", false)
-		.or(orQueryNoMatch);
+		.rpc(
+			"get_matching_notes",
+			{ p_domain: noMatchHost, p_exact: noMatchPath },
+			{ count: "exact", head: true },
+		)
+		.eq("is_resolved", false);
 
 	console.log("Query Result (No Match):", {
 		count: count3,
