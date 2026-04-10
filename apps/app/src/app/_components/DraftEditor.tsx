@@ -269,6 +269,20 @@ export default function DraftEditor({
 			if (newHistory.length > 20) newHistory.shift();
 			setHistory(newHistory);
 			setHistoryIndex(newHistory.length - 1);
+
+			// Auto-Consume Review Notes
+			const noteIdsToDelete = reviewNotes.map((note) => note.id);
+			if (noteIdsToDelete.length > 0) {
+				// Fire and forget (physically delete from DB)
+				supabase
+					.from("sitecue_notes")
+					.delete()
+					.in("id", noteIdsToDelete)
+					.then(({ error }) => {
+						if (error) console.error("Failed to delete consumed notes:", error);
+					});
+			}
+			setReviewNotes([]);
 		} catch (error) {
 			console.error("Weave failed:", error);
 			alert("AI Weave failed. Please check the console.");
