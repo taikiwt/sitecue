@@ -1,8 +1,18 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+	DrawerTrigger,
+} from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, DraftPlatform, Note } from "../../../../../types/app.ts";
 import PaywallModal from "../studio/_components/PaywallModal";
@@ -26,6 +36,7 @@ export default function DraftEditor({
 	const supabase = createClient();
 	const target = targetPlatform || initialDraft?.target_platform || "generic";
 	const activePane = searchParams.get("pane") || "review";
+	const isDesktop = useMediaQuery("(min-width: 768px)");
 
 	const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
 	const [content, setContent] = useState(initialDraft?.content || "");
@@ -468,65 +479,138 @@ export default function DraftEditor({
 					/>
 				</main>
 			</div>
+			{/* 右ペイン: コンテキストバー (Desktop only) */}
+			{isDesktop && (
+				<aside className="w-96 flex-col overflow-hidden bg-neutral-50 border-l border-neutral-200 flex">
+					<header className="border-b border-neutral-200 p-2">
+						<div className="flex rounded-lg bg-neutral-200/50 p-1">
+							<button
+								type="button"
+								onClick={() => updatePane("review")}
+								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									activePane === "review"
+										? "bg-white text-neutral-900 shadow-sm"
+										: "text-neutral-500 hover:text-neutral-700"
+								}`}
+							>
+								SELF REVIEW
+							</button>
+							<button
+								type="button"
+								onClick={() => updatePane("materials")}
+								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									activePane === "materials"
+										? "bg-white text-neutral-900 shadow-sm"
+										: "text-neutral-500 hover:text-neutral-700"
+								}`}
+							>
+								GLOBAL MATERIALS
+							</button>
+						</div>
+					</header>
 
-			{/* 右ペイン: コンテキストバー */}
-			<aside className="hidden w-96 flex-col overflow-hidden bg-neutral-50 border-l border-neutral-200 md:flex">
-				<header className="border-b border-neutral-200 p-2">
-					<div className="flex rounded-lg bg-neutral-200/50 p-1">
-						<button
-							type="button"
-							onClick={() => updatePane("review")}
-							className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-								activePane === "review"
-									? "bg-white text-neutral-900 shadow-sm"
-									: "text-neutral-500 hover:text-neutral-700"
-							}`}
-						>
-							SELF REVIEW
-						</button>
-						<button
-							type="button"
-							onClick={() => updatePane("materials")}
-							className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-								activePane === "materials"
-									? "bg-white text-neutral-900 shadow-sm"
-									: "text-neutral-500 hover:text-neutral-700"
-							}`}
-						>
-							GLOBAL MATERIALS
-						</button>
+					{/* Tab Content */}
+					<div className="flex-1 overflow-hidden">
+						{activePane === "review" ? (
+							<StudioReviewPane
+								reviewNotes={reviewNotes}
+								isLoadingReview={isLoadingReview}
+								onAddNote={handleAddNote}
+								onWeave={handleWeave}
+								isWeaving={isWeaving}
+								usageCount={usageCount}
+								plan={plan}
+							/>
+						) : (
+							<StudioMaterialsPane
+								searchKeyword={searchKeyword}
+								onSearchKeywordChange={setSearchKeyword}
+								onSearch={handleSearch}
+								searchResults={searchResults}
+								isSearching={isSearching}
+							/>
+						)}
 					</div>
-				</header>
 
-				{/* Tab Content */}
-				<div className="flex-1 overflow-hidden">
-					{activePane === "review" ? (
-						<StudioReviewPane
-							reviewNotes={reviewNotes}
-							isLoadingReview={isLoadingReview}
-							onAddNote={handleAddNote}
-							onWeave={handleWeave}
-							isWeaving={isWeaving}
-							usageCount={usageCount}
-							plan={plan}
-						/>
-					) : (
-						<StudioMaterialsPane
-							searchKeyword={searchKeyword}
-							onSearchKeywordChange={setSearchKeyword}
-							onSearch={handleSearch}
-							searchResults={searchResults}
-							isSearching={isSearching}
-						/>
-					)}
-				</div>
+					<div className="border-t border-neutral-200 p-4 text-center bg-white/50">
+						<p className="text-[10px] text-neutral-400 font-medium">
+							Weave Studio Power User Mode
+						</p>
+					</div>
+				</aside>
+			)}
 
-				<div className="border-t border-neutral-200 p-4 text-center bg-white/50">
-					<p className="text-[10px] text-neutral-400 font-medium">
-						Weave Studio Power User Mode
-					</p>
+			{/* Floating Mobile Trigger */}
+			{!isDesktop && (
+				<div className="fixed bottom-6 right-6 z-50">
+					<Drawer>
+						<DrawerTrigger asChild>
+							<button
+								type="button"
+								className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 text-white shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+							>
+								<Sparkles className="h-6 w-6" />
+								<span className="sr-only">Open Weave Studio</span>
+							</button>
+						</DrawerTrigger>
+						<DrawerContent className="h-[80vh]">
+							<div className="mx-auto w-full max-w-sm">
+								<DrawerHeader>
+									<DrawerTitle className="sr-only">Weave Studio</DrawerTitle>
+									<DrawerDescription className="sr-only">
+										Access AI Weave and Materials
+									</DrawerDescription>
+									<div className="flex rounded-lg bg-neutral-200/50 p-1 mb-4">
+										<button
+											type="button"
+											onClick={() => updatePane("review")}
+											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+												activePane === "review"
+													? "bg-white text-neutral-900 shadow-sm"
+													: "text-neutral-500 hover:text-neutral-700"
+											}`}
+										>
+											SELF REVIEW
+										</button>
+										<button
+											type="button"
+											onClick={() => updatePane("materials")}
+											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+												activePane === "materials"
+													? "bg-white text-neutral-900 shadow-sm"
+													: "text-neutral-500 hover:text-neutral-700"
+											}`}
+										>
+											GLOBAL MATERIALS
+										</button>
+									</div>
+								</DrawerHeader>
+								<div className="h-[calc(80vh-80px)] overflow-hidden">
+									{activePane === "review" ? (
+										<StudioReviewPane
+											reviewNotes={reviewNotes}
+											isLoadingReview={isLoadingReview}
+											onAddNote={handleAddNote}
+											onWeave={handleWeave}
+											isWeaving={isWeaving}
+											usageCount={usageCount}
+											plan={plan}
+										/>
+									) : (
+										<StudioMaterialsPane
+											searchKeyword={searchKeyword}
+											onSearchKeywordChange={setSearchKeyword}
+											onSearch={handleSearch}
+											searchResults={searchResults}
+											isSearching={isSearching}
+										/>
+									)}
+								</div>
+							</div>
+						</DrawerContent>
+					</Drawer>
 				</div>
-			</aside>
+			)}
 
 			<PaywallModal
 				isOpen={showPaywall}
