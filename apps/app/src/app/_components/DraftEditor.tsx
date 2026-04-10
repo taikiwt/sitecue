@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -385,6 +385,14 @@ export default function DraftEditor({
 			<div className="flex flex-1 flex-col overflow-hidden border-r border-neutral-200 bg-white">
 				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
 					<div className="flex items-center gap-4">
+						<button
+							type="button"
+							onClick={() => router.back()}
+							className="cursor-pointer text-neutral-400 hover:text-neutral-900 transition-colors p-1 -ml-2"
+							aria-label="Go back"
+						>
+							<ArrowLeft className="w-5 h-5" aria-hidden="true" />
+						</button>
 						<Link
 							href="/"
 							className="text-xl font-bold tracking-tight text-neutral-900 transition-colors hover:text-neutral-500 cursor-pointer block"
@@ -547,10 +555,10 @@ export default function DraftEditor({
 						<DrawerTrigger asChild>
 							<button
 								type="button"
-								className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-900 text-white shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+								className="flex h-14 items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 text-white shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
 							>
-								<Sparkles className="h-6 w-6" />
-								<span className="sr-only">Open Weave Studio</span>
+								<Sparkles className="h-5 w-5" aria-hidden="true" />
+								<span className="text-sm font-bold">Notes & AI</span>
 							</button>
 						</DrawerTrigger>
 						<DrawerContent className="h-[80vh]">

@@ -77,7 +77,7 @@ export function UserMenu() {
 			</button>
 
 			{isMenuOpen && (
-				<div className="absolute right-0 bottom-full mb-2 md:bottom-auto md:mt-2 w-56 origin-bottom-right md:origin-top-right rounded-xl border border-neutral-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-[100]">
+				<div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-neutral-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-[100]">
 					<div className="px-3 py-2 border-b border-neutral-100 mb-1">
 						<p className="text-xs font-semibold text-neutral-900 truncate">
 							{user.email}
