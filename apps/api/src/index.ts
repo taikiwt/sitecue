@@ -215,6 +215,7 @@ app.post("/ai/weave", async (c) => {
 		}[] = body.contexts;
 		const format: string = body.format;
 		const context_id: string | undefined = body.context_id;
+		const draft_content: string | undefined = body.draft_content;
 
 		if (!Array.isArray(contexts) || typeof format !== "string") {
 			return c.json({ error: "Invalid request body" }, 400);
@@ -243,6 +244,10 @@ app.post("/ai/weave", async (c) => {
 					.delete()
 					.eq("id", context_id);
 			}
+		}
+
+		if (draft_content) {
+			referenceContent += `${referenceContent ? "\n\n" : ""}【現在のドラフト本文】\n${draft_content}`;
 		}
 
 		const userNotesList = contexts

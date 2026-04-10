@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, DraftPlatform, Note } from "../../../../../types/app.ts";
-import NoteEditor from "./NoteEditor";
+import PaywallModal from "../studio/_components/PaywallModal";
+import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
+import StudioReviewPane from "../studio/_components/StudioReviewPane";
+import UndoRedoControls from "../studio/_components/UndoRedoControls";
 
 type NoteType = "info" | "alert" | "idea";
 
@@ -38,6 +41,20 @@ export default function DraftEditor({
 	const [searchResults, setSearchResults] = useState<Note[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 
+	// State for History (Undo/Redo)
+	const [history, setHistory] = useState<string[]>([
+		initialDraft?.content || "",
+	]);
+	const [historyIndex, setHistoryIndex] = useState(0);
+
+	// State for Quota
+	const [usageCount, setUsageCount] = useState(0);
+	const [plan, setPlan] = useState<"free" | "pro">("free");
+	const [showPaywall, setShowPaywall] = useState(false);
+
+	// AISystem State
+	const [isWeaving, setIsWeaving] = useState(false);
+
 	// Fetch notes for Self Review (based on draft_id)
 	useEffect(() => {
 		if (!initialDraft?.id) {
@@ -66,6 +83,60 @@ export default function DraftEditor({
 
 		fetchReviewNotes();
 	}, [supabase, initialDraft?.id]);
+
+	// Fetch Profile for Quota
+	useEffect(() => {
+		const fetchProfile = async () => {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) return;
+
+			const { data, error } = await supabase
+				.from("sitecue_profiles")
+				.select("plan, ai_usage_count")
+				.eq("id", user.id)
+				.single();
+
+			if (!error && data) {
+				setPlan((data.plan as "free" | "pro") || "free");
+				setUsageCount(data.ai_usage_count || 0);
+			}
+		};
+		fetchProfile();
+	}, [supabase]);
+
+	// Push to history logic
+	const pushToHistory = useCallback(
+		(newContent: string) => {
+			if (newContent === history[historyIndex]) return;
+
+			const newHistory = history.slice(0, historyIndex + 1);
+			newHistory.push(newContent);
+			if (newHistory.length > 20) {
+				newHistory.shift();
+			}
+			setHistory(newHistory);
+			setHistoryIndex(newHistory.length - 1);
+		},
+		[history, historyIndex],
+	);
+
+	const handleUndo = useCallback(() => {
+		if (historyIndex > 0) {
+			const targetIndex = historyIndex - 1;
+			setHistoryIndex(targetIndex);
+			setContent(history[targetIndex]);
+		}
+	}, [history, historyIndex]);
+
+	const handleRedo = useCallback(() => {
+		if (historyIndex < history.length - 1) {
+			const targetIndex = historyIndex + 1;
+			setHistoryIndex(targetIndex);
+			setContent(history[targetIndex]);
+		}
+	}, [history, historyIndex]);
 
 	const handleSearch = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -142,6 +213,67 @@ export default function DraftEditor({
 		} catch (error) {
 			console.error("Failed to add note:", error);
 			throw error;
+		}
+	};
+
+	const handleWeave = async () => {
+		const limit = plan === "pro" ? 100 : 3;
+		if (usageCount >= limit) {
+			setShowPaywall(true);
+			return;
+		}
+
+		setIsWeaving(true);
+		try {
+			// Save current state before weave
+			pushToHistory(content);
+
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session) throw new Error("No session");
+
+			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
+			const response = await fetch(`${apiUrl}/ai/weave`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.access_token}`,
+				},
+				body: JSON.stringify({
+					contexts: reviewNotes,
+					format: "markdown",
+					draft_content: content,
+				}),
+			});
+
+			if (response.status === 403) {
+				setShowPaywall(true);
+				return;
+			}
+
+			if (!response.ok) {
+				const errData = await response.json();
+				throw new Error(errData.error || "Failed to weave");
+			}
+
+			const data = await response.json();
+			const newContent = data.result;
+
+			setContent(newContent);
+			setUsageCount((prev) => prev + 1);
+
+			// Add result to history
+			const newHistory = history.slice(0, historyIndex + 1);
+			newHistory.push(newContent);
+			if (newHistory.length > 20) newHistory.shift();
+			setHistory(newHistory);
+			setHistoryIndex(newHistory.length - 1);
+		} catch (error) {
+			console.error("Weave failed:", error);
+			alert("AI Weave failed. Please check the console.");
+		} finally {
+			setIsWeaving(false);
 		}
 	};
 
@@ -244,16 +376,26 @@ export default function DraftEditor({
 								(initialDraft ? "Edit Note" : "New Note")}
 						</span>
 					</div>
-					<button
-						type="button"
-						onClick={handleSave}
-						disabled={status === "saving"}
-						className={`rounded-full bg-neutral-900 px-6 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer ${
-							status === "saving" ? "opacity-50 cursor-not-allowed" : ""
-						}`}
-					>
-						{status === "saving" ? "Saving..." : "Save"}
-					</button>
+
+					<div className="flex items-center gap-4">
+						<UndoRedoControls
+							canUndo={historyIndex > 0}
+							canRedo={historyIndex < history.length - 1}
+							onUndo={handleUndo}
+							onRedo={handleRedo}
+						/>
+
+						<button
+							type="button"
+							onClick={handleSave}
+							disabled={status === "saving"}
+							className={`rounded-full bg-neutral-900 px-6 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer ${
+								status === "saving" ? "opacity-50 cursor-not-allowed" : ""
+							}`}
+						>
+							{status === "saving" ? "Saving..." : "Save"}
+						</button>
+					</div>
 				</header>
 
 				<div className="border-b border-neutral-100 bg-neutral-50/50 px-8 py-6">
@@ -343,127 +485,42 @@ export default function DraftEditor({
 				</header>
 
 				{/* Tab Content */}
-				<div className="flex-1 overflow-y-auto">
+				<div className="flex-1 overflow-hidden">
 					{activePane === "review" ? (
-						<div className="flex flex-col h-full">
-							{/* Note Form */}
-							<div className="p-4 border-b border-neutral-200 bg-white/50">
-								<NoteEditor onSubmit={handleAddNote} />
-							</div>
-
-							{/* Note List */}
-							<div className="flex-1 p-4 overflow-y-auto">
-								<div className="grid gap-3">
-									{isLoadingReview ? (
-										[1, 2, 3].map((i) => (
-											<div
-												key={i}
-												className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
-											/>
-										))
-									) : reviewNotes.length === 0 ? (
-										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-											<p className="text-sm">No notes for this draft yet.</p>
-											<p className="mt-1 text-[10px]">
-												Use the form above to capture your thoughts.
-											</p>
-										</div>
-									) : (
-										reviewNotes.map((note) => (
-											<NoteCard key={note.id} note={note} />
-										))
-									)}
-								</div>
-							</div>
-						</div>
+						<StudioReviewPane
+							reviewNotes={reviewNotes}
+							isLoadingReview={isLoadingReview}
+							onAddNote={handleAddNote}
+							onWeave={handleWeave}
+							isWeaving={isWeaving}
+							usageCount={usageCount}
+							plan={plan}
+						/>
 					) : (
-						<div className="flex flex-col h-full">
-							{/* Search Bar */}
-							<div className="p-4 border-b border-neutral-200 bg-white/50">
-								<form onSubmit={handleSearch} className="relative">
-									<input
-										type="text"
-										placeholder="Search by keyword or domain..."
-										value={searchKeyword}
-										onChange={(e) => setSearchKeyword(e.target.value)}
-										className="w-full rounded-full border border-neutral-200 bg-white py-2 pl-4 pr-10 text-sm focus:border-neutral-400 focus:outline-none"
-									/>
-									<button
-										type="submit"
-										className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-									>
-										🔍
-									</button>
-								</form>
-							</div>
-
-							{/* Search Results */}
-							<div className="flex-1 p-4 overflow-y-auto">
-								<div className="grid gap-3">
-									{isSearching ? (
-										[1, 2, 3].map((i) => (
-											<div
-												key={i}
-												className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
-											/>
-										))
-									) : searchResults.length === 0 ? (
-										<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-											<p className="text-sm">No materials found.</p>
-											<p className="mt-1 text-[10px]">
-												Enter keywords to search your past notes
-												<br />
-												and saved pages.
-											</p>
-										</div>
-									) : (
-										searchResults.map((note) => (
-											<NoteCard key={note.id} note={note} />
-										))
-									)}
-								</div>
-							</div>
-						</div>
+						<StudioMaterialsPane
+							searchKeyword={searchKeyword}
+							onSearchKeywordChange={setSearchKeyword}
+							onSearch={handleSearch}
+							searchResults={searchResults}
+							isSearching={isSearching}
+						/>
 					)}
 				</div>
 
-				<div className="border-t border-neutral-200 p-4 text-center">
-					<p className="text-xs text-neutral-400 italic">
-						Click a note to cite it (Coming Soon)
+				<div className="border-t border-neutral-200 p-4 text-center bg-white/50">
+					<p className="text-[10px] text-neutral-400 font-medium">
+						Weave Studio Power User Mode
 					</p>
 				</div>
 			</aside>
+
+			<PaywallModal
+				isOpen={showPaywall}
+				onClose={() => setShowPaywall(false)}
+				limit={plan === "pro" ? 100 : 3}
+			/>
 		</div>
 	);
 }
 
-function NoteCard({ note }: { note: Note }) {
-	return (
-		<div className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400">
-			<div className="mb-2 flex items-center justify-between">
-				<span
-					className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-						note.note_type === "info" || !note.note_type
-							? "bg-blue-50 text-blue-600"
-							: note.note_type === "alert"
-								? "bg-red-50 text-red-600"
-								: "bg-amber-50 text-amber-600"
-					}`}
-				>
-					{note.note_type || "info"}
-				</span>
-				<span className="text-[10px] text-neutral-400">
-					{note.created_at ? note.created_at.split("T")[0] : ""}
-				</span>
-			</div>
-			<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
-				{note.content}
-			</p>
-			{note.url_pattern && !note.url_pattern.startsWith("sitecue://") && (
-				<p className="mt-2 text-[10px] text-neutral-400 truncate">
-					{note.url_pattern}
-				</p>
-			)}
-		</div>
-	);
-}
+// NoteCard component is now moved to Studio components
