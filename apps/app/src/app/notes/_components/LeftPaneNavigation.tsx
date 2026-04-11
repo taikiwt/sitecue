@@ -10,8 +10,8 @@ import {
 	Search,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 import { UserMenu } from "../../_components/UserMenu";
 import type { DomainGroup, GroupedNotes } from "../types";

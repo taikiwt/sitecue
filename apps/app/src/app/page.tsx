@@ -7,7 +7,7 @@ import {
 	MessageSquareText,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";

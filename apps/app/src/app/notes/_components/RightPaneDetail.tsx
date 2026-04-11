@@ -235,12 +235,20 @@ export function RightPaneDetail({ note, draft }: Props) {
 					</div>
 					{isEditing ? (
 						<div className="relative mt-2">
-							<NotesEditor
-								value={editContent}
-								onChange={(val) => setEditContent(val)}
-								placeholder="What's on your mind?"
-								isDirty={editContent !== (note?.content || "")}
-							/>
+							{(() => {
+								const baseContent =
+									optimisticContent !== null
+										? optimisticContent
+										: note?.content || "";
+								return (
+									<NotesEditor
+										value={editContent}
+										onChange={(val) => setEditContent(val)}
+										placeholder="What's on your mind?"
+										isDirty={editContent !== baseContent}
+									/>
+								);
+							})()}
 						</div>
 					) : (
 						<div className="prose prose-neutral max-w-none bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm min-h-50 whitespace-pre-wrap text-gray-800 leading-relaxed">
