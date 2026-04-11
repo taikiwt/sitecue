@@ -8,8 +8,8 @@ import {
 	Lightbulb,
 	MapPin,
 } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { ArrowLeft, Sparkles } from "lucide-react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StudioEditor } from "@/components/editor/StudioEditor";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Drawer,
 	DrawerContent,
@@ -40,9 +40,14 @@ export default function DraftEditor({
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 
 	const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
-	const [content, setContent] = useState(initialDraft?.content || "");
-	const [title, setTitle] = useState(initialDraft?.title || "");
-	const [slug, setSlug] = useState(initialDraft?.metadata?.slug || "");
+	const [savedState, setSavedState] = useState({
+		content: initialDraft?.content || "",
+		title: initialDraft?.title || "",
+		slug: initialDraft?.metadata?.slug || "",
+	});
+	const [content, setContent] = useState(savedState.content);
+	const [title, setTitle] = useState(savedState.title);
+	const [slug, setSlug] = useState(savedState.slug);
 
 	// State for Self Review
 	const [reviewNotes, setReviewNotes] = useState<Note[]>([]);
@@ -68,9 +73,19 @@ export default function DraftEditor({
 	const [isWeaving, setIsWeaving] = useState(false);
 
 	const isDirty =
-		content !== (initialDraft?.content || "") ||
-		title !== (initialDraft?.title || "") ||
-		slug !== (initialDraft?.metadata?.slug || "");
+		content !== savedState.content ||
+		title !== savedState.title ||
+		slug !== savedState.slug;
+
+	const handleBack = () => {
+		if (isDirty) {
+			const confirmLeave = window.confirm(
+				"You have unsaved changes. Are you sure you want to leave?",
+			);
+			if (!confirmLeave) return;
+		}
+		router.back();
+	};
 
 	// Fetch notes for Self Review (based on draft_id)
 	useEffect(() => {
@@ -330,6 +345,7 @@ export default function DraftEditor({
 					.eq("id", currentDraftId);
 
 				if (error) throw error;
+				setSavedState({ content, title, slug });
 			} else {
 				const { data, error } = await supabase
 					.from("sitecue_drafts")
@@ -368,6 +384,7 @@ export default function DraftEditor({
 						}
 					}
 
+					setSavedState({ content, title, slug });
 					router.push(`/studio/${data.id}`);
 				}
 			}
@@ -393,7 +410,7 @@ export default function DraftEditor({
 					<div className="flex items-center gap-4">
 						<button
 							type="button"
-							onClick={() => router.back()}
+							onClick={handleBack}
 							className="cursor-pointer text-neutral-400 hover:text-neutral-900 transition-colors p-1 -ml-2"
 							aria-label="Go back"
 						>
