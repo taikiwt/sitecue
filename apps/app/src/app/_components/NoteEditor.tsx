@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
-import TextareaAutosize from "react-textarea-autosize";
+import { NotesEditor } from "@/components/editor/NotesEditor";
 
 type NoteType = "info" | "alert" | "idea";
 
@@ -75,28 +75,23 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 			</div>
 
 			<div className="relative flex gap-2">
-				<TextareaAutosize
+				<NotesEditor
 					value={content}
-					onChange={(e) => setContent(e.target.value)}
+					onChange={(val) => setContent(val)}
 					placeholder="Write down your thoughts..."
-					className="min-h-20 w-full resize-none rounded-lg border-2 border-neutral-100 bg-neutral-50/50 p-3 text-sm transition-all focus:border-neutral-900 focus:bg-white focus:outline-none"
-					onKeyDown={(e) => {
-						if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-							handleSave();
-						}
-					}}
+					isDirty={content.length > 0}
 				/>
 				<button
 					type="button"
 					onClick={() => handleSave()}
 					disabled={!content.trim() || isSaving}
-					className="absolute right-2 bottom-2 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
+					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
 					<Send className="h-4 w-4" />
 				</button>
 			</div>
 			<p className="text-[10px] text-neutral-400">
-				{isSaving ? "Saving..." : "Cmd + Enter to save"}
+				{isSaving ? "Saving..." : "Markdown supported"}
 			</p>
 		</div>
 	);

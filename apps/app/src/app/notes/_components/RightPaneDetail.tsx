@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import TextareaAutosize from "react-textarea-autosize";
+import { NotesEditor } from "@/components/editor/NotesEditor";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note } from "../types";
 
@@ -234,17 +234,16 @@ export function RightPaneDetail({ note, draft }: Props) {
 						{note ? "Note Content" : "Draft Content"}
 					</div>
 					{isEditing ? (
-						<div className="relative">
-							<TextareaAutosize
-								autoFocus
+						<div className="relative mt-2">
+							<NotesEditor
 								value={editContent}
-								onChange={(e) => setEditContent(e.target.value)}
-								className="w-full bg-white p-6 rounded-xl border-2 border-neutral-900 shadow-sm min-h-50 whitespace-pre-wrap text-gray-800 leading-relaxed focus:outline-none"
+								onChange={(val) => setEditContent(val)}
 								placeholder="What's on your mind?"
+								isDirty={editContent !== (note?.content || "")}
 							/>
 						</div>
 					) : (
-						<div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm min-h-50 whitespace-pre-wrap text-gray-800 leading-relaxed">
+						<div className="prose prose-neutral max-w-none bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm min-h-50 whitespace-pre-wrap text-gray-800 leading-relaxed">
 							{content}
 						</div>
 					)}
