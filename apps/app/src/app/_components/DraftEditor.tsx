@@ -4,6 +4,7 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { StudioEditor } from "@/components/editor/StudioEditor";
 import {
 	Drawer,
 	DrawerContent,
@@ -65,6 +66,11 @@ export default function DraftEditor({
 
 	// AISystem State
 	const [isWeaving, setIsWeaving] = useState(false);
+
+	const isDirty =
+		content !== (initialDraft?.content || "") ||
+		title !== (initialDraft?.title || "") ||
+		slug !== (initialDraft?.metadata?.slug || "");
 
 	// Fetch notes for Self Review (based on draft_id)
 	useEffect(() => {
@@ -479,11 +485,11 @@ export default function DraftEditor({
 				</div>
 
 				<main className="flex-1 overflow-y-auto px-8 py-10">
-					<textarea
-						placeholder="Write down your thoughts..."
+					<StudioEditor
 						value={content}
-						onChange={(e) => setContent(e.target.value)}
-						className="min-h-full w-full resize-none bg-transparent text-lg leading-relaxed placeholder:text-neutral-300 focus:outline-none"
+						onChange={(val) => setContent(val)}
+						placeholder="Write down your thoughts..."
+						isDirty={isDirty}
 					/>
 				</main>
 			</div>
