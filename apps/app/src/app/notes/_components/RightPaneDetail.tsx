@@ -16,16 +16,16 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { NotesEditor } from "@/components/editor/NotesEditor";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { createClient } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -100,7 +100,9 @@ export function RightPaneDetail({ note, draft }: Props) {
 			? optimisticResolved
 			: note?.is_resolved || false;
 	const currentNoteType =
-		optimisticNoteType !== null ? optimisticNoteType : note?.note_type || "info";
+		optimisticNoteType !== null
+			? optimisticNoteType
+			: note?.note_type || "info";
 	const currentScope =
 		optimisticScope !== null ? optimisticScope : note?.scope || "inbox";
 

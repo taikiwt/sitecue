@@ -52,4 +52,4 @@ function PopoverArrow({ className, ...props }: PopoverPrimitive.Arrow.Props) {
 	);
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverArrow };
+export { Popover, PopoverArrow, PopoverContent, PopoverTrigger };
