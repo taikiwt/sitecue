@@ -242,7 +242,7 @@ function DomainAccordionItem({
 				</span>
 			</button>
 
-			{/* Children: Domain Notes & Exact Pages */}
+			{/* Children: Domain Notes & Page Pages */}
 			{effectiveIsOpen && (
 				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-gray-200 pl-3">
 					{/* Approach B: Domain Scope Notes (Always at top if open) */}
@@ -261,7 +261,7 @@ function DomainAccordionItem({
 						<span className="truncate min-w-0">All notes in {domainName}</span>
 					</Link>
 
-					{/* Exact Pages */}
+					{/* Page Pages */}
 					{Object.entries(domainData.pages).map(([url, _notes]) => {
 						const isActive = currentExact === url;
 						const path = getPath(url);
