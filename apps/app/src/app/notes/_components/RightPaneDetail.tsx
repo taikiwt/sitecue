@@ -5,6 +5,7 @@ import {
 	Check,
 	CheckCircle2,
 	Clipboard,
+	Copy,
 	Info,
 	Lightbulb,
 	MoreHorizontal,
@@ -12,13 +13,11 @@ import {
 	Pencil,
 	Pin,
 	Star,
-	Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
@@ -49,6 +48,13 @@ export function RightPaneDetail({ note, draft }: Props) {
 		null,
 	);
 	const [optimisticScope, setOptimisticScope] = useState<string | null>(null);
+	const [optimisticPinned, setOptimisticPinned] = useState<boolean | null>(
+		null,
+	);
+	const [optimisticFavorite, setOptimisticFavorite] = useState<boolean | null>(
+		null,
+	);
+	const [isCopyingUrl, setIsCopyingUrl] = useState(false);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
@@ -57,8 +63,10 @@ export function RightPaneDetail({ note, draft }: Props) {
 		setOptimisticResolved(null);
 		setOptimisticNoteType(null);
 		setOptimisticScope(null);
+		setOptimisticPinned(null);
+		setOptimisticFavorite(null);
 		setEditContent(note?.content || "");
-	}, [note?.content, note?.id]);
+	}, [note?.content]);
 
 	if (!note && !draft) {
 		return (
@@ -105,6 +113,12 @@ export function RightPaneDetail({ note, draft }: Props) {
 			: note?.note_type || "info";
 	const currentScope =
 		optimisticScope !== null ? optimisticScope : note?.scope || "inbox";
+	const currentPinned =
+		optimisticPinned !== null ? optimisticPinned : note?.is_pinned || false;
+	const currentFavorite =
+		optimisticFavorite !== null
+			? optimisticFavorite
+			: note?.is_favorite || false;
 
 	const handleEdit = () => {
 		setEditContent(note?.content || "");
@@ -150,9 +164,14 @@ export function RightPaneDetail({ note, draft }: Props) {
 		if (!note) return;
 
 		// Set optimistic states
-		if ("is_resolved" in updates) setOptimisticResolved(updates.is_resolved!);
-		if ("note_type" in updates) setOptimisticNoteType(updates.note_type!);
-		if ("scope" in updates) setOptimisticScope(updates.scope!);
+		if (updates.is_resolved !== undefined)
+			setOptimisticResolved(updates.is_resolved);
+		if (updates.note_type !== undefined)
+			setOptimisticNoteType(updates.note_type);
+		if (updates.scope !== undefined) setOptimisticScope(updates.scope);
+		if (updates.is_pinned !== undefined) setOptimisticPinned(updates.is_pinned);
+		if (updates.is_favorite !== undefined)
+			setOptimisticFavorite(updates.is_favorite);
 
 		try {
 			const supabase = createClient();
@@ -169,6 +188,8 @@ export function RightPaneDetail({ note, draft }: Props) {
 			if ("is_resolved" in updates) setOptimisticResolved(null);
 			if ("note_type" in updates) setOptimisticNoteType(null);
 			if ("scope" in updates) setOptimisticScope(null);
+			if ("is_pinned" in updates) setOptimisticPinned(null);
+			if ("is_favorite" in updates) setOptimisticFavorite(null);
 		}
 	};
 
@@ -177,6 +198,16 @@ export function RightPaneDetail({ note, draft }: Props) {
 		navigator.clipboard.writeText(content);
 		setIsCopying(true);
 		setTimeout(() => setIsCopying(false), 2000);
+	};
+
+	const handleCopyUrl = (url: string) => {
+		const fullUrl =
+			url.startsWith("http://") || url.startsWith("https://")
+				? url
+				: `https://${url}`;
+		navigator.clipboard.writeText(fullUrl);
+		setIsCopyingUrl(true);
+		setTimeout(() => setIsCopyingUrl(false), 2000);
 	};
 
 	return (
@@ -320,7 +351,9 @@ export function RightPaneDetail({ note, draft }: Props) {
 																	: "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900",
 															)}
 														>
-															<span className="capitalize">{scope}</span>
+															<span className="capitalize">
+																{scope === "exact" ? "page" : scope}
+															</span>
 															{currentScope === scope && (
 																<Check className="w-3 h-3 ml-auto" />
 															)}
@@ -353,22 +386,53 @@ export function RightPaneDetail({ note, draft }: Props) {
 								</button>
 							</div>
 						)}
-						<div className="flex gap-2 ml-2">
-							{note?.is_pinned && (
-								<div title="Pinned">
-									<Pin
-										className="w-4 h-4 fill-current text-neutral-800"
-										aria-label="Pinned"
-									/>
-								</div>
-							)}
-							{note?.is_favorite && (
-								<div title="Favorite">
-									<Star
-										className="w-4 h-4 fill-current text-amber-400"
-										aria-label="Favorite"
-									/>
-								</div>
+						<div className="flex gap-1 ml-2">
+							{note && (
+								<>
+									<button
+										type="button"
+										onClick={() =>
+											handleUpdateProperty({ is_pinned: !currentPinned })
+										}
+										className={cn(
+											"p-1.5 rounded-md transition-all active:scale-90 cursor-pointer",
+											currentPinned
+												? "text-neutral-800 bg-neutral-100"
+												: "text-neutral-300 hover:text-neutral-500 hover:bg-neutral-50",
+										)}
+										title={currentPinned ? "Unpin" : "Pin"}
+									>
+										<Pin
+											className={cn("w-4 h-4", currentPinned && "fill-current")}
+											aria-hidden="true"
+										/>
+									</button>
+									<button
+										type="button"
+										onClick={() =>
+											handleUpdateProperty({
+												is_favorite: !currentFavorite,
+											})
+										}
+										className={cn(
+											"p-1.5 rounded-md transition-all active:scale-90 cursor-pointer",
+											currentFavorite
+												? "text-amber-400 bg-amber-50"
+												: "text-neutral-300 hover:text-amber-400 hover:bg-amber-50",
+										)}
+										title={
+											currentFavorite ? "Remove from Favorites" : "Favorite"
+										}
+									>
+										<Star
+											className={cn(
+												"w-4 h-4",
+												currentFavorite && "fill-current",
+											)}
+											aria-hidden="true"
+										/>
+									</button>
+								</>
 							)}
 						</div>
 					</div>
@@ -387,21 +451,38 @@ export function RightPaneDetail({ note, draft }: Props) {
 						<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
 							Source URL
 						</div>
-						<a
-							href={
-								note.url_pattern.startsWith("http")
-									? note.url_pattern
-									: note.url_pattern.includes("localhost") ||
-											note.url_pattern.includes("127.0.0.1")
-										? `http://${note.url_pattern}`
-										: `https://${note.url_pattern}`
-							}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-neutral-600 underline hover:text-neutral-900 break-all text-sm block bg-neutral-50 p-3 rounded-lg border border-neutral-200"
-						>
-							{note.url_pattern}
-						</a>
+						<div className="flex items-center gap-2 group">
+							<a
+								href={
+									note.url_pattern.startsWith("http")
+										? note.url_pattern
+										: note.url_pattern.includes("localhost") ||
+												note.url_pattern.includes("127.0.0.1")
+											? `http://${note.url_pattern}`
+											: `https://${note.url_pattern}`
+								}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-neutral-600 underline hover:text-neutral-900 break-all text-sm flex-1 bg-neutral-50 p-3 rounded-lg border border-neutral-200 transition-colors"
+							>
+								{note.url_pattern}
+							</a>
+							<button
+								type="button"
+								onClick={() => handleCopyUrl(note.url_pattern)}
+								className="p-2.5 text-neutral-400 hover:text-neutral-900 border border-neutral-200 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-all active:scale-95 cursor-pointer shadow-sm"
+								title="Copy Source URL"
+							>
+								{isCopyingUrl ? (
+									<Check
+										className="w-4 h-4 text-green-500"
+										aria-hidden="true"
+									/>
+								) : (
+									<Copy className="w-4 h-4" aria-hidden="true" />
+								)}
+							</button>
+						</div>
 					</div>
 				)}
 
