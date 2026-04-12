@@ -84,6 +84,8 @@ export default async function Dashboard(props: {
 			.from("sitecue_notes")
 			.select("*")
 			.eq("user_id", user.id)
+			.order("is_pinned", { ascending: false })
+			.order("sort_order", { ascending: true })
 			.order("created_at", { ascending: false }),
 		supabase
 			.from("sitecue_drafts")
@@ -114,11 +116,27 @@ export default async function Dashboard(props: {
 				...domainData.domainNotes,
 				...Object.values(domainData.pages).flat(),
 			];
-			// 最後に作成日時順にソートし直す
-			filteredItems.sort(
-				(a, b) =>
-					new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-			);
+			// 最後にピン留め → sort_order → 作成日時順にソートし直す
+			filteredItems.sort((a, b) => {
+				const noteA = a as Note;
+				const noteB = b as Note;
+
+				// 1. ピン留め (is_pinned) が true のものを優先
+				if (noteA.is_pinned !== noteB.is_pinned) {
+					return noteA.is_pinned ? -1 : 1;
+				}
+				// 2. sort_order が設定されている場合は小さい順（昇順）
+				if (noteA.sort_order !== noteB.sort_order) {
+					const orderA = noteA.sort_order ?? Number.MAX_SAFE_INTEGER;
+					const orderB = noteB.sort_order ?? Number.MAX_SAFE_INTEGER;
+					return orderA - orderB;
+				}
+				// 3. どちらも同じなら created_at の新しい順（降順）
+				return (
+					new Date(noteB.created_at).getTime() -
+					new Date(noteA.created_at).getTime()
+				);
+			});
 		}
 	}
 

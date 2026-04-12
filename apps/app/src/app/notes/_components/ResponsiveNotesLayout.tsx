@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -54,9 +54,9 @@ export function ResponsiveNotesLayout({
 	if (isDesktop) {
 		return (
 			<div className="flex h-screen overflow-hidden bg-white font-sans text-gray-900">
-				{leftNode}
-				{middleNode}
-				{rightNode}
+				<Fragment key="left">{leftNode}</Fragment>
+				<Fragment key="middle">{middleNode}</Fragment>
+				<Fragment key="right">{rightNode}</Fragment>
 			</div>
 		);
 	}

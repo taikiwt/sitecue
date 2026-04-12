@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import "highlight.js/styles/github.css";
 
 // Make sure to add highlight.js theme in globals.css or here
-// import "highlight.js/styles/github-dark.css"; 
+// import "highlight.js/styles/github-dark.css";
 
 interface MarkdownRendererProps {
 	content: string;
