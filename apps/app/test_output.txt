@@ -1,0 +1,15 @@
+$ vitest src/app/notes/_components/RightPaneDetail.test.tsx --run
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+[vite:react-swc] We recommend switching to `@vitejs/plugin-react` for improved performance as no swc plugins are used. More information at https://vite.dev/rolldown
+
+ RUN  v4.1.2 /home/iatik/dev/github.com/claude-3/sitecue/apps/app
+
+ ✓ src/app/notes/_components/RightPaneDetail.test.tsx (9 tests) 2414ms
+     ✓ should show edit metadata dialog and handle updates  537ms
+     ✓ should cleanse URL when saving with domain scope  696ms
+
+ Test Files  1 passed (1)
+      Tests  9 passed (9)
+   Start at  01:30:54
+   Duration  3.63s (transform 154ms, setup 172ms, import 475ms, tests 2.41s, environment 468ms)
+
