@@ -2,17 +2,30 @@
 
 import {
 	AlertTriangle,
+	Check,
+	CheckCircle2,
+	Clipboard,
 	Info,
 	Lightbulb,
+	MoreHorizontal,
 	MousePointerClick,
 	Pencil,
 	Pin,
 	Star,
+	Trash2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { NotesEditor } from "@/components/editor/NotesEditor";
+import { Button } from "@/components/ui/button";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -25,16 +38,27 @@ export function RightPaneDetail({ note, draft }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [isCopying, setIsCopying] = useState(false);
 	const [optimisticContent, setOptimisticContent] = useState<string | null>(
 		null,
 	);
+	const [optimisticResolved, setOptimisticResolved] = useState<boolean | null>(
+		null,
+	);
+	const [optimisticNoteType, setOptimisticNoteType] = useState<string | null>(
+		null,
+	);
+	const [optimisticScope, setOptimisticScope] = useState<string | null>(null);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
 		setIsEditing(false);
 		setOptimisticContent(null);
+		setOptimisticResolved(null);
+		setOptimisticNoteType(null);
+		setOptimisticScope(null);
 		setEditContent(note?.content || "");
-	}, [note?.content]);
+	}, [note?.content, note?.id]);
 
 	if (!note && !draft) {
 		return (
@@ -70,6 +94,15 @@ export function RightPaneDetail({ note, draft }: Props) {
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";
 	const id = note ? note.id : draft?.id || "";
+
+	const currentResolved =
+		optimisticResolved !== null
+			? optimisticResolved
+			: note?.is_resolved || false;
+	const currentNoteType =
+		optimisticNoteType !== null ? optimisticNoteType : note?.note_type || "info";
+	const currentScope =
+		optimisticScope !== null ? optimisticScope : note?.scope || "inbox";
 
 	const handleEdit = () => {
 		setEditContent(note?.content || "");
@@ -111,6 +144,39 @@ export function RightPaneDetail({ note, draft }: Props) {
 		}
 	};
 
+	const handleUpdateProperty = async (updates: Partial<Note>) => {
+		if (!note) return;
+
+		// Set optimistic states
+		if ("is_resolved" in updates) setOptimisticResolved(updates.is_resolved!);
+		if ("note_type" in updates) setOptimisticNoteType(updates.note_type!);
+		if ("scope" in updates) setOptimisticScope(updates.scope!);
+
+		try {
+			const supabase = createClient();
+			const { error } = await supabase
+				.from("sitecue_notes")
+				.update(updates)
+				.eq("id", note.id);
+
+			if (error) throw error;
+			router.refresh();
+		} catch (err) {
+			console.error("Failed to update note property:", err);
+			// Reset optimistic state on error
+			if ("is_resolved" in updates) setOptimisticResolved(null);
+			if ("note_type" in updates) setOptimisticNoteType(null);
+			if ("scope" in updates) setOptimisticScope(null);
+		}
+	};
+
+	const handleCopyAll = () => {
+		if (!content) return;
+		navigator.clipboard.writeText(content);
+		setIsCopying(true);
+		setTimeout(() => setIsCopying(false), 2000);
+	};
+
 	return (
 		<div className="flex-1 flex flex-col h-full bg-white overflow-y-auto">
 			<div className="p-8 max-w-3xl mx-auto w-full">
@@ -118,24 +184,33 @@ export function RightPaneDetail({ note, draft }: Props) {
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">
 							{note ? (
-								<span
-									className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${
-										note.note_type === "alert"
-											? "bg-rose-50 text-rose-500"
-											: note.note_type === "idea"
-												? "bg-amber-50 text-amber-500"
-												: "bg-blue-50 text-blue-500"
-									}`}
+								<button
+									type="button"
+									onClick={() =>
+										handleUpdateProperty({ is_resolved: !currentResolved })
+									}
+									className={cn(
+										"flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all hover:opacity-80 active:scale-95 cursor-pointer",
+										currentResolved
+											? "bg-green-50 text-green-600 border border-green-200"
+											: currentNoteType === "alert"
+												? "bg-rose-50 text-rose-500 border border-rose-100"
+												: currentNoteType === "idea"
+													? "bg-amber-50 text-amber-500 border border-amber-100"
+													: "bg-blue-50 text-blue-500 border border-blue-100",
+									)}
 								>
-									{note.note_type === "alert" ? (
+									{currentResolved ? (
+										<CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+									) : currentNoteType === "alert" ? (
 										<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-									) : note.note_type === "idea" ? (
+									) : currentNoteType === "idea" ? (
 										<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
 									) : (
 										<Info className="w-3.5 h-3.5" aria-hidden="true" />
 									)}
-									{note.note_type}
-								</span>
+									{currentResolved ? "Completed" : currentNoteType}
+								</button>
 							) : (
 								<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
 									{draft?.target_platform || "Draft"}
@@ -148,14 +223,113 @@ export function RightPaneDetail({ note, draft }: Props) {
 					</div>
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
-							<button
-								type="button"
-								onClick={handleEdit}
-								className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors flex items-center gap-1.5 cursor-pointer"
-							>
-								<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-								Edit
-							</button>
+							<>
+								<button
+									type="button"
+									onClick={handleCopyAll}
+									className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors rounded-md hover:bg-neutral-50 cursor-pointer"
+									title="Copy all content"
+								>
+									{isCopying ? (
+										<Check className="w-4 h-4 text-green-500" />
+									) : (
+										<Clipboard className="w-4 h-4" />
+									)}
+								</button>
+								<button
+									type="button"
+									onClick={handleEdit}
+									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm ml-1"
+								>
+									<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+									Edit
+								</button>
+
+								<Popover>
+									<PopoverTrigger
+										render={
+											<button
+												type="button"
+												className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors rounded-md hover:bg-neutral-50 cursor-pointer"
+												aria-label="More options"
+											>
+												<MoreHorizontal className="w-4 h-4" />
+											</button>
+										}
+									/>
+									<PopoverContent className="w-48 p-2" align="end">
+										<div className="space-y-3">
+											<div>
+												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+													Note Type
+												</div>
+												<div className="flex flex-col gap-1">
+													{["info", "idea", "alert"].map((type) => (
+														<button
+															key={type}
+															type="button"
+															onClick={() =>
+																handleUpdateProperty({ note_type: type })
+															}
+															className={cn(
+																"flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+																currentNoteType === type
+																	? "bg-neutral-100 text-neutral-900"
+																	: "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900",
+															)}
+														>
+															<div
+																className={cn(
+																	"w-1.5 h-1.5 rounded-full",
+																	type === "alert"
+																		? "bg-rose-500"
+																		: type === "idea"
+																			? "bg-amber-500"
+																			: "bg-blue-500",
+																)}
+															/>
+															<span className="capitalize">{type}</span>
+															{currentNoteType === type && (
+																<Check className="w-3 h-3 ml-auto" />
+															)}
+														</button>
+													))}
+												</div>
+											</div>
+
+											<div className="pt-2 border-t border-neutral-100">
+												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+													Scope
+												</div>
+												<div className="flex flex-col gap-1">
+													{["inbox", "domain", "exact"].map((scope) => (
+														<button
+															key={scope}
+															type="button"
+															onClick={() =>
+																handleUpdateProperty({
+																	scope: scope as Note["scope"],
+																})
+															}
+															className={cn(
+																"flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+																currentScope === scope
+																	? "bg-neutral-100 text-neutral-900"
+																	: "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900",
+															)}
+														>
+															<span className="capitalize">{scope}</span>
+															{currentScope === scope && (
+																<Check className="w-3 h-3 ml-auto" />
+															)}
+														</button>
+													))}
+												</div>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
+							</>
 						)}
 						{isEditing && (
 							<div className="flex items-center gap-2">
@@ -170,7 +344,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 								<button
 									type="button"
 									onClick={handleSave}
-									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors disabled:opacity-50 cursor-pointer"
+									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
 									disabled={isSaving}
 								>
 									{isSaving ? "Saving..." : "Save"}
@@ -229,12 +403,12 @@ export function RightPaneDetail({ note, draft }: Props) {
 					</div>
 				)}
 
-				<div className="prose prose-neutral max-w-none">
-					<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
+				<div className="space-y-4">
+					<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">
 						{note ? "Note Content" : "Draft Content"}
 					</div>
 					{isEditing ? (
-						<div className="relative mt-2">
+						<div className="relative">
 							{(() => {
 								const baseContent =
 									optimisticContent !== null
@@ -251,8 +425,8 @@ export function RightPaneDetail({ note, draft }: Props) {
 							})()}
 						</div>
 					) : (
-						<div className="prose prose-neutral max-w-none bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm min-h-50 whitespace-pre-wrap text-gray-800 leading-relaxed">
-							{content}
+						<div className="min-h-[200px] rounded-2xl">
+							<MarkdownRenderer content={content} />
 						</div>
 					)}
 				</div>
