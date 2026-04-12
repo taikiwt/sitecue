@@ -14,15 +14,41 @@ import {
 	Pin,
 	Star,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note } from "../types";
@@ -34,6 +60,7 @@ type Props = {
 
 export function RightPaneDetail({ note, draft }: Props) {
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
@@ -55,6 +82,27 @@ export function RightPaneDetail({ note, draft }: Props) {
 		null,
 	);
 	const [isCopyingUrl, setIsCopyingUrl] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isEditMetaDialogOpen, setIsEditMetaDialogOpen] = useState(false);
+	const [editUrl, setEditUrl] = useState(note?.url_pattern || "");
+	const [editScope, setEditScope] = useState<Note["scope"]>(
+		note?.scope || "inbox",
+	);
+
+	// Sync edit states when note changes
+	useEffect(() => {
+		if (note) {
+			setEditUrl(note.url_pattern || "");
+			setEditScope(note.scope || "inbox");
+		}
+	}, [note]);
+
+	// Force inbox scope if URL is empty
+	useEffect(() => {
+		if (editUrl === "" && editScope !== "inbox") {
+			setEditScope("inbox");
+		}
+	}, [editUrl, editScope]);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
@@ -111,7 +159,7 @@ export function RightPaneDetail({ note, draft }: Props) {
 		optimisticNoteType !== null
 			? optimisticNoteType
 			: note?.note_type || "info";
-	const currentScope =
+	const _currentScope =
 		optimisticScope !== null ? optimisticScope : note?.scope || "inbox";
 	const currentPinned =
 		optimisticPinned !== null ? optimisticPinned : note?.is_pinned || false;
@@ -190,6 +238,67 @@ export function RightPaneDetail({ note, draft }: Props) {
 			if ("scope" in updates) setOptimisticScope(null);
 			if ("is_pinned" in updates) setOptimisticPinned(null);
 			if ("is_favorite" in updates) setOptimisticFavorite(null);
+		}
+	};
+
+	const handleDeleteNote = async () => {
+		if (!note) return;
+		setIsSaving(true);
+		try {
+			const supabase = createClient();
+			const { error } = await supabase
+				.from("sitecue_notes")
+				.delete()
+				.eq("id", note.id);
+			if (error) throw error;
+			setIsDeleteDialogOpen(false);
+
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("noteId");
+			router.replace(`/notes?${params.toString()}`);
+			router.refresh();
+		} catch (err) {
+			console.error("Failed to delete note:", err);
+			alert("Failed to delete the note.");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const handleSaveMeta = async () => {
+		if (!note) return;
+		setIsSaving(true);
+		try {
+			let finalUrl = editUrl;
+			if (editScope === "inbox") {
+				finalUrl = "";
+			} else if (editScope === "domain" && finalUrl) {
+				try {
+					const urlObj = new URL(
+						finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`,
+					);
+					finalUrl = urlObj.hostname;
+				} catch (_e) {
+					// invalid URLの場合はそのままにする
+				}
+			}
+
+			const supabase = createClient();
+			const { error } = await supabase
+				.from("sitecue_notes")
+				.update({
+					url_pattern: finalUrl,
+					scope: editScope,
+				})
+				.eq("id", note.id);
+			if (error) throw error;
+			setIsEditMetaDialogOpen(false);
+			router.refresh();
+		} catch (err) {
+			console.error("Failed to save metadata:", err);
+			alert("Failed to save metadata.");
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -330,35 +439,30 @@ export function RightPaneDetail({ note, draft }: Props) {
 												</div>
 											</div>
 
+
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Scope
+													Actions
 												</div>
 												<div className="flex flex-col gap-1">
-													{["inbox", "domain", "exact"].map((scope) => (
-														<button
-															key={scope}
-															type="button"
-															onClick={() =>
-																handleUpdateProperty({
-																	scope: scope as Note["scope"],
-																})
-															}
-															className={cn(
-																"flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
-																currentScope === scope
-																	? "bg-neutral-100 text-neutral-900"
-																	: "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900",
-															)}
-														>
-															<span className="capitalize">
-																{scope === "exact" ? "page" : scope}
-															</span>
-															{currentScope === scope && (
-																<Check className="w-3 h-3 ml-auto" />
-															)}
-														</button>
-													))}
+													<button
+														type="button"
+														onClick={() => {
+															setEditUrl(note?.url_pattern || "");
+															setEditScope(note?.scope || "inbox");
+															setIsEditMetaDialogOpen(true);
+														}}
+														className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors cursor-pointer"
+													>
+														Edit Scope/URL
+													</button>
+													<button
+														type="button"
+														onClick={() => setIsDeleteDialogOpen(true)}
+														className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+													>
+														Delete Note
+													</button>
 												</div>
 											</div>
 										</div>
@@ -522,6 +626,106 @@ export function RightPaneDetail({ note, draft }: Props) {
 					</p>
 				</div>
 			</div>
+
+			<AlertDialog
+				open={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will permanently delete your
+							note and remove it from our servers.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(e) => {
+								e.preventDefault();
+								handleDeleteNote();
+							}}
+							className="bg-red-600 hover:bg-red-700"
+							disabled={isSaving}
+						>
+							{isSaving ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<Dialog
+				open={isEditMetaDialogOpen}
+				onOpenChange={setIsEditMetaDialogOpen}
+			>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>Edit Note Scope & URL</DialogTitle>
+					</DialogHeader>
+					<div className="grid gap-4 py-4">
+						<div className="grid items-center gap-2">
+							<Label htmlFor="url" className="text-xs font-bold uppercase">
+								Source URL
+							</Label>
+							<Input
+								id="url"
+								value={editUrl}
+								onChange={(e) => setEditUrl(e.target.value)}
+								placeholder="example.com/page"
+								className="col-span-3"
+								disabled={isSaving}
+							/>
+							<p className="text-[10px] text-neutral-400">
+								Leave empty to move this note to Inbox.
+							</p>
+						</div>
+						<div className="grid items-center gap-2">
+							<Label htmlFor="scope" className="text-xs font-bold uppercase">
+								Scope
+							</Label>
+							<Select
+								value={editScope}
+								onValueChange={(val: string | null) => {
+									if (val) setEditScope(val as Note["scope"]);
+								}}
+								disabled={isSaving}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="Select scope" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="exact" disabled={editUrl === ""}>
+										Page
+									</SelectItem>
+									<SelectItem value="domain" disabled={editUrl === ""}>
+										Domain
+									</SelectItem>
+									<SelectItem value="inbox">Inbox</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+					<DialogFooter>
+						<button
+							type="button"
+							onClick={() => setIsEditMetaDialogOpen(false)}
+							className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 disabled:opacity-50"
+							disabled={isSaving}
+						>
+							Cancel
+						</button>
+						<button
+							type="button"
+							onClick={handleSaveMeta}
+							className="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 disabled:opacity-50"
+							disabled={isSaving}
+						>
+							{isSaving ? "Saving..." : "Save changes"}
+						</button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }
