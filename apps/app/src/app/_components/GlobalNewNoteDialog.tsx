@@ -55,6 +55,13 @@ export default function GlobalNewNoteDialog() {
 		}
 	}, [isOpen, searchParams]);
 
+	// Reset state when modal opens to prevent flickering during close transition
+	useEffect(() => {
+		if (isOpen) {
+			setNoteType("info");
+		}
+	}, [isOpen]);
+
 	// Force inbox scope if URL is empty
 	useEffect(() => {
 		if (urlPattern === "" && scope !== "inbox") {
@@ -127,7 +134,6 @@ export default function GlobalNewNoteDialog() {
 			}
 
 			router.push(`/notes?${params.toString()}`);
-			setNoteType("info");
 			router.refresh();
 		} catch (err) {
 			console.error("Failed to save note:", err);
@@ -201,7 +207,7 @@ export default function GlobalNewNoteDialog() {
 									key={type}
 									type="button"
 									onClick={() => setNoteType(type as Note["note_type"])}
-									className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+									className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors cursor-pointer ${
 										noteType === type
 											? "bg-neutral-900 text-white"
 											: "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
