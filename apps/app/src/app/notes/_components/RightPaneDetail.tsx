@@ -65,6 +65,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 	const [isCopying, setIsCopying] = useState(false);
 	const [optimisticContent, setOptimisticContent] = useState<string | null>(
 		null,
@@ -238,7 +239,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						content: newContent,
 						scope: targetScope,
 						url_pattern: targetUrlPattern,
-						note_type: "info",
+						note_type: noteType,
 						user_id: user.id,
 						is_expanded: false,
 						is_favorite: false,
@@ -661,6 +662,27 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">
 						{note ? "Note Content" : "Draft Content"}
 					</div>
+					{isNewNote && (
+						<div className="grid items-center gap-2 mb-4">
+							<Label className="text-xs font-bold uppercase">Note Type</Label>
+							<div className="flex gap-2">
+								{(["info", "alert", "idea"] as const).map((type) => (
+									<button
+										key={type}
+										type="button"
+										onClick={() => setNoteType(type as Note["note_type"])}
+										className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+											noteType === type
+												? "bg-neutral-900 text-white"
+												: "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+										}`}
+									>
+										{type}
+									</button>
+								))}
+							</div>
+						</div>
+					)}
 					{isEditing ? (
 						<div className="relative">
 							{(() => {

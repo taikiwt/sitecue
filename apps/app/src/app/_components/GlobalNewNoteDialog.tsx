@@ -22,7 +22,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { createClient } from "@/utils/supabase/client";
-import type { NoteScope } from "../../../../../types/app";
+import type { Note, NoteScope } from "../../../../../types/app";
 
 export default function GlobalNewNoteDialog() {
 	const router = useRouter();
@@ -33,6 +33,7 @@ export default function GlobalNewNoteDialog() {
 	const [urlPattern, setUrlPattern] = useState("");
 	const [scope, setScope] = useState<NoteScope>("inbox");
 	const [isSaving, setIsSaving] = useState(false);
+	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 
 	// Load initial state from URL parameters
 	useEffect(() => {
@@ -96,7 +97,7 @@ export default function GlobalNewNoteDialog() {
 					content: content.trim(),
 					scope: scope,
 					url_pattern: finalUrl,
-					note_type: "info",
+					note_type: noteType,
 					user_id: user.id,
 					is_expanded: false,
 					is_favorite: false,
@@ -126,6 +127,7 @@ export default function GlobalNewNoteDialog() {
 			}
 
 			router.push(`/notes?${params.toString()}`);
+			setNoteType("info");
 			router.refresh();
 		} catch (err) {
 			console.error("Failed to save note:", err);
@@ -188,6 +190,26 @@ export default function GlobalNewNoteDialog() {
 									<SelectItem value="inbox">Inbox</SelectItem>
 								</SelectContent>
 							</Select>
+						</div>
+					</div>
+
+					<div className="grid items-center gap-2 mb-4">
+						<Label className="text-xs font-bold uppercase">Note Type</Label>
+						<div className="flex gap-2">
+							{(["info", "alert", "idea"] as const).map((type) => (
+								<button
+									key={type}
+									type="button"
+									onClick={() => setNoteType(type as Note["note_type"])}
+									className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+										noteType === type
+											? "bg-neutral-900 text-white"
+											: "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+									}`}
+								>
+									{type}
+								</button>
+							))}
 						</div>
 					</div>
 
