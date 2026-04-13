@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Copy, ExternalLink } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkBreaks from "remark-breaks";
@@ -11,6 +11,20 @@ import "highlight.js/styles/github.css";
 
 // Make sure to add highlight.js theme in globals.css or here
 // import "highlight.js/styles/github-dark.css";
+
+// Helper to extract text from React nodes (recursively)
+const extractText = (node: React.ReactNode): string => {
+	if (typeof node === "string" || typeof node === "number") {
+		return String(node);
+	}
+	if (Array.isArray(node)) {
+		return node.map(extractText).join("");
+	}
+	if (React.isValidElement(node)) {
+		return extractText((node.props as { children?: React.ReactNode }).children);
+	}
+	return "";
+};
 
 interface MarkdownRendererProps {
 	content: string;
@@ -70,7 +84,8 @@ export default function MarkdownRenderer({
 						}
 
 						// Block Code
-						const codeString = String(children).replace(/\n$/, "");
+						const rawText = extractText(children);
+						const codeString = rawText.replace(/\n$/, "");
 						const uniqueId = Math.random().toString(36).substring(2, 9);
 						const isCopied = copiedCodeId === uniqueId;
 
