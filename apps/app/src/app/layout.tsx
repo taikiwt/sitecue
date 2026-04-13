@@ -17,6 +17,9 @@ export const metadata: Metadata = {
 	description: "The simplest context-aware notepad for your browser.",
 };
 
+import { Suspense } from "react";
+import GlobalNewNoteDialog from "./_components/GlobalNewNoteDialog";
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -27,6 +30,9 @@ export default function RootLayout({
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
+				<Suspense fallback={null}>
+					<GlobalNewNoteDialog />
+				</Suspense>
 				{children}
 			</body>
 		</html>
