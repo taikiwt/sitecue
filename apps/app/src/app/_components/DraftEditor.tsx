@@ -41,7 +41,9 @@ export default function DraftEditor({
 	const activePane = searchParams.get("pane") || "review";
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 
-	const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
+		"idle",
+	);
 	const [savedState, setSavedState] = useState({
 		content: initialDraft?.content || "",
 		title: initialDraft?.title || "",
@@ -390,7 +392,8 @@ export default function DraftEditor({
 					router.push(`/studio/${data.id}`);
 				}
 			}
-			setStatus("idle");
+			setStatus("success");
+			setTimeout(() => setStatus("idle"), 2000);
 		} catch (error) {
 			console.error("Failed to save draft:", error);
 			alert("Failed to save the draft. Check the console for details.");
@@ -446,11 +449,23 @@ export default function DraftEditor({
 
 						<Button
 							onClick={handleSave}
-							disabled={status === "saving"}
+							disabled={status === "saving" || status === "success"}
 							size="sm"
 							className="w-24 rounded-full"
 						>
-							{status === "saving" ? "Saving..." : "Save"}
+							{status === "saving" ? (
+								"Saving..."
+							) : status === "success" ? (
+								<span className="flex items-center gap-1">
+									<Check
+										className="w-4 h-4 text-green-500"
+										aria-hidden="true"
+									/>
+									Saved
+								</span>
+							) : (
+								"Save"
+							)}
 						</Button>
 					</div>
 				</header>
