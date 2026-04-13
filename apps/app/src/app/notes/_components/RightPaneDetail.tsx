@@ -671,7 +671,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 										key={type}
 										type="button"
 										onClick={() => setNoteType(type as Note["note_type"])}
-										className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+										className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors cursor-pointer ${
 											noteType === type
 												? "bg-neutral-900 text-white"
 												: "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
