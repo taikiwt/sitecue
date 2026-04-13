@@ -1,6 +1,7 @@
 "use client";
 
 import { Crown, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface PaywallModalProps {
 	isOpen: boolean;
@@ -19,14 +20,15 @@ export default function PaywallModal({
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/30 backdrop-blur-sm animate-in fade-in duration-200">
 			<div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
 				<div className="relative p-8 text-center text-neutral-900">
-					<button
-						type="button"
+					<Button
+						variant="ghost"
+						size="icon"
 						onClick={onClose}
 						aria-label="Close modal"
-						className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-neutral-900 transition-colors cursor-pointer"
+						className="absolute top-4 right-4 text-neutral-400"
 					>
 						<X size={20} />
-					</button>
+					</Button>
 
 					<div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-amber-50 text-amber-500">
 						<Crown size={32} />
@@ -43,19 +45,19 @@ export default function PaywallModal({
 					</p>
 
 					<div className="flex flex-col gap-3">
-						<button
-							type="button"
-							className="w-full rounded-2xl bg-neutral-900 py-4 text-sm font-bold text-white transition-all hover:bg-neutral-800 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+						<Button
+							variant="default"
+							className="w-full rounded-2xl py-6 text-sm font-bold"
 						>
 							Upgrade to Pro
-						</button>
-						<button
-							type="button"
+						</Button>
+						<Button
+							variant="outline"
 							onClick={onClose}
-							className="w-full rounded-2xl bg-white border border-neutral-200 py-4 text-sm font-bold text-neutral-600 transition-all hover:bg-neutral-50 cursor-pointer"
+							className="w-full rounded-2xl py-6 text-sm font-bold text-neutral-600"
 						>
 							Maybe Later
-						</button>
+						</Button>
 					</div>
 				</div>
 

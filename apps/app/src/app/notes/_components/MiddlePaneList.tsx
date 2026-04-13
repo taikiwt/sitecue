@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { CustomLink as Link } from "@/components/ui/custom-link";
 import { Button } from "@/components/ui/button";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";

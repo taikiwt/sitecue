@@ -4,7 +4,9 @@ import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StudioEditor } from "@/components/editor/StudioEditor";
+import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+
 import {
 	Drawer,
 	DrawerContent,
@@ -408,14 +410,15 @@ export default function DraftEditor({
 			<div className="flex flex-1 flex-col overflow-hidden border-r border-neutral-200 bg-white">
 				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
 					<div className="flex items-center gap-4">
-						<button
-							type="button"
+						<Button
+							variant="ghost"
+							size="icon"
 							onClick={handleBack}
-							className="cursor-pointer text-neutral-400 hover:text-neutral-900 transition-colors p-1 -ml-2"
+							className="text-neutral-400 -ml-2"
 							aria-label="Go back"
 						>
 							<ArrowLeft className="w-5 h-5" aria-hidden="true" />
-						</button>
+						</Button>
 						<Link
 							href="/"
 							className="text-xl font-bold tracking-tight text-neutral-900 transition-colors hover:text-neutral-500 cursor-pointer block"
@@ -441,16 +444,14 @@ export default function DraftEditor({
 							onRedo={handleRedo}
 						/>
 
-						<button
-							type="button"
+						<Button
 							onClick={handleSave}
 							disabled={status === "saving"}
-							className={`rounded-full bg-neutral-900 px-6 py-1.5 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer ${
-								status === "saving" ? "opacity-50 cursor-not-allowed" : ""
-							}`}
+							size="sm"
+							className="rounded-full px-6"
 						>
 							{status === "saving" ? "Saving..." : "Save"}
-						</button>
+						</Button>
 					</div>
 				</header>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { Redo2, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface UndoRedoControlsProps {
 	canUndo: boolean;
@@ -17,32 +18,26 @@ export default function UndoRedoControls({
 }: UndoRedoControlsProps) {
 	return (
 		<div className="flex items-center gap-1 border-x border-neutral-100 px-4">
-			<button
-				type="button"
+			<Button
+				variant="ghost"
+				size="icon"
 				onClick={onUndo}
 				disabled={!canUndo}
 				title="Undo (Ctrl+Z)"
-				className={`rounded p-1.5 transition-colors ${
-					canUndo
-						? "text-neutral-600 hover:bg-neutral-100 cursor-pointer"
-						: "text-neutral-300 cursor-not-allowed"
-				}`}
+				className="h-8 w-8"
 			>
 				<Undo2 size={18} aria-hidden="true" />
-			</button>
-			<button
-				type="button"
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon"
 				onClick={onRedo}
 				disabled={!canRedo}
 				title="Redo (Ctrl+Y)"
-				className={`rounded p-1.5 transition-colors ${
-					canRedo
-						? "text-neutral-600 hover:bg-neutral-100 cursor-pointer"
-						: "text-neutral-300 cursor-not-allowed"
-				}`}
+				className="h-8 w-8"
 			>
 				<Redo2 size={18} aria-hidden="true" />
-			</button>
+			</Button>
 		</div>
 	);
 }
