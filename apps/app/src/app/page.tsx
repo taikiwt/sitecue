@@ -14,6 +14,8 @@ import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
 
 import { UserMenu } from "./_components/UserMenu";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function LaunchpadPage() {
 	const supabase = await createClient();
@@ -100,7 +102,7 @@ export default async function LaunchpadPage() {
 						</h2>
 						<Link
 							href="/?globalNew=note"
-							className="ml-auto flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 transition-colors w-max text-sm font-medium"
+							className={cn(buttonVariants({ variant: "default", size: "sm" }), "ml-auto w-max")}
 						>
 							<Plus className="w-4 h-4" />
 							New Note
