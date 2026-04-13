@@ -7,6 +7,7 @@ import {
 	Globe,
 	Inbox,
 	PenSquare,
+	Plus,
 	Search,
 } from "lucide-react";
 import Image from "next/image";
@@ -54,6 +55,13 @@ export function LeftPaneNavigation({
 		},
 	);
 
+	const newNoteParams = new URLSearchParams();
+	if (currentView) newNoteParams.set("view", currentView);
+	if (currentDomain) newNoteParams.set("domain", currentDomain);
+	if (currentExact) newNoteParams.set("exact", currentExact);
+	newNoteParams.set("new", "note");
+	const newNoteHref = `/notes?${newNoteParams.toString()}`;
+
 	return (
 		<div className="flex flex-col h-full bg-gray-50 border-r border-gray-200 w-72 overflow-hidden">
 			<div className="p-4 border-b border-gray-200 bg-white">
@@ -88,6 +96,14 @@ export function LeftPaneNavigation({
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
 				</div>
+
+				<Link
+					href={newNoteHref}
+					className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer"
+				>
+					<Plus className="w-4 h-4" aria-hidden="true" />
+					New Note
+				</Link>
 			</div>
 
 			<nav className="flex-1 py-4 overflow-y-auto">

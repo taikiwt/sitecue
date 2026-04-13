@@ -15,3 +15,12 @@ export type GroupedNotes = {
 	drafts: Draft[];
 	domains: Record<string, DomainGroup>;
 };
+
+export type SearchParams = {
+	view?: "inbox" | "drafts" | "domains";
+	domain?: string;
+	exact?: string;
+	noteId?: string;
+	draftId?: string;
+	new?: string;
+};

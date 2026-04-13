@@ -22,6 +22,10 @@ type SupabaseMock = {
 	update: Mock;
 	delete: Mock;
 	eq: Mock;
+	auth: { getUser: Mock };
+	insert: Mock;
+	select: Mock;
+	single: Mock;
 };
 
 type Mock = ReturnType<typeof vi.fn>;
@@ -64,6 +68,24 @@ vi.mock("@/utils/supabase/client", () => ({
 	createClient: vi.fn(),
 }));
 
+vi.mock("@/components/editor/NotesEditor", () => ({
+	NotesEditor: ({
+		value,
+		onChange,
+		placeholder,
+	}: {
+		value: string;
+		onChange: (v: string) => void;
+		placeholder: string;
+	}) => (
+		<textarea
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			placeholder={placeholder}
+		/>
+	),
+}));
+
 // Setup MSW server for this test
 const server = setupServer();
 
@@ -85,6 +107,15 @@ describe("RightPaneDetail Component Phase 1 Improvements", () => {
 			update: vi.fn().mockReturnThis(),
 			delete: vi.fn().mockReturnThis(),
 			eq: vi.fn().mockResolvedValue({ error: null }),
+			auth: {
+				getUser: vi.fn().mockResolvedValue({
+					data: { user: { id: "test-user" } },
+					error: null,
+				}),
+			},
+			insert: vi.fn().mockReturnThis(),
+			select: vi.fn().mockReturnThis(),
+			single: vi.fn().mockResolvedValue({ data: {}, error: null }),
 		} as unknown as SupabaseMock;
 		vi.mocked(createClient).mockReturnValue(
 			supabaseMock as unknown as ReturnType<typeof createClient>,
@@ -324,5 +355,66 @@ describe("RightPaneDetail Component Phase 1 Improvements", () => {
 				scope: "inbox",
 			}),
 		);
+	});
+
+	it("should render empty editor when isNewNote is true and handle save via insert", async () => {
+		const user = userEvent.setup();
+		const getUserMock = vi.fn().mockResolvedValue({
+			data: { user: { id: "test-user-id" } },
+			error: null,
+		});
+		const insertMock = vi.fn().mockReturnThis();
+		const selectMock = vi.fn().mockReturnThis();
+		const singleMock = vi.fn().mockResolvedValue({
+			data: { id: "new-note-id" },
+			error: null,
+		});
+
+		// Setup Supabase mock for this specific test
+		supabaseMock.auth.getUser = getUserMock;
+		supabaseMock.insert = insertMock;
+		supabaseMock.select = selectMock;
+		supabaseMock.single = singleMock;
+
+		render(<RightPaneDetail isNewNote={true} />);
+
+		// Verify editor is in editing mode and empty
+		const editor = screen.getByPlaceholderText(/What's on your mind\?/i);
+		expect(editor).toBeInTheDocument();
+		expect(editor).toHaveValue("");
+
+		// Type content
+		await user.type(editor, "New note content via insert");
+
+		// Click Save
+		const saveButton = screen.getByText(/^Save$/);
+		await user.click(saveButton);
+
+		// Verify insert call
+		expect(insertMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				content: "New note content via insert",
+				scope: "inbox",
+				user_id: "test-user-id",
+			}),
+		);
+		// Note: The mock `useSearchParams` returns "filter=all&sort=newest"
+		expect(replaceMock).toHaveBeenCalledWith(
+			"/notes?filter=all&sort=newest&noteId=new-note-id",
+		);
+		expect(refreshMock).toHaveBeenCalled();
+	});
+
+	it("should remove 'new' parameter when cancelling a new note", async () => {
+		const user = userEvent.setup();
+		// The search params in mock are already filter=all&sort=newest
+		render(<RightPaneDetail isNewNote={true} />);
+
+		const cancelButton = screen.getByText(/Cancel/i);
+		await user.click(cancelButton);
+
+		// Should preserve existing params and implicitly remove 'new' if it was added to the params
+		// (In this mock setup, searchParams doesn't have 'new', so it remains the same)
+		expect(replaceMock).toHaveBeenCalledWith("/notes?filter=all&sort=newest");
 	});
 });

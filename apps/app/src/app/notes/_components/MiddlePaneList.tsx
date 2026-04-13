@@ -18,11 +18,14 @@ import { CSS } from "@dnd-kit/utilities";
 import {
 	AlertTriangle,
 	ArrowLeft,
+	CheckSquare,
 	GripVertical,
 	Inbox,
 	Info,
 	Lightbulb,
 	MapPin,
+	Plus,
+	Trash2,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -70,18 +73,22 @@ const getNoteTypeStyles = (type: string | null) => {
 	}
 };
 
-export function MiddlePaneList({
-	items,
-	currentView,
-	currentDomain,
-	currentExact,
-	selectedNoteId,
-	selectedDraftId,
-}: Props) {
+export function MiddlePaneList(props: Props) {
+	const {
+		items,
+		currentView,
+		currentDomain,
+		currentExact,
+		selectedNoteId,
+		selectedDraftId,
+	} = props;
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const supabase = createClient();
 	const [localItems, setLocalItems] = useState<(Note | Draft)[]>(items);
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+	const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+	const [isSelectMode, setIsSelectMode] = useState(false);
 
 	useEffect(() => {
 		// Ensure items have an id and are unique to prevent key warnings and dnd-kit crashes
@@ -91,6 +98,13 @@ export function MiddlePaneList({
 		);
 		setLocalItems(uniqueItems);
 	}, [items]);
+
+	// Reset Select Mode and selection state when category changes
+	useEffect(() => {
+		const _unused = { currentView, currentDomain, currentExact };
+		setIsSelectMode(false);
+		setSelectedIds(new Set());
+	}, [currentView, currentDomain, currentExact]);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -152,20 +166,100 @@ export function MiddlePaneList({
 		}
 	};
 
+	const handleDeleteSelected = async () => {
+		if (selectedIds.size === 0) return;
+		setIsDeletingBulk(true);
+		try {
+			const { error } = await supabase
+				.from("sitecue_notes")
+				.delete()
+				.in("id", Array.from(selectedIds));
+
+			if (error) throw error;
+
+			setSelectedIds(new Set());
+			router.refresh();
+		} catch (err) {
+			console.error("Failed to delete selected notes:", err);
+			alert("Failed to delete selected notes.");
+		} finally {
+			setIsDeletingBulk(false);
+		}
+	};
+
+	const toggleSelect = (id: string, checked: boolean) => {
+		const newSelected = new Set(selectedIds);
+		if (checked) {
+			newSelected.add(id);
+		} else {
+			newSelected.delete(id);
+		}
+		setSelectedIds(newSelected);
+	};
+
 	return (
 		<div className="flex flex-col h-full bg-white border-r border-gray-200 w-96">
 			<div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-				<h2
-					className="text-lg font-bold text-gray-900 truncate"
-					title={getTitle()}
-				>
-					{getTitle()}
-				</h2>
-				<p className="text-xs text-gray-500 mt-1">
-					{isSelected
-						? `${items.length} ${currentView === "drafts" ? "drafts" : "notes"}`
-						: "Waiting for selection"}
-				</p>
+				<div className="flex items-center justify-between">
+					<h2
+						className="text-lg font-bold text-gray-900 truncate"
+						title={getTitle()}
+					>
+						{getTitle()}
+					</h2>
+					<div className="flex items-center gap-1">
+						<Link
+							href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
+							className="p-1.5 text-neutral-400 hover:text-neutral-900 rounded-md hover:bg-neutral-100 transition-colors"
+							title="New Note here"
+						>
+							<Plus className="w-4 h-4" />
+						</Link>
+						<button
+							type="button"
+							onClick={() => {
+								setIsSelectMode(!isSelectMode);
+								if (!isSelectMode === false) setSelectedIds(new Set());
+							}}
+							className={`p-1.5 rounded-md transition-colors cursor-pointer ${isSelectMode ? "bg-neutral-200 text-neutral-900" : "text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100"}`}
+							title="Select Mode"
+						>
+							<CheckSquare className="w-4 h-4" />
+						</button>
+					</div>
+				</div>
+				{selectedIds.size > 0 ? (
+					<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+						<span className="text-xs font-semibold text-neutral-900">
+							{selectedIds.size} selected
+						</span>
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={() => setSelectedIds(new Set())}
+								className="text-xs text-neutral-500 hover:text-neutral-900 font-medium transition-colors cursor-pointer"
+								disabled={isDeletingBulk}
+							>
+								Cancel
+							</button>
+							<button
+								type="button"
+								onClick={handleDeleteSelected}
+								className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-md text-xs font-bold hover:bg-red-100 transition-colors cursor-pointer"
+								disabled={isDeletingBulk}
+							>
+								<Trash2 className="w-3 h-3" aria-hidden="true" />
+								{isDeletingBulk ? "Deleting..." : "Delete"}
+							</button>
+						</div>
+					</div>
+				) : (
+					<p className="text-xs text-gray-500 mt-1">
+						{isSelected
+							? `${items.length} ${currentView === "drafts" ? "drafts" : "notes"}`
+							: "Waiting for selection"}
+					</p>
+				)}
 			</div>
 
 			<div className="flex-1 overflow-y-auto">
@@ -195,6 +289,7 @@ export function MiddlePaneList({
 									selectedNoteId={selectedNoteId}
 									selectedDraftId={selectedDraftId}
 									searchParams={searchParams}
+									selectable={false}
 								/>
 							))
 						) : (
@@ -217,6 +312,9 @@ export function MiddlePaneList({
 											selectedNoteId={selectedNoteId}
 											selectedDraftId={selectedDraftId}
 											searchParams={searchParams}
+											selectable={currentView !== "drafts" && isSelectMode}
+											isSelected={selectedIds.has(item.id)}
+											onSelectChange={toggleSelect}
 										/>
 									))}
 								</SortableContext>
@@ -248,6 +346,9 @@ function NoteItem({
 	searchParams,
 	isSortable = false,
 	dragHandleProps = {},
+	selectable = false,
+	isSelected = false,
+	onSelectChange,
 }: {
 	item: Note | Draft;
 	currentExact: string | null;
@@ -256,6 +357,9 @@ function NoteItem({
 	searchParams: URLSearchParams;
 	isSortable?: boolean;
 	dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
+	selectable?: boolean;
+	isSelected?: boolean;
+	onSelectChange?: (id: string, checked: boolean) => void;
 }) {
 	const isNote = "note_type" in item;
 	const isActive = isNote
@@ -277,20 +381,37 @@ function NoteItem({
 				isActive ? "bg-neutral-100" : "hover:bg-neutral-50"
 			}`}
 		>
-			{isSortable && isNote && (
-				<button
-					type="button"
-					{...dragHandleProps}
-					style={{ touchAction: "none" }}
-					className="absolute left-2 top-0 bottom-0 flex items-center justify-center px-1 text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-20"
-					aria-label="Drag to reorder"
-				>
-					<GripVertical className="w-4 h-4" aria-hidden="true" />
-				</button>
-			)}
+			{/* Left Action Area (DnD & Checkbox) */}
+			<div className="flex items-center pl-2 shrink-0">
+				{isSortable && isNote && (
+					<button
+						type="button"
+						{...dragHandleProps}
+						style={{ touchAction: "none" }}
+						className="flex items-center justify-center p-1 text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+						aria-label="Drag to reorder"
+					>
+						<GripVertical className="w-4 h-4" aria-hidden="true" />
+					</button>
+				)}
+				{!isSortable && isNote && <div className="w-6" />}
+
+				{selectable && (
+					<div className="flex items-center justify-center px-1">
+						<input
+							type="checkbox"
+							checked={isSelected}
+							onChange={(e) => onSelectChange?.(item.id, e.target.checked)}
+							onPointerDown={(e) => e.stopPropagation()}
+							className="w-4 h-4 cursor-pointer accent-neutral-900"
+						/>
+					</div>
+				)}
+			</div>
+
 			<Link
 				href={`/notes?${params.toString()}`}
-				className="flex-1 block p-4 pl-8 md:pl-10"
+				className="flex-1 block py-4 pr-4 pl-2"
 			>
 				<div className="flex justify-between items-start mb-1">
 					{isNote ? (
@@ -338,6 +459,9 @@ function SortableNoteItem({
 	selectedNoteId,
 	selectedDraftId,
 	searchParams,
+	selectable,
+	isSelected,
+	onSelectChange,
 }: {
 	item: Note | Draft;
 	currentView: string | null;
@@ -345,6 +469,9 @@ function SortableNoteItem({
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
 	searchParams: URLSearchParams;
+	selectable?: boolean;
+	isSelected?: boolean;
+	onSelectChange?: (id: string, checked: boolean) => void;
 }) {
 	const {
 		setNodeRef,
@@ -374,6 +501,9 @@ function SortableNoteItem({
 				searchParams={searchParams}
 				isSortable={currentView !== "drafts"}
 				dragHandleProps={{ ...attributes, ...listeners }}
+				selectable={selectable}
+				isSelected={isSelected}
+				onSelectChange={onSelectChange}
 			/>
 		</div>
 	);
