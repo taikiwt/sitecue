@@ -203,18 +203,16 @@ export default function GlobalNewNoteDialog() {
 						<Label className="text-xs font-bold uppercase">Note Type</Label>
 						<div className="flex gap-2">
 							{(["info", "alert", "idea"] as const).map((type) => (
-								<button
+								<Button
 									key={type}
 									type="button"
+									variant={noteType === type ? "default" : "secondary"}
+									size="sm"
 									onClick={() => setNoteType(type as Note["note_type"])}
-									className={`px-3 py-1.5 text-sm font-medium rounded-md capitalize transition-colors cursor-pointer ${
-										noteType === type
-											? "bg-neutral-900 text-white"
-											: "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
-									}`}
+									className="capitalize cursor-pointer"
 								>
 									{type}
-								</button>
+								</Button>
 							))}
 						</div>
 					</div>
