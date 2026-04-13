@@ -56,9 +56,10 @@ import type { Draft, Note } from "../types";
 type Props = {
 	note?: Note;
 	draft?: Draft;
+	isNewNote?: boolean;
 };
 
-export function RightPaneDetail({ note, draft }: Props) {
+export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
@@ -97,6 +98,14 @@ export function RightPaneDetail({ note, draft }: Props) {
 		}
 	}, [note]);
 
+	// Initialize state for new notes
+	useEffect(() => {
+		if (isNewNote) {
+			setIsEditing(true);
+			setEditContent("");
+		}
+	}, [isNewNote]);
+
 	// Force inbox scope if URL is empty
 	useEffect(() => {
 		if (editUrl === "" && editScope !== "inbox") {
@@ -114,9 +123,13 @@ export function RightPaneDetail({ note, draft }: Props) {
 		setOptimisticPinned(null);
 		setOptimisticFavorite(null);
 		setEditContent(note?.content || "");
-	}, [note?.content]);
+		if (isNewNote) {
+			setIsEditing(true);
+			setEditContent("");
+		}
+	}, [note?.content, isNewNote]);
 
-	if (!note && !draft) {
+	if (!note && !draft && !isNewNote) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-8">
 				<MousePointerClick
@@ -174,33 +187,88 @@ export function RightPaneDetail({ note, draft }: Props) {
 	};
 
 	const handleCancel = () => {
-		setIsEditing(false);
-		setEditContent(note?.content || "");
+		if (isNewNote) {
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("new");
+			router.replace(`/notes?${params.toString()}`);
+		} else {
+			setIsEditing(false);
+			setEditContent(note?.content || "");
+		}
 	};
 
 	const handleSave = async () => {
-		if (!note) return;
+		if (!note && !isNewNote) return;
 
 		setIsSaving(true);
 		const newContent = editContent.trim();
 
 		// Optimistic update
-		setOptimisticContent(newContent);
+		if (note) {
+			setOptimisticContent(newContent);
+		}
 		setIsEditing(false);
 
 		try {
 			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ content: newContent })
-				.eq("id", note.id);
 
-			if (error) throw error;
+			if (isNewNote) {
+				const {
+					data: { user },
+				} = await supabase.auth.getUser();
+				if (!user) throw new Error("User not authenticated");
 
-			router.refresh();
+				const exactParam = searchParams.get("exact");
+				const domainParam = searchParams.get("domain");
+
+				let targetScope: Note["scope"] = "inbox";
+				let targetUrlPattern = "";
+
+				if (exactParam) {
+					targetScope = "exact";
+					targetUrlPattern = exactParam;
+				} else if (domainParam && domainParam !== "inbox") {
+					targetScope = "domain";
+					targetUrlPattern = domainParam;
+				}
+
+				const { data, error } = await supabase
+					.from("sitecue_notes")
+					.insert({
+						content: newContent,
+						scope: targetScope,
+						url_pattern: targetUrlPattern,
+						note_type: "info",
+						user_id: user.id,
+						is_expanded: false,
+						is_favorite: false,
+						is_pinned: false,
+						is_resolved: false,
+						sort_order: 0,
+					})
+					.select()
+					.single();
+
+				if (error) throw error;
+
+				setOptimisticContent(newContent);
+				const params = new URLSearchParams(searchParams.toString());
+				params.delete("new");
+				params.set("noteId", data.id);
+				router.replace(`/notes?${params.toString()}`);
+				router.refresh();
+			} else if (note) {
+				const { error } = await supabase
+					.from("sitecue_notes")
+					.update({ content: newContent })
+					.eq("id", note.id);
+
+				if (error) throw error;
+				router.refresh();
+			}
 		} catch (err) {
-			console.error("Failed to update note:", err);
-			alert("Failed to update the note.");
+			console.error("Failed to save note:", err);
+			alert("Failed to save the note.");
 			setOptimisticContent(null);
 			setIsEditing(true);
 		} finally {
@@ -438,7 +506,6 @@ export function RightPaneDetail({ note, draft }: Props) {
 													))}
 												</div>
 											</div>
-
 
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">

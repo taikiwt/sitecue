@@ -5,15 +5,7 @@ import { LeftPaneNavigation } from "./_components/LeftPaneNavigation";
 import { MiddlePaneList } from "./_components/MiddlePaneList";
 import { ResponsiveNotesLayout } from "./_components/ResponsiveNotesLayout";
 import { RightPaneDetail } from "./_components/RightPaneDetail";
-import type { Draft, GroupedNotes, Note } from "./types";
-
-type SearchParams = {
-	view?: "inbox" | "drafts" | "domains";
-	domain?: string;
-	exact?: string;
-	noteId?: string;
-	draftId?: string;
-};
+import type { Draft, GroupedNotes, Note, SearchParams } from "./types";
 
 function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
 	const grouped: GroupedNotes = {
@@ -57,6 +49,7 @@ export default async function Dashboard(props: {
 }) {
 	const searchParams = await props.searchParams;
 	const { domain, exact } = searchParams;
+	const isNewNote = searchParams.new === "note";
 
 	const supabase = await createClient();
 
@@ -170,7 +163,13 @@ export default async function Dashboard(props: {
 					selectedDraftId={searchParams.draftId ?? null}
 				/>
 			}
-			rightNode={<RightPaneDetail note={selectedNote} draft={selectedDraft} />}
+			rightNode={
+				<RightPaneDetail
+					note={selectedNote}
+					draft={selectedDraft}
+					isNewNote={isNewNote}
+				/>
+			}
 		/>
 	);
 }
