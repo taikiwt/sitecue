@@ -243,6 +243,7 @@ export default function GlobalNewNoteDialog() {
 					</Button>
 					<Button
 						type="button"
+						variant="default"
 						onClick={handleSave}
 						disabled={isSaving || !content.trim()}
 						className="min-w-[100px]"

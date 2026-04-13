@@ -2,6 +2,7 @@
 
 import { ExternalLink, Plus, Trash2, X } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
 import type { PinnedSite } from "../../../../../types/app";
 import { addPinnedSite, deletePinnedSite } from "../_actions/pinned-sites";
 
@@ -81,10 +82,12 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 						Pinned Sites
 					</h2>
 				</div>
-				<button
+				<Button
 					type="button"
+					variant="ghost"
+					size="sm"
 					onClick={() => setIsAdding(!isAdding)}
-					className="flex items-center gap-1 text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+					className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
 					aria-label={isAdding ? "Close add form" : "Add pinned site"}
 				>
 					{isAdding ? (
@@ -96,7 +99,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							<Plus className="w-4 h-4" /> Add Site
 						</>
 					)}
-				</button>
+				</Button>
 			</div>
 
 			{isAdding && (
@@ -139,13 +142,13 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 						</div>
 					</div>
 					<div className="mt-6 flex justify-end">
-						<button
+						<Button
 							type="submit"
 							disabled={isPending}
-							className="rounded-full bg-neutral-900 px-6 py-2 text-sm font-semibold text-white transition-all hover:bg-neutral-500 disabled:opacity-50 cursor-pointer"
+							className="rounded-full px-6"
 						>
 							{isPending ? "Adding..." : "Add Pinned Site"}
-						</button>
+						</Button>
 					</div>
 				</form>
 			)}
@@ -167,15 +170,17 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							<div className="rounded-lg bg-neutral-50 p-2 group-hover:bg-neutral-100 transition-colors">
 								<ExternalLink className="w-4 h-4 text-neutral-600" />
 							</div>
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="icon-sm"
 								onClick={() => handleDelete(site.id)}
 								disabled={isPending}
-								className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-red-600 transition-all cursor-pointer"
+								className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
 								title="Delete"
 							>
 								<Trash2 className="w-4 h-4" />
-							</button>
+							</Button>
 						</div>
 						<a
 							href={site.url}
