@@ -30,6 +30,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
@@ -215,17 +216,19 @@ export function MiddlePaneList(props: Props) {
 						>
 							<Plus className="w-4 h-4" />
 						</Link>
-						<button
+						<Button
 							type="button"
+							variant={isSelectMode ? "secondary" : "ghost"}
+							size="icon-sm"
 							onClick={() => {
 								setIsSelectMode(!isSelectMode);
 								if (!isSelectMode === false) setSelectedIds(new Set());
 							}}
-							className={`p-1.5 rounded-md transition-colors cursor-pointer ${isSelectMode ? "bg-neutral-200 text-neutral-900" : "text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100"}`}
+							className="transition-colors cursor-pointer"
 							title="Select Mode"
 						>
 							<CheckSquare className="w-4 h-4" />
-						</button>
+						</Button>
 					</div>
 				</div>
 				{selectedIds.size > 0 ? (
@@ -234,23 +237,27 @@ export function MiddlePaneList(props: Props) {
 							{selectedIds.size} selected
 						</span>
 						<div className="flex items-center gap-2">
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="sm"
 								onClick={() => setSelectedIds(new Set())}
-								className="text-xs text-neutral-500 hover:text-neutral-900 font-medium transition-colors cursor-pointer"
+								className="text-neutral-500 hover:text-neutral-900 font-medium cursor-pointer"
 								disabled={isDeletingBulk}
 							>
 								Cancel
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
+								variant="destructive"
+								size="sm"
 								onClick={handleDeleteSelected}
-								className="flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 rounded-md text-xs font-bold hover:bg-red-100 transition-colors cursor-pointer"
+								className="flex items-center gap-1.5 font-bold cursor-pointer"
 								disabled={isDeletingBulk}
 							>
 								<Trash2 className="w-3 h-3" aria-hidden="true" />
 								{isDeletingBulk ? "Deleting..." : "Delete"}
-							</button>
+							</Button>
 						</div>
 					</div>
 				) : (
