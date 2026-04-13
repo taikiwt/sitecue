@@ -59,7 +59,7 @@ export function LeftPaneNavigation({
 	if (currentView) newNoteParams.set("view", currentView);
 	if (currentDomain) newNoteParams.set("domain", currentDomain);
 	if (currentExact) newNoteParams.set("exact", currentExact);
-	newNoteParams.set("new", "note");
+	newNoteParams.set("globalNew", "note");
 	const newNoteHref = `/notes?${newNoteParams.toString()}`;
 
 	return (

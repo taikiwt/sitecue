@@ -5,6 +5,7 @@ import {
 	FileText,
 	Library,
 	MessageSquareText,
+	Plus,
 } from "lucide-react";
 import Image from "next/image";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -97,6 +98,13 @@ export default async function LaunchpadPage() {
 						<h2 className="text-2xl font-light tracking-tight text-neutral-800">
 							Quick Start
 						</h2>
+						<Link
+							href="/?globalNew=note"
+							className="ml-auto flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-md hover:bg-neutral-800 transition-colors w-max text-sm font-medium"
+						>
+							<Plus className="w-4 h-4" />
+							New Note
+						</Link>
 					</div>
 					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
