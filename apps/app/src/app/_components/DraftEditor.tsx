@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Copy, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StudioEditor } from "@/components/editor/StudioEditor";
@@ -448,7 +448,7 @@ export default function DraftEditor({
 							onClick={handleSave}
 							disabled={status === "saving"}
 							size="sm"
-							className="rounded-full px-6"
+							className="w-24 rounded-full"
 						>
 							{status === "saving" ? "Saving..." : "Save"}
 						</Button>
@@ -471,13 +471,16 @@ export default function DraftEditor({
 
 					{target === "zenn" && (
 						<div className="grid gap-4">
-							<input
-								type="text"
-								placeholder="Enter article title..."
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
-							/>
+							<div className="flex items-center gap-2">
+								<input
+									type="text"
+									placeholder="Enter article title..."
+									value={title}
+									onChange={(e) => setTitle(e.target.value)}
+									className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
+								/>
+								<InlineCopyButton text={title} />
+							</div>
 							<div className="flex items-center gap-2 text-sm text-neutral-400">
 								<span>slug:</span>
 								<input
@@ -487,28 +490,40 @@ export default function DraftEditor({
 									onChange={(e) => setSlug(e.target.value)}
 									className="flex-1 bg-transparent font-mono focus:outline-none"
 								/>
+								<InlineCopyButton text={slug} />
 							</div>
 						</div>
 					)}
 
 					{target === "generic" && (
-						<input
-							type="text"
-							placeholder="Title (optional)"
-							value={title}
-							onChange={(e) => setTitle(e.target.value)}
-							className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
-						/>
+						<div className="flex items-center gap-2">
+							<input
+								type="text"
+								placeholder="Title (optional)"
+								value={title}
+								onChange={(e) => setTitle(e.target.value)}
+								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
+							/>
+							<InlineCopyButton text={title} />
+						</div>
 					)}
 				</div>
 
 				<main className="flex-1 overflow-y-auto px-8 py-10">
-					<StudioEditor
-						value={content}
-						onChange={(val) => setContent(val)}
-						placeholder="Write down your thoughts..."
-						isDirty={isDirty}
-					/>
+					<div className="relative max-w-4xl mx-auto w-full">
+						<div className="absolute top-4 right-4 z-10">
+							<InlineCopyButton
+								text={content}
+								className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+							/>
+						</div>
+						<StudioEditor
+							value={content}
+							onChange={(val) => setContent(val)}
+							placeholder="Write down your thoughts..."
+							isDirty={isDirty}
+						/>
+					</div>
 				</main>
 			</div>
 			{/* 右ペイン: コンテキストバー (Desktop only) */}
@@ -653,4 +668,39 @@ export default function DraftEditor({
 	);
 }
 
-// NoteCard component is now moved to Studio components
+const InlineCopyButton = ({
+	text,
+	className,
+}: {
+	text: string;
+	className?: string;
+}) => {
+	const [copied, setCopied] = useState(false);
+
+	const handleCopy = async () => {
+		if (!text) return;
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 2000);
+		} catch (err) {
+			console.error("Failed to copy text: ", err);
+		}
+	};
+
+	return (
+		<button
+			type="button"
+			onClick={handleCopy}
+			className={`p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer shrink-0 ${className || ""}`}
+			title="Copy to clipboard"
+			aria-label="Copy to clipboard"
+		>
+			{copied ? (
+				<Check className="w-4 h-4 text-green-500" aria-hidden="true" />
+			) : (
+				<Copy className="w-4 h-4" aria-hidden="true" />
+			)}
+		</button>
+	);
+};
