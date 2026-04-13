@@ -436,10 +436,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
 							<>
-								<button
+								<Button
 									type="button"
+									variant="ghost"
+									size="icon"
 									onClick={handleCopyAll}
-									className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors rounded-md hover:bg-neutral-50 cursor-pointer"
+									className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
 									title="Copy all content"
 								>
 									{isCopying ? (
@@ -447,26 +449,30 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									) : (
 										<Clipboard className="w-4 h-4" />
 									)}
-								</button>
-								<button
+								</Button>
+								<Button
 									type="button"
+									variant="default"
+									size="sm"
 									onClick={handleEdit}
-									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm ml-1"
+									className="flex items-center gap-1.5 cursor-pointer shadow-sm ml-1"
 								>
-									<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+									<Pencil className="size-3.5" aria-hidden="true" />
 									Edit
-								</button>
+								</Button>
 
 								<Popover>
 									<PopoverTrigger
 										render={
-											<button
+											<Button
 												type="button"
-												className="p-2 text-neutral-400 hover:text-neutral-900 transition-colors rounded-md hover:bg-neutral-50 cursor-pointer"
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
 												aria-label="More options"
 											>
 												<MoreHorizontal className="w-4 h-4" />
-											</button>
+											</Button>
 										}
 									/>
 									<PopoverContent className="w-48 p-2" align="end">
@@ -477,17 +483,19 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 												</div>
 												<div className="flex flex-col gap-1">
 													{["info", "idea", "alert"].map((type) => (
-														<button
+														<Button
 															key={type}
 															type="button"
+															variant="ghost"
+															size="sm"
 															onClick={() =>
 																handleUpdateProperty({ note_type: type })
 															}
 															className={cn(
-																"flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer",
+																"flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg cursor-pointer",
 																currentNoteType === type
 																	? "bg-neutral-100 text-neutral-900"
-																	: "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900",
+																	: "text-neutral-500 hover:text-neutral-900",
 															)}
 														>
 															<div
@@ -504,7 +512,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 															{currentNoteType === type && (
 																<Check className="w-3 h-3 ml-auto" />
 															)}
-														</button>
+														</Button>
 													))}
 												</div>
 											</div>
@@ -514,24 +522,28 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 													Actions
 												</div>
 												<div className="flex flex-col gap-1">
-													<button
+													<Button
 														type="button"
+														variant="ghost"
+														size="sm"
 														onClick={() => {
 															setEditUrl(note?.url_pattern || "");
 															setEditScope(note?.scope || "inbox");
 															setIsEditMetaDialogOpen(true);
 														}}
-														className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 transition-colors cursor-pointer"
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
 													>
 														Edit Scope/URL
-													</button>
-													<button
+													</Button>
+													<Button
 														type="button"
+														variant="ghost"
+														size="sm"
 														onClick={() => setIsDeleteDialogOpen(true)}
-														className="flex items-center gap-2 w-full px-2 py-1.5 text-xs font-medium rounded-lg text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
 													>
 														Delete Note
-													</button>
+													</Button>
 												</div>
 											</div>
 										</div>
@@ -541,37 +553,43 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						)}
 						{isEditing && (
 							<div className="flex items-center gap-2">
-								<button
+								<Button
 									type="button"
+									variant="ghost"
+									size="sm"
 									onClick={handleCancel}
-									className="text-sm font-medium px-3 py-1.5 rounded-md text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer"
+									className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
 									disabled={isSaving}
 								>
 									Cancel
-								</button>
-								<button
+								</Button>
+								<Button
 									type="button"
+									variant="default"
+									size="sm"
 									onClick={handleSave}
-									className="px-3 py-1.5 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-500 transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
+									className="disabled:opacity-50 cursor-pointer shadow-sm"
 									disabled={isSaving}
 								>
 									{isSaving ? "Saving..." : "Save"}
-								</button>
+								</Button>
 							</div>
 						)}
 						<div className="flex gap-1 ml-2">
 							{note && (
 								<>
-									<button
+									<Button
 										type="button"
+										variant="ghost"
+										size="icon-sm"
 										onClick={() =>
 											handleUpdateProperty({ is_pinned: !currentPinned })
 										}
 										className={cn(
-											"p-1.5 rounded-md transition-all active:scale-90 cursor-pointer",
+											"transition-all active:scale-90 cursor-pointer",
 											currentPinned
 												? "text-neutral-800 bg-neutral-100"
-												: "text-neutral-300 hover:text-neutral-500 hover:bg-neutral-50",
+												: "text-neutral-300 hover:text-neutral-50 hover:bg-neutral-50",
 										)}
 										title={currentPinned ? "Unpin" : "Pin"}
 									>
@@ -579,16 +597,18 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											className={cn("w-4 h-4", currentPinned && "fill-current")}
 											aria-hidden="true"
 										/>
-									</button>
-									<button
+									</Button>
+									<Button
 										type="button"
+										variant="ghost"
+										size="icon-sm"
 										onClick={() =>
 											handleUpdateProperty({
 												is_favorite: !currentFavorite,
 											})
 										}
 										className={cn(
-											"p-1.5 rounded-md transition-all active:scale-90 cursor-pointer",
+											"transition-all active:scale-90 cursor-pointer",
 											currentFavorite
 												? "text-amber-400 bg-amber-50"
 												: "text-neutral-300 hover:text-amber-400 hover:bg-amber-50",
@@ -604,7 +624,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											)}
 											aria-hidden="true"
 										/>
-									</button>
+									</Button>
 								</>
 							)}
 						</div>
@@ -640,10 +660,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							>
 								{note.url_pattern}
 							</a>
-							<button
+							<Button
 								type="button"
+								variant="outline"
+								size="sm"
+								className="size-10 text-neutral-400 hover:text-neutral-900 border border-neutral-200 rounded-lg bg-neutral-50 hover:bg-neutral-100 active:scale-95 cursor-pointer shadow-sm"
 								onClick={() => handleCopyUrl(note.url_pattern)}
-								className="p-2.5 text-neutral-400 hover:text-neutral-900 border border-neutral-200 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-all active:scale-95 cursor-pointer shadow-sm"
 								title="Copy Source URL"
 							>
 								{isCopyingUrl ? (
@@ -654,7 +676,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								) : (
 									<Copy className="w-4 h-4" aria-hidden="true" />
 								)}
-							</button>
+							</Button>
 						</div>
 					</div>
 				)}
@@ -795,22 +817,24 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						</div>
 					</div>
 					<DialogFooter>
-						<button
+						<Button
 							type="button"
+							variant="ghost"
 							onClick={() => setIsEditMetaDialogOpen(false)}
-							className="px-4 py-2 text-sm font-medium text-neutral-500 hover:text-neutral-900 disabled:opacity-50"
+							className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
 							disabled={isSaving}
 						>
 							Cancel
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
+							variant="default"
 							onClick={handleSaveMeta}
-							className="px-4 py-2 bg-neutral-900 text-white text-sm font-medium rounded-md hover:bg-neutral-800 disabled:opacity-50"
+							className="cursor-pointer"
 							disabled={isSaving}
 						>
 							{isSaving ? "Saving..." : "Save changes"}
-						</button>
+						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
