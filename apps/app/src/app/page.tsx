@@ -8,14 +8,13 @@ import {
 	Plus,
 } from "lucide-react";
 import Image from "next/image";
+import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
-
 import { UserMenu } from "./_components/UserMenu";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 export default async function LaunchpadPage() {
 	const supabase = await createClient();
@@ -40,7 +39,7 @@ export default async function LaunchpadPage() {
 	]);
 
 	return (
-		<div className="min-h-screen bg-neutral-50 text-neutral-950 font-sans">
+		<div className="min-h-screen bg-base-bg text-action font-sans">
 			<main className="mx-auto max-w-4xl px-6 py-12">
 				{/* ① Top Navigation */}
 				<div className="flex items-center justify-between mb-12">
@@ -55,7 +54,7 @@ export default async function LaunchpadPage() {
 							height={28}
 							className="drop-shadow-sm transition-transform group-hover:scale-105"
 						/>
-						<span className="text-xl font-bold tracking-tight text-neutral-900">
+						<span className="text-xl font-bold tracking-tight text-action">
 							sitecue
 						</span>
 					</Link>
@@ -72,16 +71,16 @@ export default async function LaunchpadPage() {
 							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
 								Total Notes
 							</span>
-							<span className="text-xl font-light text-neutral-900">
+							<span className="text-xl font-light text-action">
 								{notesCount || 0}
 							</span>
 						</div>
-						<div className="w-px h-6 bg-neutral-200" />
+						<div className="w-px h-6 bg-base-border" />
 						<div className="flex items-center gap-3">
 							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
 								Total Drafts
 							</span>
-							<span className="text-xl font-light text-neutral-900">
+							<span className="text-xl font-light text-action">
 								{draftsCount || 0}
 							</span>
 						</div>
@@ -102,7 +101,10 @@ export default async function LaunchpadPage() {
 						</h2>
 						<Link
 							href="/?globalNew=note"
-							className={cn(buttonVariants({ variant: "default", size: "sm" }), "ml-auto w-max")}
+							className={cn(
+								buttonVariants({ variant: "default", size: "sm" }),
+								"ml-auto w-max",
+							)}
 						>
 							<Plus className="w-4 h-4" />
 							New Note
@@ -111,12 +113,12 @@ export default async function LaunchpadPage() {
 					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
 							href="/studio/new?target=x"
-							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
 								<MessageSquareText className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Short Post</h3>
+							<h3 className="mb-1 font-bold text-action">Short Post</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Save your sudden ideas as drafts for X.
 							</p>
@@ -124,12 +126,12 @@ export default async function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=zenn"
-							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
 								<BookOpen className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Article</h3>
+							<h3 className="mb-1 font-bold text-action">Article</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Draft and organize your technical articles for Zenn.
 							</p>
@@ -137,12 +139,12 @@ export default async function LaunchpadPage() {
 
 						<Link
 							href="/studio/new?target=generic"
-							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
 								<FileText className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Blank Canvas</h3>
+							<h3 className="mb-1 font-bold text-action">Blank Canvas</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Free-form notes not limited to any specific platform.
 							</p>
@@ -161,12 +163,12 @@ export default async function LaunchpadPage() {
 					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
 							href="/notes"
-							className="group relative flex flex-col items-start rounded-xl border border-neutral-200 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-neutral-50 transition-colors group-hover:bg-neutral-100">
+							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
 								<Library className="w-5 h-5 text-neutral-600" />
 							</div>
-							<h3 className="mb-1 font-bold text-neutral-900">Manage Notes</h3>
+							<h3 className="mb-1 font-bold text-action">Manage Notes</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								View and organize all your created notes and drafts.
 							</p>
@@ -185,7 +187,7 @@ export default async function LaunchpadPage() {
 						</div>
 						<Link
 							href="/notes?view=drafts"
-							className="text-sm font-medium text-neutral-400 hover:text-neutral-900 transition-colors"
+							className="text-sm font-medium text-neutral-400 hover:text-action transition-colors"
 						>
 							View all drafts
 						</Link>
@@ -193,7 +195,7 @@ export default async function LaunchpadPage() {
 
 					<div className="grid gap-4">
 						{(!recentDrafts || recentDrafts.length === 0) && (
-							<div className="py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-100 bg-neutral-50/50">
+							<div className="py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-base-border bg-base-bg/50">
 								<p className="text-sm text-neutral-400 italic">
 									No drafts yet. Start writing something to see them here.
 								</p>
@@ -203,10 +205,10 @@ export default async function LaunchpadPage() {
 							<Link
 								key={draft.id}
 								href={`/studio/${draft.id}`}
-								className="group flex items-center justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-neutral-300 cursor-pointer"
+								className="group flex items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 							>
 								<div className="flex items-center gap-4">
-									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-50 text-neutral-600 transition-colors group-hover:bg-neutral-100">
+									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-base-bg text-neutral-600 transition-colors group-hover:bg-base-surface">
 										{draft.target_platform === "x" ? (
 											<MessageSquareText className="w-5 h-5" />
 										) : draft.target_platform === "zenn" ? (
@@ -216,7 +218,7 @@ export default async function LaunchpadPage() {
 										)}
 									</div>
 									<div>
-										<h3 className="font-bold text-neutral-900">
+										<h3 className="font-bold text-action">
 											{draft.title || "Untitled Draft"}
 										</h3>
 										<div className="mt-1 flex items-center gap-2 text-xs text-neutral-400">

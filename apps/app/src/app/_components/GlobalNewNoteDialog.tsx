@@ -145,10 +145,10 @@ export default function GlobalNewNoteDialog() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="sm:max-w-2xl bg-white p-0 overflow-hidden flex flex-col">
-				<DialogHeader className="p-6 border-b border-neutral-100">
+			<DialogContent className="sm:max-w-2xl bg-base-surface p-0 overflow-hidden flex flex-col">
+				<DialogHeader className="p-6 border-b border-base-border">
 					<DialogTitle className="text-xl font-bold">New Note</DialogTitle>
-					<DialogDescription className="text-neutral-500">
+					<DialogDescription className="text-gray-500">
 						Capture a quick thought from anywhere.
 					</DialogDescription>
 				</DialogHeader>
@@ -158,7 +158,7 @@ export default function GlobalNewNoteDialog() {
 						<div className="space-y-2">
 							<Label
 								htmlFor="global-url"
-								className="text-[10px] font-bold uppercase tracking-wider text-neutral-400"
+								className="text-[10px] font-bold uppercase tracking-wider text-gray-400"
 							>
 								Source URL (Optional)
 							</Label>
@@ -174,7 +174,7 @@ export default function GlobalNewNoteDialog() {
 						<div className="space-y-2">
 							<Label
 								htmlFor="global-scope"
-								className="text-[10px] font-bold uppercase tracking-wider text-neutral-400"
+								className="text-[10px] font-bold uppercase tracking-wider text-gray-400"
 							>
 								Scope
 							</Label>
@@ -218,10 +218,10 @@ export default function GlobalNewNoteDialog() {
 					</div>
 
 					<div className="space-y-2">
-						<Label className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+						<Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
 							Content
 						</Label>
-						<div className="min-h-[250px] border rounded-lg bg-neutral-50/30 overflow-hidden">
+						<div className="min-h-[250px] border border-base-border rounded-lg bg-base-surface/30 overflow-hidden">
 							<NotesEditor
 								value={content}
 								onChange={setContent}
@@ -232,7 +232,7 @@ export default function GlobalNewNoteDialog() {
 					</div>
 				</div>
 
-				<DialogFooter className="p-4 bg-neutral-50/50 border-t border-neutral-100">
+				<DialogFooter className="p-4 bg-base-surface/50 border-t border-base-border">
 					<Button
 						type="button"
 						variant="ghost"

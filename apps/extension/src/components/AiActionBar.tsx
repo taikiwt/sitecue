@@ -125,7 +125,7 @@ export default function AiActionBar({
 		userPlan === "pro" ? aiUsageCount >= 100 : aiUsageCount >= 3;
 
 	return (
-		<div className="px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+		<div className="px-4 py-3 bg-base-surface border-b border-base-border shrink-0">
 			<button
 				type="button"
 				disabled={isWeaving || isLimitReached}
@@ -135,7 +135,7 @@ export default function AiActionBar({
 						? "Plan limit reached."
 						: "Weave page content and notes into something new."
 				}
-				className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 rounded-md hover:bg-neutral-800 hover:text-white transition-all duration-200 shadow-sm w-full disabled:opacity-50 disabled:cursor-not-allowed group"
+				className="cursor-pointer flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-gray-600 bg-base-bg rounded-md hover:bg-action hover:text-action-text transition-all duration-200 shadow-sm w-full disabled:opacity-50 disabled:cursor-not-allowed group"
 			>
 				{isWeaving ? (
 					<>

@@ -60,7 +60,7 @@ export default function MarkdownRenderer({
 							href={href}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="inline-flex items-center gap-1 text-neutral-900 font-medium underline underline-offset-4 hover:text-neutral-500 transition-colors"
+							className="inline-flex items-center gap-1 text-action font-medium underline underline-offset-4 hover:text-action-hover transition-colors"
 						>
 							{children}
 							<ExternalLink className="w-3 h-3" aria-hidden="true" />
@@ -76,7 +76,7 @@ export default function MarkdownRenderer({
 							return (
 								<code
 									{...rest}
-									className="px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded font-mono text-[0.85em] before:content-none after:content-none"
+									className="px-1.5 py-0.5 bg-base-surface dark:bg-neutral-800 text-action dark:text-neutral-100 rounded font-mono text-[0.85em] before:content-none after:content-none"
 								>
 									{children}
 								</code>
@@ -95,17 +95,17 @@ export default function MarkdownRenderer({
 									<button
 										type="button"
 										onClick={() => handleCopyCode(codeString, uniqueId)}
-										className="p-1.5 bg-white/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-neutral-200 dark:border-neutral-700 rounded-md text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition-all cursor-pointer"
+										className="p-1.5 bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 rounded-md text-gray-500 hover:text-action dark:hover:text-neutral-100 transition-all cursor-pointer"
 										title="Copy code"
 									>
 										{isCopied ? (
-											<Check className="w-3.5 h-3.5 text-green-500" />
+											<Check className="w-3.5 h-3.5 text-note-info" />
 										) : (
 											<Copy className="w-3.5 h-3.5" />
 										)}
 									</button>
 								</div>
-								<pre className="overflow-x-auto rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed">
+								<pre className="overflow-x-auto rounded-xl bg-base-bg dark:bg-neutral-900 border border-base-border dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed">
 									<code className={className}>{children}</code>
 								</pre>
 							</div>
@@ -119,7 +119,7 @@ export default function MarkdownRenderer({
 									type="checkbox"
 									checked={props.checked}
 									readOnly
-									className="w-4 h-4 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-900 mr-2"
+									className="w-4 h-4 rounded border-base-border text-action focus:ring-action mr-2"
 								/>
 							);
 						}

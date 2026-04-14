@@ -408,9 +408,9 @@ export default function DraftEditor({
 	};
 
 	return (
-		<div className="flex h-screen overflow-hidden bg-neutral-50 text-neutral-950">
+		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
 			{/* 左ペイン: メインエディタ */}
-			<div className="flex flex-1 flex-col overflow-hidden border-r border-neutral-200 bg-white">
+			<div className="flex flex-1 flex-col overflow-hidden border-r border-base-border bg-base-bg">
 				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
 					<div className="flex items-center gap-4">
 						<Button
@@ -424,12 +424,12 @@ export default function DraftEditor({
 						</Button>
 						<Link
 							href="/"
-							className="text-xl font-bold tracking-tight text-neutral-900 transition-colors hover:text-neutral-500 cursor-pointer block"
+							className="text-xl font-bold tracking-tight text-action transition-colors hover:text-gray-500 cursor-pointer block"
 						>
 							sitecue
 						</Link>
-						<div className="h-4 w-px bg-neutral-200" />
-						<span className="text-sm font-medium text-neutral-900">
+						<div className="h-4 w-px bg-base-border" />
+						<span className="text-sm font-medium text-action">
 							{target === "x" &&
 								(initialDraft ? "Edit Draft for X" : "New Draft for X")}
 							{target === "zenn" &&
@@ -458,7 +458,7 @@ export default function DraftEditor({
 							) : status === "success" ? (
 								<span className="flex items-center gap-1">
 									<Check
-										className="w-4 h-4 text-green-500"
+										className="w-4 h-4 text-note-info"
 										aria-hidden="true"
 									/>
 									Saved
@@ -477,7 +477,7 @@ export default function DraftEditor({
 								Character Count
 							</span>
 							<span
-								className={`text-2xl font-mono font-bold ${charCount > 140 ? "text-red-500" : "text-neutral-900"}`}
+								className={`text-2xl font-mono font-bold ${charCount > 140 ? "text-note-alert" : "text-action"}`}
 							>
 								{charCount} / 140
 							</span>
@@ -543,16 +543,16 @@ export default function DraftEditor({
 			</div>
 			{/* 右ペイン: コンテキストバー (Desktop only) */}
 			{isDesktop && (
-				<aside className="w-96 flex-col overflow-hidden bg-neutral-50 border-l border-neutral-200 flex">
-					<header className="border-b border-neutral-200 p-2">
-						<div className="flex rounded-lg bg-neutral-200/50 p-1">
+				<aside className="w-96 flex-col overflow-hidden bg-base-surface border-l border-base-border flex">
+					<header className="border-b border-base-border p-2">
+						<div className="flex rounded-lg bg-base-border/50 p-1">
 							<button
 								type="button"
 								onClick={() => updatePane("review")}
 								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
 									activePane === "review"
-										? "bg-white text-neutral-900 shadow-sm"
-										: "text-neutral-500 hover:text-neutral-700"
+										? "bg-base-bg text-action shadow-sm"
+										: "text-gray-500 hover:text-action"
 								}`}
 							>
 								SELF REVIEW
@@ -562,8 +562,8 @@ export default function DraftEditor({
 								onClick={() => updatePane("materials")}
 								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
 									activePane === "materials"
-										? "bg-white text-neutral-900 shadow-sm"
-										: "text-neutral-500 hover:text-neutral-700"
+										? "bg-base-bg text-action shadow-sm"
+										: "text-gray-500 hover:text-action"
 								}`}
 							>
 								GLOBAL MATERIALS
@@ -594,7 +594,7 @@ export default function DraftEditor({
 						)}
 					</div>
 
-					<div className="border-t border-neutral-200 p-4 text-center bg-white/50">
+					<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
 						<p className="text-[10px] text-neutral-400 font-medium">
 							Weave Studio Power User Mode
 						</p>
@@ -609,7 +609,7 @@ export default function DraftEditor({
 						<DrawerTrigger asChild>
 							<button
 								type="button"
-								className="flex h-14 items-center justify-center gap-2 rounded-full bg-neutral-900 px-6 text-white shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+								className="flex h-14 items-center justify-center gap-2 rounded-full bg-action px-6 text-action-text shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
 							>
 								<Sparkles className="h-5 w-5" aria-hidden="true" />
 								<span className="text-sm font-bold">Notes & AI</span>
@@ -628,8 +628,8 @@ export default function DraftEditor({
 											onClick={() => updatePane("review")}
 											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
 												activePane === "review"
-													? "bg-white text-neutral-900 shadow-sm"
-													: "text-neutral-500 hover:text-neutral-700"
+													? "bg-base-bg text-action shadow-sm"
+													: "text-gray-500 hover:text-action"
 											}`}
 										>
 											SELF REVIEW
@@ -639,8 +639,8 @@ export default function DraftEditor({
 											onClick={() => updatePane("materials")}
 											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
 												activePane === "materials"
-													? "bg-white text-neutral-900 shadow-sm"
-													: "text-neutral-500 hover:text-neutral-700"
+													? "bg-base-bg text-action shadow-sm"
+													: "text-gray-500 hover:text-action"
 											}`}
 										>
 											GLOBAL MATERIALS

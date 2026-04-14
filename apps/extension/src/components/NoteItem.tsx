@@ -129,15 +129,15 @@ export default function NoteItem({
 		setIsSwapping(false);
 	};
 
-	let badgeBgColor = "bg-blue-50";
-	let badgeTextColor = "text-blue-500";
+	let badgeBgColor = "bg-note-info/10";
+	let badgeTextColor = "text-note-info";
 
 	if (note.note_type === "alert") {
-		badgeBgColor = "bg-rose-50";
-		badgeTextColor = "text-rose-500";
+		badgeBgColor = "bg-note-alert/10";
+		badgeTextColor = "text-note-alert";
 	} else if (note.note_type === "idea") {
-		badgeBgColor = "bg-amber-50";
-		badgeTextColor = "text-amber-500";
+		badgeBgColor = "bg-note-idea/10";
+		badgeTextColor = "text-note-idea";
 	}
 
 	const resolvedClasses = note.is_resolved ? "opacity-60 grayscale-[0.5]" : "";
@@ -145,19 +145,19 @@ export default function NoteItem({
 
 	return (
 		<div
-			className={`bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all group relative flex flex-col ${resolvedClasses}`}
+			className={`bg-base-bg p-4 rounded-lg border border-base-border shadow-sm hover:shadow-md transition-all group relative flex flex-col ${resolvedClasses}`}
 		>
 			{isEditing ? (
 				<div className="space-y-2">
 					<div className="flex items-center justify-between mb-2">
 						<div className="flex items-center gap-4 text-xs">
-							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+							<label className="flex items-center gap-1.5 cursor-pointer text-action hover:text-action-hover">
 								<input
 									type="radio"
 									name={`scope-${note.id}`}
 									checked={editScope === "exact"}
 									onChange={() => setEditScope("exact")}
-									className="accent-neutral-800 focus:ring-neutral-800"
+									className="accent-action focus:ring-action"
 								/>
 								<span>Page</span>
 							</label>
@@ -167,7 +167,7 @@ export default function NoteItem({
 									name={`scope-${note.id}`}
 									checked={editScope === "domain"}
 									onChange={() => setEditScope("domain")}
-									className="accent-neutral-800 focus:ring-neutral-800"
+									className="accent-action focus:ring-action"
 								/>
 								<span>Domain</span>
 							</label>
@@ -177,16 +177,16 @@ export default function NoteItem({
 									name={`scope-${note.id}`}
 									checked={editScope === "inbox"}
 									onChange={() => setEditScope("inbox")}
-									className="accent-neutral-800 focus:ring-neutral-800"
+									className="accent-action focus:ring-action"
 								/>
 								<span>Inbox</span>
 							</label>
 						</div>
-						<div className="flex bg-gray-50 p-0.5 rounded-md w-fit">
+						<div className="flex bg-base-surface p-0.5 rounded-md w-fit">
 							<button
 								type="button"
 								onClick={() => setEditType("info")}
-								className={`cursor-pointer p-1 rounded ${editType === "info" ? "bg-blue-400 shadow-sm text-white" : "text-gray-400 hover:text-blue-500"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "info" ? "bg-note-info shadow-sm text-action-text" : "text-gray-400 hover:text-note-info"}`}
 								title="Info"
 							>
 								<Info className="w-3.5 h-3.5" />
@@ -194,7 +194,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("alert")}
-								className={`cursor-pointer p-1 rounded ${editType === "alert" ? "bg-rose-400 shadow-sm text-white" : "text-gray-400 hover:text-rose-500"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "alert" ? "bg-note-alert shadow-sm text-action-text" : "text-gray-400 hover:text-note-alert"}`}
 								title="Alert"
 							>
 								<AlertTriangle className="w-3.5 h-3.5" />
@@ -202,7 +202,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("idea")}
-								className={`cursor-pointer p-1 rounded ${editType === "idea" ? "bg-amber-400 shadow-sm text-white" : "text-gray-400 hover:text-amber-500"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "idea" ? "bg-note-idea shadow-sm text-action-text" : "text-gray-400 hover:text-note-idea"}`}
 								title="Idea"
 							>
 								<Lightbulb className="w-3.5 h-3.5" />
@@ -212,7 +212,7 @@ export default function NoteItem({
 					<TextareaAutosize
 						value={editContent}
 						onChange={(e) => setEditContent(e.target.value)}
-						className="w-full border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 resize-none"
+						className="w-full border border-base-border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-action/5 resize-none bg-base-bg"
 						minRows={3}
 						autoFocus
 						onKeyDown={(e) => {
@@ -236,7 +236,7 @@ export default function NoteItem({
 							type="button"
 							onClick={handleUpdate}
 							disabled={updating}
-							className="cursor-pointer p-1 bg-black text-white rounded hover:bg-neutral-600 disabled:opacity-50"
+							className="cursor-pointer p-1 bg-action text-action-text rounded hover:bg-action-hover disabled:opacity-50"
 						>
 							{updating ? (
 								<Loader2 className="w-4 h-4 animate-spin" />
@@ -300,13 +300,13 @@ export default function NoteItem({
 								className="flex items-center mr-0.5 outline-none cursor-default"
 								title={`Scope: ${note.scope === "exact" ? "Page" : note.scope === "inbox" ? "Inbox" : "Domain"}\nCreated: ${Intl.DateTimeFormat("sv-SE").format(new Date(note.created_at))}`}
 							>
-								<Info className="w-3.5 h-3.5 text-neutral-300 hover:text-neutral-500" />
+								<Info className="w-3.5 h-3.5 text-gray-400 hover:text-action" />
 							</div>
 
 							<button
 								type="button"
 								onClick={() => onToggleFavorite(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_favorite ? "text-neutral-800 fill-current" : "text-neutral-300 hover:text-neutral-500"}`}
+								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_favorite ? "text-action fill-current" : "text-gray-400 hover:text-action"}`}
 								title={
 									note.is_favorite
 										? "Remove from favorites"
@@ -320,7 +320,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => onTogglePinned(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_pinned ? "text-neutral-800 fill-current" : "text-neutral-300 hover:text-neutral-500"}`}
+								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_pinned ? "text-action fill-current" : "text-gray-400 hover:text-action"}`}
 								title={note.is_pinned ? "Unpin note" : "Pin note"}
 							>
 								<Pin
@@ -337,7 +337,7 @@ export default function NoteItem({
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-neutral-400" : "text-neutral-800"}`}
+								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-gray-400" : "text-action"}`}
 							>
 								<MarkdownRenderer content={note.content} />
 							</div>
@@ -351,7 +351,7 @@ export default function NoteItem({
 									onClick={() =>
 										onToggleExpansion(note.id, note.is_expanded ?? false)
 									}
-									className="cursor-pointer text-[10px] text-neutral-400 hover:text-neutral-700 transition-colors bg-neutral-50 hover:bg-neutral-100 px-2 py-0.5 rounded"
+									className="cursor-pointer text-[10px] text-gray-400 hover:text-action transition-colors bg-base-surface hover:bg-base-border px-2 py-0.5 rounded"
 								>
 									{isCollapsed ? "Read more" : "Show less"}
 								</button>
@@ -361,9 +361,9 @@ export default function NoteItem({
 
 					{/* Favoriteリスト時のみのメタデータ（必要なら引き続き表示） */}
 					{isFavoriteList && note.scope !== "inbox" && (
-						<div className="text-[10px] text-neutral-400 flex items-center gap-2 mt-1">
+						<div className="text-[10px] text-gray-400 flex items-center gap-2 mt-1">
 							<span
-								className={`px-1 rounded border ${note.scope === "exact" ? "bg-white border-neutral-200 text-neutral-500" : "bg-neutral-50 border-neutral-200 text-neutral-400"}`}
+								className={`px-1 rounded border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-gray-400"}`}
 							>
 								{note.scope === "exact" ? "Page" : "Domain"}
 							</span>
@@ -378,14 +378,16 @@ export default function NoteItem({
 									className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 truncate"
 									title={`Open ${note.url_pattern}`}
 								>
-									<span className="truncate">{note.url_pattern}</span>
+									<span className="truncate hover:text-action">
+										{note.url_pattern}
+									</span>
 								</a>
 							)}
 						</div>
 					)}
 
 					{/* 3層目：フッター（操作ボタン、ホバー時のみ出現） */}
-					<div className="mt-1 pt-1 border-t border-transparent group-hover:border-gray-100 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
+					<div className="mt-1 pt-1 border-t border-transparent group-hover:border-base-border flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
 						{/* 左側：並び替え（Pinがない時のみ表示） */}
 						<div className="flex items-center gap-1">
 							{!note.is_pinned ? (
@@ -394,7 +396,7 @@ export default function NoteItem({
 										type="button"
 										onClick={handleMoveUp}
 										disabled={!onMoveUp || isSwapping || isFirst || isSorting}
-										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-gray-100 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-base-border cursor-not-allowed" : "text-gray-400 hover:text-action cursor-pointer"}`}
 										title="Move up"
 									>
 										<ChevronUp className="w-4 h-4" />
@@ -403,16 +405,14 @@ export default function NoteItem({
 										type="button"
 										onClick={handleMoveDown}
 										disabled={!onMoveDown || isSwapping || isLast || isSorting}
-										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-gray-100 cursor-not-allowed" : "text-gray-400 hover:text-gray-800 cursor-pointer"}`}
+										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-base-border cursor-not-allowed" : "text-gray-400 hover:text-action cursor-pointer"}`}
 										title="Move down"
 									>
 										<ChevronDown className="w-4 h-4" />
 									</button>
 								</>
 							) : (
-								<span className="text-[10px] text-neutral-300 ml-1">
-									Pinned
-								</span>
+								<span className="text-[10px] text-gray-400 ml-1">Pinned</span>
 							)}
 						</div>
 
@@ -421,11 +421,11 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={handleCopyNote}
-								className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
+								className="cursor-pointer text-gray-400 hover:text-action transition-colors"
 								title="Copy note"
 							>
 								{copiedNoteId === note.id ? (
-									<Check className="w-3.5 h-3.5 text-green-500" />
+									<Check className="w-3.5 h-3.5 text-note-info" />
 								) : (
 									<Copy className="w-3.5 h-3.5" />
 								)}
@@ -433,7 +433,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={startEditing}
-								className="cursor-pointer text-neutral-300 hover:text-neutral-800 transition-colors"
+								className="cursor-pointer text-gray-400 hover:text-action transition-colors"
 								title="Edit"
 							>
 								<Edit2 className="w-3.5 h-3.5" />
@@ -441,7 +441,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => onDelete(note.id)}
-								className="cursor-pointer text-neutral-300 hover:text-rose-400 transition-colors"
+								className="cursor-pointer text-gray-400 hover:text-note-alert transition-colors"
 								title="Delete"
 							>
 								<Trash2 className="w-3.5 h-3.5" />

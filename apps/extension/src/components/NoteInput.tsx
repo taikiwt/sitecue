@@ -43,16 +43,16 @@ export default function NoteInput({
 	};
 
 	return (
-		<div className="p-4 bg-white border-t border-gray-200 space-y-3">
+		<div className="p-4 bg-base-surface border-t border-base-border space-y-3">
 			<div className="flex items-center justify-between">
 				<div className="flex items-center gap-4 text-xs">
-					<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+					<label className="flex items-center gap-1.5 cursor-pointer text-action hover:text-action-hover">
 						<input
 							type="radio"
 							name="scope"
 							checked={selectedScope === "exact"}
 							onChange={() => setSelectedScope("exact")}
-							className="accent-neutral-800 focus:ring-neutral-800"
+							className="accent-action focus:ring-action"
 						/>
 						<span>Page</span>
 					</label>
@@ -62,7 +62,7 @@ export default function NoteInput({
 							name="scope"
 							checked={selectedScope === "domain"}
 							onChange={() => setSelectedScope("domain")}
-							className="accent-neutral-800 focus:ring-neutral-800"
+							className="accent-action focus:ring-action"
 						/>
 						<span>Domain</span>
 					</label>
@@ -72,7 +72,7 @@ export default function NoteInput({
 							name="scope"
 							checked={selectedScope === "inbox"}
 							onChange={() => setSelectedScope("inbox")}
-							className="accent-neutral-800 focus:ring-neutral-800"
+							className="accent-action focus:ring-action"
 						/>
 						<span>Inbox</span>
 					</label>
@@ -85,11 +85,11 @@ export default function NoteInput({
 						</span>
 					)}
 
-					<div className="flex bg-white p-0.5 rounded-md">
+					<div className="flex bg-base-surface p-0.5 rounded-md">
 						<button
 							type="button"
 							onClick={() => setSelectedType("info")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "info" ? "bg-neutral-800 shadow-sm text-white" : "text-gray-400 hover:text-neutral-600"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "info" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
 							title="Info"
 						>
 							<Info className="w-4 h-4" strokeWidth={2} />
@@ -97,7 +97,7 @@ export default function NoteInput({
 						<button
 							type="button"
 							onClick={() => setSelectedType("alert")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "alert" ? "bg-neutral-800 shadow-sm text-white" : "text-gray-400 hover:text-neutral-600"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "alert" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
 							title="Alert"
 						>
 							<AlertTriangle className="w-4 h-4" strokeWidth={2} />
@@ -105,7 +105,7 @@ export default function NoteInput({
 						<button
 							type="button"
 							onClick={() => setSelectedType("idea")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "idea" ? "bg-neutral-800 shadow-sm text-white" : "text-gray-400 hover:text-neutral-600"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "idea" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
 							title="Idea"
 						>
 							<Lightbulb className="w-4 h-4" strokeWidth={2} />
@@ -116,7 +116,7 @@ export default function NoteInput({
 
 			<form onSubmit={handleSubmit} className="flex gap-2 items-center">
 				{userPlan === "free" && totalNoteCount >= maxFreeNotes ? (
-					<div className="w-full bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-start gap-3">
+					<div className="w-full bg-note-idea/10 border border-note-idea/20 rounded-lg p-3 text-sm text-note-idea flex items-start gap-3">
 						<AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
 						<div>
 							<div className="font-bold mb-1">FREE Plan Limit Reached</div>
@@ -133,7 +133,7 @@ export default function NoteInput({
 							value={newNote}
 							onChange={(e) => setNewNote(e.target.value)}
 							placeholder={`Add a cue to ${selectedScope === "inbox" ? "Inbox" : selectedScope === "domain" ? "this domain" : "this page"}...`}
-							className="flex-1 resize-none border-4 border-neutral-800 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 max-h-50"
+							className="flex-1 resize-none border-4 border-action rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-action/5 transition-all max-h-50"
 							minRows={1}
 							onKeyDown={(e) => {
 								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -147,7 +147,7 @@ export default function NoteInput({
 						<button
 							disabled={!newNote.trim()}
 							type="submit"
-							className="cursor-pointer bg-neutral-800 text-white p-2 rounded-md hover:bg-neutral-500 disabled:cursor-not-allowed transition-colors"
+							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:cursor-not-allowed transition-colors"
 							title="Add Note"
 						>
 							<Send className="w-4 h-4" />

@@ -30,7 +30,7 @@ export default function SidePanel() {
 
 	if (sessionLoading) {
 		return (
-			<div className="w-full h-screen bg-gray-50 flex flex-col items-center justify-center font-sans">
+			<div className="w-full h-screen bg-base-surface flex flex-col items-center justify-center font-sans">
 				<Loader2 className="w-8 h-8 animate-spin text-gray-500" />
 			</div>
 		);
@@ -105,7 +105,7 @@ function NotesUI({
 	});
 
 	return (
-		<div className="w-full h-screen bg-gray-50 flex flex-col font-sans">
+		<div className="w-full h-screen bg-base-surface flex flex-col font-sans">
 			<Toaster
 				position="bottom-center"
 				toastOptions={{
@@ -113,8 +113,8 @@ function NotesUI({
 						fontSize: "12px",
 						padding: "8px 12px",
 						borderRadius: "8px",
-						background: "#333",
-						color: "#fff",
+						background: "#262626", // action
+						color: "#ffffff", // action-text
 					},
 				}}
 			/>
@@ -172,7 +172,7 @@ function NotesUI({
 			</div>
 
 			{userStatsLoading ? (
-				<div className="p-4 bg-white border-t border-gray-200 space-y-3">
+				<div className="p-4 bg-base-surface border-t border-base-border space-y-3">
 					<div className="flex items-center justify-center py-4">
 						<Loader2 className="w-5 h-5 animate-spin text-gray-300" />
 					</div>

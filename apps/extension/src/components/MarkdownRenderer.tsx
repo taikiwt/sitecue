@@ -114,8 +114,8 @@ export default function MarkdownRenderer({
 									checked={props.checked}
 									disabled={props.disabled}
 									readOnly
-									className="appearance-none w-4 h-4 min-w-4 min-h-4 border border-neutral-300 rounded bg-white checked:bg-neutral-800 checked:border-neutral-800 focus:ring-1 focus:ring-neutral-400 focus:outline-none transition ease-in-out duration-150 cursor-pointer mt-0.5 disabled:opacity-60 disabled:cursor-not-allowed relative
-                  checked:after:content-[''] checked:after:absolute checked:after:left-1.25 checked:after:top-0.5 checked:after:w-1.25 checked:after:h-2.25 checked:after:border-white checked:after:border-r-2 checked:after:border-b-2 checked:after:rotate-45"
+									className="appearance-none w-4 h-4 min-w-4 min-h-4 border border-base-border rounded bg-base-surface checked:bg-action checked:border-action focus:ring-1 focus:ring-action/50 focus:outline-none transition ease-in-out duration-150 cursor-pointer mt-0.5 disabled:opacity-60 disabled:cursor-not-allowed relative
+                  checked:after:content-[''] checked:after:absolute checked:after:left-1.25 checked:after:top-0.5 checked:after:w-1.25 checked:after:h-2.25 checked:after:border-action-text checked:after:border-r-2 checked:after:border-b-2 checked:after:rotate-45"
 								/>
 							);
 						}
@@ -127,15 +127,13 @@ export default function MarkdownRenderer({
 						<p className="mb-2 text-sm leading-relaxed">{children}</p>
 					),
 					strong: ({ children }) => (
-						<strong className="font-semibold text-neutral-900">
-							{children}
-						</strong>
+						<strong className="font-semibold text-action">{children}</strong>
 					),
 					em: ({ children }) => (
 						<em className="italic text-neutral-600">{children}</em>
 					),
 					blockquote: ({ children }) => (
-						<blockquote className="border-l-4 border-gray-200 pl-4 py-1 my-2 bg-gray-50 italic text-neutral-600 rounded-r">
+						<blockquote className="border-l-4 border-base-border pl-4 py-1 my-2 bg-base-bg italic text-gray-600 rounded-r">
 							{children}
 						</blockquote>
 					),
@@ -146,10 +144,10 @@ export default function MarkdownRenderer({
 							href={href}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-blue-500 hover:text-blue-600 hover:underline break-all"
+							className="text-action hover:text-action-hover underline break-all"
 						>
 							{children}
-							<ExternalLink className="w-3 h-3 inline-block ml-1 align-text-bottom" />
+							<ExternalLink className="w-3 h-3 inline-block ml-1 align-text-bottom text-action" />
 						</a>
 					),
 
@@ -163,7 +161,7 @@ export default function MarkdownRenderer({
 							return (
 								<code
 									{...rest}
-									className="px-1.5 py-0.5 bg-gray-100 text-neutral-800 rounded font-mono text-xs"
+									className="px-1.5 py-0.5 bg-base-surface text-action rounded font-mono text-xs"
 								>
 									{children}
 								</code>
@@ -178,15 +176,15 @@ export default function MarkdownRenderer({
 
 						return (
 							<div className="relative group my-3">
-								<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded shadow-sm border border-gray-200 z-10">
+								<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-base-surface/90 rounded shadow-sm border border-base-border z-10">
 									<button
 										type="button"
 										onClick={() => handleCopyCode(codeString, uniqueId)}
-										className="p-1.5 text-neutral-500 hover:text-neutral-800 flex items-center justify-center transition-colors cursor-pointer"
+										className="p-1.5 text-gray-500 hover:text-action flex items-center justify-center transition-colors cursor-pointer"
 										title="Copy code"
 									>
 										{isCopied ? (
-											<Check className="w-3.5 h-3.5 text-green-500" />
+											<Check className="w-3.5 h-3.5 text-note-info" />
 										) : (
 											<Copy className="w-3.5 h-3.5" />
 										)}
@@ -217,17 +215,17 @@ export default function MarkdownRenderer({
 
 					// Table Styling
 					table: ({ children }) => (
-						<div className="overflow-x-auto my-3 border rounded border-gray-200">
-							<table className="min-w-full divide-y divide-gray-200 text-sm">
+						<div className="overflow-x-auto my-3 border rounded border-base-border">
+							<table className="min-w-full divide-y divide-base-border text-sm">
 								{children}
 							</table>
 						</div>
 					),
 					thead: ({ children }) => (
-						<thead className="bg-gray-50">{children}</thead>
+						<thead className="bg-base-bg">{children}</thead>
 					),
 					tbody: ({ children }) => (
-						<tbody className="divide-y divide-gray-200 bg-white">
+						<tbody className="divide-y divide-base-border bg-base-surface">
 							{children}
 						</tbody>
 					),
@@ -238,7 +236,7 @@ export default function MarkdownRenderer({
 						</th>
 					),
 					td: ({ children }) => (
-						<td className="px-3 py-2 text-sm text-gray-900 border-r border-gray-100 last:border-r-0">
+						<td className="px-3 py-2 text-sm text-action border-r border-base-border last:border-r-0">
 							{children}
 						</td>
 					),

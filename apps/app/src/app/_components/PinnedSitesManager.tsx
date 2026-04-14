@@ -78,7 +78,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 			<div className="mb-8 flex items-center justify-between">
 				<div className="flex items-center gap-3">
 					<span className="text-2xl">📌</span>
-					<h2 className="text-2xl font-light tracking-tight text-neutral-800">
+					<h2 className="text-2xl font-light tracking-tight text-action">
 						Pinned Sites
 					</h2>
 				</div>
@@ -87,7 +87,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 					variant="ghost"
 					size="sm"
 					onClick={() => setIsAdding(!isAdding)}
-					className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
+					className="text-gray-500 hover:text-action cursor-pointer"
 					aria-label={isAdding ? "Close add form" : "Add pinned site"}
 				>
 					{isAdding ? (
@@ -105,13 +105,13 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 			{isAdding && (
 				<form
 					onSubmit={handleSubmit}
-					className="mb-8 p-6 rounded-2xl border border-neutral-200 bg-white shadow-sm animate-in fade-in slide-in-from-top-2 duration-200"
+					className="mb-8 p-6 rounded-2xl border border-base-border bg-base-surface shadow-sm animate-in fade-in slide-in-from-top-2 duration-200"
 				>
 					<div className="grid gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
 							<label
 								htmlFor="title"
-								className="text-xs font-semibold text-neutral-500 uppercase tracking-wider"
+								className="text-xs font-semibold text-gray-500 uppercase tracking-wider"
 							>
 								Title
 							</label>
@@ -121,13 +121,13 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								name="title"
 								required
 								placeholder="e.g. My Blog"
-								className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 transition-shadow"
+								className="w-full rounded-lg border border-base-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
 							/>
 						</div>
 						<div className="space-y-2">
 							<label
 								htmlFor="url"
-								className="text-xs font-semibold text-neutral-500 uppercase tracking-wider"
+								className="text-xs font-semibold text-gray-500 uppercase tracking-wider"
 							>
 								URL
 							</label>
@@ -137,7 +137,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								name="url"
 								required
 								placeholder="https://example.com"
-								className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-neutral-900 transition-shadow"
+								className="w-full rounded-lg border border-base-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
 							/>
 						</div>
 					</div>
@@ -155,8 +155,8 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 
 			<div className="grid gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
 				{optimisticSites.length === 0 && !isAdding && (
-					<div className="col-span-full py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-neutral-100 bg-neutral-50/50">
-						<p className="text-sm text-neutral-400 italic">
+					<div className="col-span-full py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-base-border bg-base-surface/50">
+						<p className="text-sm text-gray-400 italic">
 							No pinned sites yet. Add your favorite tools or references here.
 						</p>
 					</div>
@@ -164,11 +164,11 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				{optimisticSites.map((site) => (
 					<div
 						key={site.id}
-						className="group relative flex flex-col justify-between rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-900 hover:ring-1 hover:ring-neutral-900"
+						className="group relative flex flex-col justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all hover:border-action hover:ring-1 hover:ring-action"
 					>
 						<div className="mb-3 flex items-start justify-between">
-							<div className="rounded-lg bg-neutral-50 p-2 group-hover:bg-neutral-100 transition-colors">
-								<ExternalLink className="w-4 h-4 text-neutral-600" />
+							<div className="rounded-lg bg-base-bg p-2 group-hover:bg-base-surface transition-colors">
+								<ExternalLink className="w-4 h-4 text-gray-600" />
 							</div>
 							<Button
 								type="button"
@@ -176,7 +176,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								size="icon-sm"
 								onClick={() => handleDelete(site.id)}
 								disabled={isPending}
-								className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+								className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer"
 								title="Delete"
 							>
 								<Trash2 className="w-4 h-4" />
@@ -188,7 +188,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							rel="noopener noreferrer"
 							className="block cursor-pointer outline-none"
 						>
-							<h3 className="font-bold text-neutral-900 line-clamp-1 group-hover:underline">
+							<h3 className="font-bold text-action line-clamp-1 group-hover:underline">
 								{site.title}
 							</h3>
 							<p className="mt-1 text-xs text-neutral-500 truncate">

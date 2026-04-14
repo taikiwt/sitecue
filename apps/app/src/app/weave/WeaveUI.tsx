@@ -145,11 +145,11 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 	if (!urlParam || !contextId) {
 		return (
 			<div className="flex flex-col items-center justify-center py-16 px-4">
-				<div className="bg-white border border-red-100 rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-6 transform transition-all hover:scale-[1.01]">
+				<div className="bg-base-surface border border-red-100 rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-6 transform transition-all hover:scale-[1.01]">
 					<div className="flex justify-center">
 						<div className="bg-red-50 p-4 rounded-full">
 							<svg
-								className="h-10 w-10 text-red-500"
+								className="h-10 w-10 text-note-alert"
 								xmlns="http://www.w3.org/2000/svg"
 								fill="none"
 								viewBox="0 0 24 24"
@@ -208,8 +208,8 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 								onClick={() => setFilterType(type)}
 								className={`px-3 py-1 text-sm rounded-full border transition-colors ${
 									filterType === type
-										? "bg-black text-white border-black"
-										: "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+										? "bg-action text-action-text border-action"
+										: "bg-base-surface text-gray-600 border-base-border"
 								}`}
 							>
 								{type.charAt(0).toUpperCase() + type.slice(1)}
@@ -218,7 +218,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 					</div>
 				)}
 
-				<div className="bg-white border border-gray-200 rounded-lg shadow-sm flex-1 overflow-y-auto p-4 space-y-3">
+				<div className="bg-base-surface border border-base-border rounded-lg shadow-sm flex-1 overflow-y-auto p-4 space-y-3">
 					{!urlParam ? (
 						<div className="text-center py-8 text-gray-500">
 							URL is not specified. Please open the Weave page from the
@@ -230,15 +230,15 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 								key={note.id}
 								className={`block border rounded-md p-4 cursor-pointer transition-colors ${
 									selectedNoteIds.has(note.id)
-										? "border-black bg-gray-50"
-										: "border-gray-200 hover:border-gray-300"
+										? "border-action bg-base-surface/50"
+										: "border-base-border"
 								}`}
 							>
 								<div className="flex items-start gap-3">
 									<div className="pt-1">
 										<input
 											type="checkbox"
-											className="h-4 w-4 text-black rounded border-gray-300 focus:ring-black"
+											className="h-4 w-4 text-action rounded border-base-border focus:ring-action"
 											checked={selectedNoteIds.has(note.id)}
 											onChange={() => handleNoteToggle(note.id)}
 										/>
@@ -278,7 +278,7 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 			{/* Right Pane: Generator */}
 			<div className="w-full lg:w-1/2 flex flex-col h-[calc(100vh-200px)]">
 				<h2 className="text-lg font-medium text-gray-900 mb-4">Weave Ideas</h2>
-				<div className="bg-white border border-gray-200 rounded-lg shadow-sm p-5 flex flex-col h-full">
+				<div className="bg-base-surface border border-base-border rounded-lg shadow-sm p-5 flex flex-col h-full">
 					<div className="mb-6">
 						<span className="block text-sm font-medium text-gray-700 mb-3">
 							Output Format
@@ -291,9 +291,9 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 									value="markdown"
 									checked={format === "markdown"}
 									onChange={() => setFormat("markdown")}
-									className="h-4 w-4 text-black border-gray-300 focus:ring-black cursor-pointer"
+									className="h-4 w-4 text-action border-base-border focus:ring-action cursor-pointer"
 								/>
-								<span className="ml-2 text-sm text-gray-700 group-hover:text-black">
+								<span className="ml-2 text-sm text-gray-700 group-hover:text-action">
 									Markdown
 								</span>
 							</label>
@@ -304,9 +304,9 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 									value="plaintext"
 									checked={format === "plaintext"}
 									onChange={() => setFormat("plaintext")}
-									className="h-4 w-4 text-black border-gray-300 focus:ring-black cursor-pointer"
+									className="h-4 w-4 text-action border-base-border focus:ring-action cursor-pointer"
 								/>
-								<span className="ml-2 text-sm text-gray-700 group-hover:text-black">
+								<span className="ml-2 text-sm text-gray-700 group-hover:text-action">
 									Plain Text
 								</span>
 							</label>
@@ -393,7 +393,9 @@ function WeaveUIInner({ initialNotes }: { initialNotes: Note[] }) {
 							</div>
 						) : error ? (
 							<div className="flex items-center justify-center h-full">
-								<p className="text-sm text-red-500 text-center px-4">{error}</p>
+								<p className="text-sm text-note-alert text-center px-4">
+									{error}
+								</p>
 							</div>
 						) : resultMarkdown ? (
 							<div className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none">
