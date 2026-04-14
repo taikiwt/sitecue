@@ -58,17 +58,17 @@ const getNoteTypeStyles = (type: string | null) => {
 	switch (type) {
 		case "alert":
 			return {
-				className: "bg-rose-50 text-rose-500",
+				className: "bg-note-alert/10 text-note-alert",
 				Icon: AlertTriangle,
 			};
 		case "idea":
 			return {
-				className: "bg-amber-50 text-amber-500",
+				className: "bg-note-idea/10 text-note-idea",
 				Icon: Lightbulb,
 			};
 		default:
 			return {
-				className: "bg-blue-50 text-blue-500",
+				className: "bg-note-info/10 text-note-info",
 				Icon: Info,
 			};
 	}
@@ -199,11 +199,11 @@ export function MiddlePaneList(props: Props) {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-white border-r border-gray-200 w-96">
-			<div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+		<div className="flex flex-col h-full bg-base-bg border-r border-base-border w-96">
+			<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
 				<div className="flex items-center justify-between">
 					<h2
-						className="text-lg font-bold text-gray-900 truncate"
+						className="text-lg font-bold text-action truncate"
 						title={getTitle()}
 					>
 						{getTitle()}
@@ -211,7 +211,7 @@ export function MiddlePaneList(props: Props) {
 					<div className="flex items-center gap-1">
 						<Link
 							href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
-							className="p-1.5 text-neutral-400 hover:text-neutral-900 rounded-md hover:bg-neutral-100 transition-colors"
+							className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
 							title="New Note here"
 						>
 							<Plus className="w-4 h-4" />
@@ -233,7 +233,7 @@ export function MiddlePaneList(props: Props) {
 				</div>
 				{selectedIds.size > 0 ? (
 					<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-						<span className="text-xs font-semibold text-neutral-900">
+						<span className="text-xs font-semibold text-action">
 							{selectedIds.size} selected
 						</span>
 						<div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export function MiddlePaneList(props: Props) {
 								variant="ghost"
 								size="sm"
 								onClick={() => setSelectedIds(new Set())}
-								className="text-neutral-500 hover:text-neutral-900 font-medium cursor-pointer"
+								className="text-gray-500 hover:text-action font-medium cursor-pointer"
 								disabled={isDeletingBulk}
 							>
 								Cancel
@@ -286,7 +286,7 @@ export function MiddlePaneList(props: Props) {
 						</p>
 					</div>
 				) : items.length > 0 ? (
-					<div className="divide-y divide-gray-100">
+					<div className="divide-y divide-base-border">
 						{currentView === "drafts" ? (
 							localItems.map((item) => (
 								<NoteItem
@@ -331,7 +331,7 @@ export function MiddlePaneList(props: Props) {
 				) : (
 					<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
 						<Inbox
-							className="w-12 h-12 mb-4 text-gray-200"
+							className="w-12 h-12 mb-4 text-base-border"
 							aria-hidden="true"
 						/>
 						<p className="text-sm">
@@ -385,7 +385,7 @@ function NoteItem({
 	return (
 		<div
 			className={`group relative flex items-stretch transition-colors ${
-				isActive ? "bg-neutral-100" : "hover:bg-neutral-50"
+				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
 			}`}
 		>
 			{/* Left Action Area (DnD & Checkbox) */}
@@ -395,7 +395,7 @@ function NoteItem({
 						type="button"
 						{...dragHandleProps}
 						style={{ touchAction: "none" }}
-						className="flex items-center justify-center p-1 text-gray-300 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
 						aria-label="Drag to reorder"
 					>
 						<GripVertical className="w-4 h-4" aria-hidden="true" />
@@ -410,7 +410,7 @@ function NoteItem({
 							checked={isSelected}
 							onChange={(e) => onSelectChange?.(item.id, e.target.checked)}
 							onPointerDown={(e) => e.stopPropagation()}
-							className="w-4 h-4 cursor-pointer accent-neutral-900"
+							className="w-4 h-4 cursor-pointer accent-action"
 						/>
 					</div>
 				)}
@@ -434,7 +434,7 @@ function NoteItem({
 							{item.note_type}
 						</span>
 					) : (
-						<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+						<span className="bg-note-info/10 text-note-info px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
 							{item.target_platform || "draft"}
 						</span>
 					)}
@@ -442,10 +442,10 @@ function NoteItem({
 						{formatDate(isNote ? item.created_at : item.updated_at)}
 					</span>
 				</div>
-				<h3 className="text-sm font-bold text-gray-900 truncate mb-0.5">
+				<h3 className="text-sm font-bold text-action truncate mb-0.5">
 					{!isNote && (item.title || "Untitled Draft")}
 				</h3>
-				<p className="text-sm text-gray-900 line-clamp-2 wrap-break-word">
+				<p className="text-sm text-action line-clamp-2 wrap-break-word">
 					{item.content}
 				</p>
 				{isNote && item.scope === "exact" && !currentExact && (

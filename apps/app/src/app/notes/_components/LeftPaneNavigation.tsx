@@ -63,8 +63,8 @@ export function LeftPaneNavigation({
 	const newNoteHref = `/notes?${newNoteParams.toString()}`;
 
 	return (
-		<div className="flex flex-col h-full bg-gray-50 border-r border-gray-200 w-72 overflow-hidden">
-			<div className="p-4 border-b border-gray-200 bg-white">
+		<div className="flex flex-col h-full bg-base-surface border-r border-base-border w-72 overflow-hidden">
+			<div className="p-4 border-b border-base-border bg-base-bg">
 				<Link
 					href="/"
 					className="flex items-center gap-2 mb-8 cursor-pointer group w-fit"
@@ -76,7 +76,7 @@ export function LeftPaneNavigation({
 						height={28}
 						className="drop-shadow-sm transition-transform group-hover:scale-105"
 					/>
-					<span className="text-xl font-bold tracking-tight text-neutral-900">
+					<span className="text-xl font-bold tracking-tight text-action">
 						sitecue
 					</span>
 				</Link>
@@ -91,7 +91,7 @@ export function LeftPaneNavigation({
 						type="search"
 						id="nav-search"
 						placeholder="Search URL or domain..."
-						className="w-full pl-8 pr-3 py-2 bg-gray-100 border-transparent focus:bg-white focus:border-neutral-400 focus:ring-2 focus:ring-neutral-200 rounded-lg text-sm transition-all outline-none"
+						className="w-full pl-8 pr-3 py-2 bg-base-bg border-transparent focus:bg-base-bg focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg text-sm transition-all outline-none"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
@@ -99,7 +99,7 @@ export function LeftPaneNavigation({
 
 				<Link
 					href={newNoteHref}
-					className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-500 cursor-pointer"
+					className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
 				>
 					<Plus className="w-4 h-4" aria-hidden="true" />
 					New Note
@@ -113,14 +113,14 @@ export function LeftPaneNavigation({
 						href="/notes?domain=inbox"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isInboxActive
-								? "bg-neutral-100 text-neutral-900"
-								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+								? "bg-base-bg text-action shadow-sm"
+								: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
 						}`}
 					>
 						<Inbox className="w-4 h-4" aria-hidden="true" />
 						<span>Inbox</span>
 						{groupedNotes.inbox.length > 0 && (
-							<span className="ml-auto text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
+							<span className="ml-auto text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
 								{groupedNotes.inbox.length}
 							</span>
 						)}
@@ -133,14 +133,14 @@ export function LeftPaneNavigation({
 						href="/notes?view=drafts"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isDraftsActive
-								? "bg-neutral-100 text-neutral-900"
-								: "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+								? "bg-base-bg text-action shadow-sm"
+								: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
 						}`}
 					>
 						<PenSquare className="w-4 h-4" aria-hidden="true" />
 						<span>Drafts</span>
 						{groupedNotes.drafts.length > 0 && (
-							<span className="ml-auto text-xs bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full">
+							<span className="ml-auto text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
 								{groupedNotes.drafts.length}
 							</span>
 						)}
@@ -166,10 +166,10 @@ export function LeftPaneNavigation({
 				</div>
 			</nav>
 
-			<div className="p-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
+			<div className="p-4 border-t border-base-border bg-base-bg flex items-center justify-between gap-4">
 				<Link
 					href="/studio"
-					className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-md text-sm font-medium hover:bg-neutral-500 transition-colors cursor-pointer"
+					className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-action text-action-text rounded-md text-sm font-medium hover:bg-action-hover transition-colors cursor-pointer"
 				>
 					<span>Studio</span>
 				</Link>
@@ -218,8 +218,8 @@ function DomainAccordionItem({
 				aria-expanded={effectiveIsOpen}
 				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
 					isUnderThisDomain && !currentExact
-						? "bg-neutral-100 text-neutral-900 font-medium"
-						: "text-gray-600 hover:bg-neutral-200 hover:text-gray-900"
+						? "bg-base-bg text-action font-medium shadow-sm"
+						: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
 				}`}
 			>
 				<span
@@ -260,14 +260,14 @@ function DomainAccordionItem({
 
 			{/* Children: Domain Notes & Page Pages */}
 			{effectiveIsOpen && (
-				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-gray-200 pl-3">
+				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-base-border pl-3">
 					{/* Approach B: Domain Scope Notes (Always at top if open) */}
 					<Link
 						href={`/notes?domain=${encodeURIComponent(domainName)}`}
 						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 							isUnderThisDomain && !currentExact
-								? "bg-white text-neutral-900 font-medium shadow-sm"
-								: "text-gray-500 hover:bg-neutral-200 hover:text-gray-900"
+								? "bg-base-bg text-action font-medium shadow-sm"
+								: "text-gray-500 hover:bg-base-bg/50 hover:text-action"
 						}`}
 					>
 						<Globe
@@ -301,8 +301,8 @@ function DomainAccordionItem({
 								)}&exact=${encodeURIComponent(url)}`}
 								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 									isActive
-										? "bg-white text-neutral-900 font-medium shadow-sm"
-										: "text-gray-500 hover:bg-neutral-200 hover:text-gray-900"
+										? "bg-base-bg text-action font-medium shadow-sm"
+										: "text-gray-500 hover:bg-base-bg/50 hover:text-action"
 								}`}
 								title={url}
 							>

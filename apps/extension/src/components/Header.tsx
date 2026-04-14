@@ -102,10 +102,10 @@ export default function Header({
 	};
 
 	return (
-		<div className="p-4 bg-white shadow-sm sticky top-0 z-10">
+		<div className="p-4 bg-base-surface shadow-sm sticky top-0 z-10">
 			<div className="flex justify-between items-center gap-2">
 				<div className="flex-1 min-w-0">
-					<h1 className="text-lg font-semibold text-neutral-800 flex items-center gap-2">
+					<h1 className="text-lg font-semibold text-action flex items-center gap-2">
 						{/* Indicator Dot */}
 						{/* Indicator Dot */}
 						{settings?.color && (
@@ -122,12 +122,12 @@ export default function Header({
 							{title || "SiteCue"}
 						</span>
 						{settings?.label && (
-							<span className="text-[10px] bg-neutral-800 text-neutral-300 px-1.5 py-0.5 rounded border border-neutral-600 font-mono shrink-0">
+							<span className="text-[10px] bg-action text-action-text px-1.5 py-0.5 rounded border border-base-border font-mono shrink-0">
 								{settings.label}
 							</span>
 						)}
 					</h1>
-					<p className="text-xs text-neutral-400 truncate" title={url}>
+					<p className="text-xs text-gray-400 truncate" title={url}>
 						{url || "Waiting..."}
 					</p>
 				</div>
@@ -135,14 +135,14 @@ export default function Header({
 					<button
 						type="button"
 						onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-						className={`cursor-pointer p-1.5 rounded-full transition-colors ${isSettingsOpen ? "bg-neutral-800 text-white" : "text-neutral-400 hover:text-neutral-800"}`}
+						className={`cursor-pointer p-1.5 rounded-full transition-colors ${isSettingsOpen ? "bg-action text-action-text" : "text-gray-400 hover:text-action"}`}
 					>
 						<Settings className="w-4 h-4" />
 					</button>
 					<button
 						type="button"
 						onClick={onLogout}
-						className="cursor-pointer p-1.5 text-neutral-400 hover:text-neutral-800 shrink-0"
+						className="cursor-pointer p-1.5 text-gray-400 hover:text-action shrink-0"
 					>
 						<LogOut className="w-4 h-4" />
 					</button>
@@ -151,7 +151,7 @@ export default function Header({
 
 			{/* Settings Popup / Expandable Area */}
 			{isSettingsOpen && (
-				<div className="mt-3 pt-3 border-t border-gray-100 animate-in slide-in-from-top-2 fade-in duration-200">
+				<div className="mt-3 pt-3 border-t border-base-border animate-in slide-in-from-top-2 fade-in duration-200">
 					<div className="space-y-3">
 						<div>
 							<label
@@ -166,13 +166,13 @@ export default function Header({
 								value={editLabel}
 								onChange={(e) => setEditLabel(e.target.value.slice(0, 10))}
 								placeholder="e.g. PROD, DEV"
-								className="w-full text-xs text-neutral-600 border border-neutral-500 rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-neutral-800 placeholder-neutral-400"
+								className="w-full text-xs text-action border border-base-border rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-action placeholder-gray-400"
 							/>
 						</div>
 						<div>
 							<label
 								htmlFor="color-button"
-								className="text-xs font-medium text-neutral-500 mb-1.5 block"
+								className="text-xs font-medium text-gray-500 mb-1.5 block"
 							>
 								Color
 							</label>
@@ -181,7 +181,7 @@ export default function Header({
 									id="color-button"
 									type="button"
 									onClick={() => setEditColor("")}
-									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-neutral-400 hover:text-neutral-600 ${editColor === "" ? "text-neutral-600 bg-neutral-100" : ""}`}
+									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-gray-400 hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
 									title="Clear Settings"
 								>
 									<CircleOff className="w-3.5 h-3.5" />
@@ -191,7 +191,7 @@ export default function Header({
 										type="button"
 										key={c.value}
 										onClick={() => setEditColor(c.value)}
-										className={`cursor-pointer w-4 h-4 rounded-full transition-all ${editColor === c.value ? "scale-130 ring-2 ring-offset-1 ring-neutral-300" : "border-transparent hover:scale-130"}`}
+										className={`cursor-pointer w-4 h-4 rounded-full transition-all ${editColor === c.value ? "scale-130 ring-2 ring-offset-1 ring-base-border" : "border-transparent hover:scale-130"}`}
 										style={{ backgroundColor: c.hex }}
 										title={c.name}
 									/>
@@ -202,7 +202,7 @@ export default function Header({
 							<button
 								type="button"
 								onClick={() => setIsSettingsOpen(false)}
-								className="cursor-pointer px-3 py-1 text-xs text-neutral-500 hover:text-neutral-800"
+								className="cursor-pointer px-3 py-1 text-xs text-gray-500 hover:text-action"
 							>
 								Cancel
 							</button>
@@ -210,7 +210,7 @@ export default function Header({
 								type="button"
 								onClick={handleSave}
 								disabled={saving}
-								className="cursor-pointer px-3 py-1 bg-neutral-800 text-white text-xs rounded hover:bg-neutral-500 disabled:opacity-50 flex items-center gap-1"
+								className="cursor-pointer px-3 py-1 bg-action text-action-text text-xs rounded hover:bg-action-hover disabled:opacity-50 flex items-center gap-1"
 							>
 								{saving ? "Saving..." : "Save"}
 							</button>

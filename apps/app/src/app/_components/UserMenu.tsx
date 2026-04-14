@@ -61,7 +61,7 @@ export function UserMenu() {
 			<button
 				type="button"
 				onClick={() => setIsMenuOpen(!isMenuOpen)}
-				className="flex h-10 w-10 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-600 transition-colors hover:bg-neutral-50 cursor-pointer shadow-sm"
+				className="flex h-10 w-10 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors hover:bg-base-bg cursor-pointer shadow-sm"
 				aria-label="User menu"
 			>
 				{user.user_metadata?.avatar_url ? (
@@ -77,16 +77,16 @@ export function UserMenu() {
 			</button>
 
 			{isMenuOpen && (
-				<div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-neutral-200 bg-white p-2 shadow-xl ring-1 ring-black/5 z-[100]">
-					<div className="px-3 py-2 border-b border-neutral-100 mb-1">
-						<p className="text-xs font-semibold text-neutral-900 truncate">
+				<div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100]">
+					<div className="px-3 py-2 border-b border-base-border mb-1">
+						<p className="text-xs font-semibold text-action truncate">
 							{user.email}
 						</p>
 					</div>
 					<button
 						type="button"
 						onClick={handleSignOut}
-						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
+						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-note-alert transition-colors hover:bg-note-alert/10 cursor-pointer"
 					>
 						<LogOut className="h-4 w-4" />
 						Log out

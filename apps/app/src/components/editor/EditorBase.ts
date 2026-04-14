@@ -1,5 +1,6 @@
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
+import { EditorView } from "@uiw/react-codemirror";
 
 /**
  * Common extensions for CodeMirror Markdown editor.
@@ -10,6 +11,7 @@ export const editorExtensions = [
 		codeLanguages: languages,
 		addKeymap: true,
 	}),
+	EditorView.lineWrapping,
 ];
 
 export interface EditorProps {

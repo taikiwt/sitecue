@@ -100,16 +100,16 @@ export default function FilterBar({
 	}, [isSearchOpen]);
 
 	return (
-		<div className="bg-white border-b border-gray-200 px-4 py-2 flex flex-col gap-3 sticky top-0 z-10">
+		<div className="bg-base-surface border-b border-base-border px-4 py-2 flex flex-col gap-3 sticky top-0 z-10">
 			{/* Scope Tabs */}
-			<div className="flex space-x-4 border-b border-gray-100">
+			<div className="flex space-x-4 border-b border-base-border">
 				<button
 					type="button"
 					onClick={() => setViewScope("exact")}
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "exact"
-							? "border-neutral-800 text-neutral-800"
-							: "border-transparent text-neutral-400 hover:text-neutral-600 hover:border-neutral-300"
+							? "border-action text-action"
+							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
 					}`}
 				>
 					Page
@@ -119,8 +119,8 @@ export default function FilterBar({
 					onClick={() => setViewScope("domain")}
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "domain"
-							? "border-neutral-800 text-neutral-800"
-							: "border-transparent text-neutral-400 hover:text-neutral-600 hover:border-neutral-300"
+							? "border-action text-action"
+							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
 					}`}
 				>
 					Domain
@@ -130,8 +130,8 @@ export default function FilterBar({
 					onClick={() => setViewScope("inbox")}
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "inbox"
-							? "border-neutral-800 text-neutral-800"
-							: "border-transparent text-neutral-400 hover:text-neutral-600 hover:border-neutral-300"
+							? "border-action text-action"
+							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
 					}`}
 				>
 					Inbox
@@ -140,14 +140,14 @@ export default function FilterBar({
 
 			<div className="flex items-center justify-between gap-2 w-full">
 				{/* Note Type Filter */}
-				<div className="flex bg-neutral-800 p-1 rounded-lg shrink-0">
+				<div className="flex bg-action p-1 rounded-lg shrink-0">
 					<button
 						type="button"
 						onClick={() => setFilterType("all")}
 						className={`cursor-pointer py-1 px-2 rounded text-xs font-medium transition-colors ${
 							filterType === "all"
-								? "bg-white text-neutral-800 shadow-sm"
-								: "text-neutral-400 hover:text-white"
+								? "bg-base-surface text-action shadow-sm"
+								: "text-gray-400 hover:text-white"
 						}`}
 					>
 						All
@@ -157,8 +157,8 @@ export default function FilterBar({
 						onClick={() => setFilterType("info")}
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "info"
-								? "bg-white text-neutral-800 shadow-sm"
-								: "text-neutral-400 hover:text-white"
+								? "bg-base-surface text-action shadow-sm"
+								: "text-gray-400 hover:text-white"
 						}`}
 						title="Info"
 					>
@@ -169,8 +169,8 @@ export default function FilterBar({
 						onClick={() => setFilterType("alert")}
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "alert"
-								? "bg-white text-neutral-800 shadow-sm"
-								: "text-neutral-400 hover:text-white"
+								? "bg-base-surface text-action shadow-sm"
+								: "text-gray-400 hover:text-white"
 						}`}
 						title="Alert"
 					>
@@ -181,8 +181,8 @@ export default function FilterBar({
 						onClick={() => setFilterType("idea")}
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "idea"
-								? "bg-white text-neutral-800 shadow-sm"
-								: "text-neutral-400 hover:text-white"
+								? "bg-base-surface text-action shadow-sm"
+								: "text-gray-400 hover:text-white"
 						}`}
 						title="Idea"
 					>
@@ -198,8 +198,8 @@ export default function FilterBar({
 							onClick={() => setIsSearchOpen(true)}
 							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
 								isSearchOpen || searchQuery
-									? "bg-neutral-100 text-neutral-800"
-									: "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
+									? "bg-base-bg text-action"
+									: "text-gray-400 hover:text-action hover:bg-base-bg"
 							}`}
 						>
 							<Search className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ export default function FilterBar({
 									onBlur={() => {
 										if (!searchQuery) setIsSearchOpen(false);
 									}}
-									className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-neutral-100 border-none rounded focus:outline-none focus:ring-1 focus:ring-neutral-300 placeholder:text-neutral-400"
+									className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-base-bg border-none rounded focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-gray-400"
 								/>
 								{searchQuery && (
 									<button
@@ -232,7 +232,7 @@ export default function FilterBar({
 											setSearchQuery("");
 											inputRef.current?.focus();
 										}}
-										className="absolute right-1 cursor-pointer p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
+										className="absolute right-1 cursor-pointer p-0.5 text-gray-400 hover:text-action transition-colors shrink-0"
 										title="Clear search"
 									>
 										<X className="w-3 h-3" />
@@ -249,10 +249,10 @@ export default function FilterBar({
 							onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
 							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
 								isCopied
-									? "text-green-600 bg-green-50"
+									? "text-note-info bg-note-info/10"
 									: isCopyMenuOpen
-										? "text-neutral-800 bg-neutral-100"
-										: "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"
+										? "text-action bg-base-bg"
+										: "text-gray-400 hover:text-action hover:bg-base-bg"
 							}`}
 							title={isCopied ? "Copied!" : "Copy options"}
 							aria-label={isCopied ? "Copied!" : "Open copy options menu"}
@@ -265,18 +265,18 @@ export default function FilterBar({
 						</button>
 
 						{isCopyMenuOpen && (
-							<div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-md z-20 py-1 min-w-[120px]">
+							<div className="absolute right-0 top-full mt-1 bg-base-surface border border-base-border rounded shadow-md z-20 py-1 min-w-[120px]">
 								<button
 									type="button"
 									onClick={handleCopyText}
-									className="w-full text-left px-3 py-1.5 text-xs text-neutral-600 hover:bg-gray-50 transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-gray-600 hover:bg-base-bg transition-colors"
 								>
 									Copy as Text
 								</button>
 								<button
 									type="button"
 									onClick={handleCopyJson}
-									className="w-full text-left px-3 py-1.5 text-xs text-neutral-600 hover:bg-gray-50 transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-gray-600 hover:bg-base-bg transition-colors"
 								>
 									Copy as JSON
 								</button>
@@ -290,8 +290,8 @@ export default function FilterBar({
 						onClick={() => setShowResolved(!showResolved)}
 						className={`cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded text-xs border transition-colors shrink-0 ${
 							showResolved
-								? "bg-neutral-800 border-neutral-800 text-white"
-								: "bg-white border-dashed border-neutral-800 text-neutral-800 hover:text-white hover:border-neutral-800 hover:bg-neutral-800"
+								? "bg-action border-action text-action-text"
+								: "bg-base-surface border-dashed border-action text-action hover:text-action-text hover:border-action hover:bg-action"
 						}`}
 						title="Show/Hide Resolved Notes"
 					>

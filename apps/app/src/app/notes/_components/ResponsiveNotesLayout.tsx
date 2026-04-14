@@ -53,7 +53,7 @@ export function ResponsiveNotesLayout({
 
 	if (isDesktop) {
 		return (
-			<div className="flex h-screen overflow-hidden bg-white font-sans text-gray-900">
+			<div className="flex h-screen overflow-hidden bg-base-bg font-sans text-action">
 				<Fragment key="left">{leftNode}</Fragment>
 				<Fragment key="middle">{middleNode}</Fragment>
 				<Fragment key="right">{rightNode}</Fragment>
@@ -62,9 +62,9 @@ export function ResponsiveNotesLayout({
 	}
 
 	return (
-		<div className="flex flex-col h-screen overflow-hidden bg-white font-sans text-gray-900">
+		<div className="flex flex-col h-screen overflow-hidden bg-base-bg font-sans text-action">
 			{/* Mobile Header */}
-			<header className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
+			<header className="flex items-center justify-between px-4 py-3 border-b border-base-border bg-base-surface">
 				<div className="flex items-center gap-3">
 					<Sheet>
 						<SheetTrigger

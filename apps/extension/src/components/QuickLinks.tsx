@@ -126,17 +126,17 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 	if (!currentDomain) return null;
 
 	return (
-		<div className="border-b border-gray-200 bg-white">
+		<div className="border-b border-base-border bg-base-surface">
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className="cursor-pointer w-full flex items-center justify-between p-3 py-2 text-xs font-medium text-neutral-600 hover:bg-gray-50 transition-colors"
+				className="cursor-pointer w-full flex items-center justify-between p-3 py-2 text-xs font-medium text-action hover:bg-base-bg transition-colors"
 			>
 				<div className="flex items-center gap-1.5">
 					<LinkIcon className="w-3.5 h-3.5" />
-					<span className="text-neutral-500 font-semibold">Quick Links</span>
+					<span className="text-gray-500 font-semibold">Quick Links</span>
 					{links.length > 0 && (
-						<span className="bg-gray-100 text-neutral-500 px-1.5 rounded-full text-[10px]">
+						<span className="bg-base-bg text-gray-500 px-1.5 rounded-full text-[10px]">
 							{links.length}
 						</span>
 					)}
@@ -181,7 +181,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 								return (
 									<div
 										key={link.id}
-										className="group flex items-center justify-between p-2 hover:bg-gray-50 rounded-md transition-colors text-sm"
+										className="group flex items-center justify-between p-2 hover:bg-base-bg rounded-md transition-colors text-sm"
 									>
 										<a
 											href={link.target_url}
@@ -202,11 +202,9 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 													className="w-4 h-4 rounded-sm shrink-0"
 												/>
 											) : (
-												<ArrowRightLeft className="w-4 h-4 text-purple-600 shrink-0" />
+												<ArrowRightLeft className="w-4 h-4 text-action shrink-0" />
 											)}
-											<span className="truncate text-neutral-800">
-												{link.label}
-											</span>
+											<span className="truncate text-action">{link.label}</span>
 
 											{link.type === "related" && (
 												<ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
@@ -214,7 +212,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 
 											<div className="flex items-center gap-1">
 												{link.type === "env" && (
-													<span className="flex items-center gap-0.5 text-[10px] text-gray-400 ml-1 shrink-0 border border-gray-100 px-1 rounded">
+													<span className="flex items-center gap-0.5 text-[10px] text-gray-400 ml-1 shrink-0 border border-base-border px-1 rounded">
 														ENV
 														{isIncoming && <Lock className="w-3 h-3" />}
 													</span>
@@ -227,14 +225,14 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 												<button
 													type="button"
 													onClick={() => startEditing(link)}
-													className="cursor-pointer p-1 text-gray-400 hover:text-black hover:bg-gray-100 rounded transition-all"
+													className="cursor-pointer p-1 text-gray-400 hover:text-action hover:bg-base-bg rounded transition-all"
 												>
 													<Pencil className="w-3.5 h-3.5" />
 												</button>
 												<button
 													type="button"
 													onClick={() => deleteLink(link.id)}
-													className="cursor-pointer p-1 text-gray-400 hover:text-rose-400 hover:bg-rose-50 rounded transition-all"
+													className="cursor-pointer p-1 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 rounded transition-all"
 												>
 													<Trash2 className="w-3.5 h-3.5" />
 												</button>
@@ -248,7 +246,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 						{isAdding ? (
 							<form
 								onSubmit={handleSubmit}
-								className="mt-2 text-xs border border-gray-200 rounded-md p-2 bg-gray-50"
+								className="mt-2 text-xs border border-base-border rounded-md p-2 bg-base-bg"
 							>
 								<div className="space-y-2">
 									<input
@@ -259,7 +257,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 										placeholder="URL (e.g. https://doc.com)"
 										value={formUrl}
 										onChange={(e) => setFormUrl(e.target.value)}
-										className="w-full p-1.5 border border-gray-300 rounded focus:outline-none focus:border-black bg-white"
+										className="w-full p-1.5 border border-base-border rounded focus:outline-none focus:border-action bg-base-surface text-action"
 									/>
 									<input
 										type="text"
@@ -267,7 +265,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 										placeholder="Label (e.g. API Docs)"
 										value={formLabel}
 										onChange={(e) => setFormLabel(e.target.value)}
-										className="w-full p-1.5 border border-gray-300 rounded focus:outline-none focus:border-black bg-white"
+										className="w-full p-1.5 border border-base-border rounded focus:outline-none focus:border-action bg-base-surface text-action"
 									/>
 									<div className="flex gap-2">
 										<label className="flex items-center gap-1 cursor-pointer">
@@ -276,7 +274,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 												name="linkType"
 												checked={formType === "related"}
 												onChange={() => setFormType("related")}
-												className="accent-neutral-800 focus:ring-neutral-800"
+												className="accent-action focus:ring-action"
 											/>
 											<span>Related</span>
 										</label>
@@ -286,7 +284,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 												name="linkType"
 												checked={formType === "env"}
 												onChange={() => setFormType("env")}
-												className="accent-neutral-800 focus:ring-neutral-800"
+												className="accent-action focus:ring-action"
 											/>
 											<span>Env Switch</span>
 										</label>
@@ -295,14 +293,14 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 										<button
 											type="button"
 											onClick={cancelForm}
-											className="cursor-pointer px-2 py-1 text-gray-500 hover:text-neutral-800"
+											className="cursor-pointer px-2 py-1 text-gray-500 hover:text-action"
 										>
 											Cancel
 										</button>
 										<button
 											type="submit"
 											disabled={submitting}
-											className="cursor-pointer px-2 py-1 bg-neutral-800 text-white rounded hover:bg-neutral-600 disabled:opacity-50"
+											className="cursor-pointer px-2 py-1 bg-action text-action-text rounded hover:bg-action-hover disabled:opacity-50"
 										>
 											{submitting
 												? "Saving..."
@@ -317,7 +315,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 							<button
 								type="button"
 								onClick={startAdding}
-								className="cursor-pointer w-full text-left p-2 text-xs text-gray-400 hover:text-black hover:bg-gray-50 rounded flex items-center gap-1 transition-colors"
+								className="cursor-pointer w-full text-left p-2 text-xs text-gray-400 hover:text-action hover:bg-base-bg rounded flex items-center gap-1 transition-colors"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								Add Link

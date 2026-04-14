@@ -10,9 +10,9 @@ export default function LoginScreen({
 	handleSocialLogin,
 }: LoginScreenProps) {
 	return (
-		<div className="w-full h-screen bg-gray-50 flex flex-col items-center justify-center p-6 font-sans">
-			<div className="w-full max-w-xs bg-white p-6 rounded-lg shadow-md border border-gray-200">
-				<h1 className="text-xl font-bold text-center mb-2 text-neutral-800">
+		<div className="w-full h-screen bg-base-bg flex flex-col items-center justify-center p-6 font-sans">
+			<div className="w-full max-w-xs bg-base-surface p-6 rounded-lg shadow-md border border-base-border">
+				<h1 className="text-xl font-bold text-center mb-2 text-action">
 					Welcome to SiteCue
 				</h1>
 				<p className="text-xs text-center text-gray-500 mb-6">
@@ -20,7 +20,7 @@ export default function LoginScreen({
 				</p>
 
 				{authError && (
-					<div className="text-rose-400 text-xs mb-4 text-center bg-rose-50 p-2 rounded border border-rose-100">
+					<div className="text-note-alert text-xs mb-4 text-center bg-note-alert/10 p-2 rounded border border-note-alert/20">
 						{authError}
 					</div>
 				)}
@@ -30,7 +30,7 @@ export default function LoginScreen({
 						type="button"
 						onClick={() => handleSocialLogin("google")}
 						disabled={authLoading}
-						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-white border border-gray-300 text-neutral-700 py-2.5 rounded text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-base-surface border border-base-border text-action py-2.5 rounded text-sm font-medium hover:bg-base-bg transition-colors disabled:opacity-50"
 					>
 						{/* Google Icon (SVG) */}
 						<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -57,7 +57,7 @@ export default function LoginScreen({
 						type="button"
 						onClick={() => handleSocialLogin("github")}
 						disabled={authLoading}
-						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#24292F] text-white py-2.5 rounded text-sm font-medium hover:bg-[#24292F]/90 transition-colors disabled:opacity-50"
+						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#24292F] text-action-text py-2.5 rounded text-sm font-medium hover:bg-[#24292F]/90 transition-colors disabled:opacity-50"
 					>
 						{/* GitHub Icon (SVG Path) */}
 						<svg

@@ -32,16 +32,16 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 	};
 
 	return (
-		<div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
+		<div className="flex flex-col gap-3 rounded-xl border border-base-border bg-base-surface p-4 shadow-sm">
 			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-1.5 rounded-lg bg-neutral-100 p-1">
+				<div className="flex items-center gap-1.5 rounded-lg bg-base-bg p-1">
 					<button
 						type="button"
 						onClick={() => setNoteType("info")}
 						className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
 							noteType === "info"
-								? "bg-white text-blue-600 shadow-sm"
-								: "text-neutral-400 hover:text-neutral-600"
+								? "bg-base-surface text-note-info shadow-sm"
+								: "text-gray-400 hover:text-action"
 						}`}
 					>
 						<Info className="h-3 w-3" />
@@ -52,8 +52,8 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 						onClick={() => setNoteType("alert")}
 						className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
 							noteType === "alert"
-								? "bg-white text-red-600 shadow-sm"
-								: "text-neutral-400 hover:text-neutral-600"
+								? "bg-base-surface text-note-alert shadow-sm"
+								: "text-gray-400 hover:text-action"
 						}`}
 					>
 						<AlertTriangle className="h-3 w-3" />
@@ -64,8 +64,8 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 						onClick={() => setNoteType("idea")}
 						className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
 							noteType === "idea"
-								? "bg-white text-amber-600 shadow-sm"
-								: "text-neutral-400 hover:text-neutral-600"
+								? "bg-base-surface text-note-idea shadow-sm"
+								: "text-gray-400 hover:text-action"
 						}`}
 					>
 						<Lightbulb className="h-3 w-3" />
@@ -85,12 +85,12 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 					type="button"
 					onClick={() => handleSave()}
 					disabled={!content.trim() || isSaving}
-					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-neutral-900 text-white shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
+					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
 					<Send className="h-4 w-4" />
 				</button>
 			</div>
-			<p className="text-[10px] text-neutral-400">
+			<p className="text-[10px] text-gray-400">
 				{isSaving ? "Saving..." : "Markdown supported"}
 			</p>
 		</div>

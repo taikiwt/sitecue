@@ -133,9 +133,9 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 	if (!note && !draft && !isNewNote) {
 		return (
-			<div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400 p-8">
+			<div className="flex-1 flex flex-col items-center justify-center bg-base-bg text-gray-400 p-8">
 				<MousePointerClick
-					className="w-12 h-12 text-gray-300 mb-6 animate-pulse"
+					className="w-12 h-12 text-base-border mb-6 animate-pulse"
 					aria-hidden="true"
 				/>
 				<p className="text-lg font-medium">
@@ -390,9 +390,9 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	};
 
 	return (
-		<div className="flex-1 flex flex-col h-full bg-white overflow-y-auto">
+		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-y-auto">
 			<div className="p-8 max-w-3xl mx-auto w-full">
-				<div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100">
+				<div className="flex items-center justify-between mb-8 pb-4 border-b border-base-border">
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">
 							{note ? (
@@ -406,10 +406,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 										currentResolved
 											? "bg-green-50 text-green-600 border border-green-200"
 											: currentNoteType === "alert"
-												? "bg-rose-50 text-rose-500 border border-rose-100"
+												? "bg-note-alert/10 text-note-alert border border-note-alert/20"
 												: currentNoteType === "idea"
-													? "bg-amber-50 text-amber-500 border border-amber-100"
-													: "bg-blue-50 text-blue-500 border border-blue-100",
+													? "bg-note-idea/10 text-note-idea border border-note-idea/20"
+													: "bg-note-info/10 text-note-info border border-note-info/20",
 									)}
 								>
 									{currentResolved ? (
@@ -455,7 +455,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									variant="default"
 									size="sm"
 									onClick={handleEdit}
-									className="flex items-center gap-1.5 cursor-pointer shadow-sm ml-1"
+									className="flex items-center gap-1.5 cursor-pointer shadow-sm ml-1 bg-action hover:bg-action-hover text-action-text"
 								>
 									<Pencil className="size-3.5" aria-hidden="true" />
 									Edit
@@ -502,10 +502,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 																className={cn(
 																	"w-1.5 h-1.5 rounded-full",
 																	type === "alert"
-																		? "bg-rose-500"
+																		? "bg-note-alert"
 																		: type === "idea"
-																			? "bg-amber-500"
-																			: "bg-blue-500",
+																			? "bg-note-idea"
+																			: "bg-note-info",
 																)}
 															/>
 															<span className="capitalize">{type}</span>
@@ -540,7 +540,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 														variant="ghost"
 														size="sm"
 														onClick={() => setIsDeleteDialogOpen(true)}
-														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
 														Delete Note
 													</Button>
@@ -633,7 +633,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 				{!note && draft?.title && (
 					<div className="mb-8">
-						<h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+						<h1 className="text-3xl font-extrabold text-action tracking-tight">
 							{draft.title}
 						</h1>
 					</div>
@@ -656,7 +656,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="text-neutral-600 underline hover:text-neutral-900 break-all text-sm flex-1 bg-neutral-50 p-3 rounded-lg border border-neutral-200 transition-colors"
+								className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
 							>
 								{note.url_pattern}
 							</a>
@@ -664,7 +664,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								type="button"
 								variant="outline"
 								size="sm"
-								className="size-10 text-neutral-400 hover:text-neutral-900 border border-neutral-200 rounded-lg bg-neutral-50 hover:bg-neutral-100 active:scale-95 cursor-pointer shadow-sm"
+								className="size-10 text-gray-400 hover:text-action border border-base-border rounded-lg bg-base-surface hover:bg-base-surface/80 active:scale-95 cursor-pointer shadow-sm"
 								onClick={() => handleCopyUrl(note.url_pattern)}
 								title="Copy Source URL"
 							>
@@ -728,7 +728,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					)}
 				</div>
 
-				<div className="mt-12 pt-8 border-t border-gray-100 text-xs text-gray-400">
+				<div className="mt-12 pt-8 border-t border-base-border text-xs text-gray-400">
 					<p>ID: {id}</p>
 					<p>Last updated: {formatDate(updatedAt)}</p>
 					<p className="mt-1 uppercase tracking-widest font-bold">
@@ -756,7 +756,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								e.preventDefault();
 								handleDeleteNote();
 							}}
-							className="bg-red-600 hover:bg-red-700"
+							className="bg-note-alert hover:bg-note-alert/80 text-white"
 							disabled={isSaving}
 						>
 							{isSaving ? "Deleting..." : "Delete"}
