@@ -47,6 +47,7 @@ next-env.d.ts
 
 # AI context files
 repomix-*.xml
+repomix-*.md
 
 # Playwright
 playwright-report/
