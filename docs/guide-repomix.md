@@ -142,7 +142,7 @@ supabase/migrations/
 ### 生成コマンド
 
 ```bash
-# 1. プロジェクト全体のスケルトン（地図）を生成する(設定ファイルが反映される)
+# 1. プロジェクト全体のスケルトン（地図）を生成する(設定ファイルを使って生成)
 bun x repomix --config repomix-skeleton.config.json
 
 # 2. プロジェクト全体を網羅して生成する( `repomix-output.xml` が作られる)

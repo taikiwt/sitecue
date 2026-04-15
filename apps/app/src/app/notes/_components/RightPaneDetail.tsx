@@ -425,7 +425,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								</button>
 							) : (
 								<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-									{draft?.target_platform || "Draft"}
+									Draft
 								</span>
 							)}
 							<span className="text-sm text-gray-400">

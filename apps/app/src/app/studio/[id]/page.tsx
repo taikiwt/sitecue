@@ -15,7 +15,7 @@ export default async function DraftEditPage({ params }: DraftPageProps) {
 
 	const { data: draft, error } = await supabase
 		.from("sitecue_drafts")
-		.select("*")
+		.select("*, sitecue_templates(*)")
 		.eq("id", id)
 		.single();
 
@@ -26,9 +26,15 @@ export default async function DraftEditPage({ params }: DraftPageProps) {
 	// 型の整合性を合わせる（supabaseのRowからDraft型へ）
 	const formattedDraft: Draft = {
 		...draft,
-		target_platform: draft.target_platform as Draft["target_platform"],
 		metadata: draft.metadata as Draft["metadata"],
+		sitecue_templates:
+			draft.sitecue_templates as unknown as Draft["sitecue_templates"],
 	};
 
-	return <DraftEditor initialDraft={formattedDraft} />;
+	return (
+		<DraftEditor
+			initialDraft={formattedDraft}
+			template={formattedDraft.sitecue_templates}
+		/>
+	);
 }

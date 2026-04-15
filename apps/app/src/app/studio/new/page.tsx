@@ -1,27 +1,23 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
-import type { DraftPlatform } from "../../../../../../types/app.ts";
+import { createClient } from "@/utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
 
-function FocusModeEditor() {
-	const searchParams = useSearchParams();
-	const target = (searchParams.get("target") as DraftPlatform) || "generic";
+export default async function FocusModePage({
+	searchParams,
+}: {
+	searchParams: Promise<{ template_id?: string }>;
+}) {
+	const resolvedParams = await searchParams;
+	let template = null;
 
-	return <DraftEditor targetPlatform={target} />;
-}
+	if (resolvedParams.template_id) {
+		const supabase = await createClient();
+		const { data } = await supabase
+			.from("sitecue_templates")
+			.select("*")
+			.eq("id", resolvedParams.template_id)
+			.single();
+		template = data;
+	}
 
-export default function FocusModePage() {
-	return (
-		<Suspense
-			fallback={
-				<div className="flex h-screen items-center justify-center bg-white text-neutral-400">
-					Loading Studio...
-				</div>
-			}
-		>
-			<FocusModeEditor />
-		</Suspense>
-	);
+	return <DraftEditor template={template} />;
 }
