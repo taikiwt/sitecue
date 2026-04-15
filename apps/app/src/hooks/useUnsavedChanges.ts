@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { useEditorStore } from "@/store/useEditorStore";
 
 /**
@@ -6,14 +6,16 @@ import { useEditorStore } from "@/store/useEditorStore";
  * @param isDirty Whether there are unsaved changes.
  */
 export const useUnsavedChanges = (isDirty: boolean) => {
-	const setIsDirty = useEditorStore((state) => state.setIsDirty);
+	const setDirtySource = useEditorStore((state) => state.setDirtySource);
+	const removeDirtySource = useEditorStore((state) => state.removeDirtySource);
+	const hookId = useId();
 
-	// propsの変更をグローバルストアに同期
+	// propsの変更をIDごとにグローバルストアに同期
 	useEffect(() => {
-		setIsDirty(isDirty);
-		// アンマウント時に状態をリセット
-		return () => setIsDirty(false);
-	}, [isDirty, setIsDirty]);
+		setDirtySource(hookId, isDirty);
+		// アンマウント時にこのコンポーネントの状態をリセット
+		return () => removeDirtySource(hookId);
+	}, [isDirty, setDirtySource, removeDirtySource, hookId]);
 
 	// ブラウザ標準の離脱防止（リロード・タブ閉じ用）
 	useEffect(() => {

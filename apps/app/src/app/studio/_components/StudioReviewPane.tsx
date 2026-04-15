@@ -1,6 +1,33 @@
 "use client";
 
+import {
+	closestCenter,
+	DndContext,
+	type DragEndEvent,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from "@dnd-kit/core";
+import {
+	arrayMove,
+	SortableContext,
+	useSortable,
+	verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Loader2, Sparkles } from "lucide-react";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import type { Note } from "../../../../../../types/app.ts";
 import NoteEditor from "../../_components/NoteEditor";
 import NoteCard from "./NoteCard";
@@ -11,6 +38,11 @@ interface StudioReviewPaneProps {
 	reviewNotes: Note[];
 	isLoadingReview: boolean;
 	onAddNote: (content: string, type: NoteType) => Promise<void>;
+	onUpdateNote: (id: string, content: string) => void;
+	onDeleteNote: (id: string) => void;
+	onDeleteAllNotes: () => void;
+	onReorderNotes: (newOrder: Note[]) => void;
+	onInsertToEditor: (content: string) => void;
 	onWeave: () => void;
 	isWeaving: boolean;
 	usageCount: number;
@@ -21,6 +53,11 @@ export default function StudioReviewPane({
 	reviewNotes,
 	isLoadingReview,
 	onAddNote,
+	onUpdateNote,
+	onDeleteNote,
+	onDeleteAllNotes,
+	onReorderNotes,
+	onInsertToEditor,
 	onWeave,
 	isWeaving,
 	usageCount,
@@ -28,6 +65,25 @@ export default function StudioReviewPane({
 }: StudioReviewPaneProps) {
 	const limit = plan === "pro" ? 100 : 3;
 	const isLimitReached = usageCount >= limit;
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 5,
+			},
+		}),
+	);
+
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over || active.id === over.id) return;
+
+		const oldIndex = reviewNotes.findIndex((item) => item.id === active.id);
+		const newIndex = reviewNotes.findIndex((item) => item.id === over.id);
+
+		const updatedNotes = arrayMove(reviewNotes, oldIndex, newIndex);
+		onReorderNotes(updatedNotes);
+	};
 
 	return (
 		<div className="relative flex h-full flex-col bg-neutral-50/30">
@@ -39,6 +95,45 @@ export default function StudioReviewPane({
 
 				{/* Note List */}
 				<div className="p-4">
+					<div className="flex justify-between items-center mb-3">
+						<span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+							Review Notes ({reviewNotes.length})
+						</span>
+						{reviewNotes.length > 0 && (
+							<AlertDialog>
+								<AlertDialogTrigger
+									render={
+										<Button
+											variant="ghost"
+											size="sm"
+											className="text-red-500 hover:bg-red-50 hover:text-red-600 h-6 px-2 text-[10px] font-bold uppercase"
+										>
+											Delete All
+										</Button>
+									}
+								/>
+								<AlertDialogContent>
+									<AlertDialogHeader>
+										<AlertDialogTitle>Delete all notes?</AlertDialogTitle>
+										<AlertDialogDescription>
+											This will remove all comments from this draft. You must
+											click "Save" to apply these changes to the server.
+										</AlertDialogDescription>
+									</AlertDialogHeader>
+									<AlertDialogFooter>
+										<AlertDialogCancel>Cancel</AlertDialogCancel>
+										<AlertDialogAction
+											onClick={onDeleteAllNotes}
+											className="bg-red-600 hover:bg-red-700 text-white font-bold"
+										>
+											Delete
+										</AlertDialogAction>
+									</AlertDialogFooter>
+								</AlertDialogContent>
+							</AlertDialog>
+						)}
+					</div>
+
 					<div className="grid gap-3">
 						{isLoadingReview ? (
 							Array.from({ length: 3 }).map((_, i) => (
@@ -60,7 +155,29 @@ export default function StudioReviewPane({
 								</p>
 							</div>
 						) : (
-							reviewNotes.map((note) => <NoteCard key={note.id} note={note} />)
+							<DndContext
+								id="studio-review-dnd"
+								sensors={sensors}
+								collisionDetection={closestCenter}
+								onDragEnd={handleDragEnd}
+							>
+								<SortableContext
+									items={reviewNotes.map((n) => n.id)}
+									strategy={verticalListSortingStrategy}
+								>
+									<div className="grid gap-3">
+										{reviewNotes.map((note) => (
+											<SortableNoteCard
+												key={note.id}
+												note={note}
+												onUpdate={onUpdateNote}
+												onDelete={onDeleteNote}
+												onInsert={onInsertToEditor}
+											/>
+										))}
+									</div>
+								</SortableContext>
+							</DndContext>
 						)}
 					</div>
 				</div>
@@ -111,6 +228,47 @@ export default function StudioReviewPane({
 					)}
 				</div>
 			</div>
+		</div>
+	);
+}
+
+function SortableNoteCard({
+	note,
+	onUpdate,
+	onDelete,
+	onInsert,
+}: {
+	note: Note;
+	onUpdate: (id: string, content: string) => void;
+	onDelete: (id: string) => void;
+	onInsert: (content: string) => void;
+}) {
+	const {
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+		attributes,
+		listeners,
+	} = useSortable({
+		id: note.id,
+	});
+
+	const style = {
+		transform: CSS.Translate.toString(transform),
+		transition,
+		zIndex: isDragging ? 50 : undefined,
+		position: "relative" as const,
+	};
+
+	return (
+		<div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+			<NoteCard
+				note={note}
+				onUpdate={onUpdate}
+				onDelete={onDelete}
+				onInsert={onInsert}
+			/>
 		</div>
 	);
 }

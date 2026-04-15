@@ -51,10 +51,12 @@ export default function DraftEditor({
 	const [content, setContent] = useState(savedState.content);
 	const [title, setTitle] = useState(savedState.title);
 	const [slug, setSlug] = useState(savedState.slug);
+	const [hasUnsavedNotesChanges, setHasUnsavedNotesChanges] = useState(false);
 
 	// State for Self Review
 	const [reviewNotes, setReviewNotes] = useState<Note[]>([]);
 	const [isLoadingReview, setIsLoadingReview] = useState(true);
+	const [deletedNoteIds, setDeletedNoteIds] = useState<string[]>([]);
 
 	// State for Global Materials
 	const [searchKeyword, setSearchKeyword] = useState("");
@@ -78,7 +80,8 @@ export default function DraftEditor({
 	const isDirty =
 		content !== savedState.content ||
 		title !== savedState.title ||
-		slug !== savedState.slug;
+		slug !== savedState.slug ||
+		hasUnsavedNotesChanges;
 
 	const handleBack = () => {
 		if (isDirty) {
@@ -205,50 +208,73 @@ export default function DraftEditor({
 
 			if (!user) throw new Error("User not authenticated");
 
-			if (initialDraft?.id) {
-				// Pattern A: Existing draft -> Save to DB immediately
-				const { data, error } = await supabase
-					.from("sitecue_notes")
-					.insert({
-						content,
-						note_type: type,
-						draft_id: initialDraft.id,
-						scope: "draft",
-						url_pattern: `sitecue://draft/${initialDraft.id}`,
-						user_id: user.id,
-					})
-					.select()
-					.single();
-
-				if (error) throw error;
-				if (data) {
-					setReviewNotes((prev) => [data as Note, ...prev]);
-				}
-			} else {
-				// Pattern B: New draft -> Keep in memory
-				const now = new Date().toISOString();
-				const tempNote: Note = {
-					id: crypto.randomUUID(),
-					content,
-					note_type: type,
-					draft_id: null,
-					scope: "draft",
-					url_pattern: "", // Will be filled on sync
-					user_id: user.id,
-					created_at: now,
-					updated_at: now,
-					is_expanded: false,
-					is_favorite: false,
-					is_pinned: false,
-					is_resolved: false,
-					sort_order: 0,
-				};
-				setReviewNotes((prev) => [tempNote, ...prev]);
-			}
+			// Always keep in-memory for both New and Existing drafts (In-Memory First Pattern)
+			const now = new Date().toISOString();
+			const tempNote: Note = {
+				id: crypto.randomUUID(),
+				content,
+				note_type: type,
+				draft_id: initialDraft?.id || null, // Preserve draft_id if it exists
+				scope: "draft",
+				url_pattern: initialDraft?.id
+					? `sitecue://draft/${initialDraft.id}`
+					: "",
+				user_id: user.id,
+				created_at: now,
+				updated_at: now,
+				is_expanded: false,
+				is_favorite: false,
+				is_pinned: false,
+				is_resolved: false,
+				sort_order: reviewNotes.length,
+			};
+			setReviewNotes((prev) => [tempNote, ...prev]);
+			setHasUnsavedNotesChanges(true);
 		} catch (error) {
 			console.error("Failed to add note:", error);
 			throw error;
 		}
+	};
+
+	const handleUpdateNote = (id: string, newContent: string) => {
+		setReviewNotes((prev) =>
+			prev.map((n) => (n.id === id ? { ...n, content: newContent } : n)),
+		);
+		setHasUnsavedNotesChanges(true);
+	};
+
+	const handleDeleteNote = (id: string) => {
+		const noteToDelete = reviewNotes.find((n) => n.id === id);
+		// Only track for DB deletion if it's already in the DB (has a draft_id from fetching)
+		// Note: We'll assume if it was fetched, it has a draft_id.
+		// If it's a newly added note in memory, its draft_id might be null or set but it won't be in the DB yet.
+		// Actually, checking if it exists in DB is better by checking if it's NOT a randomUUID we just made.
+		// But the prompt suggestion is noteToDelete?.draft_id.
+		if (noteToDelete?.draft_id) {
+			setDeletedNoteIds((prev) => [...prev, id]);
+		}
+		setReviewNotes((prev) => prev.filter((n) => n.id !== id));
+		setHasUnsavedNotesChanges(true);
+	};
+
+	const handleDeleteAllNotes = () => {
+		const dbNotesIds = reviewNotes.filter((n) => n.draft_id).map((n) => n.id);
+		if (dbNotesIds.length > 0) {
+			setDeletedNoteIds((prev) => [...prev, ...dbNotesIds]);
+		}
+		setReviewNotes([]);
+		setHasUnsavedNotesChanges(true);
+	};
+
+	const handleReorderNotes = (newOrder: Note[]) => {
+		setReviewNotes(newOrder);
+		setHasUnsavedNotesChanges(true);
+	};
+
+	const handleInsertToEditor = (noteContent: string) => {
+		const newContent = content ? `${content}\n\n${noteContent}` : noteContent;
+		setContent(newContent);
+		pushToHistory(newContent);
 	};
 
 	const handleWeave = async () => {
@@ -332,6 +358,11 @@ export default function DraftEditor({
 	const handleSave = async () => {
 		setStatus("saving");
 		try {
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("Not authenticated");
+
 			const metadata =
 				template?.name === "Zenn" ? { slug } : initialDraft?.metadata || {};
 
@@ -349,7 +380,6 @@ export default function DraftEditor({
 					.eq("id", currentDraftId);
 
 				if (error) throw error;
-				setSavedState({ content, title, slug });
 			} else {
 				const { data, error } = await supabase
 					.from("sitecue_drafts")
@@ -365,35 +395,62 @@ export default function DraftEditor({
 				if (error) throw error;
 				if (data) {
 					currentDraftId = data.id;
-
-					// Sync In-Memory notes if any
-					const unsavedNotes = reviewNotes.filter((n) => !n.draft_id);
-					if (unsavedNotes.length > 0) {
-						const notesToInsert = unsavedNotes.map((n) => ({
-							content: n.content,
-							note_type: n.note_type,
-							draft_id: currentDraftId,
-							scope: n.scope,
-							url_pattern: `sitecue://draft/${currentDraftId}`,
-							user_id: n.user_id,
-						}));
-
-						const { error: notesError } = await supabase
-							.from("sitecue_notes")
-							.insert(notesToInsert);
-
-						if (notesError) {
-							console.error("Failed to sync notes:", notesError);
-							// Don't fail the whole save, but alert user?
-						}
-					}
-
-					setSavedState({ content, title, slug });
-					router.push(`/studio/${data.id}`);
 				}
 			}
+
+			if (currentDraftId) {
+				// 1. Handle Deletions
+				if (deletedNoteIds.length > 0) {
+					const { error: deleteError } = await supabase
+						.from("sitecue_notes")
+						.delete()
+						.in("id", deletedNoteIds);
+					if (deleteError)
+						console.error("Failed to delete notes:", deleteError);
+				}
+
+				// 2. Handle Upserts (Additions & Updates)
+				if (reviewNotes.length >= 0) {
+					// biome-ignore lint/suspicious/noExplicitAny: Supabase upsert payload
+					const notesToUpsert: any[] = reviewNotes.map((n, index) => ({
+						id: n.id,
+						content: n.content,
+						note_type: n.note_type,
+						draft_id: currentDraftId,
+						scope: n.scope,
+						url_pattern: n.draft_id
+							? n.url_pattern
+							: `sitecue://draft/${currentDraftId}`,
+						user_id: user.id,
+						sort_order: index,
+						is_expanded: n.is_expanded || false,
+						is_favorite: n.is_favorite || false,
+						is_pinned: n.is_pinned || false,
+						is_resolved: n.is_resolved || false,
+					}));
+
+					if (notesToUpsert.length > 0) {
+						const { error: upsertError } = await supabase
+							.from("sitecue_notes")
+							.upsert(notesToUpsert);
+						if (upsertError)
+							console.error("Failed to sync notes:", upsertError);
+					}
+				}
+
+				setDeletedNoteIds([]);
+				setSavedState({ content, title, slug });
+				setHasUnsavedNotesChanges(false);
+
+				if (!initialDraft?.id) {
+					router.push(`/studio/${currentDraftId}`);
+				}
+			}
+
 			setStatus("success");
-			setTimeout(() => setStatus("idle"), 2000);
+			setTimeout(() => {
+				setStatus("idle");
+			}, 2000);
 		} catch (error) {
 			console.error("Failed to save draft:", error);
 			alert("Failed to save the draft. Check the console for details.");
@@ -568,6 +625,11 @@ export default function DraftEditor({
 								reviewNotes={reviewNotes}
 								isLoadingReview={isLoadingReview}
 								onAddNote={handleAddNote}
+								onUpdateNote={handleUpdateNote}
+								onDeleteNote={handleDeleteNote}
+								onDeleteAllNotes={handleDeleteAllNotes}
+								onReorderNotes={handleReorderNotes}
+								onInsertToEditor={handleInsertToEditor}
 								onWeave={handleWeave}
 								isWeaving={isWeaving}
 								usageCount={usageCount}
@@ -643,6 +705,11 @@ export default function DraftEditor({
 											reviewNotes={reviewNotes}
 											isLoadingReview={isLoadingReview}
 											onAddNote={handleAddNote}
+											onUpdateNote={handleUpdateNote}
+											onDeleteNote={handleDeleteNote}
+											onDeleteAllNotes={handleDeleteAllNotes}
+											onReorderNotes={handleReorderNotes}
+											onInsertToEditor={handleInsertToEditor}
 											onWeave={handleWeave}
 											isWeaving={isWeaving}
 											usageCount={usageCount}
