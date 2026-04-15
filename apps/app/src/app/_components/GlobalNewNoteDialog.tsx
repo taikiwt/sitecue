@@ -145,7 +145,7 @@ export default function GlobalNewNoteDialog() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
-			<DialogContent className="sm:max-w-2xl bg-base-surface p-0 overflow-hidden flex flex-col">
+			<DialogContent className="sm:max-w-2xl bg-base-surface p-0 overflow-hidden flex flex-col max-h-[85vh]">
 				<DialogHeader className="p-6 border-b border-base-border">
 					<DialogTitle className="text-xl font-bold">New Note</DialogTitle>
 					<DialogDescription className="text-gray-500">
@@ -184,7 +184,13 @@ export default function GlobalNewNoteDialog() {
 								disabled={isSaving}
 							>
 								<SelectTrigger id="global-scope" className="h-9 w-full">
-									<SelectValue placeholder="Select scope" />
+									<SelectValue placeholder="Select scope">
+										{scope === "exact"
+											? "Page"
+											: scope === "domain"
+												? "Domain"
+												: "Inbox"}
+									</SelectValue>
 								</SelectTrigger>
 								<SelectContent>
 									<SelectItem value="exact" disabled={!urlPattern}>
@@ -219,20 +225,18 @@ export default function GlobalNewNoteDialog() {
 
 					<div className="space-y-2">
 						<Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-							Content
+							Note
 						</Label>
-						<div className="min-h-[250px] border border-base-border rounded-lg bg-base-surface/30 overflow-hidden">
-							<NotesEditor
-								value={content}
-								onChange={setContent}
-								placeholder="What's on your mind?"
-								isDirty={content.length > 0}
-							/>
-						</div>
+						<NotesEditor
+							value={content}
+							onChange={setContent}
+							placeholder="What's on your mind?"
+							isDirty={content.length > 0}
+						/>
 					</div>
 				</div>
 
-				<DialogFooter className="p-4 bg-base-surface/50 border-t border-base-border">
+				<DialogFooter className="m-0 p-4 bg-base-surface/50 border-t border-base-border">
 					<Button
 						type="button"
 						variant="ghost"
