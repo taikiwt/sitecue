@@ -9,14 +9,14 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
 - **Subtraction Aesthetics (引き算の美学)**: 不要なボーダー、過剰なシャドウ、多すぎる色数を徹底的に排除する。コンテンツ（タスクとメモ）自体が主役となるUIを構築する。
 - **Implementation Priority**: 抽象的なデザイン理念と、堅牢で業界標準（Industry-standard）な実装手法が競合した場合は、**常に「堅牢で業界標準な実装」を優先**する。見た目のシンプルさのためにアクセシビリティ（a11y）やセマンティックなHTMLを犠牲にしてはならない。
 
-## 2. Visual Language & Color Strict Rules (Tailwind CSS)
+## 2. Visual Language & Color Strict Rules (Tailwind CSS v4)
 
 ### 2.1. Semantic Color Usage (絶対ルール)
-AIエディタがUIコンポーネントを生成・修正する際は、`tailwind.config.ts` に定義されたセマンティックカラーを**必ず**使用すること。
+AIエディタがUIコンポーネントを生成・修正する際は、各アプリのメインCSSファイル（`apps/app/src/app/globals.css` や `apps/extension/src/index.css`）の `@theme` ディレクティブで定義されたセマンティックカラーを**必ず**使用すること。
 Tailwindのデフォルトカラースケール（例: `bg-blue-500`, `text-red-400`, `bg-gray-800` など）を直接ハードコードすることは**厳重に禁止**する。
 
 - **Backgrounds & Borders**:
-  - `bg-base-bg` (メイン背景) と `bg-base-surface` (少し浮いた要素) を使い分け、極力ボーダー（`border-base-border`）に頼らず空間で要素を区切る。
+  - `bg-base-bg` (メイン背景) と `bg-base-surface` (少し浮いた要素・コンテナ等) を使い分け、極力ボーダー（`border-base-border`）に頼らず空間で要素を区切る。
 - **Action Buttons**:
   - 画面上下などの主要なアクション要素には `bg-action hover:bg-action-hover text-action-text` を使用する。
 - **Note Markers (機能的カラー)**:
