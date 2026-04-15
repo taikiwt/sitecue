@@ -434,8 +434,8 @@ function NoteItem({
 							{item.note_type}
 						</span>
 					) : (
-						<span className="bg-note-info/10 text-note-info px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-							{item.target_platform || "draft"}
+						<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+							Draft
 						</span>
 					)}
 					<span className="text-[10px] text-gray-400">

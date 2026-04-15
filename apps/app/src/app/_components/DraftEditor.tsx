@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { createClient } from "@/utils/supabase/client";
-import type { Draft, DraftPlatform, Note } from "../../../../../types/app.ts";
+import type { Draft, Note, Template } from "../../../../../types/app.ts";
 import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
@@ -26,18 +26,17 @@ import UndoRedoControls from "../studio/_components/UndoRedoControls";
 type NoteType = "info" | "alert" | "idea";
 
 interface DraftEditorProps {
-	targetPlatform?: DraftPlatform;
+	template?: Template | null;
 	initialDraft?: Draft;
 }
 
 export default function DraftEditor({
-	targetPlatform,
+	template,
 	initialDraft,
 }: DraftEditorProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const supabase = createClient();
-	const target = targetPlatform || initialDraft?.target_platform || "generic";
 	const activePane = searchParams.get("pane") || "review";
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -45,7 +44,7 @@ export default function DraftEditor({
 		"idle",
 	);
 	const [savedState, setSavedState] = useState({
-		content: initialDraft?.content || "",
+		content: initialDraft?.content || template?.boilerplate || "",
 		title: initialDraft?.title || "",
 		slug: initialDraft?.metadata?.slug || "",
 	});
@@ -328,12 +327,13 @@ export default function DraftEditor({
 	};
 
 	const charCount = content.length;
+	const maxLength = template?.max_length;
 
 	const handleSave = async () => {
 		setStatus("saving");
 		try {
 			const metadata =
-				target === "zenn" ? { slug } : initialDraft?.metadata || {};
+				template?.name === "Zenn" ? { slug } : initialDraft?.metadata || {};
 
 			let currentDraftId = initialDraft?.id;
 
@@ -356,7 +356,7 @@ export default function DraftEditor({
 					.insert({
 						title,
 						content,
-						target_platform: target,
+						template_id: template?.id || null,
 						metadata,
 					})
 					.select()
@@ -430,12 +430,11 @@ export default function DraftEditor({
 						</Link>
 						<div className="h-4 w-px bg-base-border" />
 						<span className="text-sm font-medium text-action">
-							{target === "x" &&
-								(initialDraft ? "Edit Draft for X" : "New Draft for X")}
-							{target === "zenn" &&
-								(initialDraft ? "Edit Draft for Zenn" : "New Draft for Zenn")}
-							{target === "generic" &&
-								(initialDraft ? "Edit Note" : "New Note")}
+							{template
+								? `Draft for ${template.name}`
+								: initialDraft
+									? "Edit Draft"
+									: "New Blank Canvas"}
 						</span>
 					</div>
 
@@ -471,31 +470,35 @@ export default function DraftEditor({
 				</header>
 
 				<div className="border-b border-neutral-100 bg-neutral-50/50 px-8 py-6">
-					{target === "x" && (
-						<div className="flex items-center justify-between">
+					{maxLength && (
+						<div className="flex items-center justify-between mb-4">
 							<span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
 								Character Count
 							</span>
 							<span
-								className={`text-2xl font-mono font-bold ${charCount > 140 ? "text-note-alert" : "text-action"}`}
+								className={`text-2xl font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-action"}`}
 							>
-								{charCount} / 140
+								{charCount} / {maxLength}
 							</span>
 						</div>
 					)}
 
-					{target === "zenn" && (
-						<div className="grid gap-4">
-							<div className="flex items-center gap-2">
-								<input
-									type="text"
-									placeholder="Enter article title..."
-									value={title}
-									onChange={(e) => setTitle(e.target.value)}
-									className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
-								/>
-								<InlineCopyButton text={title} />
-							</div>
+					<div className="grid gap-4">
+						<div className="flex items-center gap-2">
+							<input
+								type="text"
+								placeholder={
+									template?.name === "Zenn"
+										? "Enter article title..."
+										: "Title (optional)"
+								}
+								value={title}
+								onChange={(e) => setTitle(e.target.value)}
+								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
+							/>
+							<InlineCopyButton text={title} />
+						</div>
+						{template?.name === "Zenn" && (
 							<div className="flex items-center gap-2 text-sm text-neutral-400">
 								<span>slug:</span>
 								<input
@@ -507,21 +510,8 @@ export default function DraftEditor({
 								/>
 								<InlineCopyButton text={slug} />
 							</div>
-						</div>
-					)}
-
-					{target === "generic" && (
-						<div className="flex items-center gap-2">
-							<input
-								type="text"
-								placeholder="Title (optional)"
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
-							/>
-							<InlineCopyButton text={title} />
-						</div>
-					)}
+						)}
+					</div>
 				</div>
 
 				<main className="flex-1 overflow-y-auto px-8 py-10">

@@ -1,12 +1,4 @@
-import {
-	ArrowRight,
-	BookOpen,
-	Calendar,
-	FileText,
-	Library,
-	MessageSquareText,
-	Plus,
-} from "lucide-react";
+import { ArrowRight, Calendar, FileText, Library, Plus } from "lucide-react";
 import Image from "next/image";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -18,12 +10,12 @@ import { UserMenu } from "./_components/UserMenu";
 
 export default async function LaunchpadPage() {
 	const supabase = await createClient();
-
 	const [
 		{ count: notesCount },
 		{ count: draftsCount },
 		{ data: recentDrafts },
 		{ data: pinnedSites },
+		{ data: templates },
 	] = await Promise.all([
 		supabase.from("sitecue_notes").select("*", { count: "exact", head: true }),
 		supabase.from("sitecue_drafts").select("*", { count: "exact", head: true }),
@@ -36,6 +28,10 @@ export default async function LaunchpadPage() {
 			.from("sitecue_pinned_sites")
 			.select("*")
 			.order("created_at", { ascending: false }),
+		supabase
+			.from("sitecue_templates")
+			.select("*")
+			.order("created_at", { ascending: true }),
 	]);
 
 	return (
@@ -112,33 +108,7 @@ export default async function LaunchpadPage() {
 					</div>
 					<div className="grid gap-8 sm:grid-cols-3">
 						<Link
-							href="/studio/new?target=x"
-							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
-						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
-								<MessageSquareText className="w-5 h-5 text-neutral-600" />
-							</div>
-							<h3 className="mb-1 font-bold text-action">Short Post</h3>
-							<p className="text-xs text-neutral-500 line-clamp-2">
-								Save your sudden ideas as drafts for X.
-							</p>
-						</Link>
-
-						<Link
-							href="/studio/new?target=zenn"
-							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
-						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
-								<BookOpen className="w-5 h-5 text-neutral-600" />
-							</div>
-							<h3 className="mb-1 font-bold text-action">Article</h3>
-							<p className="text-xs text-neutral-500 line-clamp-2">
-								Draft and organize your technical articles for Zenn.
-							</p>
-						</Link>
-
-						<Link
-							href="/studio/new?target=generic"
+							href="/studio/new"
 							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
 						>
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
@@ -146,9 +116,30 @@ export default async function LaunchpadPage() {
 							</div>
 							<h3 className="mb-1 font-bold text-action">Blank Canvas</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
-								Free-form notes not limited to any specific platform.
+								Free-form notes not limited to any specific template.
 							</p>
 						</Link>
+
+						{templates?.map((template) => (
+							<Link
+								key={template.id}
+								href={`/studio/new?template_id=${template.id}`}
+								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
+							>
+								<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
+									<FileText className="w-5 h-5 text-neutral-600" />
+								</div>
+								<h3 className="mb-1 font-bold text-action">{template.name}</h3>
+								{template.max_length && (
+									<p className="text-[10px] text-neutral-400 font-mono mb-1">
+										Max: {template.max_length} chars
+									</p>
+								)}
+								<p className="text-xs text-neutral-500 line-clamp-2">
+									Use this template for your workflow.
+								</p>
+							</Link>
+						))}
 					</div>
 				</section>
 
@@ -209,22 +200,18 @@ export default async function LaunchpadPage() {
 							>
 								<div className="flex items-center gap-4">
 									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-base-bg text-neutral-600 transition-colors group-hover:bg-base-surface">
-										{draft.target_platform === "x" ? (
-											<MessageSquareText className="w-5 h-5" />
-										) : draft.target_platform === "zenn" ? (
-											<BookOpen className="w-5 h-5" />
-										) : (
-											<FileText className="w-5 h-5" />
-										)}
+										<FileText className="w-5 h-5" />
 									</div>
 									<div>
 										<h3 className="font-bold text-action">
 											{draft.title || "Untitled Draft"}
 										</h3>
 										<div className="mt-1 flex items-center gap-2 text-xs text-neutral-400">
-											<span className="capitalize">
-												{draft.target_platform}
-											</span>
+											{draft.template_id ? (
+												<span className="capitalize">Template User</span>
+											) : (
+												<span className="capitalize">Blank Canvas</span>
+											)}
 											<span>•</span>
 											<span className="flex items-center gap-1">
 												<Calendar className="w-3 h-3" />

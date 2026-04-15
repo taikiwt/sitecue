@@ -9,17 +9,14 @@ export type Note = Omit<
 	scope: NoteScope;
 };
 
-export type DraftPlatform = "x" | "zenn" | "generic";
+export type Template = Database["public"]["Tables"]["sitecue_templates"]["Row"];
 
-export type Draft = Omit<
-	Database["public"]["Tables"]["sitecue_drafts"]["Row"],
-	"target_platform"
-> & {
-	target_platform: DraftPlatform;
+export type Draft = Database["public"]["Tables"]["sitecue_drafts"]["Row"] & {
 	metadata: {
 		slug?: string;
 		[key: string]: unknown;
 	} | null;
+	sitecue_templates?: Template | null;
 };
 
 export type PinnedSite =
