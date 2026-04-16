@@ -16,6 +16,7 @@ export async function weaveDocument(
 		format: string;
 		context_id?: string;
 		draft_content?: string;
+		template_id?: string;
 	},
 ) {
 	const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
@@ -48,7 +49,6 @@ export async function weaveDocument(
 		currentResetAt = nextMonth.toISOString();
 	}
 
-	// Ensure we have a reset date (defensive)
 	if (!currentResetAt) {
 		const nextMonth = new Date();
 		nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -65,13 +65,12 @@ export async function weaveDocument(
 		);
 	}
 
-	const { contexts, format, context_id, draft_content } = body;
+	const { contexts, format, context_id, draft_content, template_id } = body;
 
 	if (!Array.isArray(contexts) || typeof format !== "string") {
 		throw new Error("Invalid request body");
 	}
 
-	// 👇 ここにフォーマット判定のルールを追加
 	const formatRule =
 		format === "plaintext"
 			? "- マークダウン記号（# や ** など）は一切使用せず、見出しや箇条書きも含めて純粋なプレーンテキストのみで出力してください。"
@@ -88,7 +87,6 @@ export async function weaveDocument(
 		if (!pageError && pageData) {
 			referenceContent = `【現在のページ内容】\n${pageData.content}`;
 
-			// 使い捨てを保証するため直ちに削除
 			await supabase
 				.from("sitecue_page_contents")
 				.delete()
@@ -107,9 +105,27 @@ export async function weaveDocument(
 		})
 		.join("\n\n");
 
-	// 👇 出力の絶対ルールに ${formatRule} と言語指定を組み込み
-	const fullPrompt = `あなたは優秀なクリエイティブ・パートナーです。
-ユーザーからの直接の指示はありません。以下の【参考ページの内容】を背景知識とし、<user_notes>タグで囲まれた【ユーザーのメモ】を絶対的なディレクションとして、最適なドキュメントを自律的に推論して作成してください。
+	// --- テンプレートのWeave Prompt取得 ---
+	let customWeavePrompt = "";
+	if (template_id) {
+		const { data: templateData, error: templateError } = await supabase
+			.from("sitecue_templates")
+			.select("weave_prompt")
+			.eq("id", template_id)
+			.single();
+
+		if (!templateError && templateData) {
+			// any型エラー回避のため明示的に型をアサーション
+			const tData = templateData as { weave_prompt: string | null };
+			customWeavePrompt = tData.weave_prompt || "";
+		}
+	}
+
+	const systemInstruction = customWeavePrompt
+		? `【システムプロンプト（最優先のフォーマット・トーン指示）】\n${customWeavePrompt}\n\n上記のシステムプロンプトの指示・トーンを最優先で厳守し、以下の【参考ページの内容】と<user_notes>タグ内の【ユーザーのメモ】をもとにドキュメントを作成してください。`
+		: `あなたは優秀なクリエイティブ・パートナーです。\nユーザーからの直接の指示はありません。以下の【参考ページの内容】を背景知識とし、<user_notes>タグで囲まれた【ユーザーのメモ】を絶対的なディレクションとして、最適なドキュメントを自律的に推論して作成してください。`;
+
+	const fullPrompt = `${systemInstruction}
 
 # 出力の絶対ルール（厳守）
 - 前置き（「ご提示いただいたメモに基づき…」「〜を作成しました」等の挨拶や説明）は一切不要です。
