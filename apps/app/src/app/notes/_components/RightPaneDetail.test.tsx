@@ -373,4 +373,18 @@ describe("RightPaneDetail Component Phase 1 Improvements", () => {
 		expect(editLink).toHaveAttribute("href", "/studio/test-draft-1");
 		expect(screen.getByText("My Draft")).toBeInTheDocument();
 	});
+
+	it("should toggle resolved status when note type badge is clicked", async () => {
+		const user = userEvent.setup();
+		render(<RightPaneDetail note={mockNote as unknown as Note} />);
+
+		// Infoバッジ（現在のnote_type）をクリック
+		const resolvedButton = screen.getByRole("button", { name: /info/i });
+		await user.click(resolvedButton);
+
+		expect(supabaseMock.from).toHaveBeenCalledWith("sitecue_notes");
+		expect(supabaseMock.update).toHaveBeenCalledWith(
+			expect.objectContaining({ is_resolved: true }),
+		);
+	});
 });

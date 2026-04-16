@@ -29,6 +29,7 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { CustomLink } from "@/components/ui/custom-link";
 import {
 	Dialog,
 	DialogContent,
@@ -52,7 +53,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
-import { CustomLink } from "@/components/ui/custom-link";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -404,13 +404,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									}
 									className={cn(
 										"flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all hover:opacity-80 active:scale-95 cursor-pointer",
-										currentResolved
-											? "bg-green-50 text-green-600 border border-green-200"
-											: currentNoteType === "alert"
-												? "bg-note-alert/10 text-note-alert border border-note-alert/20"
-												: currentNoteType === "idea"
-													? "bg-note-idea/10 text-note-idea border border-note-idea/20"
-													: "bg-note-info/10 text-note-info border border-note-info/20",
+										currentNoteType === "alert"
+											? "bg-note-alert/10 text-note-alert border border-note-alert/20"
+											: currentNoteType === "idea"
+												? "bg-note-idea/10 text-note-idea border border-note-idea/20"
+												: "bg-note-info/10 text-note-info border border-note-info/20",
 									)}
 								>
 									{currentResolved ? (
@@ -422,7 +420,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									) : (
 										<Info className="w-3.5 h-3.5" aria-hidden="true" />
 									)}
-									{currentResolved ? "Completed" : currentNoteType}
+									{currentNoteType}
 								</button>
 							) : (
 								<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
@@ -692,7 +690,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					</div>
 				)}
 
-				<div className="space-y-4">
+				<div
+					className={cn(
+						"space-y-4",
+						currentResolved && "opacity-50 transition-opacity",
+					)}
+				>
 					<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">
 						{note ? "Note Content" : "Draft Content"}
 					</div>
