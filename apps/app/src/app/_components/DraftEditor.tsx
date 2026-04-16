@@ -315,6 +315,7 @@ export default function DraftEditor({
 					contexts: reviewNotes,
 					format: "markdown",
 					draft_content: content,
+					template_id: activeTemplate?.id || null,
 				}),
 			});
 
