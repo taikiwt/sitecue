@@ -92,6 +92,9 @@ export function MiddlePaneList(props: Props) {
 	const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 	const [isSelectMode, setIsSelectMode] = useState(false);
 	const [showResolved, setShowResolved] = useState(false);
+	const [filterType, setFilterType] = useState<
+		"all" | "info" | "alert" | "idea"
+	>("all");
 
 	useEffect(() => {
 		// Ensure items have an id and are unique to prevent key warnings and dnd-kit crashes
@@ -107,6 +110,7 @@ export function MiddlePaneList(props: Props) {
 		const _unused = { currentView, currentDomain, currentExact };
 		setIsSelectMode(false);
 		setSelectedIds(new Set());
+		setFilterType("all");
 	}, [currentView, currentDomain, currentExact]);
 
 	const sensors = useSensors(
@@ -201,7 +205,13 @@ export function MiddlePaneList(props: Props) {
 	};
 
 	const displayItems = localItems.filter((item) => {
-		if ("note_type" in item && item.is_resolved && !showResolved) return false;
+		const isNote = "note_type" in item;
+		if (isNote && item.is_resolved && !showResolved) return false;
+
+		if (filterType !== "all") {
+			if (!isNote || item.note_type !== filterType) return false;
+		}
+
 		return true;
 	});
 
@@ -248,6 +258,41 @@ export function MiddlePaneList(props: Props) {
 						</Button>
 					</div>
 				</div>
+				{currentView !== "drafts" && (
+					<div className="mt-3 flex items-center gap-1 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
+						<button
+							type="button"
+							onClick={() => setFilterType("all")}
+							className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${filterType === "all" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
+						>
+							All
+						</button>
+						<button
+							type="button"
+							onClick={() => setFilterType("info")}
+							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "info" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
+							title="Info"
+						>
+							<Info className="w-3.5 h-3.5" aria-hidden="true" />
+						</button>
+						<button
+							type="button"
+							onClick={() => setFilterType("alert")}
+							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "alert" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
+							title="Alert"
+						>
+							<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+						</button>
+						<button
+							type="button"
+							onClick={() => setFilterType("idea")}
+							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "idea" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
+							title="Idea"
+						>
+							<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
+						</button>
+					</div>
+				)}
 				{selectedIds.size > 0 ? (
 					<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
 						<span className="text-xs font-semibold text-action">
