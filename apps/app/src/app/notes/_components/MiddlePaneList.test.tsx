@@ -126,4 +126,38 @@ describe("MiddlePaneList Bulk Actions", () => {
 		await user.click(toggleBtn);
 		expect(screen.getByText("Resolved Content")).toBeInTheDocument();
 	});
+
+	it("should filter notes by note_type when filter buttons are clicked", async () => {
+		const user = userEvent.setup();
+		render(
+			<MiddlePaneList
+				items={mockItems}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// Initially both notes should be visible
+		expect(screen.getByText("Note 1")).toBeInTheDocument(); // info note
+		expect(screen.getByText("Note 2")).toBeInTheDocument(); // idea note
+
+		// Click Idea filter
+		const ideaFilterBtn = screen.getByTitle("Idea");
+		await user.click(ideaFilterBtn);
+
+		// Only Note 2 (idea) should be visible
+		expect(screen.queryByText("Note 1")).not.toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
+
+		// Click All filter
+		const allFilterBtn = screen.getByRole("button", { name: "All" });
+		await user.click(allFilterBtn);
+
+		// Both should be visible again
+		expect(screen.getByText("Note 1")).toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
+	});
 });
