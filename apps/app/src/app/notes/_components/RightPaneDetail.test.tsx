@@ -13,7 +13,7 @@ import {
 	vi,
 } from "vitest";
 import { createClient } from "@/utils/supabase/client";
-import type { Note } from "../types";
+import type { Draft, Note } from "../types";
 import { RightPaneDetail } from "./RightPaneDetail";
 
 // Define mock type to avoid 'any'
@@ -355,5 +355,22 @@ describe("RightPaneDetail Component Phase 1 Improvements", () => {
 				scope: "inbox",
 			}),
 		);
+	});
+
+	it("should show 'Edit in Studio' button when a draft is provided", () => {
+		const mockDraft = {
+			id: "test-draft-1",
+			title: "My Draft",
+			content: "Draft content",
+			created_at: "2026-04-12T00:00:00Z",
+			updated_at: "2026-04-12T00:00:00Z",
+			user_id: "test-user",
+		};
+		render(<RightPaneDetail draft={mockDraft as unknown as Draft} />);
+
+		const editLink = screen.getByRole("link", { name: /Edit in Studio/i });
+		expect(editLink).toBeInTheDocument();
+		expect(editLink).toHaveAttribute("href", "/studio/test-draft-1");
+		expect(screen.getByText("My Draft")).toBeInTheDocument();
 	});
 });
