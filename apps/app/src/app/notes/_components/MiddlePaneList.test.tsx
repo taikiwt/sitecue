@@ -99,4 +99,31 @@ describe("MiddlePaneList Bulk Actions", () => {
 		await user.click(screen.getByRole("button", { name: /cancel/i }));
 		expect(screen.queryByText(/selected/i)).not.toBeInTheDocument();
 	});
+
+	it("should hide resolved notes by default and show them when toggle is clicked", async () => {
+		const user = userEvent.setup();
+		render(
+			<MiddlePaneList
+				items={[
+					...mockItems,
+					{
+						...mockItems[0],
+						id: "resolved-note",
+						content: "Resolved Content",
+						is_resolved: true,
+					},
+				]}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+		expect(screen.queryByText("Resolved Content")).not.toBeInTheDocument();
+
+		const toggleBtn = screen.getByTitle("Show Resolved Notes");
+		await user.click(toggleBtn);
+		expect(screen.getByText("Resolved Content")).toBeInTheDocument();
+	});
 });

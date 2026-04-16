@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
 	AlertTriangle,
 	ArrowLeft,
+	CheckCircle2,
 	CheckSquare,
 	GripVertical,
 	Inbox,
@@ -90,6 +91,7 @@ export function MiddlePaneList(props: Props) {
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 	const [isSelectMode, setIsSelectMode] = useState(false);
+	const [showResolved, setShowResolved] = useState(false);
 
 	useEffect(() => {
 		// Ensure items have an id and are unique to prevent key warnings and dnd-kit crashes
@@ -198,6 +200,11 @@ export function MiddlePaneList(props: Props) {
 		setSelectedIds(newSelected);
 	};
 
+	const displayItems = localItems.filter((item) => {
+		if ("note_type" in item && item.is_resolved && !showResolved) return false;
+		return true;
+	});
+
 	return (
 		<div className="flex flex-col h-full bg-base-bg border-r border-base-border w-96">
 			<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
@@ -216,6 +223,16 @@ export function MiddlePaneList(props: Props) {
 						>
 							<Plus className="w-4 h-4" />
 						</Link>
+						<Button
+							type="button"
+							variant={showResolved ? "secondary" : "ghost"}
+							size="icon-sm"
+							onClick={() => setShowResolved(!showResolved)}
+							className="transition-colors cursor-pointer"
+							title="Show Resolved Notes"
+						>
+							<CheckCircle2 className="w-4 h-4" />
+						</Button>
 						<Button
 							type="button"
 							variant={isSelectMode ? "secondary" : "ghost"}
@@ -263,7 +280,7 @@ export function MiddlePaneList(props: Props) {
 				) : (
 					<p className="text-xs text-gray-500 mt-1">
 						{isSelected
-							? `${items.length} ${currentView === "drafts" ? "drafts" : "notes"}`
+							? `${displayItems.length} ${currentView === "drafts" ? "drafts" : "notes"}`
 							: "Waiting for selection"}
 					</p>
 				)}
@@ -285,10 +302,10 @@ export function MiddlePaneList(props: Props) {
 							to see the list of items
 						</p>
 					</div>
-				) : items.length > 0 ? (
+				) : displayItems.length > 0 ? (
 					<div className="divide-y divide-base-border">
 						{currentView === "drafts" ? (
-							localItems.map((item) => (
+							displayItems.map((item) => (
 								<NoteItem
 									key={item.id}
 									item={item}
@@ -307,10 +324,10 @@ export function MiddlePaneList(props: Props) {
 								onDragEnd={handleDragEnd}
 							>
 								<SortableContext
-									items={localItems.map((item) => item.id)}
+									items={displayItems.map((item) => item.id)}
 									strategy={verticalListSortingStrategy}
 								>
-									{localItems.map((item) => (
+									{displayItems.map((item) => (
 										<SortableNoteItem
 											key={item.id}
 											item={item}
@@ -369,6 +386,7 @@ function NoteItem({
 	onSelectChange?: (id: string, checked: boolean) => void;
 }) {
 	const isNote = "note_type" in item;
+	const isResolved = isNote && item.is_resolved;
 	const isActive = isNote
 		? selectedNoteId === item.id
 		: selectedDraftId === item.id;
@@ -386,7 +404,7 @@ function NoteItem({
 		<div
 			className={`group relative flex items-stretch transition-colors ${
 				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
-			}`}
+			} ${isResolved ? "opacity-50" : ""}`}
 		>
 			{/* Left Action Area (DnD & Checkbox) */}
 			<div className="flex items-center pl-2 shrink-0">
@@ -442,10 +460,14 @@ function NoteItem({
 						{formatDate(isNote ? item.created_at : item.updated_at)}
 					</span>
 				</div>
-				<h3 className="text-sm font-bold text-action truncate mb-0.5">
+				<h3
+					className={`text-sm font-bold text-action truncate mb-0.5 ${isResolved ? "line-through" : ""}`}
+				>
 					{!isNote && (item.title || "Untitled Draft")}
 				</h3>
-				<p className="text-sm text-action line-clamp-2 wrap-break-word">
+				<p
+					className={`text-sm text-action line-clamp-2 wrap-break-word ${isResolved ? "line-through" : ""}`}
+				>
 					{item.content}
 				</p>
 				{isNote && item.scope === "exact" && !currentExact && (
