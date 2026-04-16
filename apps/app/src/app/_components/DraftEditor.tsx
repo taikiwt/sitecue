@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowLeft, Check, Copy, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { StudioEditor } from "@/components/editor/StudioEditor";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-
 import {
 	Drawer,
 	DrawerContent,
@@ -15,6 +14,11 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note, Template } from "../../../../../types/app.ts";
@@ -22,6 +26,7 @@ import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
 import UndoRedoControls from "../studio/_components/UndoRedoControls";
+import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
 
 type NoteType = "info" | "alert" | "idea";
 
@@ -43,6 +48,11 @@ export default function DraftEditor({
 	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
 		"idle",
 	);
+	const [activeTemplate, setActiveTemplate] = useState<
+		Template | null | undefined
+	>(template);
+	const [isSaveTemplateDialogOpen, setIsSaveTemplateDialogOpen] =
+		useState(false);
 	const [savedState, setSavedState] = useState({
 		content: initialDraft?.content || template?.boilerplate || "",
 		title: initialDraft?.title || "",
@@ -353,7 +363,7 @@ export default function DraftEditor({
 	};
 
 	const charCount = content.length;
-	const maxLength = template?.max_length;
+	const maxLength = activeTemplate?.max_length;
 
 	const handleSave = async () => {
 		setStatus("saving");
@@ -364,7 +374,9 @@ export default function DraftEditor({
 			if (!user) throw new Error("Not authenticated");
 
 			const metadata =
-				template?.name === "Zenn" ? { slug } : initialDraft?.metadata || {};
+				activeTemplate?.name === "Zenn"
+					? { slug }
+					: initialDraft?.metadata || {};
 
 			let currentDraftId = initialDraft?.id;
 
@@ -374,6 +386,7 @@ export default function DraftEditor({
 					.update({
 						title,
 						content,
+						template_id: activeTemplate?.id || null,
 						metadata,
 						updated_at: new Date().toISOString(),
 					})
@@ -386,7 +399,7 @@ export default function DraftEditor({
 					.insert({
 						title,
 						content,
-						template_id: template?.id || null,
+						template_id: activeTemplate?.id || null,
 						metadata,
 					})
 					.select()
@@ -464,6 +477,18 @@ export default function DraftEditor({
 		router.replace(`?${params.toString()}`);
 	};
 
+	const handleTemplateSaved = async (newTemplate: Template) => {
+		setActiveTemplate(newTemplate);
+		setIsSaveTemplateDialogOpen(false);
+		// If draft is already saved in DB, update its template_id immediately
+		if (initialDraft?.id) {
+			await supabase
+				.from("sitecue_drafts")
+				.update({ template_id: newTemplate.id })
+				.eq("id", initialDraft.id);
+		}
+	};
+
 	return (
 		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
 			{/* 左ペイン: メインエディタ */}
@@ -487,8 +512,8 @@ export default function DraftEditor({
 						</Link>
 						<div className="h-4 w-px bg-base-border" />
 						<span className="text-sm font-medium text-action">
-							{template
-								? `Draft for ${template.name}`
+							{activeTemplate
+								? `Draft for ${activeTemplate.name}`
 								: initialDraft
 									? "Edit Draft"
 									: "New Blank Canvas"}
@@ -508,6 +533,7 @@ export default function DraftEditor({
 							disabled={status === "saving" || status === "success"}
 							size="sm"
 							className="w-24 rounded-full"
+							type="button"
 						>
 							{status === "saving" ? (
 								"Saving..."
@@ -523,6 +549,32 @@ export default function DraftEditor({
 								"Save"
 							)}
 						</Button>
+
+						<Popover>
+							<PopoverTrigger
+								render={
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+										aria-label="More options"
+									>
+										<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+									</Button>
+								}
+							/>
+							<PopoverContent align="end" className="w-48 p-2">
+								<Button
+									type="button"
+									variant="ghost"
+									className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
+									onClick={() => setIsSaveTemplateDialogOpen(true)}
+								>
+									Save as Template
+								</Button>
+							</PopoverContent>
+						</Popover>
 					</div>
 				</header>
 
@@ -545,7 +597,7 @@ export default function DraftEditor({
 							<input
 								type="text"
 								placeholder={
-									template?.name === "Zenn"
+									activeTemplate?.name === "Zenn"
 										? "Enter article title..."
 										: "Title (optional)"
 								}
@@ -555,7 +607,7 @@ export default function DraftEditor({
 							/>
 							<InlineCopyButton text={title} />
 						</div>
-						{template?.name === "Zenn" && (
+						{activeTemplate?.name === "Zenn" && (
 							<div className="flex items-center gap-2 text-sm text-neutral-400">
 								<span>slug:</span>
 								<input
@@ -735,6 +787,14 @@ export default function DraftEditor({
 				isOpen={showPaywall}
 				onClose={() => setShowPaywall(false)}
 				limit={plan === "pro" ? 100 : 3}
+			/>
+
+			<SaveAsTemplateDialog
+				isOpen={isSaveTemplateDialogOpen}
+				onOpenChange={setIsSaveTemplateDialogOpen}
+				initialTitle={title}
+				initialContent={content}
+				onSuccess={handleTemplateSaved}
 			/>
 		</div>
 	);
