@@ -52,6 +52,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import { CustomLink } from "@/components/ui/custom-link";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -574,6 +575,16 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									{isSaving ? "Saving..." : "Save"}
 								</Button>
 							</div>
+						)}
+
+						{!note && draft && (
+							<CustomLink
+								href={`/studio/${draft.id}`}
+								className="flex items-center gap-1.5 px-3 py-1.5 bg-action text-action-text hover:bg-action-hover rounded-md text-sm font-medium shadow-sm transition-colors cursor-pointer"
+							>
+								<Pencil className="size-3.5" aria-hidden="true" />
+								Edit in Studio
+							</CustomLink>
 						)}
 						<div className="flex gap-1 ml-2">
 							{note && (
