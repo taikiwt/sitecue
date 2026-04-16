@@ -1,9 +1,10 @@
 "use client";
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { LogOut, User } from "lucide-react";
+import { LogOut, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { createClient } from "@/utils/supabase/client";
 
 export function UserMenu() {
@@ -83,6 +84,14 @@ export function UserMenu() {
 							{user.email}
 						</p>
 					</div>
+					<Link
+						href="/templates"
+						onClick={() => setIsMenuOpen(false)}
+						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
+					>
+						<Settings className="h-4 w-4" aria-hidden="true" />
+						Manage Templates
+					</Link>
 					<button
 						type="button"
 						onClick={handleSignOut}
