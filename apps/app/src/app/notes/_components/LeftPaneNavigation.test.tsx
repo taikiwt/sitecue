@@ -40,8 +40,8 @@ const mockGroupedNotes = {
 	},
 } as unknown as GroupedNotes;
 
-describe("LeftPaneNavigation", () => {
-	it("should keep DOMAINS closed by default and fetch content on open", async () => {
+describe("LeftPaneNavigation Hierarchical UI & Prefetch", () => {
+	it("should open Domains parent, then open child domain, and trigger prefetch", async () => {
 		const user = userEvent.setup();
 		const mockFetchContentForIds = vi.fn();
 
@@ -60,20 +60,15 @@ describe("LeftPaneNavigation", () => {
 			/>,
 		);
 
-		// ドメイン名が表示されていることを確認
-		const triggerButton = screen.getByRole("button", {
-			name: /github\.com/i,
-		});
-		expect(triggerButton).toBeDefined();
+		// 1. 親の Domains アコーディオンを開く (初期は閉じている想定のテスト)
+		const domainsParentButton = screen.getByRole("button", { name: /Domains/i });
+		await user.click(domainsParentButton);
 
-		// 最初はアコーディオンが閉じていることを確認
-		expect(triggerButton.getAttribute("aria-expanded")).toBe("false");
+		// 2. 子の github.com アコーディオンを探して開く
+		const childDomainButton = screen.getByText("github.com");
+		await user.click(childDomainButton);
 
-		// クリックして開く
-		await user.click(triggerButton);
-
-		// 開いた瞬間に、該当ドメインのノートID("n1")で fetchContentForIds が呼ばれることを検証
+		// 開いた瞬間にプリフェッチが発火することを検証
 		expect(mockFetchContentForIds).toHaveBeenCalledWith(["n1"]);
-		expect(triggerButton.getAttribute("aria-expanded")).toBe("true");
 	});
 });

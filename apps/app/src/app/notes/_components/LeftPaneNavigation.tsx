@@ -1,6 +1,8 @@
 "use client";
 
 import {
+	ChevronDown,
+	ChevronRight,
 	FileText,
 	Folder,
 	FolderOpen,
@@ -63,6 +65,12 @@ export function LeftPaneNavigation({
 	newNoteParams.set("globalNew", "note");
 	const newNoteHref = `/notes?${newNoteParams.toString()}`;
 
+	// 親DOMAINSフォルダの開閉・自動展開ロジック
+	const isAnyDomainActive = currentDomain && currentDomain !== "inbox";
+	const shouldForceOpenDomains = !!normalizedQuery || isAnyDomainActive;
+	const [isDomainsOpen, setIsDomainsOpen] = useState(() => shouldForceOpenDomains);
+	const effectiveIsDomainsOpen = isDomainsOpen || shouldForceOpenDomains;
+
 	return (
 		<div className="flex flex-col h-full bg-base-surface border-r border-base-border w-72 overflow-hidden">
 			<div className="p-4 border-b border-base-border bg-base-bg">
@@ -107,9 +115,10 @@ export function LeftPaneNavigation({
 				</Link>
 			</div>
 
-			<nav className="flex-1 py-4 overflow-y-auto">
-				{/* Inbox */}
-				<div className="px-2 mb-4">
+			<nav className="flex-1 flex flex-col py-4 overflow-hidden">
+				{/* Fixed Area: Inbox and Drafts */}
+				<div className="shrink-0 px-2 space-y-1 mb-2">
+					{/* Inbox */}
 					<Link
 						href="/notes?domain=inbox"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -126,10 +135,8 @@ export function LeftPaneNavigation({
 							</span>
 						)}
 					</Link>
-				</div>
 
-				{/* Drafts */}
-				<div className="px-2 mb-4">
+					{/* Drafts */}
 					<Link
 						href="/notes?view=drafts"
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -148,22 +155,50 @@ export function LeftPaneNavigation({
 					</Link>
 				</div>
 
-				<div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-					Domains
-				</div>
+				{/* Independent Scroll Area: DOMAINS Accordion */}
+				<div className="flex flex-col flex-1 overflow-hidden px-2">
+					<button
+						type="button"
+						onClick={() => setIsDomainsOpen(!isDomainsOpen)}
+						className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg/50 hover:text-action rounded-md transition-colors cursor-pointer group"
+					>
+						<div className="flex items-center gap-2">
+							<Globe className="w-4 h-4" aria-hidden="true" />
+							<span>Domains</span>
+						</div>
+						<div className="flex items-center gap-1">
+							<span className="text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
+								{Object.keys(groupedNotes.domains).length}
+							</span>
+							{effectiveIsDomainsOpen ? (
+								<ChevronDown
+									className="w-4 h-4 text-gray-400 group-hover:text-action"
+									aria-hidden="true"
+								/>
+							) : (
+								<ChevronRight
+									className="w-4 h-4 text-gray-400 group-hover:text-action"
+									aria-hidden="true"
+								/>
+							)}
+						</div>
+					</button>
 
-				{/* Domains Accordion */}
-				<div className="space-y-1">
-					{filteredDomains.map(([domain, data]) => (
-						<DomainAccordionItem
-							key={domain}
-							domainName={domain}
-							domainData={data}
-							normalizedQuery={normalizedQuery}
-							currentDomain={currentDomain}
-							currentExact={currentExact}
-						/>
-					))}
+					{/* DOMAINS Child List */}
+					{effectiveIsDomainsOpen && (
+						<div className="flex-1 overflow-y-auto mt-1 pr-1 space-y-1">
+							{filteredDomains.map(([domain, data]) => (
+								<DomainAccordionItem
+									key={domain}
+									domainName={domain}
+									domainData={data}
+									normalizedQuery={normalizedQuery}
+									currentDomain={currentDomain}
+									currentExact={currentExact}
+								/>
+							))}
+						</div>
+					)}
 				</div>
 			</nav>
 
@@ -235,46 +270,39 @@ function DomainAccordionItem({
 				onClick={() => handleOpenChange(!isOpen)}
 				aria-label={`${effectiveIsOpen ? "Close" : "Open"} accordion for ${domainName}`}
 				aria-expanded={effectiveIsOpen}
-				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
+				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
 					isUnderThisDomain && !currentExact
 						? "bg-base-bg text-action font-medium shadow-sm"
 						: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
 				}`}
 			>
-				<span
-					aria-hidden="true"
-					className="p-0.5 text-gray-400 group-hover:text-gray-600 transition-transform"
-					style={{
-						transform: effectiveIsOpen ? "rotate(90deg)" : "rotate(0deg)",
-					}}
-				>
-					<svg
-						className="w-3 h-3"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						xmlns="http://www.w3.org/2000/svg"
-						aria-hidden="true"
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M9 5l7 7-7 7"
+				<div className="flex items-center gap-2 overflow-hidden">
+					{effectiveIsOpen ? (
+						<FolderOpen
+							className="w-4 h-4 text-gray-400 shrink-0"
+							aria-hidden="true"
 						/>
-					</svg>
-				</span>
+					) : (
+						<Folder
+							className="w-4 h-4 text-gray-400 shrink-0"
+							aria-hidden="true"
+						/>
+					)}
+					<span className="truncate" title={domainName}>
+						{domainName}
+					</span>
+				</div>
 				{effectiveIsOpen ? (
-					<FolderOpen
-						className="w-4 h-4 text-gray-400 mr-1"
+					<ChevronDown
+						className="w-4 h-4 text-gray-400 group-hover:text-action"
 						aria-hidden="true"
 					/>
 				) : (
-					<Folder className="w-4 h-4 text-gray-400 mr-1" aria-hidden="true" />
+					<ChevronRight
+						className="w-4 h-4 text-gray-400 group-hover:text-action"
+						aria-hidden="true"
+					/>
 				)}
-				<span className="truncate flex-1 text-left" title={domainName}>
-					{domainName}
-				</span>
 			</button>
 
 			{/* Children: Domain Notes & Page Pages */}
