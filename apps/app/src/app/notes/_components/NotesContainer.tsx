@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useNotesStore } from "@/store/useNotesStore";
 import type { Draft, Note, SearchParams } from "../types";
-import { LeftPaneNavigation } from "./LeftPaneNavigation";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { RightPaneDetail } from "./RightPaneDetail";
@@ -31,11 +30,6 @@ export function NotesContainer() {
 			new: searchParams.get("new") || undefined,
 		};
 	}, [searchParams]);
-
-	// 初回メタデータ取得
-	useEffect(() => {
-		fetchMetadata();
-	}, [fetchMetadata]);
 
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
@@ -122,14 +116,6 @@ export function NotesContainer() {
 		<ResponsiveNotesLayout
 			selectedNoteId={params.noteId ?? null}
 			selectedDraftId={params.draftId ?? null}
-			leftNode={
-				<LeftPaneNavigation
-					groupedNotes={groupedNotes}
-					currentView={effectiveView}
-					currentDomain={domain ?? null}
-					currentExact={exact ?? null}
-				/>
-			}
 			middleNode={
 				<MiddlePaneList
 					items={filteredItems}

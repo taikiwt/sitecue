@@ -9,6 +9,8 @@ import { CustomLink as Link } from "@/components/ui/custom-link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Template } from "../../../../../../types/app";
 
@@ -19,6 +21,7 @@ export function TemplateManager({
 	initialTemplates: Template[];
 	selectedId: string | null;
 }) {
+	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
 	const supabase = createClient();
 	const [templates, setTemplates] = useState<Template[]>(initialTemplates);
@@ -148,7 +151,12 @@ export function TemplateManager({
 		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
 			{/* Left Pane: List */}
 			<div className="w-80 flex flex-col border-r border-base-border bg-base-surface">
-				<div className="p-4 border-b border-base-border flex items-center gap-2">
+				<div
+					className={cn(
+						"p-4 border-b border-base-border flex items-center gap-2 transition-all duration-300",
+						!isSidebarOpen && "md:pl-16",
+					)}
+				>
 					<Link
 						href="/"
 						className="inline-flex items-center justify-center h-7 w-7 rounded-[min(var(--radius-md),12px)] hover:bg-muted hover:text-foreground transition-colors"

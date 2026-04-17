@@ -20,6 +20,8 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note, Template } from "../../../../../types/app.ts";
 import PaywallModal from "../studio/_components/PaywallModal";
@@ -39,6 +41,7 @@ export default function DraftEditor({
 	template,
 	initialDraft,
 }: DraftEditorProps) {
+	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const supabase = createClient();
@@ -491,10 +494,15 @@ export default function DraftEditor({
 	};
 
 	return (
-		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
+		<div className="flex h-full overflow-hidden bg-base-bg text-action">
 			{/* 左ペイン: メインエディタ */}
 			<div className="flex flex-1 flex-col overflow-hidden border-r border-base-border bg-base-bg">
-				<header className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+				<header
+					className={cn(
+						"flex items-center justify-between border-b border-neutral-100 px-6 py-4 transition-all duration-300",
+						!isSidebarOpen && "md:pl-16",
+					)}
+				>
 					<div className="flex items-center gap-4">
 						<Button
 							variant="ghost"

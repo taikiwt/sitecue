@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Suspense } from "react";
+import { AppShell } from "@/components/layout/AppShell";
 import GlobalNewNoteDialog from "./_components/GlobalNewNoteDialog";
 
 export default function RootLayout({
@@ -33,7 +34,9 @@ export default function RootLayout({
 				<Suspense fallback={null}>
 					<GlobalNewNoteDialog />
 				</Suspense>
-				{children}
+				<Suspense fallback={null}>
+					<AppShell>{children}</AppShell>
+				</Suspense>
 			</body>
 		</html>
 	);
