@@ -13,9 +13,10 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 import { UserMenu } from "../../_components/UserMenu";
-import type { DomainGroup, GroupedNotes } from "../types";
+import type { DomainGroup, GroupedNotes, Note } from "../types";
 
 type Props = {
 	groupedNotes: GroupedNotes;
@@ -195,7 +196,25 @@ function DomainAccordionItem({
 	currentExact,
 }: DomainAccordionItemProps) {
 	const isUnderThisDomain = currentDomain === domainName;
-	const [isOpen, setIsOpen] = useState(() => isUnderThisDomain);
+	const [isOpen, setIsOpen] = useState(false);
+	const fetchContentForIds = useNotesStore((state) => state.fetchContentForIds);
+
+	const handleOpenChange = (open: boolean) => {
+		setIsOpen(open);
+		if (open) {
+			// フォルダが開かれた瞬間にプリフェッチ
+			const ids = [
+				...domainData.domainNotes,
+				...Object.values(domainData.pages).flat(),
+			]
+				.filter((n): n is Note => n.content === undefined) // 未取得のものだけ抽出
+				.map((n) => n.id);
+
+			if (ids.length > 0) {
+				fetchContentForIds(ids);
+			}
+		}
+	};
 
 	// 検索中、またはこのドメイン配下を選択中の場合は強制展開
 	const effectiveIsOpen = isOpen || !!normalizedQuery || isUnderThisDomain;
@@ -213,7 +232,7 @@ function DomainAccordionItem({
 			{/* Domain Header: Toggles Only */}
 			<button
 				type="button"
-				onClick={() => setIsOpen(!isOpen)}
+				onClick={() => handleOpenChange(!isOpen)}
 				aria-label={`${effectiveIsOpen ? "Close" : "Open"} accordion for ${domainName}`}
 				aria-expanded={effectiveIsOpen}
 				className={`w-full flex items-center gap-1 group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
