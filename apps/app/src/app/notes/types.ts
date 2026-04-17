@@ -1,6 +1,8 @@
 import type { Tables } from "../../../../../types/supabase";
 
-export type Note = Tables<"sitecue_notes">;
+export type Note = Omit<Tables<"sitecue_notes">, "content"> & {
+	content?: string;
+};
 export type Draft = Tables<"sitecue_drafts">;
 
 export interface DomainGroup {
