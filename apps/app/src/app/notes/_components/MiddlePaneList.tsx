@@ -32,6 +32,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
@@ -84,6 +86,7 @@ export function MiddlePaneList(props: Props) {
 		selectedNoteId,
 		selectedDraftId,
 	} = props;
+	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const supabase = createClient();
@@ -217,7 +220,12 @@ export function MiddlePaneList(props: Props) {
 
 	return (
 		<div className="flex flex-col h-full bg-base-bg border-r border-base-border w-96">
-			<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
+			<div
+				className={cn(
+					"p-4 border-b border-base-border sticky top-0 bg-base-bg z-10 transition-all duration-300",
+					!isSidebarOpen && "md:pl-16",
+				)}
+			>
 				<div className="flex items-center justify-between">
 					<h2
 						className="text-lg font-bold text-action truncate"

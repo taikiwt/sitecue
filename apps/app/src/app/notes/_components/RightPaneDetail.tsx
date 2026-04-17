@@ -161,7 +161,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		optimisticContent !== null
 			? optimisticContent
 			: note
-				? note.content ?? ""
+				? (note.content ?? "")
 				: draft?.content || "";
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";

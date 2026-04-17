@@ -1,15 +1,18 @@
-/** @vitest-environment jsdom */
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { usePathname, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
+import type { GroupedNotes, Note } from "@/app/notes/types";
 import { useNotesStore } from "@/store/useNotesStore";
-import type { GroupedNotes, Note } from "../types";
-import { LeftPaneNavigation } from "./LeftPaneNavigation";
+import { GlobalSidebar } from "./GlobalSidebar";
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ push: vi.fn() }),
-	useSearchParams: () => new URLSearchParams(),
+	usePathname: vi.fn(() => "/notes"),
+	useSearchParams: vi.fn(
+		() => new URLSearchParams("domain=inbox") as unknown as any,
+	),
+	useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
 // Mock useNotesStore
@@ -18,7 +21,7 @@ vi.mock("@/store/useNotesStore", () => ({
 }));
 
 // Mock UserMenu to avoid Supabase calls
-vi.mock("../../_components/UserMenu", () => ({
+vi.mock("@/app/_components/UserMenu", () => ({
 	UserMenu: () => <div data-testid="user-menu" />,
 }));
 
@@ -40,28 +43,25 @@ const mockGroupedNotes = {
 	},
 } as unknown as GroupedNotes;
 
-describe("LeftPaneNavigation Hierarchical UI & Prefetch", () => {
+describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 	it("should open Domains parent, then open child domain, and trigger prefetch", async () => {
 		const user = userEvent.setup();
 		const mockFetchContentForIds = vi.fn();
 
 		vi.mocked(useNotesStore).mockImplementation((selector) => {
-			return selector({
+			const state = {
+				groupedNotes: mockGroupedNotes,
 				fetchContentForIds: mockFetchContentForIds,
-			} as unknown as Parameters<typeof selector>[0]);
+			};
+			return selector ? selector(state as any) : state;
 		});
 
-		render(
-			<LeftPaneNavigation
-				groupedNotes={mockGroupedNotes}
-				currentView="inbox"
-				currentDomain="inbox"
-				currentExact={null}
-			/>,
-		);
+		render(<GlobalSidebar />);
 
-		// 1. 親の Domains アコーディオンを開く (初期は閉じている想定のテスト)
-		const domainsParentButton = screen.getByRole("button", { name: /Domains/i });
+		// 1. 親の Domains アコーディオンを開く
+		const domainsParentButton = screen.getByRole("button", {
+			name: /Domains/i,
+		});
 		await user.click(domainsParentButton);
 
 		// 2. 子の github.com アコーディオンを探して開く
@@ -70,5 +70,26 @@ describe("LeftPaneNavigation Hierarchical UI & Prefetch", () => {
 
 		// 開いた瞬間にプリフェッチが発火することを検証
 		expect(mockFetchContentForIds).toHaveBeenCalledWith(["n1"]);
+	});
+
+	it("should determine active state from pathname and searchParams", () => {
+		vi.mocked(usePathname).mockReturnValue("/notes");
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("domain=inbox") as unknown as any,
+		);
+
+		vi.mocked(useNotesStore).mockImplementation((selector) => {
+			const state = {
+				groupedNotes: mockGroupedNotes,
+				fetchContentForIds: vi.fn(),
+			};
+			return selector ? selector(state as any) : state;
+		});
+
+		render(<GlobalSidebar />);
+
+		// Inbox should be active
+		const inboxLink = screen.getByText("Inbox").closest("a");
+		expect(inboxLink?.className).toContain("bg-base-bg text-action shadow-sm");
 	});
 });

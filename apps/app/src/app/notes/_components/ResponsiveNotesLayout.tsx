@@ -1,9 +1,7 @@
 "use client";
 
-import { Menu } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
@@ -11,18 +9,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import {
-	Sheet,
-	SheetContent,
-	SheetDescription,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface ResponsiveNotesLayoutProps {
-	leftNode: ReactNode;
 	middleNode: ReactNode;
 	rightNode: ReactNode;
 	selectedNoteId: string | null;
@@ -30,7 +19,6 @@ interface ResponsiveNotesLayoutProps {
 }
 
 export function ResponsiveNotesLayout({
-	leftNode,
 	middleNode,
 	rightNode,
 	selectedNoteId,
@@ -53,8 +41,7 @@ export function ResponsiveNotesLayout({
 
 	if (isDesktop) {
 		return (
-			<div className="flex h-screen overflow-hidden bg-base-bg font-sans text-action">
-				<Fragment key="left">{leftNode}</Fragment>
+			<div className="flex h-full overflow-hidden bg-base-bg font-sans text-action">
 				<Fragment key="middle">{middleNode}</Fragment>
 				<Fragment key="right">{rightNode}</Fragment>
 			</div>
@@ -62,33 +49,7 @@ export function ResponsiveNotesLayout({
 	}
 
 	return (
-		<div className="flex flex-col h-screen overflow-hidden bg-base-bg font-sans text-action">
-			{/* Mobile Header */}
-			<header className="flex items-center justify-between px-4 py-3 border-b border-base-border bg-base-surface">
-				<div className="flex items-center gap-3">
-					<Sheet>
-						<SheetTrigger
-							render={
-								<Button variant="ghost" size="icon" className="cursor-pointer">
-									<Menu className="h-5 w-5" />
-									<span className="sr-only">Toggle menu</span>
-								</Button>
-							}
-						/>
-						<SheetContent side="left" className="p-0 w-72">
-							<SheetHeader className="sr-only">
-								<SheetTitle>Navigation Menu</SheetTitle>
-								<SheetDescription>
-									Access your inbox, drafts, and domains
-								</SheetDescription>
-							</SheetHeader>
-							{leftNode}
-						</SheetContent>
-					</Sheet>
-					<h1 className="font-bold text-lg tracking-tight">sitecue</h1>
-				</div>
-			</header>
-
+		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
 			{/* List Area */}
 			<main className="flex-1 overflow-hidden">{middleNode}</main>
 

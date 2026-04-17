@@ -1,12 +1,10 @@
 import { ArrowRight, Calendar, FileText, Library, Plus } from "lucide-react";
-import Image from "next/image";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
-import { UserMenu } from "./_components/UserMenu";
 
 export default async function LaunchpadPage() {
 	const supabase = await createClient();
@@ -35,28 +33,8 @@ export default async function LaunchpadPage() {
 	]);
 
 	return (
-		<div className="min-h-screen bg-base-bg text-action font-sans">
+		<div className="flex-1 bg-base-bg text-action font-sans">
 			<main className="mx-auto max-w-4xl px-6 py-12">
-				{/* ① Top Navigation */}
-				<div className="flex items-center justify-between mb-12">
-					<Link
-						href="/"
-						className="flex items-center gap-2 cursor-pointer group"
-					>
-						<Image
-							src="/logo.svg"
-							alt="sitecue logo"
-							width={28}
-							height={28}
-							className="drop-shadow-sm transition-transform group-hover:scale-105"
-						/>
-						<span className="text-xl font-bold tracking-tight text-action">
-							sitecue
-						</span>
-					</Link>
-					<UserMenu />
-				</div>
-
 				{/* ② Welcome & Activity Area */}
 				<div className="mb-20">
 					<h1 className="text-2xl font-light tracking-tight text-neutral-600 mb-8">

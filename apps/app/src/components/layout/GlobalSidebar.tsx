@@ -8,55 +8,71 @@ import {
 	FolderOpen,
 	Globe,
 	Inbox,
+	PanelLeftClose,
 	PenSquare,
 	Plus,
 	Search,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
+import { UserMenu } from "@/app/_components/UserMenu";
+import type { DomainGroup, Note } from "@/app/notes/types";
+import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
-import { UserMenu } from "../../_components/UserMenu";
-import type { DomainGroup, GroupedNotes, Note } from "../types";
 
-type Props = {
-	groupedNotes: GroupedNotes;
-	currentView: string | null;
-	currentDomain: string | null;
-	currentExact: string | null;
-};
+interface GlobalSidebarProps {
+	onClose?: () => void;
+}
 
-export function LeftPaneNavigation({
-	groupedNotes,
-	currentView,
-	currentDomain,
-	currentExact,
-}: Props) {
-	const isInboxActive =
-		currentView === "inbox" || (currentDomain === "inbox" && !currentExact);
-	const isDraftsActive = currentView === "drafts";
+export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
+	const { groupedNotes } = useNotesStore();
 
 	const [searchQuery, setSearchQuery] = useState("");
 
-	// 検索フィルタリング
-	const normalizedQuery = searchQuery.trim()
-		? normalizeUrlForGrouping(searchQuery.toLowerCase())
-		: "";
+	// Determine active state from URL
+	const _isLaunchpad = pathname === "/";
+	const isStudio = pathname.startsWith("/studio");
+	const isNotes = pathname.startsWith("/notes");
+	const isTemplates = pathname.startsWith("/templates");
 
-	const filteredDomains = Object.entries(groupedNotes.domains).filter(
-		([domain, data]) => {
+	const domainParam = searchParams.get("domain");
+	const viewParam = searchParams.get("view");
+	const exactParam = searchParams.get("exact");
+
+	const currentDomain = domainParam || (isNotes && !viewParam ? "inbox" : null);
+	const currentView =
+		viewParam || (domainParam ? "domains" : isNotes ? "inbox" : null);
+	const currentExact = exactParam || null;
+
+	const isInboxActive =
+		isNotes &&
+		(currentView === "inbox" || (currentDomain === "inbox" && !currentExact));
+	const isDraftsActive = isNotes && currentView === "drafts";
+
+	// Search implementation (copied from LeftPaneNavigation)
+	const normalizedQuery = useMemo(
+		() =>
+			searchQuery.trim()
+				? normalizeUrlForGrouping(searchQuery.toLowerCase())
+				: "",
+		[searchQuery],
+	);
+
+	const filteredDomains = useMemo(() => {
+		if (!groupedNotes) return [];
+		return Object.entries(groupedNotes.domains).filter(([domain, data]) => {
 			if (!normalizedQuery) return true;
-
-			// ドメイン自体にマッチするか
 			if (domain.toLowerCase().includes(normalizedQuery)) return true;
-
-			// 各ページにマッチするか
 			return Object.keys(data.pages).some((url) =>
 				normalizeUrlForGrouping(url.toLowerCase()).includes(normalizedQuery),
 			);
-		},
-	);
+		});
+	}, [groupedNotes, normalizedQuery]);
 
 	const newNoteParams = new URLSearchParams();
 	if (currentView) newNoteParams.set("view", currentView);
@@ -65,30 +81,47 @@ export function LeftPaneNavigation({
 	newNoteParams.set("globalNew", "note");
 	const newNoteHref = `/notes?${newNoteParams.toString()}`;
 
-	// 親DOMAINSフォルダの開閉・自動展開ロジック
-	const isAnyDomainActive = currentDomain && currentDomain !== "inbox";
+	// Accordion logic
+	const isAnyDomainActive = !!(currentDomain && currentDomain !== "inbox");
 	const shouldForceOpenDomains = !!normalizedQuery || isAnyDomainActive;
-	const [isDomainsOpen, setIsDomainsOpen] = useState(() => shouldForceOpenDomains);
+	const [isDomainsOpen, setIsDomainsOpen] = useState(
+		() => shouldForceOpenDomains,
+	);
 	const effectiveIsDomainsOpen = isDomainsOpen || shouldForceOpenDomains;
 
+	if (!groupedNotes) return null;
+
 	return (
-		<div className="flex flex-col h-full bg-base-surface border-r border-base-border w-72 overflow-hidden">
+		<div className="flex flex-col h-full bg-base-surface w-full overflow-hidden border-r border-base-border">
 			<div className="p-4 border-b border-base-border bg-base-bg">
-				<Link
-					href="/"
-					className="flex items-center gap-2 mb-8 cursor-pointer group w-fit"
-				>
-					<Image
-						src="/logo.svg"
-						alt="sitecue logo"
-						width={28}
-						height={28}
-						className="drop-shadow-sm transition-transform group-hover:scale-105"
-					/>
-					<span className="text-xl font-bold tracking-tight text-action">
-						sitecue
-					</span>
-				</Link>
+				<div className="flex items-center justify-between mb-6">
+					<Link
+						href="/"
+						className="flex items-center gap-2 cursor-pointer group w-fit"
+					>
+						<Image
+							src="/logo.svg"
+							alt="sitecue logo"
+							width={28}
+							height={28}
+							className="drop-shadow-sm transition-transform group-hover:scale-105"
+						/>
+						<span className="text-xl font-bold tracking-tight text-action">
+							sitecue
+						</span>
+					</Link>
+					{onClose && (
+						<Button
+							variant="ghost"
+							size="icon"
+							onClick={onClose}
+							className="text-neutral-400 hover:text-neutral-900 cursor-pointer hidden md:flex"
+							title="Close Sidebar"
+						>
+							<PanelLeftClose className="w-5 h-5" aria-hidden="true" />
+						</Button>
+					)}
+				</div>
 
 				{/* Search Area */}
 				<div className="relative">
@@ -108,7 +141,7 @@ export function LeftPaneNavigation({
 
 				<Link
 					href={newNoteHref}
-					className="mt-4 flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
+					className="flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
 				>
 					<Plus className="w-4 h-4" aria-hidden="true" />
 					New Note
@@ -202,34 +235,49 @@ export function LeftPaneNavigation({
 				</div>
 			</nav>
 
-			<div className="p-4 border-t border-base-border bg-base-bg flex items-center justify-between gap-4">
+			<div className="p-4 border-t border-base-border bg-base-bg flex flex-col gap-2">
 				<Link
 					href="/studio"
-					className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-action text-action-text rounded-md text-sm font-medium hover:bg-action-hover transition-colors cursor-pointer"
+					className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+						isStudio
+							? "bg-action text-action-text hover:bg-action-hover"
+							: "bg-base-surface text-neutral-600 border border-base-border hover:bg-base-bg"
+					}`}
 				>
 					<span>Studio</span>
 				</Link>
-				<UserMenu />
+				<div className="flex items-center justify-between">
+					<Link
+						href="/templates"
+						className={`text-xs px-2 py-1 rounded transition-colors ${
+							isTemplates
+								? "text-action font-bold"
+								: "text-neutral-500 hover:text-action"
+						}`}
+					>
+						Templates
+					</Link>
+					<UserMenu />
+				</div>
 			</div>
 		</div>
 	);
 }
 
-type DomainAccordionItemProps = {
-	domainName: string;
-	domainData: DomainGroup;
-	normalizedQuery: string;
-	currentDomain: string | null;
-	currentExact: string | null;
-};
-
+// Subcomponent: DomainAccordionItem (largely unchanged logic, but handles its own prefetching)
 function DomainAccordionItem({
 	domainName,
 	domainData,
 	normalizedQuery,
 	currentDomain,
 	currentExact,
-}: DomainAccordionItemProps) {
+}: {
+	domainName: string;
+	domainData: DomainGroup;
+	normalizedQuery: string;
+	currentDomain: string | null;
+	currentExact: string | null;
+}) {
 	const isUnderThisDomain = currentDomain === domainName;
 	const [isOpen, setIsOpen] = useState(false);
 	const fetchContentForIds = useNotesStore((state) => state.fetchContentForIds);
@@ -237,12 +285,11 @@ function DomainAccordionItem({
 	const handleOpenChange = (open: boolean) => {
 		setIsOpen(open);
 		if (open) {
-			// フォルダが開かれた瞬間にプリフェッチ
 			const ids = [
 				...domainData.domainNotes,
 				...Object.values(domainData.pages).flat(),
 			]
-				.filter((n): n is Note => n.content === undefined) // 未取得のものだけ抽出
+				.filter((n): n is Note => n.content === undefined)
 				.map((n) => n.id);
 
 			if (ids.length > 0) {
@@ -251,7 +298,6 @@ function DomainAccordionItem({
 		}
 	};
 
-	// 検索中、またはこのドメイン配下を選択中の場合は強制展開
 	const effectiveIsOpen = isOpen || !!normalizedQuery || isUnderThisDomain;
 
 	const getPath = (url: string) => {
@@ -264,7 +310,6 @@ function DomainAccordionItem({
 
 	return (
 		<div className="px-2">
-			{/* Domain Header: Toggles Only */}
 			<button
 				type="button"
 				onClick={() => handleOpenChange(!isOpen)}
@@ -305,10 +350,8 @@ function DomainAccordionItem({
 				)}
 			</button>
 
-			{/* Children: Domain Notes & Page Pages */}
 			{effectiveIsOpen && (
 				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-base-border pl-3">
-					{/* Approach B: Domain Scope Notes (Always at top if open) */}
 					<Link
 						href={`/notes?domain=${encodeURIComponent(domainName)}`}
 						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
@@ -324,12 +367,10 @@ function DomainAccordionItem({
 						<span className="truncate min-w-0">All notes in {domainName}</span>
 					</Link>
 
-					{/* Page Pages */}
 					{Object.entries(domainData.pages).map(([url, _notes]) => {
 						const isActive = currentExact === url;
 						const path = getPath(url);
 
-						// 検索中の場合、マッチしないページは非表示にする
 						if (
 							normalizedQuery &&
 							!normalizeUrlForGrouping(url.toLowerCase()).includes(
