@@ -134,9 +134,11 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 			>
 				<div className="flex items-center gap-1.5">
 					<LinkIcon className="w-3.5 h-3.5" />
-					<span className="text-gray-500 font-semibold">Quick Links</span>
+					<span className="text-muted-foreground font-semibold">
+						Quick Links
+					</span>
 					{links.length > 0 && (
-						<span className="bg-base-bg text-gray-500 px-1.5 rounded-full text-[10px]">
+						<span className="bg-base-bg text-muted-foreground px-1.5 rounded-full text-[10px]">
 							{links.length}
 						</span>
 					)}
@@ -167,11 +169,11 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 					<div className="space-y-1">
 						{loading ? (
 							<div className="flex justify-center py-2">
-								<Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+								<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
 							</div>
 						) : links.length === 0 ? (
 							!isAdding && (
-								<div className="text-center text-gray-400 text-xs py-2 italic">
+								<div className="text-center text-muted-foreground text-xs py-2 italic">
 									No links added yet.
 								</div>
 							)
@@ -207,12 +209,12 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 											<span className="truncate text-action">{link.label}</span>
 
 											{link.type === "related" && (
-												<ExternalLink className="w-3 h-3 text-gray-400 shrink-0" />
+												<ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
 											)}
 
 											<div className="flex items-center gap-1">
 												{link.type === "env" && (
-													<span className="flex items-center gap-0.5 text-[10px] text-gray-400 ml-1 shrink-0 border border-base-border px-1 rounded">
+													<span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-1 shrink-0 border border-base-border px-1 rounded">
 														ENV
 														{isIncoming && <Lock className="w-3 h-3" />}
 													</span>
@@ -225,14 +227,14 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 												<button
 													type="button"
 													onClick={() => startEditing(link)}
-													className="cursor-pointer p-1 text-gray-400 hover:text-action hover:bg-base-bg rounded transition-all"
+													className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-base-bg rounded transition-all"
 												>
 													<Pencil className="w-3.5 h-3.5" />
 												</button>
 												<button
 													type="button"
 													onClick={() => deleteLink(link.id)}
-													className="cursor-pointer p-1 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 rounded transition-all"
+													className="cursor-pointer p-1 text-muted-foreground hover:text-note-alert hover:bg-note-alert/10 rounded transition-all"
 												>
 													<Trash2 className="w-3.5 h-3.5" />
 												</button>
@@ -293,7 +295,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 										<button
 											type="button"
 											onClick={cancelForm}
-											className="cursor-pointer px-2 py-1 text-gray-500 hover:text-action"
+											className="cursor-pointer px-2 py-1 text-muted-foreground hover:text-action"
 										>
 											Cancel
 										</button>
@@ -315,7 +317,7 @@ export default function QuickLinks({ currentDomain }: QuickLinksProps) {
 							<button
 								type="button"
 								onClick={startAdding}
-								className="cursor-pointer w-full text-left p-2 text-xs text-gray-400 hover:text-action hover:bg-base-bg rounded flex items-center gap-1 transition-colors"
+								className="cursor-pointer w-full text-left p-2 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded flex items-center gap-1 transition-colors"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								Add Link

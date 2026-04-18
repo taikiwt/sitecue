@@ -130,10 +130,10 @@ export default function MarkdownRenderer({
 						<strong className="font-semibold text-action">{children}</strong>
 					),
 					em: ({ children }) => (
-						<em className="italic text-neutral-600">{children}</em>
+						<em className="italic text-muted-foreground">{children}</em>
 					),
 					blockquote: ({ children }) => (
-						<blockquote className="border-l-4 border-base-border pl-4 py-1 my-2 bg-base-bg italic text-gray-600 rounded-r">
+						<blockquote className="border-l-4 border-base-border pl-4 py-1 my-2 bg-base-bg italic text-muted-foreground rounded-r">
 							{children}
 						</blockquote>
 					),
@@ -180,7 +180,7 @@ export default function MarkdownRenderer({
 									<button
 										type="button"
 										onClick={() => handleCopyCode(codeString, uniqueId)}
-										className="p-1.5 text-gray-500 hover:text-action flex items-center justify-center transition-colors cursor-pointer"
+										className="p-1.5 text-muted-foreground hover:text-action flex items-center justify-center transition-colors cursor-pointer"
 										title="Copy code"
 									>
 										{isCopied ? (
@@ -231,7 +231,7 @@ export default function MarkdownRenderer({
 					),
 					tr: ({ children }) => <tr>{children}</tr>,
 					th: ({ children }) => (
-						<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+						<th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
 							{children}
 						</th>
 					),
