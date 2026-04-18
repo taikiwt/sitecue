@@ -25,25 +25,38 @@ export const getCurrentUrl = async (): Promise<string | null> => {
 	return info.url;
 };
 
-/**
- * URLからプロトコルを除去し、スコープに応じた形式に変換する
- */
+export function getSafeUrl(urlString: string): URL | null {
+	try {
+		if (!urlString.startsWith("http")) return null;
+		return new URL(urlString);
+	} catch (_error) {
+		return null;
+	}
+}
+
+export function normalizeUrlForGrouping(url: string): string {
+	let normalized = url.replace(/^(https?:\/\/)?(www\.)?/, "");
+	if (normalized.endsWith("/")) {
+		normalized = normalized.slice(0, -1);
+	}
+	return normalized;
+}
+
 export const normalizeUrl = (
 	url: string,
 	scope: "domain" | "exact",
 ): string => {
-	try {
-		const u = new URL(url);
-		if (scope === "domain") {
-			return u.host;
-		} else {
-			// exact: schemaを除去し、パスとクエリを保持
-			// 例: https://example.com/path?q=1 -> example.com/path?q=1
-			return u.host + u.pathname + u.search;
-		}
-	} catch (_e) {
-		// URL解析に失敗した場合はそのまま返す（または適宜ハンドリング）
-		return url.replace(/^https?:\/\//, "");
+	const safeUrl = getSafeUrl(url);
+	if (!safeUrl) {
+		return normalizeUrlForGrouping(url);
+	}
+
+	if (scope === "domain") {
+		return normalizeUrlForGrouping(safeUrl.host);
+	} else {
+		return normalizeUrlForGrouping(
+			safeUrl.host + safeUrl.pathname + safeUrl.search,
+		);
 	}
 };
 

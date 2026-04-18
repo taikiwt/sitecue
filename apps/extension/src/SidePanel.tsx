@@ -2,7 +2,6 @@ import type { Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Toaster } from "react-hot-toast";
-import AiActionBar from "./components/AiActionBar";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
 import LoginScreen from "./components/LoginScreen";
@@ -57,13 +56,8 @@ function NotesUI({
 	onLogout: () => void;
 }) {
 	const { currentFullUrl, url, title } = useCurrentTab();
-	const {
-		userPlan,
-		aiUsageCount,
-		totalNoteCount,
-		setTotalNoteCount,
-		userStatsLoading,
-	} = useUserStats(session);
+	const { userPlan, totalNoteCount, setTotalNoteCount, userStatsLoading } =
+		useUserStats(session);
 
 	const {
 		notes,
@@ -143,15 +137,6 @@ function NotesUI({
 				setSearchQuery={setSearchQuery}
 				filteredNotes={filteredNotesByScope}
 			/>
-
-			{currentFullUrl && notes.length > 0 && (
-				<AiActionBar
-					currentFullUrl={currentFullUrl}
-					session={session}
-					aiUsageCount={aiUsageCount}
-					userPlan={userPlan}
-				/>
-			)}
 
 			<div className="flex-1 overflow-y-auto p-4 space-y-6">
 				<NoteList
