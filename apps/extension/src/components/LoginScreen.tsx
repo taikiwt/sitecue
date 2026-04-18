@@ -15,7 +15,7 @@ export default function LoginScreen({
 				<h1 className="text-xl font-bold text-center mb-2 text-action">
 					Welcome to SiteCue
 				</h1>
-				<p className="text-xs text-center text-gray-500 mb-6">
+				<p className="text-xs text-center text-muted-foreground mb-6">
 					Sign in to sync your notes across devices
 				</p>
 
@@ -73,13 +73,13 @@ export default function LoginScreen({
 					</button>
 				</div>
 
-				<p className="text-xs text-gray-500 mt-4 text-center">
+				<p className="text-xs text-muted-foreground mt-4 text-center">
 					By signing in, you agree to our{" "}
 					<a
 						href="https://grey-throat-c6a.notion.site/Privacy-Policy-for-sitecue-30eee95bb40780f396f0e27e417db8bf"
 						target="_blank"
 						rel="noopener noreferrer"
-						className="underline hover:text-gray-700"
+						className="underline hover:text-action"
 					>
 						Privacy Policy
 					</a>

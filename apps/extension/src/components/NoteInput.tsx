@@ -27,6 +27,9 @@ export default function NoteInput({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const handleAutoIndent = useAutoIndent();
 
+	const isNearLimit = totalNoteCount >= maxFreeNotes * 0.9;
+	const isLimitReached = totalNoteCount >= maxFreeNotes;
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const content = newNote.trim();
@@ -79,50 +82,71 @@ export default function NoteInput({
 				</div>
 
 				<div className="flex items-center gap-3">
-					{userPlan === "free" && (
-						<span className="text-[10px] text-gray-400 font-medium">
-							{totalNoteCount} / {maxFreeNotes}
-						</span>
+					{/* カウンターは引き算の美学に基づき非表示化。将来の参考のためコメントアウトで残す */}
+					{/* {userPlan === "free" && (
+						<div className="flex items-center gap-2">
+							{isNearLimit && (
+								<span className="text-[9px] text-note-alert opacity-90 hidden sm:inline">
+									To manage or upgrade, visit the App.
+								</span>
+							)}
+							<span
+								className={`text-[10px] font-medium ${isNearLimit ? "text-note-alert" : "text-muted-foreground"}`}
+							>
+								{totalNoteCount}
+							</span>
+						</div>
 					)}
+					*/}
 
 					<div className="flex bg-base-surface p-0.5 rounded-md">
 						<button
 							type="button"
 							onClick={() => setSelectedType("info")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "info" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "info" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
 							title="Info"
 						>
-							<Info className="w-4 h-4" strokeWidth={2} />
+							<Info className="w-4 h-4" />
 						</button>
 						<button
 							type="button"
 							onClick={() => setSelectedType("alert")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "alert" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "alert" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
 							title="Alert"
 						>
-							<AlertTriangle className="w-4 h-4" strokeWidth={2} />
+							<AlertTriangle className="w-4 h-4" />
 						</button>
 						<button
 							type="button"
 							onClick={() => setSelectedType("idea")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "idea" ? "bg-action shadow-sm text-action-text" : "text-gray-400 hover:text-action"}`}
+							className={`cursor-pointer p-1 rounded ${selectedType === "idea" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
 							title="Idea"
 						>
-							<Lightbulb className="w-4 h-4" strokeWidth={2} />
+							<Lightbulb className="w-4 h-4" />
 						</button>
 					</div>
 				</div>
 			</div>
 
+			{userPlan === "free" && isNearLimit && !isLimitReached && (
+				<div className="flex items-start gap-2 p-2 mb-2 text-xs text-note-alert bg-note-alert/10 border border-note-alert/20 rounded">
+					<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+					<p>
+						Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please visit
+						Basecamp to free up space or unlock unlimited notes.
+					</p>
+				</div>
+			)}
+
 			<form onSubmit={handleSubmit} className="flex gap-2 items-center">
-				{userPlan === "free" && totalNoteCount >= maxFreeNotes ? (
+				{userPlan === "free" && isLimitReached ? (
 					<div className="w-full bg-note-idea/10 border border-note-idea/20 rounded-lg p-3 text-sm text-note-idea flex items-start gap-3">
 						<AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
 						<div>
-							<div className="font-bold mb-1">FREE Plan Limit Reached</div>
+							<div className="font-bold mb-1">Note Limit Reached</div>
 							<p className="text-xs opacity-90">
-								You have reached the {maxFreeNotes} note limit. Please delete
-								some existing notes to create new ones.
+								You have reached the {maxFreeNotes}-note limit. Please visit
+								Basecamp to free up space or upgrade for unlimited access.
 							</p>
 						</div>
 					</div>

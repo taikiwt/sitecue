@@ -15,7 +15,7 @@ import { useUserStats } from "./hooks/useUserStats";
 
 import { getScopeUrls } from "./utils/url";
 
-const MAX_FREE_NOTES = 200;
+const MAX_FREE_NOTES = 500;
 
 export default function SidePanel() {
 	const {
@@ -30,7 +30,7 @@ export default function SidePanel() {
 	if (sessionLoading) {
 		return (
 			<div className="w-full h-screen bg-base-surface flex flex-col items-center justify-center font-sans">
-				<Loader2 className="w-8 h-8 animate-spin text-gray-500" />
+				<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
 			</div>
 		);
 	}
@@ -159,7 +159,7 @@ function NotesUI({
 			{userStatsLoading ? (
 				<div className="p-4 bg-base-surface border-t border-base-border space-y-3">
 					<div className="flex items-center justify-center py-4">
-						<Loader2 className="w-5 h-5 animate-spin text-gray-300" />
+						<Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
 					</div>
 				</div>
 			) : (

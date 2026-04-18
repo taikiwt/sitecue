@@ -186,7 +186,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("info")}
-								className={`cursor-pointer p-1 rounded ${editType === "info" ? "bg-note-info shadow-sm text-action-text" : "text-gray-400 hover:text-note-info"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "info" ? "bg-note-info shadow-sm text-action-text" : "text-muted-foreground hover:text-note-info"}`}
 								title="Info"
 							>
 								<Info className="w-3.5 h-3.5" />
@@ -194,7 +194,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("alert")}
-								className={`cursor-pointer p-1 rounded ${editType === "alert" ? "bg-note-alert shadow-sm text-action-text" : "text-gray-400 hover:text-note-alert"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "alert" ? "bg-note-alert shadow-sm text-action-text" : "text-muted-foreground hover:text-note-alert"}`}
 								title="Alert"
 							>
 								<AlertTriangle className="w-3.5 h-3.5" />
@@ -202,7 +202,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("idea")}
-								className={`cursor-pointer p-1 rounded ${editType === "idea" ? "bg-note-idea shadow-sm text-action-text" : "text-gray-400 hover:text-note-idea"}`}
+								className={`cursor-pointer p-1 rounded ${editType === "idea" ? "bg-note-idea shadow-sm text-action-text" : "text-muted-foreground hover:text-note-idea"}`}
 								title="Idea"
 							>
 								<Lightbulb className="w-3.5 h-3.5" />
@@ -228,7 +228,7 @@ export default function NoteItem({
 						<button
 							type="button"
 							onClick={cancelEditing}
-							className="cursor-pointer p-1 text-gray-400 hover:text-gray-600 rounded"
+							className="cursor-pointer p-1 text-muted-foreground hover:text-gray-600 rounded"
 						>
 							<X className="w-4 h-4" />
 						</button>
@@ -300,13 +300,13 @@ export default function NoteItem({
 								className="flex items-center mr-0.5 outline-none cursor-default"
 								title={`Scope: ${note.scope === "exact" ? "Page" : note.scope === "inbox" ? "Inbox" : "Domain"}\nCreated: ${Intl.DateTimeFormat("sv-SE").format(new Date(note.created_at))}`}
 							>
-								<Info className="w-3.5 h-3.5 text-gray-400 hover:text-action" />
+								<Info className="w-3.5 h-3.5 text-muted-foreground hover:text-action" />
 							</div>
 
 							<button
 								type="button"
 								onClick={() => onToggleFavorite(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_favorite ? "text-action fill-current" : "text-gray-400 hover:text-action"}`}
+								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_favorite ? "text-action fill-current" : "text-muted-foreground hover:text-action"}`}
 								title={
 									note.is_favorite
 										? "Remove from favorites"
@@ -320,7 +320,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => onTogglePinned(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_pinned ? "text-action fill-current" : "text-gray-400 hover:text-action"}`}
+								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_pinned ? "text-action fill-current" : "text-muted-foreground hover:text-action"}`}
 								title={note.is_pinned ? "Unpin note" : "Pin note"}
 							>
 								<Pin
@@ -337,21 +337,26 @@ export default function NoteItem({
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-gray-400" : "text-action"}`}
+								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-muted-foreground" : "text-action"}`}
 							>
 								<MarkdownRenderer content={note.content} />
 							</div>
+
+							{/* 縮小時に下部を背景色へフェードアウトさせるグラデーション */}
+							{isCollapsed && (
+								<div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-base-bg to-transparent pointer-events-none" />
+							)}
 						</div>
 
 						{/* 展開ボタン */}
 						{(isCollapsed || (note.is_expanded && isOverflowing)) && (
-							<div className="mt-1 flex justify-center">
+							<div className="mt-1 flex justify-center relative z-10">
 								<button
 									type="button"
 									onClick={() =>
 										onToggleExpansion(note.id, note.is_expanded ?? false)
 									}
-									className="cursor-pointer text-[10px] text-gray-400 hover:text-action transition-colors bg-base-surface hover:bg-base-border px-2 py-0.5 rounded"
+									className="cursor-pointer text-[10px] text-muted-foreground hover:text-action transition-colors bg-base-surface hover:bg-base-border px-2 py-0.5 rounded"
 								>
 									{isCollapsed ? "Read more" : "Show less"}
 								</button>
@@ -361,9 +366,9 @@ export default function NoteItem({
 
 					{/* Favoriteリスト時のみのメタデータ（必要なら引き続き表示） */}
 					{isFavoriteList && note.scope !== "inbox" && (
-						<div className="text-[10px] text-gray-400 flex items-center gap-2 mt-1">
+						<div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-1">
 							<span
-								className={`px-1 rounded border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-gray-400"}`}
+								className={`px-1 rounded border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-muted-foreground"}`}
 							>
 								{note.scope === "exact" ? "Page" : "Domain"}
 							</span>
@@ -396,7 +401,7 @@ export default function NoteItem({
 										type="button"
 										onClick={handleMoveUp}
 										disabled={!onMoveUp || isSwapping || isFirst || isSorting}
-										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-base-border cursor-not-allowed" : "text-gray-400 hover:text-action cursor-pointer"}`}
+										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-base-border cursor-not-allowed" : "text-muted-foreground hover:text-action cursor-pointer"}`}
 										title="Move up"
 									>
 										<ChevronUp className="w-4 h-4" />
@@ -405,14 +410,16 @@ export default function NoteItem({
 										type="button"
 										onClick={handleMoveDown}
 										disabled={!onMoveDown || isSwapping || isLast || isSorting}
-										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-base-border cursor-not-allowed" : "text-gray-400 hover:text-action cursor-pointer"}`}
+										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-base-border cursor-not-allowed" : "text-muted-foreground hover:text-action cursor-pointer"}`}
 										title="Move down"
 									>
 										<ChevronDown className="w-4 h-4" />
 									</button>
 								</>
 							) : (
-								<span className="text-[10px] text-gray-400 ml-1">Pinned</span>
+								<span className="text-[10px] text-muted-foreground ml-1">
+									Pinned
+								</span>
 							)}
 						</div>
 
@@ -421,7 +428,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={handleCopyNote}
-								className="cursor-pointer text-gray-400 hover:text-action transition-colors"
+								className="cursor-pointer text-muted-foreground hover:text-action transition-colors"
 								title="Copy note"
 							>
 								{copiedNoteId === note.id ? (
@@ -433,7 +440,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={startEditing}
-								className="cursor-pointer text-gray-400 hover:text-action transition-colors"
+								className="cursor-pointer text-muted-foreground hover:text-action transition-colors"
 								title="Edit"
 							>
 								<Edit2 className="w-3.5 h-3.5" />
@@ -441,7 +448,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => onDelete(note.id)}
-								className="cursor-pointer text-gray-400 hover:text-note-alert transition-colors"
+								className="cursor-pointer text-muted-foreground hover:text-note-alert transition-colors"
 								title="Delete"
 							>
 								<Trash2 className="w-3.5 h-3.5" />

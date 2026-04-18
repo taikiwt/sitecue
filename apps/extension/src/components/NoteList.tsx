@@ -90,7 +90,7 @@ export default function NoteList({
 	if (loading && notes.length === 0) {
 		return (
 			<div className="flex justify-center p-8">
-				<Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+				<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
 			</div>
 		);
 	}
@@ -99,12 +99,12 @@ export default function NoteList({
 		return (
 			<div className="flex flex-col items-center justify-center py-10 text-center">
 				<div className="bg-base-bg p-4 rounded-full mb-4">
-					<Ghost className="w-8 h-8 text-gray-400" />
+					<Ghost className="w-8 h-8 text-muted-foreground" />
 				</div>
 				<h3 className="text-sm font-medium text-action mb-1">
 					No notes for this page yet
 				</h3>
-				<p className="text-xs text-gray-500 mb-4 max-w-50">
+				<p className="text-xs text-muted-foreground mb-4 max-w-50">
 					Capture your thoughts for this page.
 				</p>
 			</div>
@@ -191,7 +191,7 @@ export default function NoteList({
 					<button
 						type="button"
 						onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
-						className="flex items-center gap-1 text-xs font-semibold text-gray-500 uppercase tracking-wider px-1 hover:text-action transition-colors cursor-pointer"
+						className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 hover:text-action transition-colors cursor-pointer"
 					>
 						{isFavoritesOpen ? (
 							<ChevronDown className="w-3 h-3" />
@@ -214,7 +214,7 @@ export default function NoteList({
 			{currentScopeNotes.length > 0 && (
 				<div className="space-y-3">
 					{favoriteNotes.length > 0 && (
-						<div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">
+						<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
 							<span>Current Page</span>
 						</div>
 					)}

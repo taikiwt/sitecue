@@ -39,7 +39,7 @@ export default defineConfig({
 						"128": "sitecue_icon128.png",
 					},
 		permissions: ["sidePanel", "activeTab", "storage", "tabs", "identity"],
-		optional_host_permissions: ["<all_urls>"],
+		optional_host_permissions: [],
 		// 開発時のみローカル API 通信を許可
 		host_permissions:
 			command === "serve"

@@ -109,7 +109,7 @@ export default function FilterBar({
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "exact"
 							? "border-action text-action"
-							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
+							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
 					}`}
 				>
 					Page
@@ -120,7 +120,7 @@ export default function FilterBar({
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "domain"
 							? "border-action text-action"
-							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
+							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
 					}`}
 				>
 					Domain
@@ -131,7 +131,7 @@ export default function FilterBar({
 					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
 						viewScope === "inbox"
 							? "border-action text-action"
-							: "border-transparent text-gray-400 hover:text-action hover:border-base-border"
+							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
 					}`}
 				>
 					Inbox
@@ -147,7 +147,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1 px-2 rounded text-xs font-medium transition-colors ${
 							filterType === "all"
 								? "bg-base-surface text-action shadow-sm"
-								: "text-gray-400 hover:text-white"
+								: "text-muted-foreground hover:text-white"
 						}`}
 					>
 						All
@@ -158,7 +158,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "info"
 								? "bg-base-surface text-action shadow-sm"
-								: "text-gray-400 hover:text-white"
+								: "text-muted-foreground hover:text-white"
 						}`}
 						title="Info"
 					>
@@ -170,7 +170,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "alert"
 								? "bg-base-surface text-action shadow-sm"
-								: "text-gray-400 hover:text-white"
+								: "text-muted-foreground hover:text-white"
 						}`}
 						title="Alert"
 					>
@@ -182,7 +182,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
 							filterType === "idea"
 								? "bg-base-surface text-action shadow-sm"
-								: "text-gray-400 hover:text-white"
+								: "text-muted-foreground hover:text-white"
 						}`}
 						title="Idea"
 					>
@@ -199,7 +199,7 @@ export default function FilterBar({
 							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
 								isSearchOpen || searchQuery
 									? "bg-base-bg text-action"
-									: "text-gray-400 hover:text-action hover:bg-base-bg"
+									: "text-muted-foreground hover:text-action hover:bg-base-bg"
 							}`}
 						>
 							<Search className="w-3.5 h-3.5" />
@@ -219,7 +219,7 @@ export default function FilterBar({
 									onBlur={() => {
 										if (!searchQuery) setIsSearchOpen(false);
 									}}
-									className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-base-bg border-none rounded focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-gray-400"
+									className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-base-bg border-none rounded focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-muted-foreground"
 								/>
 								{searchQuery && (
 									<button
@@ -232,7 +232,7 @@ export default function FilterBar({
 											setSearchQuery("");
 											inputRef.current?.focus();
 										}}
-										className="absolute right-1 cursor-pointer p-0.5 text-gray-400 hover:text-action transition-colors shrink-0"
+										className="absolute right-1 cursor-pointer p-0.5 text-muted-foreground hover:text-action transition-colors shrink-0"
 										title="Clear search"
 									>
 										<X className="w-3 h-3" />
@@ -252,7 +252,7 @@ export default function FilterBar({
 									? "text-note-info bg-note-info/10"
 									: isCopyMenuOpen
 										? "text-action bg-base-bg"
-										: "text-gray-400 hover:text-action hover:bg-base-bg"
+										: "text-muted-foreground hover:text-action hover:bg-base-bg"
 							}`}
 							title={isCopied ? "Copied!" : "Copy options"}
 							aria-label={isCopied ? "Copied!" : "Open copy options menu"}
@@ -269,14 +269,14 @@ export default function FilterBar({
 								<button
 									type="button"
 									onClick={handleCopyText}
-									className="w-full text-left px-3 py-1.5 text-xs text-gray-600 hover:bg-base-bg transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
 								>
 									Copy as Text
 								</button>
 								<button
 									type="button"
 									onClick={handleCopyJson}
-									className="w-full text-left px-3 py-1.5 text-xs text-gray-600 hover:bg-base-bg transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
 								>
 									Copy as JSON
 								</button>

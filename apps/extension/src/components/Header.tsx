@@ -127,7 +127,7 @@ export default function Header({
 							</span>
 						)}
 					</h1>
-					<p className="text-xs text-gray-400 truncate" title={url}>
+					<p className="text-xs text-muted-foreground truncate" title={url}>
 						{url || "Waiting..."}
 					</p>
 				</div>
@@ -135,14 +135,14 @@ export default function Header({
 					<button
 						type="button"
 						onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-						className={`cursor-pointer p-1.5 rounded-full transition-colors ${isSettingsOpen ? "bg-action text-action-text" : "text-gray-400 hover:text-action"}`}
+						className={`cursor-pointer p-1.5 rounded-full transition-colors ${isSettingsOpen ? "bg-action text-action-text" : "text-muted-foreground hover:text-action"}`}
 					>
 						<Settings className="w-4 h-4" />
 					</button>
 					<button
 						type="button"
 						onClick={onLogout}
-						className="cursor-pointer p-1.5 text-gray-400 hover:text-action shrink-0"
+						className="cursor-pointer p-1.5 text-muted-foreground hover:text-action shrink-0"
 					>
 						<LogOut className="w-4 h-4" />
 					</button>
@@ -156,7 +156,7 @@ export default function Header({
 						<div>
 							<label
 								htmlFor="label-input"
-								className="text-xs font-medium text-neutral-500 mb-1.5 block"
+								className="text-xs font-medium text-muted-foreground mb-1.5 block"
 							>
 								Label
 							</label>
@@ -166,13 +166,13 @@ export default function Header({
 								value={editLabel}
 								onChange={(e) => setEditLabel(e.target.value.slice(0, 10))}
 								placeholder="e.g. PROD, DEV"
-								className="w-full text-xs text-action border border-base-border rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-action placeholder-gray-400"
+								className="w-full text-xs text-action border border-base-border rounded p-1.5 focus:outline-none focus:ring-1 focus:ring-action placeholder-muted-foreground"
 							/>
 						</div>
 						<div>
 							<label
 								htmlFor="color-button"
-								className="text-xs font-medium text-gray-500 mb-1.5 block"
+								className="text-xs font-medium text-muted-foreground mb-1.5 block"
 							>
 								Color
 							</label>
@@ -181,7 +181,7 @@ export default function Header({
 									id="color-button"
 									type="button"
 									onClick={() => setEditColor("")}
-									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-gray-400 hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
+									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-muted-foreground hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
 									title="Clear Settings"
 								>
 									<CircleOff className="w-3.5 h-3.5" />
@@ -202,7 +202,7 @@ export default function Header({
 							<button
 								type="button"
 								onClick={() => setIsSettingsOpen(false)}
-								className="cursor-pointer px-3 py-1 text-xs text-gray-500 hover:text-action"
+								className="cursor-pointer px-3 py-1 text-xs text-muted-foreground hover:text-action"
 							>
 								Cancel
 							</button>
