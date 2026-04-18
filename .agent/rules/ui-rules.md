@@ -1,5 +1,5 @@
 ---
-name: UI & Design Rules
+trigger: always_on
 description: sitecueのテーマ、セマンティックカラーの運用、環境ごとのUI実装ルール
 ---
 
@@ -8,6 +8,10 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
 ## 1. Core Design Philosophy
 - **Subtraction Aesthetics (引き算の美学)**: 不要なボーダー、過剰なシャドウ、多すぎる色数を徹底的に排除する。コンテンツ（タスクとメモ）自体が主役となるUIを構築する。
 - **Implementation Priority**: 抽象的なデザイン理念と、堅牢で業界標準（Industry-standard）な実装手法が競合した場合は、**常に「堅牢で業界標準な実装」を優先**する。見た目のシンプルさのためにアクセシビリティ（a11y）やセマンティックなHTMLを犠牲にしてはならない。
+
+## 1.5 Copywriting & Monetization Strategy (コピーと課金の建前)
+- **拡張機能におけるプラン表現の禁止**: 拡張機能内では「Free Plan」や「Pro Plan」という直接的なプラン名をUIテキストに出さないこと。拡張機能はあくまで「無料で使える便利なツール」という建前を維持し、使用制限は単なる「アカウントのノート保存容量上限（Note Limit）」として表現する。上限到達時や警告時は、必ず「Basecamp（App側）へアクセスして容量を空けるか、無制限アクセスのためにアップグレードしてください」と案内し、Webアプリ側へ誘導する設計とする。
+- **限界提示の引き算 (Limit Counters)**: メモ数などの上限があるリソースにおいて、常に `150 / 500` のように分母を表示してユーザーに制限を意識させるUIは避ける。普段は「引き算の美学」に基づき分母を隠し、上限の90%などに迫ったタイミングで初めて控えめな警告テキスト（アラート）を出す洗練された体験を提供すること。
 
 ## 2. Visual Language & Color Strict Rules (Tailwind CSS v4)
 
