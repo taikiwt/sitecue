@@ -11,18 +11,17 @@ import {
 	PanelLeftClose,
 	PenSquare,
 	Plus,
-	Search,
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { UserMenu } from "@/app/_components/UserMenu";
+import SearchInput from "@/app/notes/_components/SearchInput";
 import type { DomainGroup, Note } from "@/app/notes/types";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
-import SearchInput from "@/app/notes/_components/SearchInput";
 
 interface GlobalSidebarProps {
 	onClose?: () => void;
@@ -34,6 +33,17 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const { groupedNotes } = useNotesStore();
 
 	const qParam = searchParams.get("q") || "";
+	const tagsParam = searchParams.get("tags") || "";
+
+	// Helper to create href with search state (q, tags) preserved
+	const createHref = (domain: string, exactUrl?: string) => {
+		const params = new URLSearchParams();
+		params.set("domain", domain);
+		if (exactUrl) params.set("exact", exactUrl);
+		if (qParam) params.set("q", qParam);
+		if (tagsParam) params.set("tags", tagsParam);
+		return `/notes?${params.toString()}`;
+	};
 
 	// Determine active state from URL
 	const isStudio = pathname.startsWith("/studio");
@@ -56,8 +66,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 
 	// Search implementation (Use q from URL)
 	const normalizedQuery = useMemo(
-		() =>
-			qParam.trim() ? normalizeUrlForGrouping(qParam.toLowerCase()) : "",
+		() => (qParam.trim() ? normalizeUrlForGrouping(qParam.toLowerCase()) : ""),
 		[qParam],
 	);
 
@@ -215,6 +224,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 									normalizedQuery={normalizedQuery}
 									currentDomain={currentDomain}
 									currentExact={currentExact}
+									createHref={createHref}
 								/>
 							))}
 						</div>
@@ -258,12 +268,14 @@ function DomainAccordionItem({
 	normalizedQuery,
 	currentDomain,
 	currentExact,
+	createHref,
 }: {
 	domainName: string;
 	domainData: DomainGroup;
 	normalizedQuery: string;
 	currentDomain: string | null;
 	currentExact: string | null;
+	createHref: (domain: string, exactUrl?: string) => string;
 }) {
 	const isUnderThisDomain = currentDomain === domainName;
 	const [isOpen, setIsOpen] = useState(false);
@@ -340,7 +352,7 @@ function DomainAccordionItem({
 			{effectiveIsOpen && (
 				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-base-border pl-3">
 					<Link
-						href={`/notes?domain=${encodeURIComponent(domainName)}`}
+						href={createHref(domainName)}
 						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 							isUnderThisDomain && !currentExact
 								? "bg-base-bg text-action font-medium shadow-sm"
@@ -371,9 +383,7 @@ function DomainAccordionItem({
 						return (
 							<Link
 								key={url}
-								href={`/notes?domain=${encodeURIComponent(
-									domainName,
-								)}&exact=${encodeURIComponent(url)}`}
+								href={createHref(domainName, url)}
 								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 									isActive
 										? "bg-base-bg text-action font-medium shadow-sm"
