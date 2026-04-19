@@ -53,6 +53,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
+import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -235,6 +236,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					targetUrlPattern = domainParam;
 				}
 
+				const extractedTags = extractTags(newContent);
+
 				const { data, error } = await supabase
 					.from("sitecue_notes")
 					.insert({
@@ -248,6 +251,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						is_pinned: false,
 						is_resolved: false,
 						sort_order: 0,
+						tags: extractedTags,
 					})
 					.select()
 					.single();
@@ -261,9 +265,13 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				router.replace(`/notes?${params.toString()}`);
 				router.refresh();
 			} else if (note) {
+				const extractedTags = extractTags(newContent);
 				const { error } = await supabase
 					.from("sitecue_notes")
-					.update({ content: newContent })
+					.update({
+						content: newContent,
+						tags: extractedTags,
+					})
 					.eq("id", note.id);
 
 				if (error) throw error;

@@ -68,7 +68,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 			supabase
 				.from("sitecue_notes")
 				.select(
-					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id",
+					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
 				)
 				.eq("user_id", user.id)
 				.order("is_pinned", { ascending: false })

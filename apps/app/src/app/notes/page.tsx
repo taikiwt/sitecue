@@ -25,7 +25,9 @@ export default async function Dashboard(props: {
 		!searchParams.domain &&
 		!searchParams.exact &&
 		!searchParams.noteId &&
-		!searchParams.draftId
+		!searchParams.draftId &&
+		!searchParams.q &&
+		!searchParams.tags
 	) {
 		redirect("/notes?domain=inbox");
 	}
