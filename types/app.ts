@@ -7,6 +7,7 @@ export type Note = Omit<
 	"scope"
 > & {
 	scope: NoteScope;
+	tags?: string[];
 };
 
 export type Template = Database["public"]["Tables"]["sitecue_templates"]["Row"];
@@ -17,6 +18,7 @@ export type Draft = Database["public"]["Tables"]["sitecue_drafts"]["Row"] & {
 		[key: string]: unknown;
 	} | null;
 	sitecue_templates?: Template | null;
+	tags?: string[];
 };
 
 export type PinnedSite =
