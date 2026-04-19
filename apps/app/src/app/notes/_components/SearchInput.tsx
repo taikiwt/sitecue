@@ -20,7 +20,7 @@ function SearchInputInner() {
 		`${initialTags} ${initialQ}`.trim(),
 	);
 
-	const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const updateUrl = useCallback(
 		(value: string) => {
@@ -78,14 +78,7 @@ function SearchInputInner() {
 		[pathname, router, searchParams],
 	);
 
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
-			if (timeoutRef.current) clearTimeout(timeoutRef.current);
-		};
-	}, []);
-
-	// Passive synchronization: Update input value when URL changes (e.g. sidebar reset)
+	// 外部からのURL変更（Inboxクリック等）に inputValue を追従させるだけの一方向同期
 	useEffect(() => {
 		const currentQ = searchParams.get("q") || "";
 		const currentTags = searchParams.get("tags")
@@ -95,9 +88,7 @@ function SearchInputInner() {
 					.join(" ")
 			: "";
 		const expected = `${currentTags} ${currentQ}`.trim();
-
-		// Only update if different to avoid cursor jumping
-		setInputValue((prev) => (prev === expected ? prev : expected));
+		setInputValue(expected);
 	}, [searchParams]);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
