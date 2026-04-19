@@ -5,6 +5,7 @@
 	},
 	"include": [
 		"src/**/*",
+		"entrypoints/**/*",
 		".wxt/types/**/*",
 		"../../types/**/*",
 		"../../../types/**/*",

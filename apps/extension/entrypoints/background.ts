@@ -73,19 +73,26 @@ export default defineBackground(() => {
 
 	// 1. Tab Activated (Switched)
 	chrome.tabs.onActivated.addListener(async (activeInfo) => {
-		const tab = await chrome.tabs.get(activeInfo.tabId);
-		if (tab.url) {
-			updateBadge(activeInfo.tabId, tab.url);
+		try {
+			const tab = await chrome.tabs.get(activeInfo.tabId);
+			if (tab.url) {
+				await updateBadge(activeInfo.tabId, tab.url);
+			}
+		} catch (error) {
+			console.debug(
+				"[SiteCue] Tab closed or unavailable before badge update:",
+				error,
+			);
 		}
 	});
 
 	// 2. Tab Updated (Navigated/Reloaded)
-	chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-		// We can update when status is 'loading' or 'complete'.
-		// 'status' change happens often. 'url' change happens on nav.
+	chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+		// リロード時は changeInfo.url が undefined になるが、
+		// Chromeがバッジをクリアしてしまうため status === "complete" で再描画する
 		if (changeInfo.url || changeInfo.status === "complete") {
 			if (tab.url) {
-				updateBadge(tabId, tab.url);
+				await updateBadge(tabId, tab.url);
 			}
 		}
 	});
@@ -93,20 +100,33 @@ export default defineBackground(() => {
 	// 3. Message from Side Panel (Note created/deleted)
 	chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 		if (message.type === "REFRESH_BADGE") {
-			// Refresh badge for the active tab (or all relevant tabs, but active is most important)
-			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-				if (tabs.length > 0 && tabs[0].id && tabs[0].url) {
-					updateBadge(tabs[0].id, tabs[0].url);
+			// 非同期処理を即時実行関数（IIFE）でラップして実行
+			(async () => {
+				try {
+					const tabs = await chrome.tabs.query({
+						active: true,
+						currentWindow: true,
+					});
+					if (tabs.length > 0 && tabs[0].id && tabs[0].url) {
+						await updateBadge(tabs[0].id, tabs[0].url);
+					}
+					sendResponse({ status: "ok" });
+				} catch (error) {
+					console.error("[SiteCue] Failed to refresh badge:", error);
+					sendResponse({ status: "error", error });
 				}
-			});
+			})();
 
-			// Also handy to return something
-			sendResponse({ status: "ok" });
-		} else if (message.type === "TEST_SESSION_REFRESH") {
+			// 非同期で sendResponse を呼ぶために true を返す (Manifest V3 必須)
+			return true;
+		}
+
+		if (message.type === "TEST_SESSION_REFRESH") {
 			// Trigger manual session refresh test
 			// biome-ignore lint/suspicious/noExplicitAny: test hacking
 			(self as any).testSessionRefresh?.();
 			sendResponse({ status: "test_started" });
+			return false; // Sync response
 		}
 	});
 
