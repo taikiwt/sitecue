@@ -81,6 +81,8 @@ function NotesUI({
 		"exact",
 	);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
 
 	const filteredNotesByScope = notes.filter((n) => {
 		if (viewScope === "inbox") {
@@ -97,6 +99,21 @@ function NotesUI({
 
 		return true;
 	});
+
+	const availableTags = Array.from(
+		new Set(
+			filteredNotesByScope.flatMap((n) => (n as { tags?: string[] }).tags || []),
+		),
+	).sort();
+
+	const finalFilteredNotes = filteredNotesByScope.filter((n) => {
+		const noteTags = (n as { tags?: string[] }).tags || [];
+		if (selectedTag && !noteTags.includes(selectedTag)) {
+			return false;
+		}
+		return true;
+	});
+
 
 	return (
 		<div className="w-full h-screen bg-base-surface flex flex-col font-sans">
@@ -136,11 +153,16 @@ function NotesUI({
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
 				filteredNotes={filteredNotesByScope}
+				selectedTag={selectedTag}
+				setSelectedTag={setSelectedTag}
+				availableTags={availableTags}
 			/>
+
 
 			<div className="flex-1 overflow-y-auto p-4 space-y-6">
 				<NoteList
-					notes={filteredNotesByScope}
+					notes={finalFilteredNotes}
+
 					loading={loading}
 					filterType={filterType}
 					showResolved={showResolved}

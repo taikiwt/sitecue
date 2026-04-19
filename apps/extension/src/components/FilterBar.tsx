@@ -21,6 +21,9 @@ interface FilterBarProps {
 	searchQuery: string;
 	setSearchQuery: (query: string) => void;
 	filteredNotes: Note[];
+	selectedTag: string | null;
+	setSelectedTag: (tag: string | null) => void;
+	availableTags: string[];
 }
 
 export default function FilterBar({
@@ -33,6 +36,9 @@ export default function FilterBar({
 	searchQuery,
 	setSearchQuery,
 	filteredNotes,
+	selectedTag,
+	setSelectedTag,
+	availableTags,
 }: FilterBarProps) {
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
@@ -300,6 +306,26 @@ export default function FilterBar({
 					</button>
 				</div>
 			</div>
+
+			{/* Tag Pills */}
+			{availableTags.length > 0 && (
+				<div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+					{availableTags.map((tag) => (
+						<button
+							key={tag}
+							type="button"
+							onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+							className={`cursor-pointer whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+								selectedTag === tag
+									? "bg-action text-action-text border-action"
+									: "bg-base-surface text-muted-foreground border-base-border hover:border-action hover:text-action"
+							}`}
+						>
+							#{tag}
+						</button>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

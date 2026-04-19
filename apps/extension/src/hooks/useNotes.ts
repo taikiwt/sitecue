@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
 import { getScopeUrls } from "../utils/url";
+import { extractTags } from "../utils/tags";
 
 export type NoteType = Note["note_type"];
 export type { Note, NoteScope };
@@ -78,6 +79,7 @@ export function useNotes(
 			is_favorite: false,
 			is_pinned: false,
 			is_resolved: false,
+			tags: extractTags(content),
 		} as Note;
 
 		// UI（ステート）には全スコープ追加する
@@ -91,6 +93,7 @@ export function useNotes(
 				scope: selectedScope,
 				note_type: selectedType,
 				sort_order: newSortOrder,
+				tags: extractTags(content),
 			};
 
 			const { data, error } = await supabase
@@ -140,9 +143,11 @@ export function useNotes(
 				note_type: NoteType;
 				scope?: NoteScope;
 				url_pattern?: string;
+				tags?: string[];
 			} = {
 				content: editContent,
 				note_type: editType,
+				tags: extractTags(editContent),
 			};
 
 			if (editScope && editScope !== currentNote?.scope) {
