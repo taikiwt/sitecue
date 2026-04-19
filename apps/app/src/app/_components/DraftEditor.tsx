@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note, Template } from "../../../../../types/app.ts";
+import { extractTags } from "@/utils/tags";
 import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
@@ -382,6 +383,7 @@ export default function DraftEditor({
 					? { slug }
 					: initialDraft?.metadata || {};
 
+			const extractedTags = extractTags(content);
 			let currentDraftId = initialDraft?.id;
 
 			if (currentDraftId) {
@@ -392,6 +394,7 @@ export default function DraftEditor({
 						content,
 						template_id: activeTemplate?.id || null,
 						metadata,
+						tags: extractedTags,
 						updated_at: new Date().toISOString(),
 					})
 					.eq("id", currentDraftId);
@@ -405,6 +408,7 @@ export default function DraftEditor({
 						content,
 						template_id: activeTemplate?.id || null,
 						metadata,
+						tags: extractedTags,
 					})
 					.select()
 					.single();

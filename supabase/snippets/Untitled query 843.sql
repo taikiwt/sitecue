@@ -1,0 +1,2 @@
+UPDATE sitecue_notes SET url_pattern = regexp_replace(url_pattern, '^www\.', '') WHERE url_pattern LIKE 'www.%';
+UPDATE sitecue_notes SET url_pattern = regexp_replace(url_pattern, '/$', '') WHERE url_pattern LIKE '%/';

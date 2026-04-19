@@ -25,4 +25,6 @@ export type SearchParams = {
 	noteId?: string;
 	draftId?: string;
 	new?: string;
+	q?: string;
+	tags?: string;
 };

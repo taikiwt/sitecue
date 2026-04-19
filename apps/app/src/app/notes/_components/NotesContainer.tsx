@@ -1,8 +1,9 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNotesStore } from "@/store/useNotesStore";
+import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
@@ -10,14 +11,8 @@ import { RightPaneDetail } from "./RightPaneDetail";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
-	const {
-		notes,
-		drafts,
-		groupedNotes,
-		isMetadataFetched,
-		fetchMetadata,
-		fetchContentForIds,
-	} = useNotesStore();
+	const { notes, drafts, groupedNotes, isMetadataFetched, fetchContentForIds } =
+		useNotesStore();
 
 	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {
@@ -28,8 +23,50 @@ export function NotesContainer() {
 			noteId: searchParams.get("noteId") || undefined,
 			draftId: searchParams.get("draftId") || undefined,
 			new: searchParams.get("new") || undefined,
+			q: searchParams.get("q") || undefined,
+			tags: searchParams.get("tags") || undefined,
 		};
 	}, [searchParams]);
+
+	const [searchResults, setSearchResults] = useState<Note[] | null>(null);
+	const [_isSearching, setIsSearching] = useState(false);
+
+	// Implement database-level search
+	useEffect(() => {
+		if (!params.q && !params.tags) {
+			setSearchResults(null);
+			return;
+		}
+
+		const fetchSearch = async () => {
+			setIsSearching(true);
+			try {
+				const supabase = createClient();
+				let query = supabase.from("sitecue_notes").select("*");
+
+				if (params.q) {
+					query = query.ilike("content", `%${params.q}%`);
+				}
+				if (params.tags) {
+					const tagsArray = params.tags.split(",");
+					query = query.contains("tags", tagsArray);
+				}
+
+				const { data, error } = await query
+					.order("is_pinned", { ascending: false })
+					.order("created_at", { ascending: false });
+
+				if (error) throw error;
+				setSearchResults((data as Note[]) || []);
+			} catch (err) {
+				console.error("Search failed:", err);
+			} finally {
+				setIsSearching(false);
+			}
+		};
+
+		fetchSearch();
+	}, [params.q, params.tags]);
 
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
@@ -41,6 +78,7 @@ export function NotesContainer() {
 
 	// フィルタリングされた一覧の計算 (既存の page.tsx から移植)
 	const filteredItems = useMemo(() => {
+		if (searchResults !== null) return searchResults;
 		if (!groupedNotes) return [];
 
 		let items: (Note | Draft)[] = [];
@@ -78,7 +116,7 @@ export function NotesContainer() {
 			}
 		}
 		return items;
-	}, [groupedNotes, effectiveView, domain, exact]);
+	}, [groupedNotes, effectiveView, domain, exact, searchResults]);
 
 	// フォールバック: 表示されているリストの中に本文(content)がないものがあれば自動取得
 	useEffect(() => {
@@ -97,11 +135,17 @@ export function NotesContainer() {
 	}, [filteredItems, isMetadataFetched, fetchContentForIds]);
 
 	// 選択されたノートまたはドラフトの取得
-	const selectedNote = useMemo(
-		() =>
-			params.noteId ? notes.find((n) => n.id === params.noteId) : undefined,
-		[notes, params.noteId],
-	);
+	const selectedNote = useMemo(() => {
+		if (!params.noteId) return undefined;
+		// まず全体ストアから探す
+		const foundInNotes = notes.find((n) => n.id === params.noteId);
+		if (foundInNotes) return foundInNotes;
+		// なければ検索結果（ローカル状態）から探す
+		if (searchResults) {
+			return searchResults.find((n) => n.id === params.noteId);
+		}
+		return undefined;
+	}, [notes, searchResults, params.noteId]);
 	const selectedDraft = useMemo(
 		() =>
 			params.draftId ? drafts.find((d) => d.id === params.draftId) : undefined,

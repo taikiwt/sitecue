@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
+import SearchInput from "@/app/notes/_components/SearchInput";
 
 interface GlobalSidebarProps {
 	onClose?: () => void;
@@ -32,10 +33,9 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const searchParams = useSearchParams();
 	const { groupedNotes } = useNotesStore();
 
-	const [searchQuery, setSearchQuery] = useState("");
+	const qParam = searchParams.get("q") || "";
 
 	// Determine active state from URL
-	const _isLaunchpad = pathname === "/";
 	const isStudio = pathname.startsWith("/studio");
 	const isNotes = pathname.startsWith("/notes");
 	const isTemplates = pathname.startsWith("/templates");
@@ -54,13 +54,11 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 		(currentView === "inbox" || (currentDomain === "inbox" && !currentExact));
 	const isDraftsActive = isNotes && currentView === "drafts";
 
-	// Search implementation (copied from LeftPaneNavigation)
+	// Search implementation (Use q from URL)
 	const normalizedQuery = useMemo(
 		() =>
-			searchQuery.trim()
-				? normalizeUrlForGrouping(searchQuery.toLowerCase())
-				: "",
-		[searchQuery],
+			qParam.trim() ? normalizeUrlForGrouping(qParam.toLowerCase()) : "",
+		[qParam],
 	);
 
 	const filteredDomains = useMemo(() => {
@@ -124,19 +122,8 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				</div>
 
 				{/* Search Area */}
-				<div className="relative">
-					<Search
-						className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
-						aria-hidden="true"
-					/>
-					<input
-						type="search"
-						id="nav-search"
-						placeholder="Search URL or domain..."
-						className="w-full pl-8 pr-3 py-2 bg-base-bg border-transparent focus:bg-base-bg focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg text-sm transition-all outline-none"
-						value={searchQuery}
-						onChange={(e) => setSearchQuery(e.target.value)}
-					/>
+				<div className="mb-4">
+					<SearchInput />
 				</div>
 
 				<Link
