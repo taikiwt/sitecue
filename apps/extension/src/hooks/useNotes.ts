@@ -3,8 +3,8 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
-import { getScopeUrls } from "../utils/url";
 import { extractTags } from "../utils/tags";
+import { getScopeUrls } from "../utils/url";
 
 export type NoteType = Note["note_type"];
 export type { Note, NoteScope };
