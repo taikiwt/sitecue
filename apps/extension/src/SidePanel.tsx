@@ -83,7 +83,6 @@ function NotesUI({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-
 	const filteredNotesByScope = notes.filter((n) => {
 		if (viewScope === "inbox") {
 			if (n.scope !== "inbox") return false;
@@ -102,7 +101,9 @@ function NotesUI({
 
 	const availableTags = Array.from(
 		new Set(
-			filteredNotesByScope.flatMap((n) => (n as { tags?: string[] }).tags || []),
+			filteredNotesByScope.flatMap(
+				(n) => (n as { tags?: string[] }).tags || [],
+			),
 		),
 	).sort();
 
@@ -113,7 +114,6 @@ function NotesUI({
 		}
 		return true;
 	});
-
 
 	return (
 		<div className="w-full h-screen bg-base-surface flex flex-col font-sans">
@@ -158,11 +158,9 @@ function NotesUI({
 				availableTags={availableTags}
 			/>
 
-
 			<div className="flex-1 overflow-y-auto p-4 space-y-6">
 				<NoteList
 					notes={finalFilteredNotes}
-
 					loading={loading}
 					filterType={filterType}
 					showResolved={showResolved}
