@@ -56,9 +56,10 @@
   --color-action: #262626;
   --color-action-hover: #737373;
   --color-action-text: #ffffff;
-  --color-note-info: #3b82f6;
-  --color-note-alert: #ef4444;
-  --color-note-idea: #eab308;
+
+  --color-note-info: #38A8F8;
+  --color-note-alert: #FB7176;
+  --color-note-idea: #ff8104;
 }
 
 :root {

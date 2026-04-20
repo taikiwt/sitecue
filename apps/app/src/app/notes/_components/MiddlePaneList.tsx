@@ -61,17 +61,17 @@ const getNoteTypeStyles = (type: string | null) => {
 	switch (type) {
 		case "alert":
 			return {
-				className: "bg-note-alert/10 text-note-alert",
+				className: "bg-note-alert/5 text-note-alert",
 				Icon: AlertTriangle,
 			};
 		case "idea":
 			return {
-				className: "bg-note-idea/10 text-note-idea",
+				className: "bg-note-idea/5 text-note-idea",
 				Icon: Lightbulb,
 			};
 		default:
 			return {
-				className: "bg-note-info/10 text-note-info",
+				className: "bg-note-info/5 text-note-info",
 				Icon: Info,
 			};
 	}
