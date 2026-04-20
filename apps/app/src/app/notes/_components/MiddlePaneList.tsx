@@ -124,9 +124,14 @@ export function MiddlePaneList(props: Props) {
 		}),
 	);
 
-	const isSelected = !!currentView || !!currentDomain || !!currentExact;
+	const isSearchActive = !!searchParams.get("q") || !!searchParams.get("tags");
+	const isSelected =
+		!!currentView || !!currentDomain || !!currentExact || isSearchActive;
 
 	const getTitle = () => {
+		if (isSearchActive && !currentDomain && !currentExact) {
+			return "Search Results";
+		}
 		if (currentView === "drafts") return "Drafts";
 		if (currentExact) {
 			const safeUrl = getSafeUrl(currentExact);
@@ -385,6 +390,7 @@ export function MiddlePaneList(props: Props) {
 											key={item.id}
 											item={item}
 											currentView={currentView}
+											isSearchActive={isSearchActive}
 											currentExact={currentExact}
 											selectedNoteId={selectedNoteId}
 											selectedDraftId={selectedDraftId}
@@ -537,6 +543,7 @@ function NoteItem({
 function SortableNoteItem({
 	item,
 	currentView,
+	isSearchActive,
 	currentExact,
 	selectedNoteId,
 	selectedDraftId,
@@ -551,6 +558,7 @@ function SortableNoteItem({
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
 	searchParams: URLSearchParams;
+	isSearchActive: boolean;
 	selectable?: boolean;
 	isSelected?: boolean;
 	onSelectChange?: (id: string, checked: boolean) => void;
@@ -581,7 +589,7 @@ function SortableNoteItem({
 				selectedNoteId={selectedNoteId}
 				selectedDraftId={selectedDraftId}
 				searchParams={searchParams}
-				isSortable={currentView !== "drafts"}
+				isSortable={currentView !== "drafts" && !isSearchActive}
 				dragHandleProps={{ ...attributes, ...listeners }}
 				selectable={selectable}
 				isSelected={isSelected}

@@ -30,7 +30,7 @@ interface GlobalSidebarProps {
 export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
-	const { groupedNotes } = useNotesStore();
+	const { groupedNotes, searchResults } = useNotesStore();
 
 	const qParam = searchParams.get("q") || "";
 	const tagsParam = searchParams.get("tags") || "";
@@ -66,20 +66,43 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 
 	// Search implementation (Use q from URL)
 	const normalizedQuery = useMemo(
-		() => (qParam.trim() ? normalizeUrlForGrouping(qParam.toLowerCase()) : ""),
+		() => (qParam.trim() ? qParam.toLowerCase() : ""),
 		[qParam],
 	);
+	const isSearchActive = !!qParam || !!tagsParam;
 
 	const filteredDomains = useMemo(() => {
 		if (!groupedNotes) return [];
 		return Object.entries(groupedNotes.domains).filter(([domain, data]) => {
-			if (!normalizedQuery) return true;
-			if (domain.toLowerCase().includes(normalizedQuery)) return true;
-			return Object.keys(data.pages).some((url) =>
-				normalizeUrlForGrouping(url.toLowerCase()).includes(normalizedQuery),
-			);
+			if (!isSearchActive) return true;
+
+			// 1. URL・ドメイン名によるマッチ
+			if (normalizedQuery) {
+				if (domain.toLowerCase().includes(normalizedQuery)) return true;
+				if (
+					Object.keys(data.pages).some((url) =>
+						normalizeUrlForGrouping(url.toLowerCase()).includes(
+							normalizedQuery,
+						),
+					)
+				)
+					return true;
+			}
+
+			// 2. 本文検索結果 (searchResults) によるマッチ
+			if (searchResults) {
+				const hasMatchingNote = searchResults.some((note) => {
+					const noteDomain = normalizeUrlForGrouping(note.url_pattern).split(
+						"/",
+					)[0];
+					return noteDomain === domain;
+				});
+				if (hasMatchingNote) return true;
+			}
+
+			return false;
 		});
-	}, [groupedNotes, normalizedQuery]);
+	}, [groupedNotes, normalizedQuery, searchResults, isSearchActive]);
 
 	const newNoteParams = new URLSearchParams();
 	if (currentView) newNoteParams.set("view", currentView);
@@ -90,7 +113,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 
 	// Accordion logic
 	const isAnyDomainActive = !!(currentDomain && currentDomain !== "inbox");
-	const shouldForceOpenDomains = !!normalizedQuery || isAnyDomainActive;
+	const shouldForceOpenDomains = isSearchActive || isAnyDomainActive;
 	const [isDomainsOpen, setIsDomainsOpen] = useState(
 		() => shouldForceOpenDomains,
 	);
@@ -225,6 +248,8 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 									currentDomain={currentDomain}
 									currentExact={currentExact}
 									createHref={createHref}
+									searchResults={searchResults}
+									isSearchActive={isSearchActive}
 								/>
 							))}
 						</div>
@@ -269,6 +294,8 @@ function DomainAccordionItem({
 	currentDomain,
 	currentExact,
 	createHref,
+	searchResults,
+	isSearchActive,
 }: {
 	domainName: string;
 	domainData: DomainGroup;
@@ -276,6 +303,8 @@ function DomainAccordionItem({
 	currentDomain: string | null;
 	currentExact: string | null;
 	createHref: (domain: string, exactUrl?: string) => string;
+	searchResults: Note[] | null;
+	isSearchActive: boolean;
 }) {
 	const isUnderThisDomain = currentDomain === domainName;
 	const [isOpen, setIsOpen] = useState(false);
@@ -297,7 +326,7 @@ function DomainAccordionItem({
 		}
 	};
 
-	const effectiveIsOpen = isOpen || !!normalizedQuery || isUnderThisDomain;
+	const effectiveIsOpen = isOpen || isSearchActive || isUnderThisDomain;
 
 	const getPath = (url: string) => {
 		const safeUrl = getSafeUrl(url);
@@ -370,14 +399,20 @@ function DomainAccordionItem({
 						const isActive = currentExact === url;
 						const path = getPath(url);
 
-						if (
-							normalizedQuery &&
-							!normalizeUrlForGrouping(url.toLowerCase()).includes(
-								normalizedQuery,
-							) &&
-							!domainName.toLowerCase().includes(normalizedQuery)
-						) {
-							return null;
+						if (isSearchActive) {
+							const matchesQuery =
+								normalizedQuery &&
+								(normalizeUrlForGrouping(url.toLowerCase()).includes(
+									normalizedQuery,
+								) ||
+									domainName.toLowerCase().includes(normalizedQuery));
+							const matchesContent = searchResults?.some(
+								(n) => n.url_pattern === url,
+							);
+
+							if (!matchesQuery && !matchesContent) {
+								return null;
+							}
 						}
 
 						return (

@@ -19,6 +19,7 @@ function SearchInputInner() {
 	const [inputValue, setInputValue] = useState(
 		`${initialTags} ${initialQ}`.trim(),
 	);
+	const inputRef = useRef<HTMLInputElement>(null);
 
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -80,6 +81,11 @@ function SearchInputInner() {
 
 	// 外部からのURL変更（Inboxクリック等）に inputValue を追従させるだけの一方向同期
 	useEffect(() => {
+		// ユーザーが入力中の場合（IME変換中など）は、URLからの強制上書きをスキップする
+		if (inputRef.current && document.activeElement === inputRef.current) {
+			return;
+		}
+
 		const currentQ = searchParams.get("q") || "";
 		const currentTags = searchParams.get("tags")
 			? (searchParams.get("tags") ?? "")
@@ -114,6 +120,7 @@ function SearchInputInner() {
 				aria-hidden="true"
 			/>
 			<input
+				ref={inputRef}
 				type="text"
 				value={inputValue}
 				onChange={handleInputChange}
