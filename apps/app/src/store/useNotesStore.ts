@@ -10,6 +10,8 @@ interface NotesState {
 	isMetadataFetched: boolean;
 	fetchMetadata: () => Promise<void>;
 	fetchContentForIds: (ids: string[]) => Promise<void>;
+	searchResults: Note[] | null;
+	setSearchResults: (results: Note[] | null) => void;
 }
 
 function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
@@ -54,6 +56,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 	drafts: [],
 	groupedNotes: null,
 	isMetadataFetched: false,
+	searchResults: null,
+
+	setSearchResults: (results) => set({ searchResults: results }),
 
 	fetchMetadata: async () => {
 		if (get().isMetadataFetched) return;

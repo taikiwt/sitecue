@@ -11,8 +11,15 @@ import { RightPaneDetail } from "./RightPaneDetail";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
-	const { notes, drafts, groupedNotes, isMetadataFetched, fetchContentForIds } =
-		useNotesStore();
+	const {
+		notes,
+		drafts,
+		groupedNotes,
+		isMetadataFetched,
+		fetchContentForIds,
+		searchResults,
+		setSearchResults,
+	} = useNotesStore();
 
 	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {
@@ -28,7 +35,6 @@ export function NotesContainer() {
 		};
 	}, [searchParams]);
 
-	const [searchResults, setSearchResults] = useState<Note[] | null>(null);
 	const [_isSearching, setIsSearching] = useState(false);
 
 	// Implement database-level search
@@ -66,7 +72,7 @@ export function NotesContainer() {
 		};
 
 		fetchSearch();
-	}, [params.q, params.tags]);
+	}, [params.q, params.tags, setSearchResults]);
 
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
