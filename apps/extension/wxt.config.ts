@@ -17,7 +17,7 @@ export default defineConfig({
 	// manifest.json の完全な代わり
 	manifest: ({ command }) => ({
 		name: command === "serve" ? "[DEV] sitecue" : "sitecue",
-		version: "1.1.0",
+		// version: "1.2.0", // package.jsonの記載が反映されるので不要
 		description:
 			"Leave notes linked to websites in the side panel. A simple way to keep the notes you need exactly where you need them.",
 		action: {

@@ -129,14 +129,14 @@ export default function NoteItem({
 		setIsSwapping(false);
 	};
 
-	let badgeBgColor = "bg-note-info/10";
+	let badgeBgColor = "bg-note-info/5";
 	let badgeTextColor = "text-note-info";
 
 	if (note.note_type === "alert") {
-		badgeBgColor = "bg-note-alert/10";
+		badgeBgColor = "bg-note-alert/5";
 		badgeTextColor = "text-note-alert";
 	} else if (note.note_type === "idea") {
-		badgeBgColor = "bg-note-idea/10";
+		badgeBgColor = "bg-note-idea/5";
 		badgeTextColor = "text-note-idea";
 	}
 
