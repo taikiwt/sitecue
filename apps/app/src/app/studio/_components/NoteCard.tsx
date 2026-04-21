@@ -1,8 +1,18 @@
 "use client";
 
-import { ArrowLeft, Check, Pencil, Trash2, X } from "lucide-react";
+import {
+	AlertTriangle,
+	ArrowLeft,
+	Check,
+	Info,
+	Lightbulb,
+	Pencil,
+	Trash2,
+	X,
+} from "lucide-react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { cn } from "@/lib/utils";
 import type { Note } from "../../../../../../types/app.ts";
 
 interface NoteCardProps {
@@ -38,14 +48,22 @@ export default function NoteCard({
 			<div className="mb-2 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<span
-						className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-							note.note_type === "info" || !note.note_type
-								? "bg-blue-50 text-blue-600"
-								: note.note_type === "alert"
-									? "bg-red-50 text-red-600"
-									: "bg-amber-50 text-amber-600"
-						}`}
+						className={cn(
+							"flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide w-fit",
+							note.note_type === "alert"
+								? "bg-note-alert/5 text-note-alert"
+								: note.note_type === "idea"
+									? "bg-note-idea/5 text-note-idea"
+									: "bg-note-info/5 text-note-info",
+						)}
 					>
+						{note.note_type === "alert" ? (
+							<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+						) : note.note_type === "idea" ? (
+							<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
+						) : (
+							<Info className="w-3.5 h-3.5" aria-hidden="true" />
+						)}
 						{note.note_type || "info"}
 					</span>
 					<span className="text-[10px] text-neutral-400">

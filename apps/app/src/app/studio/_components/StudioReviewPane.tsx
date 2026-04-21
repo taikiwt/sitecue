@@ -106,7 +106,7 @@ export default function StudioReviewPane({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="text-red-500 hover:bg-red-50 hover:text-red-600 h-6 px-2 text-[10px] font-bold uppercase"
+											className="text-note-alert hover:bg-note-alert/10 hover:text-note-alert h-6 px-2 text-[10px] font-bold uppercase"
 										>
 											Delete All
 										</Button>
@@ -124,7 +124,7 @@ export default function StudioReviewPane({
 										<AlertDialogCancel>Cancel</AlertDialogCancel>
 										<AlertDialogAction
 											onClick={onDeleteAllNotes}
-											className="bg-red-600 hover:bg-red-700 text-white font-bold"
+											className="bg-note-alert hover:bg-note-alert/90 text-white font-bold"
 										>
 											Delete
 										</AlertDialogAction>

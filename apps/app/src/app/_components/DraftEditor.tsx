@@ -3,8 +3,9 @@
 import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Drawer,
@@ -97,14 +98,21 @@ export default function DraftEditor({
 		slug !== savedState.slug ||
 		hasUnsavedNotesChanges;
 
-	const handleBack = () => {
-		if (isDirty) {
-			const confirmLeave = window.confirm(
-				"You have unsaved changes. Are you sure you want to leave?",
-			);
-			if (!confirmLeave) return;
+	const handleDeleteDraft = async () => {
+		if (!initialDraft?.id) return;
+		if (!window.confirm("Are you sure you want to delete this draft?")) return;
+		try {
+			const { error } = await supabase
+				.from("sitecue_drafts")
+				.delete()
+				.eq("id", initialDraft.id);
+			if (error) throw error;
+			router.push("/");
+			router.refresh();
+		} catch (err) {
+			console.error("Failed to delete draft:", err);
+			alert("Failed to delete draft.");
 		}
-		router.back();
 	};
 
 	// Fetch notes for Self Review (based on draft_id)
@@ -508,29 +516,16 @@ export default function DraftEditor({
 					)}
 				>
 					<div className="flex items-center gap-4">
-						<Button
-							variant="ghost"
-							size="icon"
-							onClick={handleBack}
-							className="text-neutral-400 -ml-2"
-							aria-label="Go back"
-						>
-							<ArrowLeft className="w-5 h-5" aria-hidden="true" />
-						</Button>
 						<Link
 							href="/"
-							className="text-xl font-bold tracking-tight text-action transition-colors hover:text-gray-500 cursor-pointer block"
+							className={cn(
+								buttonVariants({ variant: "ghost", size: "sm" }),
+								"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
+							)}
 						>
-							sitecue
+							<ArrowLeft className="w-4 h-4" aria-hidden="true" />
+							Home
 						</Link>
-						<div className="h-4 w-px bg-base-border" />
-						<span className="text-sm font-medium text-action">
-							{activeTemplate
-								? `Draft for ${activeTemplate.name}`
-								: initialDraft
-									? "Edit Draft"
-									: "New Blank Canvas"}
-						</span>
 					</div>
 
 					<div className="flex items-center gap-4">
@@ -578,78 +573,100 @@ export default function DraftEditor({
 								}
 							/>
 							<PopoverContent align="end" className="w-48 p-2">
-								<Button
-									type="button"
-									variant="ghost"
-									className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
-									onClick={() => setIsSaveTemplateDialogOpen(true)}
-								>
-									Save as Template
-								</Button>
+								<div className="flex flex-col gap-1">
+									<Button
+										type="button"
+										variant="ghost"
+										className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
+										onClick={() => setIsSaveTemplateDialogOpen(true)}
+									>
+										Save as Template
+									</Button>
+									{initialDraft?.id && (
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
+											onClick={handleDeleteDraft}
+										>
+											Delete Draft
+										</Button>
+									)}
+								</div>
 							</PopoverContent>
 						</Popover>
 					</div>
 				</header>
 
-				<div className="border-b border-neutral-100 bg-neutral-50/50 px-8 py-6">
-					{maxLength && (
-						<div className="flex items-center justify-between mb-4">
-							<span className="text-sm font-medium text-neutral-500 uppercase tracking-wider">
-								Character Count
-							</span>
-							<span
-								className={`text-2xl font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-action"}`}
-							>
-								{charCount} / {maxLength}
-							</span>
-						</div>
-					)}
-
-					<div className="grid gap-4">
-						<div className="flex items-center gap-2">
-							<input
-								type="text"
-								placeholder={
-									activeTemplate?.name === "Zenn"
-										? "Enter article title..."
-										: "Title (optional)"
-								}
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-								className="w-full bg-transparent text-2xl font-bold placeholder:text-neutral-300 focus:outline-none"
-							/>
-							<InlineCopyButton text={title} />
-						</div>
-						{activeTemplate?.name === "Zenn" && (
-							<div className="flex items-center gap-2 text-sm text-neutral-400">
-								<span>slug:</span>
-								<input
-									type="text"
-									placeholder="example-article-slug"
-									value={slug}
-									onChange={(e) => setSlug(e.target.value)}
-									className="flex-1 bg-transparent font-mono focus:outline-none"
-								/>
-								<InlineCopyButton text={slug} />
-							</div>
-						)}
-					</div>
-				</div>
-
 				<main className="flex-1 overflow-y-auto px-8 py-10">
-					<div className="relative max-w-4xl mx-auto w-full">
-						<div className="absolute top-4 right-4 z-10">
-							<InlineCopyButton
-								text={content}
-								className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+					<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
+						{/* Metadata & Title Area */}
+						<div className="flex flex-col gap-4">
+							<div className="flex items-center justify-between">
+								<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+									{activeTemplate
+										? `Template: ${activeTemplate.name}`
+										: "Blank Canvas"}
+								</span>
+								{maxLength && (
+									<span
+										className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
+									>
+										{charCount} / {maxLength}
+									</span>
+								)}
+							</div>
+							<div className="grid gap-4">
+								<div className="flex items-start gap-2 group/title">
+									<TextareaAutosize
+										placeholder={
+											activeTemplate?.name === "Zenn"
+												? "Enter article title..."
+												: "Title (optional)"
+										}
+										value={title}
+										onChange={(e) => setTitle(e.target.value)}
+										className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
+									/>
+									<InlineCopyButton
+										text={title}
+										className="mt-2 opacity-0 group-hover/title:opacity-100 transition-opacity"
+									/>
+								</div>
+								{activeTemplate?.name === "Zenn" && (
+									<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
+										<span>slug:</span>
+										<input
+											type="text"
+											placeholder="example-article-slug"
+											value={slug}
+											onChange={(e) => setSlug(e.target.value)}
+											className="flex-1 bg-transparent font-mono focus:outline-none"
+										/>
+										<InlineCopyButton
+											text={slug}
+											className="opacity-0 group-hover/slug:opacity-100 transition-opacity"
+										/>
+									</div>
+								)}
+							</div>
+						</div>
+
+						{/* Editor Area */}
+						<div className="relative w-full">
+							<div className="absolute top-4 right-4 z-10">
+								<InlineCopyButton
+									text={content}
+									className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+								/>
+							</div>
+							<StudioEditor
+								value={content}
+								onChange={(val) => setContent(val)}
+								placeholder="Write down your thoughts..."
+								isDirty={isDirty}
 							/>
 						</div>
-						<StudioEditor
-							value={content}
-							onChange={(val) => setContent(val)}
-							placeholder="Write down your thoughts..."
-							isDirty={isDirty}
-						/>
 					</div>
 				</main>
 			</div>
