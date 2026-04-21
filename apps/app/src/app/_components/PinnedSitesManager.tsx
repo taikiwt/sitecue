@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Plus, Trash2, X } from "lucide-react";
+import { ExternalLink, Pin, Plus, Trash2, X } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { PinnedSite } from "../../../../../types/app";
@@ -76,9 +76,9 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 	return (
 		<section className="mb-16">
 			<div className="mb-8 flex items-center justify-between">
-				<div className="flex items-center gap-3">
-					<span className="text-2xl">📌</span>
-					<h2 className="text-2xl font-light tracking-tight text-action">
+				<div className="flex items-center gap-2">
+					<Pin className="w-5 h-5 text-neutral-400" aria-hidden="true" />
+					<h2 className="text-xl font-light tracking-tight text-neutral-800">
 						Pinned Sites
 					</h2>
 				</div>

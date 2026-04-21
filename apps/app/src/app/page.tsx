@@ -1,7 +1,5 @@
-import { ArrowRight, Calendar, FileText, Library, Plus } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { ArrowRight, Library, PenSquare } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
@@ -35,64 +33,114 @@ export default async function LaunchpadPage() {
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans">
 			<main className="mx-auto max-w-4xl px-6 py-12">
-				{/* ② Welcome & Activity Area */}
-				<div className="mb-20">
-					<h1 className="text-2xl font-light tracking-tight text-neutral-600 mb-8">
-						Cultivate your thoughts right from here.
-					</h1>
-					<div className="flex items-center gap-6 text-sm text-neutral-500">
-						<div className="flex items-center gap-3">
-							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
-								Total Notes
-							</span>
-							<span className="text-xl font-light text-action">
-								{notesCount || 0}
-							</span>
+				{/* 1段目: Pinned Sites */}
+				<div className="mb-16">
+					<PinnedSitesManager
+						initialSites={(pinnedSites as PinnedSite[]) ?? []}
+					/>
+				</div>
+
+				{/* 2段目: 統計 & Recent Drafts (2カラム) */}
+				<div className="mb-20 grid gap-12 md:grid-cols-[1fr_2fr] items-start">
+					{/* 左: Overview */}
+					<div>
+						<h1 className="text-2xl font-light tracking-tight text-neutral-600 mb-8">
+							Cultivate your thoughts right from here.
+						</h1>
+						<div className="flex flex-col gap-4 text-sm text-neutral-500">
+							<div className="flex items-center justify-between border-b border-base-border pb-2">
+								<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
+									Total Notes
+								</span>
+								<span className="text-xl font-light text-action">
+									{notesCount || 0}
+								</span>
+							</div>
+							<div className="flex items-center justify-between border-b border-base-border pb-2">
+								<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
+									Total Drafts
+								</span>
+								<span className="text-xl font-light text-action">
+									{draftsCount || 0}
+								</span>
+							</div>
 						</div>
-						<div className="w-px h-6 bg-base-border" />
-						<div className="flex items-center gap-3">
-							<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
-								Total Drafts
-							</span>
-							<span className="text-xl font-light text-action">
-								{draftsCount || 0}
-							</span>
+					</div>
+
+					{/* 右: Recent Drafts */}
+					<div>
+						<div className="mb-6 flex items-center justify-between">
+							<h2 className="text-lg font-medium tracking-tight text-neutral-800">
+								Recent Drafts
+							</h2>
+							<Link
+								href="/notes?view=drafts"
+								className="text-xs font-medium text-neutral-400 hover:text-action transition-colors"
+							>
+								View all
+							</Link>
+						</div>
+						<div className="flex flex-col">
+							{(!recentDrafts || recentDrafts.length === 0) && (
+								<div className="py-8 text-center border border-dashed border-base-border rounded-xl">
+									<p className="text-xs text-neutral-400 italic">
+										No drafts yet.
+									</p>
+								</div>
+							)}
+							{recentDrafts?.map((draft) => (
+								<Link
+									key={draft.id}
+									href={`/studio/${draft.id}`}
+									className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 transition-colors hover:bg-base-surface -mx-3 px-3 rounded-lg"
+								>
+									<div className="min-w-0 flex-1">
+										<h3 className="text-sm font-medium text-action truncate group-hover:text-action-hover">
+											{draft.title || "Untitled Draft"}
+										</h3>
+									</div>
+									<div className="flex items-center gap-3 shrink-0 ml-4">
+										<span className="text-[10px] text-neutral-400 font-mono">
+											{new Date(draft.updated_at).toLocaleDateString()}
+										</span>
+										<ArrowRight
+											className="w-3.5 h-3.5 text-neutral-300 transition-transform group-hover:translate-x-1 group-hover:text-neutral-900"
+											aria-hidden="true"
+										/>
+									</div>
+								</Link>
+							))}
 						</div>
 					</div>
 				</div>
 
-				{/* Pinned Sites */}
-				<PinnedSitesManager
-					initialSites={(pinnedSites as PinnedSite[]) ?? []}
-				/>
-
-				{/* Launchpad Section */}
+				{/* 3段目: Start a Draft */}
 				<section className="mb-20">
-					<div className="mb-8 flex items-center gap-3">
-						<span className="text-2xl">🚀</span>
-						<h2 className="text-2xl font-light tracking-tight text-neutral-800">
-							Quick Start
-						</h2>
+					<div className="mb-8 flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<PenSquare
+								className="w-5 h-5 text-neutral-400"
+								aria-hidden="true"
+							/>
+							<h2 className="text-xl font-light tracking-tight text-neutral-800">
+								Start a Draft
+							</h2>
+						</div>
 						<Link
-							href="/?globalNew=note"
-							className={cn(
-								buttonVariants({ variant: "default", size: "sm" }),
-								"ml-auto w-max",
-							)}
+							href="/templates"
+							className="text-xs font-medium text-neutral-400 hover:text-action transition-colors"
 						>
-							<Plus className="w-4 h-4" />
-							New Note
+							Manage Templates
 						</Link>
 					</div>
-					<div className="grid gap-8 sm:grid-cols-3">
+					<div className="grid gap-6 sm:grid-cols-3">
 						<Link
 							href="/studio/new"
-							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 transition-all hover:border-neutral-400 cursor-pointer"
 						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
-								<FileText className="w-5 h-5 text-neutral-600" />
-							</div>
-							<h3 className="mb-1 font-bold text-action">Blank Canvas</h3>
+							<h3 className="mb-1 text-sm font-bold text-action group-hover:text-action-hover transition-colors">
+								Blank Canvas
+							</h3>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Free-form notes not limited to any specific template.
 							</p>
@@ -102,15 +150,14 @@ export default async function LaunchpadPage() {
 							<Link
 								key={template.id}
 								href={`/studio/new?template_id=${template.id}`}
-								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
+								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 transition-all hover:border-neutral-400 cursor-pointer"
 							>
-								<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
-									<FileText className="w-5 h-5 text-neutral-600" />
-								</div>
-								<h3 className="mb-1 font-bold text-action">{template.name}</h3>
+								<h3 className="mb-1 text-sm font-bold text-action group-hover:text-action-hover transition-colors">
+									{template.name}
+								</h3>
 								{template.max_length && (
 									<p className="text-[10px] text-neutral-400 font-mono mb-1">
-										Max: {template.max_length} chars
+										Max: {template.max_length}
 									</p>
 								)}
 								<p className="text-xs text-neutral-500 line-clamp-2">
@@ -121,87 +168,29 @@ export default async function LaunchpadPage() {
 					</div>
 				</section>
 
-				{/* Your Library Section */}
-				<section className="mb-20">
-					<div className="mb-8 flex items-center gap-3">
-						<span className="text-2xl">📚</span>
-						<h2 className="text-2xl font-light tracking-tight text-neutral-800">
-							Your Library
-						</h2>
-					</div>
-					<div className="grid gap-8 sm:grid-cols-3">
-						<Link
-							href="/notes"
-							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
-						>
-							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-base-bg transition-colors group-hover:bg-base-surface">
-								<Library className="w-5 h-5 text-neutral-600" />
-							</div>
-							<h3 className="mb-1 font-bold text-action">Manage Notes</h3>
-							<p className="text-xs text-neutral-500 line-clamp-2">
-								View and organize all your created notes and drafts.
-							</p>
-						</Link>
-					</div>
-				</section>
-
-				{/* Recent Drafts Section */}
-				<section className="mb-20">
-					<div className="mb-8 flex items-center justify-between">
+				{/* 4段目: Your Library */}
+				<section className="mb-12">
+					<Link
+						href="/notes"
+						className="group flex w-full items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all hover:border-neutral-400 cursor-pointer"
+					>
 						<div className="flex items-center gap-3">
-							<span className="text-2xl">✍️</span>
-							<h2 className="text-2xl font-light tracking-tight text-neutral-800">
-								Recent Drafts
-							</h2>
-						</div>
-						<Link
-							href="/notes?view=drafts"
-							className="text-sm font-medium text-neutral-400 hover:text-action transition-colors"
-						>
-							View all drafts
-						</Link>
-					</div>
-
-					<div className="grid gap-4">
-						{(!recentDrafts || recentDrafts.length === 0) && (
-							<div className="py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-base-border bg-base-bg/50">
-								<p className="text-sm text-neutral-400 italic">
-									No drafts yet. Start writing something to see them here.
+							<Library
+								className="w-5 h-5 text-neutral-500"
+								aria-hidden="true"
+							/>
+							<div>
+								<h3 className="text-sm font-bold text-action">Manage Notes</h3>
+								<p className="text-xs text-neutral-500">
+									View and organize all your created notes and drafts.
 								</p>
 							</div>
-						)}
-						{recentDrafts?.map((draft) => (
-							<Link
-								key={draft.id}
-								href={`/studio/${draft.id}`}
-								className="group flex items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-base-border/50 cursor-pointer"
-							>
-								<div className="flex items-center gap-4">
-									<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-base-bg text-neutral-600 transition-colors group-hover:bg-base-surface">
-										<FileText className="w-5 h-5" />
-									</div>
-									<div>
-										<h3 className="font-bold text-action">
-											{draft.title || "Untitled Draft"}
-										</h3>
-										<div className="mt-1 flex items-center gap-2 text-xs text-neutral-400">
-											{draft.template_id ? (
-												<span className="capitalize">Template User</span>
-											) : (
-												<span className="capitalize">Blank Canvas</span>
-											)}
-											<span>•</span>
-											<span className="flex items-center gap-1">
-												<Calendar className="w-3 h-3" />
-												{new Date(draft.updated_at).toLocaleDateString()}
-											</span>
-										</div>
-									</div>
-								</div>
-								<ArrowRight className="w-5 h-5 text-neutral-300 transition-transform group-hover:translate-x-1 group-hover:text-neutral-900" />
-							</Link>
-						))}
-					</div>
+						</div>
+						<ArrowRight
+							className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform"
+							aria-hidden="true"
+						/>
+					</Link>
 				</section>
 			</main>
 		</div>
