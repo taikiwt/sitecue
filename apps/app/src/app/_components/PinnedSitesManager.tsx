@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Pin, Plus, Trash2, X } from "lucide-react";
+import { Pin, Plus, Trash2, X } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { PinnedSite } from "../../../../../types/app";
@@ -153,9 +153,9 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				</form>
 			)}
 
-			<div className="grid gap-4 grid-cols-2 sm:grid-cols-4 lg:grid-cols-5">
+			<div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
 				{optimisticSites.length === 0 && !isAdding && (
-					<div className="col-span-full py-12 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-base-border bg-base-surface/50">
+					<div className="col-span-full py-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-base-border bg-base-surface/50">
 						<p className="text-sm text-gray-400 italic">
 							No pinned sites yet. Add your favorite tools or references here.
 						</p>
@@ -164,37 +164,43 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				{optimisticSites.map((site) => (
 					<div
 						key={site.id}
-						className="group relative flex flex-col justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all hover:border-action hover:ring-1 hover:ring-action"
+						className="group relative flex items-center justify-between rounded-lg border border-base-border bg-base-surface p-2.5 transition-all hover:border-action hover:shadow-sm"
 					>
-						<div className="mb-3 flex items-start justify-between">
-							<div className="rounded-lg bg-base-bg p-2 group-hover:bg-base-surface transition-colors">
-								<ExternalLink className="w-4 h-4 text-gray-600" />
-							</div>
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								onClick={() => handleDelete(site.id)}
-								disabled={isPending}
-								className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer"
-								title="Delete"
-							>
-								<Trash2 className="w-4 h-4" />
-							</Button>
-						</div>
 						<a
 							href={site.url}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="block cursor-pointer outline-none"
+							className="flex items-center gap-2.5 flex-1 min-w-0 outline-none cursor-pointer"
 						>
-							<h3 className="font-bold text-action line-clamp-1 group-hover:underline">
-								{site.title}
-							</h3>
-							<p className="mt-1 text-xs text-neutral-500 truncate">
-								{getHostname(site.url)}
-							</p>
+							<div className="shrink-0 rounded bg-base-bg p-1.5 group-hover:bg-white transition-colors">
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img
+									src={`https://www.google.com/s2/favicons?domain=${getHostname(site.url)}&sz=32`}
+									alt=""
+									className="w-4 h-4"
+									aria-hidden="true"
+								/>
+							</div>
+							<div className="min-w-0">
+								<h3 className="text-sm font-bold text-action line-clamp-1 group-hover:underline">
+									{site.title}
+								</h3>
+								<p className="text-[10px] text-neutral-500 truncate">
+									{getHostname(site.url)}
+								</p>
+							</div>
 						</a>
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon-xs"
+							onClick={() => handleDelete(site.id)}
+							disabled={isPending}
+							className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer ml-2 shrink-0"
+							title="Delete"
+						>
+							<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+						</Button>
 					</div>
 				))}
 			</div>

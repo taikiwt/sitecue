@@ -1,4 +1,11 @@
-import { ArrowRight, Library, PenSquare } from "lucide-react";
+import {
+	Activity,
+	ArrowRight,
+	Clock,
+	Library,
+	PenSquare,
+	Plus,
+} from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../types/app";
@@ -44,9 +51,15 @@ export default async function LaunchpadPage() {
 				<div className="mb-20 grid gap-12 md:grid-cols-[1fr_2fr] items-start">
 					{/* 左: Overview */}
 					<div>
-						<h1 className="text-2xl font-light tracking-tight text-neutral-600 mb-8">
-							Cultivate your thoughts right from here.
-						</h1>
+						<div className="mb-8 flex items-center gap-2">
+							<Activity
+								className="w-5 h-5 text-neutral-400"
+								aria-hidden="true"
+							/>
+							<h1 className="text-xl font-light tracking-tight text-neutral-800">
+								Overview
+							</h1>
+						</div>
 						<div className="flex flex-col gap-4 text-sm text-neutral-500">
 							<div className="flex items-center justify-between border-b border-base-border pb-2">
 								<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
@@ -70,9 +83,15 @@ export default async function LaunchpadPage() {
 					{/* 右: Recent Drafts */}
 					<div>
 						<div className="mb-6 flex items-center justify-between">
-							<h2 className="text-lg font-medium tracking-tight text-neutral-800">
-								Recent Drafts
-							</h2>
+							<div className="flex items-center gap-2">
+								<Clock
+									className="w-4 h-4 text-neutral-400"
+									aria-hidden="true"
+								/>
+								<h2 className="text-lg font-medium tracking-tight text-neutral-800">
+									Recent Drafts
+								</h2>
+							</div>
 							<Link
 								href="/notes?view=drafts"
 								className="text-xs font-medium text-neutral-400 hover:text-action transition-colors"
@@ -136,11 +155,14 @@ export default async function LaunchpadPage() {
 					<div className="grid gap-6 sm:grid-cols-3">
 						<Link
 							href="/studio/new"
-							className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 transition-all hover:border-neutral-400 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border-2 border-dashed border-base-border bg-transparent p-5 transition-all hover:border-neutral-400 hover:bg-base-surface/50 cursor-pointer"
 						>
-							<h3 className="mb-1 text-sm font-bold text-action group-hover:text-action-hover transition-colors">
-								Blank Canvas
-							</h3>
+							<div className="flex items-center gap-2 mb-1">
+								<Plus className="w-4 h-4 text-action" aria-hidden="true" />
+								<h3 className="text-sm font-bold text-action group-hover:text-action-hover transition-colors">
+									Blank Canvas
+								</h3>
+							</div>
 							<p className="text-xs text-neutral-500 line-clamp-2">
 								Free-form notes not limited to any specific template.
 							</p>
