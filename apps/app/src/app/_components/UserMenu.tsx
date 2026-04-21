@@ -58,32 +58,35 @@ export function UserMenu() {
 	if (!user) return null;
 
 	return (
-		<div className="relative" ref={menuRef}>
+		<div className="relative w-full" ref={menuRef}>
 			<button
 				type="button"
 				onClick={() => setIsMenuOpen(!isMenuOpen)}
-				className="flex h-10 w-10 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors hover:bg-base-bg cursor-pointer shadow-sm"
+				className="flex w-full items-center gap-3 rounded-xl p-2 transition-colors hover:bg-base-surface cursor-pointer text-left border border-transparent hover:border-base-border"
 				aria-label="User menu"
 			>
-				{user.user_metadata?.avatar_url ? (
-					// biome-ignore lint/performance/noImgElement: External OAuth avatar
-					<img
-						src={user.user_metadata.avatar_url}
-						alt="User avatar"
-						className="h-full w-full rounded-full object-cover"
-					/>
-				) : (
-					<User className="h-5 w-5" />
-				)}
+				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors shadow-sm overflow-hidden">
+					{user.user_metadata?.avatar_url ? (
+						// biome-ignore lint/performance/noImgElement: External OAuth avatar
+						<img
+							src={user.user_metadata.avatar_url}
+							alt=""
+							className="h-full w-full object-cover"
+						/>
+					) : (
+						<User className="h-4 w-4" aria-hidden="true" />
+					)}
+				</div>
+				<div className="flex-1 min-w-0">
+					<p className="text-sm font-semibold text-action truncate">
+						{user.email}
+					</p>
+					<p className="text-[10px] text-neutral-400 font-medium">My Account</p>
+				</div>
 			</button>
 
 			{isMenuOpen && (
-				<div className="absolute right-0 top-full mt-2 w-56 origin-top-right rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100]">
-					<div className="px-3 py-2 border-b border-base-border mb-1">
-						<p className="text-xs font-semibold text-action truncate">
-							{user.email}
-						</p>
-					</div>
+				<div className="absolute bottom-full left-0 mb-2 w-full origin-bottom-left rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100] animate-in fade-in zoom-in-95 duration-200">
 					<Link
 						href="/templates"
 						onClick={() => setIsMenuOpen(false)}
@@ -97,7 +100,7 @@ export function UserMenu() {
 						onClick={handleSignOut}
 						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-note-alert transition-colors hover:bg-note-alert/10 cursor-pointer"
 					>
-						<LogOut className="h-4 w-4" />
+						<LogOut className="h-4 w-4" aria-hidden="true" />
 						Log out
 					</button>
 				</div>
