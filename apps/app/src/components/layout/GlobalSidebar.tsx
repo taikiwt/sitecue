@@ -46,9 +46,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	};
 
 	// Determine active state from URL
-	const isStudio = pathname.startsWith("/studio");
 	const isNotes = pathname.startsWith("/notes");
-	const isTemplates = pathname.startsWith("/templates");
 
 	const domainParam = searchParams.get("domain");
 	const viewParam = searchParams.get("view");
@@ -257,30 +255,8 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				</div>
 			</nav>
 
-			<div className="p-4 border-t border-base-border bg-base-bg flex flex-col gap-2">
-				<Link
-					href="/studio"
-					className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-						isStudio
-							? "bg-action text-action-text hover:bg-action-hover"
-							: "bg-base-surface text-neutral-600 border border-base-border hover:bg-base-bg"
-					}`}
-				>
-					<span>Studio</span>
-				</Link>
-				<div className="flex items-center justify-between">
-					<Link
-						href="/templates"
-						className={`text-xs px-2 py-1 rounded transition-colors ${
-							isTemplates
-								? "text-action font-bold"
-								: "text-neutral-500 hover:text-action"
-						}`}
-					>
-						Templates
-					</Link>
-					<UserMenu />
-				</div>
+			<div className="p-4 border-t border-base-border bg-base-bg">
+				<UserMenu />
 			</div>
 		</div>
 	);
