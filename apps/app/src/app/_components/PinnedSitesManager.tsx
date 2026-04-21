@@ -1,6 +1,7 @@
 "use client";
 
 import { Pin, Plus, Trash2, X } from "lucide-react";
+import Image from "next/image";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import type { PinnedSite } from "../../../../../types/app";
@@ -173,12 +174,14 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							className="flex items-center gap-2.5 flex-1 min-w-0 outline-none cursor-pointer"
 						>
 							<div className="shrink-0 rounded bg-base-bg p-1.5 group-hover:bg-white transition-colors">
-								{/* eslint-disable-next-line @next/next/no-img-element */}
-								<img
+								<Image
 									src={`https://www.google.com/s2/favicons?domain=${getHostname(site.url)}&sz=32`}
 									alt=""
+									width={16}
+									height={16}
 									className="w-4 h-4"
 									aria-hidden="true"
+									unoptimized
 								/>
 							</div>
 							<div className="min-w-0">

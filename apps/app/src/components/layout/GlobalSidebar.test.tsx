@@ -10,7 +10,10 @@ import { GlobalSidebar } from "./GlobalSidebar";
 vi.mock("next/navigation", () => ({
 	usePathname: vi.fn(() => "/notes"),
 	useSearchParams: vi.fn(
-		() => new URLSearchParams("domain=inbox") as unknown as any,
+		() =>
+			new URLSearchParams("domain=inbox") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
 	),
 	useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
@@ -53,7 +56,11 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 				groupedNotes: mockGroupedNotes,
 				fetchContentForIds: mockFetchContentForIds,
 			};
-			return selector ? selector(state as any) : state;
+			return selector
+				? selector(
+						state as unknown as ReturnType<typeof useNotesStore.getState>,
+					)
+				: state;
 		});
 
 		render(<GlobalSidebar />);
@@ -75,7 +82,9 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 	it("should determine active state from pathname and searchParams", () => {
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("domain=inbox") as unknown as any,
+			new URLSearchParams("domain=inbox") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
 		);
 
 		vi.mocked(useNotesStore).mockImplementation((selector) => {
@@ -83,7 +92,11 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 				groupedNotes: mockGroupedNotes,
 				fetchContentForIds: vi.fn(),
 			};
-			return selector ? selector(state as any) : state;
+			return selector
+				? selector(
+						state as unknown as ReturnType<typeof useNotesStore.getState>,
+					)
+				: state;
 		});
 
 		render(<GlobalSidebar />);
