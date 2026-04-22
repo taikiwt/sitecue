@@ -1,7 +1,7 @@
 "use client";
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -12,16 +12,32 @@ export function UserMenu() {
 	const supabase = createClient();
 	const [user, setUser] = useState<SupabaseUser | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [usageCount, setUsageCount] = useState<number | null>(null);
+	const [plan, setPlan] = useState<"free" | "pro">("free");
 	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		const getUser = async () => {
+		const getUserAndProfile = async () => {
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();
 			setUser(user);
+
+			if (user) {
+				// AI利用状況の取得
+				const { data } = await supabase
+					.from("sitecue_profiles")
+					.select("plan, ai_usage_count")
+					.eq("id", user.id)
+					.single();
+
+				if (data) {
+					setPlan((data.plan as "free" | "pro") || "free");
+					setUsageCount(data.ai_usage_count || 0);
+				}
+			}
 		};
-		getUser();
+		getUserAndProfile();
 	}, [supabase]);
 
 	// Close menu on click outside or Esc key
@@ -87,6 +103,21 @@ export function UserMenu() {
 
 			{isMenuOpen && (
 				<div className="absolute bottom-full left-0 mb-2 w-full origin-bottom-left rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+						<p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+							<Sparkles className="w-3 h-3" />
+							AI Usage
+						</p>
+						<p className="text-sm font-bold text-action">
+							{usageCount !== null
+								? `${usageCount} / ${plan === "pro" ? 100 : 3}`
+								: "..."}
+							<span className="text-[10px] font-normal text-neutral-400 ml-1">
+								uses
+							</span>
+						</p>
+					</div>
+
 					<Link
 						href="/templates"
 						onClick={() => setIsMenuOpen(false)}
