@@ -300,6 +300,8 @@ export default function DraftEditor({
 	};
 
 	const handleWeave = async () => {
+		if (isWeaving) return;
+
 		setIsWeaving(true);
 		try {
 			// Save current state before weave
@@ -371,6 +373,8 @@ export default function DraftEditor({
 	};
 
 	const handleGenerateReview = async () => {
+		if (isGeneratingReview) return;
+
 		setIsGeneratingReview(true);
 		try {
 			const {
