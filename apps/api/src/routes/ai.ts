@@ -20,13 +20,40 @@ ai.post("/weave", async (c) => {
 		const error = err as Error;
 		console.error("AI Weave Error:", error);
 
-		// Determine status code based on error message or type if needed.
-		// For now, keeping it simple as per original logic.
 		const isLimitError = error.message.includes("limit reached");
 		const status = isLimitError ? 403 : 500;
 
 		return c.json({ error: error.message || "Internal Server Error" }, status);
 	}
+});
+
+// ---------------------------------------------------------
+// 🧠 AI Review (PoC Mock)
+// ---------------------------------------------------------
+ai.post("/review", async (c) => {
+	return c.json({
+		reviews: [
+			{
+				type: "info",
+				content:
+					"モック: 導入部分が長いため、結論を先に持ってくる構成も検討できます。",
+			},
+			{
+				type: "idea",
+				content:
+					"モック: ここで具体的なユースケースを一つ挙げると説得力が増します。",
+			},
+		],
+	});
+});
+
+// ---------------------------------------------------------
+// 🧠 AI Hint / Ghost Text (PoC Mock)
+// ---------------------------------------------------------
+ai.post("/hint", async (c) => {
+	return c.json({
+		hint: "モック: この課題に対する具体的な解決策として、",
+	});
 });
 
 export default ai;

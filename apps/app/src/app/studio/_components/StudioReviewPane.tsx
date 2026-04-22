@@ -47,6 +47,8 @@ interface StudioReviewPaneProps {
 	isWeaving: boolean;
 	usageCount: number;
 	plan: "free" | "pro";
+	onGenerateReview: () => Promise<void>;
+	isGeneratingReview: boolean;
 }
 
 export default function StudioReviewPane({
@@ -62,6 +64,8 @@ export default function StudioReviewPane({
 	isWeaving,
 	usageCount,
 	plan,
+	onGenerateReview,
+	isGeneratingReview,
 }: StudioReviewPaneProps) {
 	const limit = plan === "pro" ? 100 : 3;
 	const isLimitReached = usageCount >= limit;
@@ -90,6 +94,26 @@ export default function StudioReviewPane({
 			<div className="flex-1 overflow-y-auto pb-28">
 				{/* Note Form */}
 				<div className="sticky top-0 z-10 p-4 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
+					<div className="flex justify-between items-center mb-3">
+						<span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+							Add Notes
+						</span>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onGenerateReview}
+							disabled={isGeneratingReview}
+							className="h-7 text-[10px] font-bold uppercase gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+						>
+							{isGeneratingReview ? (
+								<Loader2 className="w-3 h-3 animate-spin" />
+							) : (
+								<Sparkles className="w-3 h-3" />
+							)}
+							AI Review
+						</Button>
+					</div>
 					<NoteEditor onSubmit={onAddNote} />
 				</div>
 
