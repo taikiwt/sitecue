@@ -53,12 +53,21 @@ export const generateHint = async (apiKey: string, textContext: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
 	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
-	const prompt = `Provide a natural continuation, a transition, or a short next-step hint for the following incomplete draft. The hint should be very concise (under 50 characters) and flow logically from the context.
+	const prompt = `
+  You are a professional editor and writing coach.
+  The user will provide the end portion of their current draft.
+  Your task is to provide a single, short "question" or "suggestion" that stimulates the user's thinking and hints at what to write next.
 
-Context:
-"""
-${textContext}
-"""`;
+  [RULES]
+  - DO NOT write a continuation or autocomplete the sentence.
+  - Provide a thought-provoking question, such as "Do you have a specific example?", "What would a counter-argument be?", or "Why do you feel this way?".
+  - Keep it extremely short and concise (under 40 characters).
+  - DO NOT include any conversational filler like "Here is a suggestion" or "How about this:". Just output the direct question.
+  - **CRITICAL: You MUST respond in the exact same language as the user's provided text.**
+
+  [USER'S DRAFT]
+  ${textContext}
+  `;
 
 	const responseSchema: ResponseSchema = {
 		type: SchemaType.OBJECT,

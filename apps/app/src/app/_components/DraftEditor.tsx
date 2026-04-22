@@ -91,6 +91,7 @@ export default function DraftEditor({
 	// AISystem State
 	const [isWeaving, setIsWeaving] = useState(false);
 	const [isGeneratingReview, setIsGeneratingReview] = useState(false);
+	const [isGeneratingHint, setIsGeneratingHint] = useState(false);
 
 	const isDirty =
 		content !== savedState.content ||
@@ -429,6 +430,9 @@ export default function DraftEditor({
 	const handleGenerateHint = async (
 		contextText: string,
 	): Promise<string | null> => {
+		if (isGeneratingHint) return null;
+
+		setIsGeneratingHint(true);
 		try {
 			const {
 				data: { session },
@@ -448,6 +452,8 @@ export default function DraftEditor({
 			return data.hint;
 		} catch (_e) {
 			return null;
+		} finally {
+			setIsGeneratingHint(false);
 		}
 	};
 

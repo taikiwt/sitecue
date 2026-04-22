@@ -75,17 +75,28 @@ export const StudioEditor = ({
 	const hintExtension = React.useMemo(() => {
 		if (!onGenerateHint) return [];
 
-		const requestHint: StateCommand = ({ state, dispatch }) => {
-			const pos = state.selection.main.head;
-			const textBefore = state.sliceDoc(Math.max(0, pos - 500), pos);
+		const requestHint = (view: EditorView) => {
+			const pos = view.state.selection.main.head;
+			const textBefore = view.state.sliceDoc(Math.max(0, pos - 500), pos);
+			const initialDocLength = view.state.doc.length;
 
 			onGenerateHint(textBefore).then((hintText) => {
 				if (hintText) {
-					dispatch(
-						state.update({
-							effects: [setHintEffect.of({ pos, text: hintText })],
-						}),
-					);
+					if (view.state.doc.length !== initialDocLength) {
+						console.info(
+							"Editor state changed during AI fetch. Discarding hint.",
+						);
+						return;
+					}
+
+					view.dispatch({
+						effects: [
+							setHintEffect.of({
+								pos: view.state.selection.main.head,
+								text: hintText,
+							}),
+						],
+					});
 				}
 			});
 			return true;
