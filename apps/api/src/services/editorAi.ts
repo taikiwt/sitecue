@@ -6,7 +6,7 @@ import {
 
 export const generateReview = async (apiKey: string, content: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
-	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+	const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 	const prompt = `Review the following draft and provide 1 to 3 constructive notes.
 Draft content:
@@ -51,7 +51,7 @@ ${content}
 
 export const generateHint = async (apiKey: string, textContext: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
-	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+	const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 	const prompt = `
   You are a professional editor and writing coach.

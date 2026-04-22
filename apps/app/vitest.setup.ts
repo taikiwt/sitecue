@@ -37,7 +37,7 @@ vi.mock("@/utils/supabase/client", () => ({
 }));
 
 // MSWサーバーの設定
-const server = setupServer(...handlers);
+export const server = setupServer(...handlers);
 
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
