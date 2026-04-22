@@ -21,7 +21,11 @@ ai.post("/weave", async (c) => {
 	);
 	if (!quota.allowed) {
 		return c.json(
-			{ error: quota.reason || "Quota exceeded", code: "QUOTA_EXCEEDED" },
+			{
+				error: quota.reason || "Quota exceeded",
+				code: "QUOTA_EXCEEDED",
+				plan: quota.plan,
+			},
 			403,
 		);
 	}
@@ -54,7 +58,11 @@ ai.post("/review", async (c) => {
 	);
 	if (!quota.allowed) {
 		return c.json(
-			{ error: quota.reason || "Quota exceeded", code: "QUOTA_EXCEEDED" },
+			{
+				error: quota.reason || "Quota exceeded",
+				code: "QUOTA_EXCEEDED",
+				plan: quota.plan,
+			},
 			403,
 		);
 	}

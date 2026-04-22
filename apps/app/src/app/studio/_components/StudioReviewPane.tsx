@@ -45,8 +45,6 @@ interface StudioReviewPaneProps {
 	onInsertToEditor: (content: string) => void;
 	onWeave: () => void;
 	isWeaving: boolean;
-	usageCount: number;
-	plan: "free" | "pro";
 	onGenerateReview: () => Promise<void>;
 	isGeneratingReview: boolean;
 }
@@ -62,14 +60,9 @@ export default function StudioReviewPane({
 	onInsertToEditor,
 	onWeave,
 	isWeaving,
-	usageCount,
-	plan,
 	onGenerateReview,
 	isGeneratingReview,
 }: StudioReviewPaneProps) {
-	const limit = plan === "pro" ? 100 : 3;
-	const isLimitReached = usageCount >= limit;
-
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
 			activationConstraint: {
@@ -214,42 +207,23 @@ export default function StudioReviewPane({
 						type="button"
 						onClick={onWeave}
 						disabled={isWeaving}
-						className={`relative w-full flex items-center justify-between p-3 rounded-[14px] transition-all duration-300 ${
+						className={`relative w-full flex items-center justify-center p-3 rounded-[14px] transition-all duration-300 ${
 							isWeaving
 								? "bg-neutral-50 text-neutral-400 cursor-not-allowed"
-								: isLimitReached
-									? "bg-neutral-100 text-neutral-500 hover:bg-neutral-800 hover:text-white cursor-pointer"
-									: "bg-neutral-900 text-white hover:bg-neutral-800 hover:scale-[1.01] active:scale-[0.99] cursor-pointer font-bold"
+								: "bg-neutral-900 text-white hover:bg-neutral-800 hover:scale-[1.01] active:scale-[0.99] cursor-pointer font-bold"
 						}`}
 					>
 						<div className="flex items-center gap-3 pl-1">
 							{isWeaving ? (
 								<Loader2 className="h-5 w-5 animate-spin" />
 							) : (
-								<Sparkles
-									className={`h-5 w-5 ${!isLimitReached ? "text-amber-400" : ""}`}
-								/>
+								<Sparkles className="h-5 w-5 text-amber-400" />
 							)}
 							<span className="text-sm tracking-tight">
 								{isWeaving ? "WEAVING..." : "WEAVE WITH AI"}
 							</span>
 						</div>
-
-						<div
-							className={`px-2 py-1 rounded-lg text-[10px] font-black tracking-widest uppercase transition-colors ${
-								isWeaving || isLimitReached
-									? "bg-neutral-200 text-neutral-500"
-									: "bg-white/10 text-white/70"
-							}`}
-						>
-							{usageCount} / {limit} USES
-						</div>
 					</button>
-					{isLimitReached && (
-						<p className="mt-2 text-[10px] text-center text-red-500 font-bold animate-pulse">
-							MONTHLY LIMIT REACHED
-						</p>
-					)}
 				</div>
 			</div>
 		</div>

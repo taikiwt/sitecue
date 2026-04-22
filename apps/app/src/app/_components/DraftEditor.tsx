@@ -85,7 +85,6 @@ export default function DraftEditor({
 	const [historyIndex, setHistoryIndex] = useState(0);
 
 	// State for Quota
-	const [usageCount, setUsageCount] = useState(0);
 	const [plan, setPlan] = useState<"free" | "pro">("free");
 	const [showPaywall, setShowPaywall] = useState(false);
 
@@ -161,7 +160,6 @@ export default function DraftEditor({
 
 			if (!error && data) {
 				setPlan((data.plan as "free" | "pro") || "free");
-				setUsageCount(data.ai_usage_count || 0);
 			}
 		};
 		fetchProfile();
@@ -301,12 +299,6 @@ export default function DraftEditor({
 	};
 
 	const handleWeave = async () => {
-		const limit = plan === "pro" ? 100 : 3;
-		if (usageCount >= limit) {
-			setShowPaywall(true);
-			return;
-		}
-
 		setIsWeaving(true);
 		try {
 			// Save current state before weave
@@ -333,6 +325,8 @@ export default function DraftEditor({
 			});
 
 			if (response.status === 403) {
+				const errData = await response.json();
+				if (errData.plan) setPlan(errData.plan as "free" | "pro");
 				setShowPaywall(true);
 				return;
 			}
@@ -346,7 +340,6 @@ export default function DraftEditor({
 			const newContent = data.result;
 
 			setContent(newContent);
-			setUsageCount((prev) => prev + 1);
 
 			// Add result to history
 			const newHistory = history.slice(0, historyIndex + 1);
@@ -392,7 +385,15 @@ export default function DraftEditor({
 				},
 				body: JSON.stringify({ draft_content: content }),
 			});
-			if (!res.ok) throw new Error("API Error");
+			if (!res.ok) {
+				if (res.status === 403) {
+					const errData = await res.json();
+					if (errData.plan) setPlan(errData.plan as "free" | "pro");
+					setShowPaywall(true);
+					return;
+				}
+				throw new Error("API Error");
+			}
 			const data = await res.json();
 
 			// biome-ignore lint/suspicious/noExplicitAny: AI API response type
@@ -790,8 +791,6 @@ export default function DraftEditor({
 								onInsertToEditor={handleInsertToEditor}
 								onWeave={handleWeave}
 								isWeaving={isWeaving}
-								usageCount={usageCount}
-								plan={plan}
 								onGenerateReview={handleGenerateReview}
 								isGeneratingReview={isGeneratingReview}
 							/>
@@ -872,8 +871,6 @@ export default function DraftEditor({
 											onInsertToEditor={handleInsertToEditor}
 											onWeave={handleWeave}
 											isWeaving={isWeaving}
-											usageCount={usageCount}
-											plan={plan}
 											onGenerateReview={handleGenerateReview}
 											isGeneratingReview={isGeneratingReview}
 										/>
@@ -896,7 +893,7 @@ export default function DraftEditor({
 			<PaywallModal
 				isOpen={showPaywall}
 				onClose={() => setShowPaywall(false)}
-				limit={plan === "pro" ? 100 : 3}
+				plan={plan}
 			/>
 
 			<SaveAsTemplateDialog

@@ -21,8 +21,6 @@ describe("StudioReviewPane - AI Review", () => {
 				onInsertToEditor={vi.fn()}
 				onWeave={vi.fn()}
 				isWeaving={false}
-				usageCount={0}
-				plan="free"
 				onGenerateReview={mockGenerate}
 				isGeneratingReview={false}
 			/>,

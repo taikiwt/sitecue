@@ -4,7 +4,7 @@ export const checkAndConsumeQuota = async (
 	supabaseUrl: string,
 	supabaseAnonKey: string,
 	authHeader: string,
-): Promise<{ allowed: boolean; reason?: string }> => {
+): Promise<{ allowed: boolean; reason?: string; plan?: string }> => {
 	// ユーザーの権限（RLS）でSupabaseクライアントを作成
 	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		global: { headers: { Authorization: authHeader } },
@@ -42,7 +42,11 @@ export const checkAndConsumeQuota = async (
 	// プランごとの上限設定 (例: Freeは3回, Proは100回)
 	const limit = profile.plan === "pro" ? 100 : 3;
 	if (currentCount >= limit) {
-		return { allowed: false, reason: `Plan limit reached (${limit} times).` };
+		return {
+			allowed: false,
+			reason: "Plan limit reached.",
+			plan: profile.plan,
+		};
 	}
 
 	// カウントアップとリセット日時の更新
@@ -59,5 +63,5 @@ export const checkAndConsumeQuota = async (
 		return { allowed: false, reason: "Failed to update quota" };
 	}
 
-	return { allowed: true };
+	return { allowed: true, plan: profile.plan };
 };
