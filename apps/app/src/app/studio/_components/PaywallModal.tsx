@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 interface PaywallModalProps {
 	isOpen: boolean;
 	onClose: () => void;
-	limit: number;
+	plan: "free" | "pro"; // limit から plan に変更
 }
 
 export default function PaywallModal({
 	isOpen,
 	onClose,
-	limit,
+	plan,
 }: PaywallModalProps) {
 	if (!isOpen) return null;
 
@@ -35,28 +35,41 @@ export default function PaywallModal({
 					</div>
 
 					<h2 className="text-2xl font-bold mb-2 tracking-tight">
-						Monthly Generation Limit
+						{plan === "free" ? "Monthly Generation Limit" : "Pro Limit Reached"}
 					</h2>
 					<p className="text-neutral-500 mb-8 leading-relaxed">
-						You've used all {limit} generations for this period.
-						<br />
-						Upgrade to Pro to enjoy 100+ generations and supercharge your
-						writing process.
+						{plan === "free" ? (
+							<>
+								You've used all your Free plan AI generations.
+								<br />
+								Upgrade to Pro to enjoy 100+ generations and supercharge your
+								writing process.
+							</>
+						) : (
+							<>
+								You've reached the monthly limit for your Pro plan.
+								<br />
+								Please wait for the next billing cycle to continue using AI
+								features.
+							</>
+						)}
 					</p>
 
 					<div className="flex flex-col gap-3">
+						{plan === "free" && (
+							<Button
+								variant="default"
+								className="w-full rounded-2xl py-6 text-sm font-bold"
+							>
+								Upgrade to Pro
+							</Button>
+						)}
 						<Button
-							variant="default"
-							className="w-full rounded-2xl py-6 text-sm font-bold"
-						>
-							Upgrade to Pro
-						</Button>
-						<Button
-							variant="outline"
+							variant={plan === "free" ? "outline" : "default"}
 							onClick={onClose}
 							className="w-full rounded-2xl py-6 text-sm font-bold text-neutral-600"
 						>
-							Maybe Later
+							{plan === "free" ? "Maybe Later" : "Got it"}
 						</Button>
 					</div>
 				</div>

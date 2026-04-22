@@ -85,12 +85,12 @@ export default function DraftEditor({
 	const [historyIndex, setHistoryIndex] = useState(0);
 
 	// State for Quota
-	const [usageCount, setUsageCount] = useState(0);
 	const [plan, setPlan] = useState<"free" | "pro">("free");
 	const [showPaywall, setShowPaywall] = useState(false);
 
 	// AISystem State
 	const [isWeaving, setIsWeaving] = useState(false);
+	const [isGeneratingReview, setIsGeneratingReview] = useState(false);
 
 	const isDirty =
 		content !== savedState.content ||
@@ -160,7 +160,6 @@ export default function DraftEditor({
 
 			if (!error && data) {
 				setPlan((data.plan as "free" | "pro") || "free");
-				setUsageCount(data.ai_usage_count || 0);
 			}
 		};
 		fetchProfile();
@@ -300,12 +299,6 @@ export default function DraftEditor({
 	};
 
 	const handleWeave = async () => {
-		const limit = plan === "pro" ? 100 : 3;
-		if (usageCount >= limit) {
-			setShowPaywall(true);
-			return;
-		}
-
 		setIsWeaving(true);
 		try {
 			// Save current state before weave
@@ -332,6 +325,8 @@ export default function DraftEditor({
 			});
 
 			if (response.status === 403) {
+				const errData = await response.json();
+				if (errData.plan) setPlan(errData.plan as "free" | "pro");
 				setShowPaywall(true);
 				return;
 			}
@@ -345,7 +340,6 @@ export default function DraftEditor({
 			const newContent = data.result;
 
 			setContent(newContent);
-			setUsageCount((prev) => prev + 1);
 
 			// Add result to history
 			const newHistory = history.slice(0, historyIndex + 1);
@@ -372,6 +366,88 @@ export default function DraftEditor({
 			alert("AI Weave failed. Please check the console.");
 		} finally {
 			setIsWeaving(false);
+		}
+	};
+
+	const handleGenerateReview = async () => {
+		setIsGeneratingReview(true);
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session) throw new Error("No session");
+			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
+			const res = await fetch(`${apiUrl}/ai/review`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.access_token}`,
+				},
+				body: JSON.stringify({ draft_content: content }),
+			});
+			if (!res.ok) {
+				if (res.status === 403) {
+					const errData = await res.json();
+					if (errData.plan) setPlan(errData.plan as "free" | "pro");
+					setShowPaywall(true);
+					return;
+				}
+				throw new Error("API Error");
+			}
+			const data = await res.json();
+
+			// biome-ignore lint/suspicious/noExplicitAny: AI API response type
+			const newNotes: Note[] = data.reviews.map((r: any) => ({
+				id: crypto.randomUUID(),
+				content: r.content,
+				note_type: r.type,
+				draft_id: initialDraft?.id || null,
+				scope: "draft",
+				url_pattern: initialDraft?.id
+					? `sitecue://draft/${initialDraft.id}`
+					: "",
+				user_id: session.user.id,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				is_expanded: false,
+				is_favorite: false,
+				is_pinned: false,
+				is_resolved: false,
+				sort_order: 0,
+			}));
+
+			setReviewNotes((prev) => [...newNotes, ...prev]);
+			setHasUnsavedNotesChanges(true);
+		} catch (error) {
+			console.error(error);
+			alert("Failed to generate AI review.");
+		} finally {
+			setIsGeneratingReview(false);
+		}
+	};
+
+	const handleGenerateHint = async (
+		contextText: string,
+	): Promise<string | null> => {
+		try {
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			if (!session) return null;
+			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
+			const res = await fetch(`${apiUrl}/ai/hint`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${session.access_token}`,
+				},
+				body: JSON.stringify({ text: contextText }),
+			});
+			if (!res.ok) return null;
+			const data = await res.json();
+			return data.hint;
+		} catch (_e) {
+			return null;
 		}
 	};
 
@@ -665,6 +741,7 @@ export default function DraftEditor({
 								onChange={(val) => setContent(val)}
 								placeholder="Write down your thoughts..."
 								isDirty={isDirty}
+								onGenerateHint={handleGenerateHint}
 							/>
 						</div>
 					</div>
@@ -714,8 +791,8 @@ export default function DraftEditor({
 								onInsertToEditor={handleInsertToEditor}
 								onWeave={handleWeave}
 								isWeaving={isWeaving}
-								usageCount={usageCount}
-								plan={plan}
+								onGenerateReview={handleGenerateReview}
+								isGeneratingReview={isGeneratingReview}
 							/>
 						) : (
 							<StudioMaterialsPane
@@ -794,8 +871,8 @@ export default function DraftEditor({
 											onInsertToEditor={handleInsertToEditor}
 											onWeave={handleWeave}
 											isWeaving={isWeaving}
-											usageCount={usageCount}
-											plan={plan}
+											onGenerateReview={handleGenerateReview}
+											isGeneratingReview={isGeneratingReview}
 										/>
 									) : (
 										<StudioMaterialsPane
@@ -816,7 +893,7 @@ export default function DraftEditor({
 			<PaywallModal
 				isOpen={showPaywall}
 				onClose={() => setShowPaywall(false)}
-				limit={plan === "pro" ? 100 : 3}
+				plan={plan}
 			/>
 
 			<SaveAsTemplateDialog
