@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { weaveDocument } from "../services/ai";
 import { generateHint, generateReview } from "../services/editorAi";
+import { checkAndConsumeQuota } from "../services/quota";
 import type { Bindings, Variables } from "../types";
 
 const ai = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -9,22 +10,32 @@ const ai = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 // 🧠 AI Weave (Gemini)
 // ---------------------------------------------------------
 ai.post("/weave", async (c) => {
+	const authHeader = c.req.header("Authorization");
+	if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+
+	// 🌟 AI Weave実行前のQuotaチェック
+	const quota = await checkAndConsumeQuota(
+		c.env.SUPABASE_URL,
+		c.env.SUPABASE_ANON_KEY,
+		authHeader,
+	);
+	if (!quota.allowed) {
+		return c.json(
+			{ error: quota.reason || "Quota exceeded", code: "QUOTA_EXCEEDED" },
+			403,
+		);
+	}
+
 	try {
-		const user = c.get("user");
-		const authHeader = c.req.header("Authorization") ?? "";
 		const body = await c.req.json();
 
-		const result = await weaveDocument(c.env, user, authHeader, body);
+		const result = await weaveDocument(c.env, authHeader, body);
 
 		return c.json({ result });
 	} catch (err: unknown) {
 		const error = err as Error;
 		console.error("AI Weave Error:", error);
-
-		const isLimitError = error.message.includes("limit reached");
-		const status = isLimitError ? 403 : 500;
-
-		return c.json({ error: error.message || "Internal Server Error" }, status);
+		return c.json({ error: error.message || "Internal Server Error" }, 500);
 	}
 });
 
@@ -32,6 +43,22 @@ ai.post("/weave", async (c) => {
 // 🧠 AI Review
 // ---------------------------------------------------------
 ai.post("/review", async (c) => {
+	const authHeader = c.req.header("Authorization");
+	if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+
+	// 🌟 AI Review実行前のQuotaチェック
+	const quota = await checkAndConsumeQuota(
+		c.env.SUPABASE_URL,
+		c.env.SUPABASE_ANON_KEY,
+		authHeader,
+	);
+	if (!quota.allowed) {
+		return c.json(
+			{ error: quota.reason || "Quota exceeded", code: "QUOTA_EXCEEDED" },
+			403,
+		);
+	}
+
 	const body = await c.req.json();
 	const content = body.draft_content as unknown;
 	if (typeof content !== "string" || !content) {
@@ -52,6 +79,7 @@ ai.post("/review", async (c) => {
 // 🧠 AI Hint / Ghost Text
 // ---------------------------------------------------------
 ai.post("/hint", async (c) => {
+	// ⚡ Ghost Text は高頻度のためQuotaチェック対象外
 	const body = await c.req.json();
 	const textContext = body.text as unknown;
 	if (typeof textContext !== "string" || !textContext) {

@@ -1,10 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { createClient, type User } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import type { Bindings } from "../types";
 
 export async function weaveDocument(
 	env: Bindings,
-	user: User,
 	authHeader: string,
 	body: {
 		contexts: {
@@ -24,46 +23,6 @@ export async function weaveDocument(
 			headers: { Authorization: authHeader },
 		},
 	});
-
-	// Check usage limit and handle reset
-	const { data: profile, error: profileError } = await supabase
-		.from("sitecue_profiles")
-		.select("plan, ai_usage_count, ai_usage_reset_at")
-		.eq("id", user.id)
-		.single();
-
-	if (profileError) {
-		console.error("Failed to fetch profile:", profileError);
-		throw new Error("Failed to fetch user profile");
-	}
-
-	const now = new Date();
-	let currentCount = profile?.ai_usage_count ?? 0;
-	let currentResetAt = profile?.ai_usage_reset_at;
-
-	// Handle reset if the period has passed
-	if (currentResetAt && now > new Date(currentResetAt)) {
-		currentCount = 0;
-		const nextMonth = new Date();
-		nextMonth.setMonth(nextMonth.getMonth() + 1);
-		currentResetAt = nextMonth.toISOString();
-	}
-
-	if (!currentResetAt) {
-		const nextMonth = new Date();
-		nextMonth.setMonth(nextMonth.getMonth() + 1);
-		currentResetAt = nextMonth.toISOString();
-	}
-
-	const plan = profile?.plan || "free";
-	const limit = plan === "pro" ? 100 : 3;
-
-	if (currentCount >= limit) {
-		const resetDate = new Date(currentResetAt).toLocaleDateString();
-		throw new Error(
-			`${plan.toUpperCase()} tier limit reached (${limit} times). Your usage will reset on ${resetDate}.`,
-		);
-	}
 
 	const { contexts, format, context_id, draft_content, template_id } = body;
 
@@ -163,19 +122,6 @@ ${userNotesList}
 	const result = await model.generateContent(fullPrompt);
 	const response = await result.response;
 	const text = response.text();
-
-	// Update usage count and reset date upon successful generation
-	const { error: updateError } = await supabase
-		.from("sitecue_profiles")
-		.update({
-			ai_usage_count: currentCount + 1,
-			ai_usage_reset_at: currentResetAt,
-		})
-		.eq("id", user.id);
-
-	if (updateError) {
-		console.error("Failed to update profile usage:", updateError);
-	}
 
 	return text;
 }

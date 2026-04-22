@@ -1,4 +1,8 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import {
+	GoogleGenerativeAI,
+	type ResponseSchema,
+	SchemaType,
+} from "@google/generative-ai";
 
 export const generateReview = async (apiKey: string, content: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
@@ -10,13 +14,14 @@ Draft content:
 ${content}
 """`;
 
-	const responseSchema = {
+	const responseSchema: ResponseSchema = {
 		type: SchemaType.ARRAY,
 		items: {
 			type: SchemaType.OBJECT,
 			properties: {
 				type: {
 					type: SchemaType.STRING,
+					format: "enum",
 					enum: ["info", "alert", "idea"],
 					description:
 						"Categorize as 'info' (objective/structural), 'alert' (warnings/flaws), or 'idea' (new perspectives).",
@@ -55,7 +60,7 @@ Context:
 ${textContext}
 """`;
 
-	const responseSchema = {
+	const responseSchema: ResponseSchema = {
 		type: SchemaType.OBJECT,
 		properties: {
 			hint: {
