@@ -136,7 +136,7 @@ export default function NoteCard({
 					</div>
 				</div>
 			) : (
-				<p className="line-clamp-3 text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
+				<p className="whitespace-pre-wrap break-words text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
 					{note.content}
 				</p>
 			)}

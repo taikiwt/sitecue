@@ -1,27 +1,40 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
 export const generateReview = async (apiKey: string, content: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
 	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-	const prompt = `
-You are an objective and insightful editor. Review the following draft and provide 1 to 3 constructive notes.
-Notes must be categorized strictly as one of the following:
-- "info": Objective facts, structural advice, or general tips.
-- "alert": Warnings, logical flaws, typos, or things to avoid.
-- "idea": New perspectives, suggestions for expansion, or creative inspiration.
 
+	const prompt = `Review the following draft and provide 1 to 3 constructive notes.
 Draft content:
 """
 ${content}
-"""
+"""`;
 
-Output strictly as a JSON array of objects with "type" and "content" properties.
-Example: [{"type": "idea", "content": "Here is an idea..."}]
-`;
+	const responseSchema = {
+		type: SchemaType.ARRAY,
+		items: {
+			type: SchemaType.OBJECT,
+			properties: {
+				type: {
+					type: SchemaType.STRING,
+					enum: ["info", "alert", "idea"],
+					description:
+						"Categorize as 'info' (objective/structural), 'alert' (warnings/flaws), or 'idea' (new perspectives).",
+				},
+				content: {
+					type: SchemaType.STRING,
+				},
+			},
+			required: ["type", "content"],
+		},
+	};
 
 	const result = await model.generateContent({
 		contents: [{ role: "user", parts: [{ text: prompt }] }],
-		generationConfig: { responseMimeType: "application/json" },
+		generationConfig: {
+			responseMimeType: "application/json",
+			responseSchema: responseSchema,
+		},
 	});
 
 	const responseText = result.response.text();
@@ -34,22 +47,30 @@ Example: [{"type": "idea", "content": "Here is an idea..."}]
 export const generateHint = async (apiKey: string, textContext: string) => {
 	const genAI = new GoogleGenerativeAI(apiKey);
 	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-	const prompt = `
-You are a writing assistant. Provide a natural continuation, a transition, or a short next-step hint for the following incomplete draft.
-The hint should be very concise (under 50 characters) and flow logically from the context.
+
+	const prompt = `Provide a natural continuation, a transition, or a short next-step hint for the following incomplete draft. The hint should be very concise (under 50 characters) and flow logically from the context.
 
 Context:
 """
 ${textContext}
-"""
+"""`;
 
-Output strictly as a JSON object with a single "hint" property.
-Example: {"hint": "However, this approach introduces..."}
-`;
+	const responseSchema = {
+		type: SchemaType.OBJECT,
+		properties: {
+			hint: {
+				type: SchemaType.STRING,
+			},
+		},
+		required: ["hint"],
+	};
 
 	const result = await model.generateContent({
 		contents: [{ role: "user", parts: [{ text: prompt }] }],
-		generationConfig: { responseMimeType: "application/json" },
+		generationConfig: {
+			responseMimeType: "application/json",
+			responseSchema: responseSchema,
+		},
 	});
 
 	const responseText = result.response.text();
