@@ -33,7 +33,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				<Toaster
-					position="bottom-center"
+					position="top-center"
 					toastOptions={{ duration: 4000, style: { fontSize: "14px" } }}
 				/>
 				<Suspense fallback={null}>
