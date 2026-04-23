@@ -3,6 +3,7 @@
 import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -365,8 +366,11 @@ export default function DraftEditor({
 			}
 			setReviewNotes([]);
 		} catch (error) {
-			console.error("Weave failed:", error);
-			alert("AI Weave failed. Please check the console.");
+			const _err = error as Error;
+			console.error("Weave failed:", _err);
+			toast.error(
+				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
+			);
 		} finally {
 			setIsWeaving(false);
 		}
@@ -424,8 +428,11 @@ export default function DraftEditor({
 			setReviewNotes((prev) => [...newNotes, ...prev]);
 			setHasUnsavedNotesChanges(true);
 		} catch (error) {
-			console.error(error);
-			alert("Failed to generate AI review.");
+			const _err = error as Error;
+			console.error("Failed to generate review:", _err);
+			toast.error(
+				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
+			);
 		} finally {
 			setIsGeneratingReview(false);
 		}
@@ -433,6 +440,7 @@ export default function DraftEditor({
 
 	const handleGenerateHint = async (
 		contextText: string,
+		isExplicit: boolean = false,
 	): Promise<string | null> => {
 		if (isGeneratingHint) return null;
 
@@ -451,10 +459,24 @@ export default function DraftEditor({
 				},
 				body: JSON.stringify({ text: contextText }),
 			});
-			if (!res.ok) return null;
+			if (!res.ok) {
+				if (isExplicit) {
+					toast.error(
+						"AI補完の生成に失敗しました。時間をおいて再試行してください。",
+					);
+				}
+				return null;
+			}
 			const data = await res.json();
 			return data.hint;
-		} catch (_e) {
+		} catch (e) {
+			const _err = e as Error;
+			console.error("Hint failed:", _err);
+			if (isExplicit) {
+				toast.error(
+					"AI補完の生成に失敗しました。時間をおいて再試行してください。",
+				);
+			}
 			return null;
 		} finally {
 			setIsGeneratingHint(false);

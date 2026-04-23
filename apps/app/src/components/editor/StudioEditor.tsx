@@ -20,7 +20,10 @@ import { sitecueTheme } from "./sitecueTheme";
 
 // propsに onGenerateHint を追加
 interface StudioEditorProps extends EditorProps {
-	onGenerateHint?: (context: string) => Promise<string | null>;
+	onGenerateHint?: (
+		context: string,
+		isExplicit?: boolean,
+	) => Promise<string | null>;
 }
 
 // --- CM6 Hint Extension ---
@@ -80,7 +83,7 @@ export const StudioEditor = ({
 			const textBefore = view.state.sliceDoc(Math.max(0, pos - 500), pos);
 			const initialDocLength = view.state.doc.length;
 
-			onGenerateHint(textBefore).then((hintText) => {
+			onGenerateHint(textBefore, true).then((hintText) => {
 				if (hintText) {
 					if (view.state.doc.length !== initialDocLength) {
 						console.info(

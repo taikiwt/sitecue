@@ -117,7 +117,7 @@ ${userNotesList}
 
 	const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 	// 利用可能な最新Flashモデルを指定
-	const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+	const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 	const result = await model.generateContent(fullPrompt);
 	const response = await result.response;
