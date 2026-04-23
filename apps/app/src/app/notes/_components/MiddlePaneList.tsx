@@ -238,38 +238,40 @@ export function MiddlePaneList(props: Props) {
 					>
 						{getTitle()}
 					</h2>
-					<div className="flex items-center gap-1">
-						<Link
-							href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
-							className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
-							title="New Note here"
-						>
-							<Plus className="w-4 h-4" />
-						</Link>
-						<Button
-							type="button"
-							variant={showResolved ? "secondary" : "ghost"}
-							size="icon-sm"
-							onClick={() => setShowResolved(!showResolved)}
-							className="transition-colors cursor-pointer"
-							title="Show Resolved Notes"
-						>
-							<CheckCircle2 className="w-4 h-4" />
-						</Button>
-						<Button
-							type="button"
-							variant={isSelectMode ? "secondary" : "ghost"}
-							size="icon-sm"
-							onClick={() => {
-								setIsSelectMode(!isSelectMode);
-								if (!isSelectMode === false) setSelectedIds(new Set());
-							}}
-							className="transition-colors cursor-pointer"
-							title="Select Mode"
-						>
-							<CheckSquare className="w-4 h-4" />
-						</Button>
-					</div>
+					{currentView !== "drafts" && (
+						<div className="flex items-center gap-1">
+							<Link
+								href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
+								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
+								title="New Note here"
+							>
+								<Plus className="w-4 h-4" />
+							</Link>
+							<Button
+								type="button"
+								variant={showResolved ? "secondary" : "ghost"}
+								size="icon-sm"
+								onClick={() => setShowResolved(!showResolved)}
+								className="transition-colors cursor-pointer"
+								title="Show Resolved Notes"
+							>
+								<CheckCircle2 className="w-4 h-4" />
+							</Button>
+							<Button
+								type="button"
+								variant={isSelectMode ? "secondary" : "ghost"}
+								size="icon-sm"
+								onClick={() => {
+									setIsSelectMode(!isSelectMode);
+									if (!isSelectMode === false) setSelectedIds(new Set());
+								}}
+								className="transition-colors cursor-pointer"
+								title="Select Mode"
+							>
+								<CheckSquare className="w-4 h-4" />
+							</Button>
+						</div>
+					)}
 				</div>
 				{currentView !== "drafts" && (
 					<div className="mt-3 flex items-center gap-1 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">

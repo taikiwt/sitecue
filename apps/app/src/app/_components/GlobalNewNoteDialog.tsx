@@ -21,6 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Note, NoteScope } from "../../../../../types/app";
 
@@ -34,6 +35,7 @@ export default function GlobalNewNoteDialog() {
 	const [scope, setScope] = useState<NoteScope>("inbox");
 	const [isSaving, setIsSaving] = useState(false);
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
+	const addNote = useNotesStore((state) => state.addNote);
 
 	// Load initial state from URL parameters
 	useEffect(() => {
@@ -116,6 +118,8 @@ export default function GlobalNewNoteDialog() {
 				.single();
 
 			if (error) throw error;
+
+			addNote(data as Note);
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("globalNew");
