@@ -3,7 +3,6 @@
 import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -27,6 +26,8 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useDraftHistory } from "@/hooks/useDraftHistory";
+import { useStudioAI } from "@/hooks/useStudioAI";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
@@ -84,20 +85,26 @@ export default function DraftEditor({
 	const [searchResults, setSearchResults] = useState<Note[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 
-	// State for History (Undo/Redo)
-	const [history, setHistory] = useState<string[]>([
-		initialDraft?.content || "",
-	]);
-	const [historyIndex, setHistoryIndex] = useState(0);
-
 	// State for Quota
 	const [plan, setPlan] = useState<"free" | "pro">("free");
 	const [showPaywall, setShowPaywall] = useState(false);
 
-	// AISystem State
-	const [isWeaving, setIsWeaving] = useState(false);
-	const [isGeneratingReview, setIsGeneratingReview] = useState(false);
-	const [isGeneratingHint, setIsGeneratingHint] = useState(false);
+	// Custom Hooks
+	const {
+		historyIndex,
+		historyLength,
+		pushToHistory,
+		handleUndo: undoHistory,
+		handleRedo: redoHistory,
+	} = useDraftHistory(initialDraft?.content || template?.boilerplate || "");
+
+	const {
+		isWeaving,
+		isGeneratingReview,
+		generateWeave,
+		generateReview,
+		generateHint,
+	} = useStudioAI();
 
 	const isDirty =
 		content !== savedState.content ||
@@ -172,37 +179,15 @@ export default function DraftEditor({
 		fetchProfile();
 	}, [supabase]);
 
-	// Push to history logic
-	const pushToHistory = useCallback(
-		(newContent: string) => {
-			if (newContent === history[historyIndex]) return;
-
-			const newHistory = history.slice(0, historyIndex + 1);
-			newHistory.push(newContent);
-			if (newHistory.length > 20) {
-				newHistory.shift();
-			}
-			setHistory(newHistory);
-			setHistoryIndex(newHistory.length - 1);
-		},
-		[history, historyIndex],
-	);
-
 	const handleUndo = useCallback(() => {
-		if (historyIndex > 0) {
-			const targetIndex = historyIndex - 1;
-			setHistoryIndex(targetIndex);
-			setContent(history[targetIndex]);
-		}
-	}, [history, historyIndex]);
+		const previousContent = undoHistory();
+		if (previousContent !== null) setContent(previousContent);
+	}, [undoHistory]);
 
 	const handleRedo = useCallback(() => {
-		if (historyIndex < history.length - 1) {
-			const targetIndex = historyIndex + 1;
-			setHistoryIndex(targetIndex);
-			setContent(history[targetIndex]);
-		}
-	}, [history, historyIndex]);
+		const previousContent = redoHistory();
+		if (previousContent !== null) setContent(previousContent);
+	}, [redoHistory]);
 
 	const handleSearch = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -308,54 +293,29 @@ export default function DraftEditor({
 	const handleWeave = async () => {
 		if (isWeaving) return;
 
-		setIsWeaving(true);
-		try {
-			// Save current state before weave
-			pushToHistory(content);
+		// Save current state before weave
+		pushToHistory(content);
 
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) throw new Error("No session");
+		const {
+			newContent,
+			planError,
+			plan: errorPlan,
+			error,
+		} = await generateWeave(content, reviewNotes, activeTemplate);
 
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const response = await fetch(`${apiUrl}/ai/weave`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({
-					contexts: reviewNotes,
-					format: "markdown",
-					draft_content: content,
-					template_id: activeTemplate?.id || null,
-				}),
-			});
+		if (planError) {
+			if (errorPlan) setPlan(errorPlan as "free" | "pro");
+			setShowPaywall(true);
+			return;
+		}
 
-			if (response.status === 403) {
-				const errData = await response.json();
-				if (errData.plan) setPlan(errData.plan as "free" | "pro");
-				setShowPaywall(true);
-				return;
-			}
+		if (error) {
+			return;
+		}
 
-			if (!response.ok) {
-				const errData = await response.json();
-				throw new Error(errData.error || "Failed to weave");
-			}
-
-			const data = await response.json();
-			const newContent = data.result;
-
+		if (newContent) {
 			setContent(newContent);
-
-			// Add result to history
-			const newHistory = history.slice(0, historyIndex + 1);
-			newHistory.push(newContent);
-			if (newHistory.length > 20) newHistory.shift();
-			setHistory(newHistory);
-			setHistoryIndex(newHistory.length - 1);
+			pushToHistory(newContent);
 
 			// Auto-Consume Review Notes
 			const noteIdsToDelete = reviewNotes.map((note) => note.id);
@@ -370,76 +330,32 @@ export default function DraftEditor({
 					});
 			}
 			setReviewNotes([]);
-		} catch (error) {
-			const _err = error as Error;
-			console.error("Weave failed:", _err);
-			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
-			);
-		} finally {
-			setIsWeaving(false);
 		}
 	};
 
 	const handleGenerateReview = async () => {
 		if (isGeneratingReview) return;
 
-		setIsGeneratingReview(true);
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) throw new Error("No session");
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const res = await fetch(`${apiUrl}/ai/review`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({ draft_content: content }),
-			});
-			if (!res.ok) {
-				if (res.status === 403) {
-					const errData = await res.json();
-					if (errData.plan) setPlan(errData.plan as "free" | "pro");
-					setShowPaywall(true);
-					return;
-				}
-				throw new Error("API Error");
-			}
-			const data = await res.json();
+		const {
+			newNotes,
+			planError,
+			plan: errorPlan,
+			error,
+		} = await generateReview(content, initialDraft?.id);
 
-			// biome-ignore lint/suspicious/noExplicitAny: AI API response type
-			const newNotes: Note[] = data.reviews.map((r: any) => ({
-				id: crypto.randomUUID(),
-				content: r.content,
-				note_type: r.type,
-				draft_id: initialDraft?.id || null,
-				scope: "draft",
-				url_pattern: initialDraft?.id
-					? `sitecue://draft/${initialDraft.id}`
-					: "",
-				user_id: session.user.id,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-				is_expanded: false,
-				is_favorite: false,
-				is_pinned: false,
-				is_resolved: false,
-				sort_order: 0,
-			}));
+		if (planError) {
+			if (errorPlan) setPlan(errorPlan as "free" | "pro");
+			setShowPaywall(true);
+			return;
+		}
 
+		if (error) {
+			return;
+		}
+
+		if (newNotes) {
 			setReviewNotes((prev) => [...newNotes, ...prev]);
 			setHasUnsavedNotesChanges(true);
-		} catch (error) {
-			const _err = error as Error;
-			console.error("Failed to generate review:", _err);
-			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
-			);
-		} finally {
-			setIsGeneratingReview(false);
 		}
 	};
 
@@ -447,45 +363,7 @@ export default function DraftEditor({
 		contextText: string,
 		isExplicit: boolean = false,
 	): Promise<string | null> => {
-		if (isGeneratingHint) return null;
-
-		setIsGeneratingHint(true);
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) return null;
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const res = await fetch(`${apiUrl}/ai/hint`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({ text: contextText }),
-			});
-			if (!res.ok) {
-				if (isExplicit) {
-					toast.error(
-						"AI補完の生成に失敗しました。時間をおいて再試行してください。",
-					);
-				}
-				return null;
-			}
-			const data = await res.json();
-			return data.hint;
-		} catch (e) {
-			const _err = e as Error;
-			console.error("Hint failed:", _err);
-			if (isExplicit) {
-				toast.error(
-					"AI補完の生成に失敗しました。時間をおいて再試行してください。",
-				);
-			}
-			return null;
-		} finally {
-			setIsGeneratingHint(false);
-		}
+		return generateHint(contextText, isExplicit);
 	};
 
 	const charCount = content.length;
@@ -652,7 +530,7 @@ export default function DraftEditor({
 						<div className="flex items-center gap-4">
 							<UndoRedoControls
 								canUndo={historyIndex > 0}
-								canRedo={historyIndex < history.length - 1}
+								canRedo={historyIndex < historyLength - 1}
 								onUndo={handleUndo}
 								onRedo={handleRedo}
 							/>
