@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -10,8 +10,6 @@ import {
 } from "react-resizable-panels";
 import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Drawer,
 	DrawerContent,
@@ -20,23 +18,20 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDraftHistory } from "@/hooks/useDraftHistory";
 import { useStudioAI } from "@/hooks/useStudioAI";
-import { cn } from "@/lib/utils";
+
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note, Template } from "../../../../../types/app.ts";
+import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
-import UndoRedoControls from "../studio/_components/UndoRedoControls";
+
 import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
 
 type NoteType = "info" | "alert" | "idea";
@@ -508,94 +503,18 @@ export default function DraftEditor({
 					minSize="30%"
 					className="flex h-full flex-col overflow-hidden border-r border-base-border bg-base-bg"
 				>
-					<header
-						className={cn(
-							"flex items-center justify-between border-b border-neutral-100 px-6 py-4 transition-all duration-300",
-							!isSidebarOpen && "md:pl-16",
-						)}
-					>
-						<div className="flex items-center gap-4">
-							<Link
-								href="/"
-								className={cn(
-									buttonVariants({ variant: "ghost", size: "sm" }),
-									"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
-								)}
-							>
-								<ArrowLeft className="w-4 h-4" aria-hidden="true" />
-								Home
-							</Link>
-						</div>
-
-						<div className="flex items-center gap-4">
-							<UndoRedoControls
-								canUndo={historyIndex > 0}
-								canRedo={historyIndex < historyLength - 1}
-								onUndo={handleUndo}
-								onRedo={handleRedo}
-							/>
-
-							<Button
-								onClick={handleSave}
-								disabled={status === "saving" || status === "success"}
-								size="sm"
-								className="w-24 rounded-full"
-								type="button"
-							>
-								{status === "saving" ? (
-									"Saving..."
-								) : status === "success" ? (
-									<span className="flex items-center gap-1">
-										<Check
-											className="w-4 h-4 text-note-info"
-											aria-hidden="true"
-										/>
-										Saved
-									</span>
-								) : (
-									"Save"
-								)}
-							</Button>
-
-							<Popover>
-								<PopoverTrigger
-									render={
-										<Button
-											type="button"
-											variant="ghost"
-											size="icon"
-											className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-											aria-label="More options"
-										>
-											<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
-										</Button>
-									}
-								/>
-								<PopoverContent align="end" className="w-48 p-2">
-									<div className="flex flex-col gap-1">
-										<Button
-											type="button"
-											variant="ghost"
-											className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
-											onClick={() => setIsSaveTemplateDialogOpen(true)}
-										>
-											Save as Template
-										</Button>
-										{initialDraft?.id && (
-											<Button
-												type="button"
-												variant="ghost"
-												className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
-												onClick={handleDeleteDraft}
-											>
-												Delete Draft
-											</Button>
-										)}
-									</div>
-								</PopoverContent>
-							</Popover>
-						</div>
-					</header>
+					<DraftEditorHeader
+						isSidebarOpen={isSidebarOpen}
+						canUndo={historyIndex > 0}
+						canRedo={historyIndex < historyLength - 1}
+						onUndo={handleUndo}
+						onRedo={handleRedo}
+						onSave={handleSave}
+						status={status}
+						hasDraftId={!!initialDraft?.id}
+						onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
+						onDeleteDraft={handleDeleteDraft}
+					/>
 
 					<main className="flex-1 overflow-y-auto px-8 py-10">
 						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
@@ -838,40 +757,3 @@ export default function DraftEditor({
 		</div>
 	);
 }
-
-const InlineCopyButton = ({
-	text,
-	className,
-}: {
-	text: string;
-	className?: string;
-}) => {
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = async () => {
-		if (!text) return;
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch (err) {
-			console.error("Failed to copy text: ", err);
-		}
-	};
-
-	return (
-		<button
-			type="button"
-			onClick={handleCopy}
-			className={`p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer shrink-0 ${className || ""}`}
-			title="Copy to clipboard"
-			aria-label="Copy to clipboard"
-		>
-			{copied ? (
-				<Check className="w-4 h-4 text-green-500" aria-hidden="true" />
-			) : (
-				<Copy className="w-4 h-4" aria-hidden="true" />
-			)}
-		</button>
-	);
-};
