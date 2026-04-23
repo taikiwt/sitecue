@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { usePathname, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
-import type { GroupedNotes, Note } from "@/app/notes/types";
+import { useFetchDrafts } from "@/hooks/useDraftsQuery";
+import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { useNotesStore } from "@/store/useNotesStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
@@ -18,50 +19,61 @@ vi.mock("next/navigation", () => ({
 	useRouter: vi.fn(() => ({ push: vi.fn() })),
 }));
 
-// Mock useNotesStore
-vi.mock("@/store/useNotesStore", () => ({
-	useNotesStore: vi.fn(),
+// Mock Hooks
+vi.mock("@/hooks/useNotesQuery", () => ({
+	useFetchNotes: vi.fn(),
+	useFetchNoteContents: vi.fn(),
 }));
+
+vi.mock("@/hooks/useDraftsQuery", () => ({
+	useFetchDrafts: vi.fn(),
+}));
+
+// Mock useNotesStore
+vi.mock("@/store/useNotesStore", async () => {
+	const actual = (await vi.importActual(
+		"@/store/useNotesStore",
+	)) as unknown as object;
+	return {
+		...actual,
+		useNotesStore: vi.fn(),
+	};
+});
 
 // Mock UserMenu to avoid Supabase calls
 vi.mock("@/app/_components/UserMenu", () => ({
 	UserMenu: () => <div data-testid="user-menu" />,
 }));
 
-const mockGroupedNotes = {
-	inbox: [],
-	drafts: [],
-	domains: {
-		"github.com": {
-			domainNotes: [
-				{
-					id: "n1",
-					url_pattern: "github.com",
-					scope: "domain",
-					content: undefined,
-				} as unknown as Note,
-			],
-			pages: {},
-		},
+const mockNotes = [
+	{
+		id: "n1",
+		url_pattern: "github.com",
+		scope: "domain",
+		note_type: "info",
+		created_at: new Date().toISOString(),
 	},
-} as unknown as GroupedNotes;
+];
 
 describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 	it("should open Domains parent, then open child domain, and trigger prefetch", async () => {
 		const user = userEvent.setup();
-		const mockFetchContentForIds = vi.fn();
+		const mockMutate = vi.fn();
 
-		vi.mocked(useNotesStore).mockImplementation((selector) => {
-			const state = {
-				groupedNotes: mockGroupedNotes,
-				fetchContentForIds: mockFetchContentForIds,
-			};
-			return selector
-				? selector(
-						state as unknown as ReturnType<typeof useNotesStore.getState>,
-					)
-				: state;
-		});
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: mockNotes,
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchNotes>);
+		vi.mocked(useFetchDrafts).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchDrafts>);
+		vi.mocked(useFetchNoteContents).mockReturnValue({
+			mutate: mockMutate,
+		} as unknown as ReturnType<typeof useFetchNoteContents>);
+		vi.mocked(useNotesStore).mockReturnValue({
+			searchResults: null,
+		} as unknown as ReturnType<typeof useNotesStore>);
 
 		render(<GlobalSidebar />);
 
@@ -76,7 +88,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		await user.click(childDomainButton);
 
 		// 開いた瞬間にプリフェッチが発火することを検証
-		expect(mockFetchContentForIds).toHaveBeenCalledWith(["n1"]);
+		expect(mockMutate).toHaveBeenCalledWith(["n1"]);
 	});
 
 	it("should determine active state from pathname and searchParams", () => {
@@ -87,17 +99,17 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 			>,
 		);
 
-		vi.mocked(useNotesStore).mockImplementation((selector) => {
-			const state = {
-				groupedNotes: mockGroupedNotes,
-				fetchContentForIds: vi.fn(),
-			};
-			return selector
-				? selector(
-						state as unknown as ReturnType<typeof useNotesStore.getState>,
-					)
-				: state;
-		});
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchNotes>);
+		vi.mocked(useFetchDrafts).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchDrafts>);
+		vi.mocked(useNotesStore).mockReturnValue({
+			searchResults: null,
+		} as unknown as ReturnType<typeof useNotesStore>);
 
 		render(<GlobalSidebar />);
 

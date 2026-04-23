@@ -20,6 +20,7 @@ import SearchInput from "@/app/notes/_components/SearchInput";
 import type { DomainGroup, Note } from "@/app/notes/types";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes, useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
@@ -33,18 +34,15 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
-	const {
-		drafts,
-		isMetadataFetched: isDraftsFetched,
-		searchResults,
-	} = useNotesStore();
+	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
+	const { searchResults } = useNotesStore();
 
 	const groupedNotes = useMemo(() => {
-		if (isNotesLoading) return null;
+		if (isNotesLoading || isDraftsLoading) return null;
 		return groupNotes(notes, drafts);
-	}, [notes, drafts, isNotesLoading]);
+	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
-	const isDataReady = !isNotesLoading && isDraftsFetched;
+	const isDataReady = !isNotesLoading && !isDraftsLoading;
 
 	const qParam = searchParams.get("q") || "";
 	const tagsParam = searchParams.get("tags") || "";

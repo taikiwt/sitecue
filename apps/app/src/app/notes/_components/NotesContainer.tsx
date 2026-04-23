@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes, useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
@@ -13,20 +14,16 @@ import { RightPaneDetail } from "./RightPaneDetail";
 export function NotesContainer() {
 	const searchParams = useSearchParams();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
+	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
 	const { mutate: fetchContentForIds } = useFetchNoteContents();
-	const {
-		drafts,
-		isMetadataFetched: isDraftsFetched,
-		searchResults,
-		setSearchResults,
-	} = useNotesStore();
+	const { searchResults, setSearchResults } = useNotesStore();
 
 	const groupedNotes = useMemo(() => {
-		if (isNotesLoading) return null;
+		if (isNotesLoading || isDraftsLoading) return null;
 		return groupNotes(notes, drafts);
-	}, [notes, drafts, isNotesLoading]);
+	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
-	const isDataReady = !isNotesLoading && isDraftsFetched;
+	const isDataReady = !isNotesLoading && !isDraftsLoading;
 
 	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {

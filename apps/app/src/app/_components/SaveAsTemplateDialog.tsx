@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@/utils/supabase/client";
+import { useCreateTemplate } from "@/hooks/useTemplatesQuery";
 import type { Template } from "../../../../../types/app";
 
 interface SaveAsTemplateDialogProps {
@@ -35,6 +35,7 @@ export function SaveAsTemplateDialog({
 	const [boilerplate, setBoilerplate] = useState("");
 	const [weavePrompt, setWeavePrompt] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const createTemplateMutation = useCreateTemplate();
 
 	useEffect(() => {
 		if (isOpen) {
@@ -47,30 +48,16 @@ export function SaveAsTemplateDialog({
 	const handleSave = async () => {
 		if (!name.trim()) return;
 		setIsSaving(true);
-		const supabase = createClient();
 		try {
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-			if (!user) throw new Error("Not authenticated");
-
 			const payload = {
 				name: name.trim(),
 				boilerplate: boilerplate.trim() || null,
 				weave_prompt: weavePrompt.trim() || null,
 				max_length: null,
-				user_id: user.id,
 			};
 
-			const { data, error } = await supabase
-				.from("sitecue_templates")
-				.insert(payload)
-				.select()
-				.single();
-
-			if (error) throw error;
-
-			onSuccess(data as Template);
+			const data = await createTemplateMutation.mutateAsync(payload);
+			onSuccess(data);
 		} catch (error) {
 			console.error(error);
 			alert("Failed to save template.");
