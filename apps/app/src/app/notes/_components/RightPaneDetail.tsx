@@ -53,9 +53,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	useCreateNote,
+	useDeleteNote,
+	useUpdateNote,
+} from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
-import { useNotesStore } from "@/store/useNotesStore";
-import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
 
@@ -66,8 +69,9 @@ type Props = {
 };
 
 export function RightPaneDetail({ note, draft, isNewNote }: Props) {
-	const addNote = useNotesStore((state) => state.addNote);
-	const removeNote = useNotesStore((state) => state.removeNote);
+	const createNoteMutation = useCreateNote();
+	const updateNoteMutation = useUpdateNote();
+	const deleteNoteMutation = useDeleteNote();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
@@ -219,14 +223,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		setIsEditing(false);
 
 		try {
-			const supabase = createClient();
-
 			if (isNewNote) {
-				const {
-					data: { user },
-				} = await supabase.auth.getUser();
-				if (!user) throw new Error("User not authenticated");
-
 				const exactParam = searchParams.get("exact");
 				const domainParam = searchParams.get("domain");
 
@@ -243,47 +240,28 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 				const extractedTags = extractTags(newContent);
 
-				const { data, error } = await supabase
-					.from("sitecue_notes")
-					.insert({
-						content: newContent,
-						scope: targetScope,
-						url_pattern: targetUrlPattern,
-						note_type: noteType,
-						user_id: user.id,
-						is_expanded: false,
-						is_favorite: false,
-						is_pinned: false,
-						is_resolved: false,
-						sort_order: 0,
-						tags: extractedTags,
-					})
-					.select()
-					.single();
-
-				if (error) throw error;
-
-				// 【追加】新規作成されたノートを Zustand ストアに即時反映する
-				addNote(data as Note);
+				const data = await createNoteMutation.mutateAsync({
+					content: newContent,
+					scope: targetScope,
+					url_pattern: targetUrlPattern,
+					note_type: noteType,
+					tags: extractedTags,
+				});
 
 				setOptimisticContent(newContent);
 				const params = new URLSearchParams(searchParams.toString());
 				params.delete("new");
 				params.set("noteId", data.id);
 				router.replace(`/notes?${params.toString()}`);
-				router.refresh();
 			} else if (note) {
 				const extractedTags = extractTags(newContent);
-				const { error } = await supabase
-					.from("sitecue_notes")
-					.update({
+				await updateNoteMutation.mutateAsync({
+					id: note.id,
+					updates: {
 						content: newContent,
 						tags: extractedTags,
-					})
-					.eq("id", note.id);
-
-				if (error) throw error;
-				router.refresh();
+					},
+				});
 			}
 		} catch (err) {
 			console.error("Failed to save note:", err);
@@ -309,14 +287,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 			setOptimisticFavorite(updates.is_favorite);
 
 		try {
-			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update(updates)
-				.eq("id", note.id);
-
-			if (error) throw error;
-			router.refresh();
+			await updateNoteMutation.mutateAsync({
+				id: note.id,
+				updates,
+			});
 		} catch (err) {
 			console.error("Failed to update note property:", err);
 			// Reset optimistic state on error
@@ -332,20 +306,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		if (!note) return;
 		setIsSaving(true);
 		try {
-			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.delete()
-				.eq("id", note.id);
-			if (error) throw error;
-
-			removeNote(note.id);
+			await deleteNoteMutation.mutateAsync(note.id);
 			setIsDeleteDialogOpen(false);
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("noteId");
 			router.replace(`/notes?${params.toString()}`);
-			router.refresh();
 		} catch (err) {
 			console.error("Failed to delete note:", err);
 			alert("Failed to delete the note.");
@@ -372,17 +338,14 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				}
 			}
 
-			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({
+			await updateNoteMutation.mutateAsync({
+				id: note.id,
+				updates: {
 					url_pattern: finalUrl,
 					scope: editScope,
-				})
-				.eq("id", note.id);
-			if (error) throw error;
+				},
+			});
 			setIsEditMetaDialogOpen(false);
-			router.refresh();
 		} catch (err) {
 			console.error("Failed to save metadata:", err);
 			alert("Failed to save metadata.");

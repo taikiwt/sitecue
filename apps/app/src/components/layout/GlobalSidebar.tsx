@@ -20,7 +20,8 @@ import SearchInput from "@/app/notes/_components/SearchInput";
 import type { DomainGroup, Note } from "@/app/notes/types";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import { useNotesStore } from "@/store/useNotesStore";
+import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
+import { groupNotes, useNotesStore } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 
 interface GlobalSidebarProps {
@@ -31,7 +32,19 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const { groupedNotes, searchResults } = useNotesStore();
+	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
+	const {
+		drafts,
+		isMetadataFetched: isDraftsFetched,
+		searchResults,
+	} = useNotesStore();
+
+	const groupedNotes = useMemo(() => {
+		if (isNotesLoading) return null;
+		return groupNotes(notes, drafts);
+	}, [notes, drafts, isNotesLoading]);
+
+	const isDataReady = !isNotesLoading && isDraftsFetched;
 
 	const qParam = searchParams.get("q") || "";
 	const tagsParam = searchParams.get("tags") || "";
@@ -111,7 +124,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	);
 	const effectiveIsDomainsOpen = isDomainsOpen || shouldForceOpenDomains;
 
-	if (!groupedNotes) return null;
+	if (!isDataReady || !groupedNotes) return null;
 
 	return (
 		<div className="flex flex-col h-full bg-base-surface w-full overflow-hidden border-r border-base-border">
@@ -285,7 +298,7 @@ function DomainAccordionItem({
 }) {
 	const isUnderThisDomain = currentDomain === domainName;
 	const [isOpen, setIsOpen] = useState(false);
-	const fetchContentForIds = useNotesStore((state) => state.fetchContentForIds);
+	const { mutate: fetchContentForIds } = useFetchNoteContents();
 
 	const handleOpenChange = (open: boolean) => {
 		setIsOpen(open);

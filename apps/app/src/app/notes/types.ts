@@ -1,6 +1,7 @@
+import type { Note as AppNote } from "../../../../../types/app";
 import type { Tables } from "../../../../../types/supabase";
 
-export type Note = Omit<Tables<"sitecue_notes">, "content"> & {
+export type Note = Omit<AppNote, "content"> & {
 	content?: string;
 };
 export type Draft = Tables<"sitecue_drafts">;

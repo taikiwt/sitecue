@@ -21,8 +21,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useNotesStore } from "@/store/useNotesStore";
-import { createClient } from "@/utils/supabase/client";
+import { useCreateNote } from "@/hooks/useNotesQuery";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
@@ -36,7 +35,7 @@ export default function GlobalNewNoteDialog() {
 	const [scope, setScope] = useState<NoteScope>("inbox");
 	const [isSaving, setIsSaving] = useState(false);
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
-	const addNote = useNotesStore((state) => state.addNote);
+	const createNoteMutation = useCreateNote();
 
 	// Load initial state from URL parameters
 	useEffect(() => {
@@ -89,13 +88,6 @@ export default function GlobalNewNoteDialog() {
 
 		setIsSaving(true);
 		try {
-			const supabase = createClient();
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-
-			if (!user) throw new Error("User not authenticated");
-
 			let finalUrl = urlPattern.trim();
 			if (scope === "inbox") {
 				finalUrl = "";
@@ -110,26 +102,12 @@ export default function GlobalNewNoteDialog() {
 				}
 			}
 
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.insert({
-					content: content.trim(),
-					scope: scope,
-					url_pattern: finalUrl,
-					note_type: noteType,
-					user_id: user.id,
-					is_expanded: false,
-					is_favorite: false,
-					is_pinned: false,
-					is_resolved: false,
-					sort_order: 0,
-				})
-				.select()
-				.single();
-
-			if (error) throw error;
-
-			addNote(data as Note);
+			const data = await createNoteMutation.mutateAsync({
+				content: content.trim(),
+				scope: scope,
+				url_pattern: finalUrl,
+				note_type: noteType,
+			});
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("globalNew");
@@ -151,7 +129,6 @@ export default function GlobalNewNoteDialog() {
 			}
 
 			router.push(`/notes?${params.toString()}`);
-			router.refresh();
 		} catch (err) {
 			console.error("Failed to save note:", err);
 			alert("Failed to save the note.");

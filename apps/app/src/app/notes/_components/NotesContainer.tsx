@@ -2,7 +2,8 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { useNotesStore } from "@/store/useNotesStore";
+import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
+import { groupNotes, useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
@@ -11,15 +12,21 @@ import { RightPaneDetail } from "./RightPaneDetail";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
+	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
+	const { mutate: fetchContentForIds } = useFetchNoteContents();
 	const {
-		notes,
 		drafts,
-		groupedNotes,
-		isMetadataFetched,
-		fetchContentForIds,
+		isMetadataFetched: isDraftsFetched,
 		searchResults,
 		setSearchResults,
 	} = useNotesStore();
+
+	const groupedNotes = useMemo(() => {
+		if (isNotesLoading) return null;
+		return groupNotes(notes, drafts);
+	}, [notes, drafts, isNotesLoading]);
+
+	const isDataReady = !isNotesLoading && isDraftsFetched;
 
 	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {
@@ -130,7 +137,7 @@ export function NotesContainer() {
 
 	// フォールバック: 表示されているリストの中に本文(content)がないものがあれば自動取得
 	useEffect(() => {
-		if (!isMetadataFetched || filteredItems.length === 0) return;
+		if (!isDataReady || filteredItems.length === 0) return;
 
 		const missingIds = filteredItems
 			.filter(
@@ -142,12 +149,12 @@ export function NotesContainer() {
 		if (missingIds.length > 0) {
 			fetchContentForIds(missingIds);
 		}
-	}, [filteredItems, isMetadataFetched, fetchContentForIds]);
+	}, [filteredItems, isDataReady, fetchContentForIds]);
 
 	// 選択されたノートまたはドラフトの取得
 	const selectedNote = useMemo(() => {
 		if (!params.noteId) return undefined;
-		// まず全体ストアから探す
+		// まず全体データから探す
 		const foundInNotes = notes.find((n) => n.id === params.noteId);
 		if (foundInNotes) return foundInNotes;
 		// なければ検索結果（ローカル状態）から探す
@@ -162,7 +169,7 @@ export function NotesContainer() {
 		[drafts, params.draftId],
 	);
 
-	if (!isMetadataFetched || !groupedNotes) {
+	if (!isDataReady || !groupedNotes) {
 		return null; // Initial loading state (handled by Suspense if we want a better fallback)
 	}
 
