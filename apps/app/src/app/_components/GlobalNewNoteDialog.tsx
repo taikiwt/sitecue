@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
+import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
 export default function GlobalNewNoteDialog() {
@@ -95,9 +96,12 @@ export default function GlobalNewNoteDialog() {
 
 			if (!user) throw new Error("User not authenticated");
 
-			let finalUrl = urlPattern;
+			let finalUrl = urlPattern.trim();
 			if (scope === "inbox") {
 				finalUrl = "";
+			} else if (scope === "domain" && finalUrl) {
+				// ドメインスコープの場合は URL をドメイン名のみにクレンジングする
+				finalUrl = normalizeUrlForGrouping(finalUrl).split("/")[0];
 			}
 
 			const { data, error } = await supabase
@@ -125,16 +129,20 @@ export default function GlobalNewNoteDialog() {
 			params.delete("globalNew");
 			params.set("noteId", data.id);
 
-			if (scope === "domain" && urlPattern) {
-				params.set("domain", urlPattern);
-				params.delete("exact");
-			} else if (scope === "exact" && urlPattern) {
-				params.set("exact", urlPattern);
-				params.delete("domain");
-			} else {
-				// inbox or empty urlPattern
+			if (scope === "inbox" || !finalUrl) {
 				params.set("domain", "inbox");
 				params.delete("exact");
+			} else {
+				// NotesContainer が正しくグループを引き当てられるよう、常に正規化されたドメインをセットする
+				const normalizedDomain =
+					normalizeUrlForGrouping(finalUrl).split("/")[0];
+				params.set("domain", normalizedDomain);
+
+				if (scope === "exact") {
+					params.set("exact", finalUrl);
+				} else {
+					params.delete("exact");
+				}
 			}
 
 			router.push(`/notes?${params.toString()}`);
