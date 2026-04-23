@@ -21,8 +21,13 @@ import {
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDraftHistory } from "@/hooks/useDraftHistory";
+import {
+	useCreateDraft,
+	useDeleteDraft,
+	useUpdateDraft,
+} from "@/hooks/useDraftsQuery";
+import { useDeleteNotes, useUpsertNotes } from "@/hooks/useNotesQuery";
 import { useStudioAI } from "@/hooks/useStudioAI";
-
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
@@ -101,6 +106,12 @@ export default function DraftEditor({
 		generateHint,
 	} = useStudioAI();
 
+	const createDraftMutation = useCreateDraft();
+	const updateDraftMutation = useUpdateDraft();
+	const deleteDraftMutation = useDeleteDraft();
+	const upsertNotesMutation = useUpsertNotes();
+	const deleteNotesMutation = useDeleteNotes();
+
 	const isDirty =
 		content !== savedState.content ||
 		title !== savedState.title ||
@@ -111,11 +122,7 @@ export default function DraftEditor({
 		if (!initialDraft?.id) return;
 		if (!window.confirm("Are you sure you want to delete this draft?")) return;
 		try {
-			const { error } = await supabase
-				.from("sitecue_drafts")
-				.delete()
-				.eq("id", initialDraft.id);
-			if (error) throw error;
+			await deleteDraftMutation.mutateAsync(initialDraft.id);
 			router.push("/");
 			router.refresh();
 		} catch (err) {
@@ -315,14 +322,7 @@ export default function DraftEditor({
 			// Auto-Consume Review Notes
 			const noteIdsToDelete = reviewNotes.map((note) => note.id);
 			if (noteIdsToDelete.length > 0) {
-				// Fire and forget (physically delete from DB)
-				supabase
-					.from("sitecue_notes")
-					.delete()
-					.in("id", noteIdsToDelete)
-					.then(({ error }) => {
-						if (error) console.error("Failed to delete consumed notes:", error);
-					});
+				deleteNotesMutation.mutate(noteIdsToDelete);
 			}
 			setReviewNotes([]);
 		}
@@ -381,47 +381,32 @@ export default function DraftEditor({
 			let currentDraftId = initialDraft?.id;
 
 			if (currentDraftId) {
-				const { error } = await supabase
-					.from("sitecue_drafts")
-					.update({
+				await updateDraftMutation.mutateAsync({
+					id: currentDraftId,
+					updates: {
 						title,
 						content,
 						template_id: activeTemplate?.id || null,
 						metadata,
 						tags: extractedTags,
 						updated_at: new Date().toISOString(),
-					})
-					.eq("id", currentDraftId);
-
-				if (error) throw error;
+					},
+				});
 			} else {
-				const { data, error } = await supabase
-					.from("sitecue_drafts")
-					.insert({
-						title,
-						content,
-						template_id: activeTemplate?.id || null,
-						metadata,
-						tags: extractedTags,
-					})
-					.select()
-					.single();
-
-				if (error) throw error;
-				if (data) {
-					currentDraftId = data.id;
-				}
+				const data = await createDraftMutation.mutateAsync({
+					title,
+					content,
+					template_id: activeTemplate?.id || null,
+					metadata,
+					tags: extractedTags,
+				});
+				currentDraftId = data.id;
 			}
 
 			if (currentDraftId) {
 				// 1. Handle Deletions
 				if (deletedNoteIds.length > 0) {
-					const { error: deleteError } = await supabase
-						.from("sitecue_notes")
-						.delete()
-						.in("id", deletedNoteIds);
-					if (deleteError)
-						console.error("Failed to delete notes:", deleteError);
+					await deleteNotesMutation.mutateAsync(deletedNoteIds);
 				}
 
 				// 2. Handle Upserts (Additions & Updates)
@@ -445,11 +430,7 @@ export default function DraftEditor({
 					}));
 
 					if (notesToUpsert.length > 0) {
-						const { error: upsertError } = await supabase
-							.from("sitecue_notes")
-							.upsert(notesToUpsert);
-						if (upsertError)
-							console.error("Failed to sync notes:", upsertError);
+						await upsertNotesMutation.mutateAsync(notesToUpsert);
 					}
 				}
 
@@ -484,10 +465,10 @@ export default function DraftEditor({
 		setIsSaveTemplateDialogOpen(false);
 		// If draft is already saved in DB, update its template_id immediately
 		if (initialDraft?.id) {
-			await supabase
-				.from("sitecue_drafts")
-				.update({ template_id: newTemplate.id })
-				.eq("id", initialDraft.id);
+			await updateDraftMutation.mutateAsync({
+				id: initialDraft.id,
+				updates: { template_id: newTemplate.id },
+			});
 		}
 	};
 

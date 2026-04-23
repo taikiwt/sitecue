@@ -158,3 +158,45 @@ export function useFetchNoteContents() {
 		},
 	});
 }
+
+export function useUpsertNotes() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (notes: Partial<Note>[]) => {
+			if (notes.length === 0) return [];
+			const supabase = createClient();
+			const { data, error } = await supabase
+				.from("sitecue_notes")
+				.upsert(notes)
+				.select();
+
+			if (error) throw error;
+			return data as Note[];
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+		},
+	});
+}
+
+export function useDeleteNotes() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (ids: string[]) => {
+			if (ids.length === 0) return [];
+			const supabase = createClient();
+			const { error } = await supabase
+				.from("sitecue_notes")
+				.delete()
+				.in("id", ids);
+
+			if (error) throw error;
+			return ids;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+		},
+	});
+}

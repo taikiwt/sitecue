@@ -14,20 +14,13 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import { useNotesStore } from "@/store/useNotesStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-	const fetchMetadata = useNotesStore((state) => state.fetchMetadata);
 	const pathname = usePathname();
-
-	// Global initial data fetch
-	useEffect(() => {
-		fetchMetadata();
-	}, [fetchMetadata]);
 
 	// Close mobile menu on route change
 	useEffect(() => {

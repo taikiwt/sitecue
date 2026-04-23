@@ -1,12 +1,8 @@
 import { create } from "zustand";
 import type { Draft, GroupedNotes, Note } from "@/app/notes/types";
-import { createClient } from "@/utils/supabase/client";
 import { normalizeUrlForGrouping } from "@/utils/url";
 
 interface NotesState {
-	drafts: Draft[];
-	isMetadataFetched: boolean; // Note: Still used for drafts for now
-	fetchMetadata: () => Promise<void>;
 	searchResults: Note[] | null;
 	setSearchResults: (results: Note[] | null) => void;
 }
@@ -48,29 +44,8 @@ export function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
 	return grouped;
 }
 
-export const useNotesStore = create<NotesState>((set, get) => ({
-	drafts: [],
-	isMetadataFetched: false,
+export const useNotesStore = create<NotesState>((set, _get) => ({
 	searchResults: null,
 
 	setSearchResults: (results) => set({ searchResults: results }),
-
-	fetchMetadata: async () => {
-		if (get().isMetadataFetched) return;
-		const supabase = createClient();
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-		if (!user) return;
-
-		const { data: draftsData } = await supabase
-			.from("sitecue_drafts")
-			.select("*")
-			.eq("user_id", user.id)
-			.order("updated_at", { ascending: false });
-
-		const drafts = (draftsData as Draft[]) || [];
-
-		set({ drafts, isMetadataFetched: true });
-	},
 }));

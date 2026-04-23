@@ -8,10 +8,15 @@ import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	useCreateTemplate,
+	useDeleteTemplate,
+	useFetchTemplates,
+	useUpdateTemplate,
+} from "@/hooks/useTemplatesQuery";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import { createClient } from "@/utils/supabase/client";
 import type { Template } from "../../../../../../types/app";
 
 export function TemplateManager({
@@ -23,8 +28,12 @@ export function TemplateManager({
 }) {
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
-	const supabase = createClient();
-	const [templates, setTemplates] = useState<Template[]>(initialTemplates);
+	const { data: templates = [], isLoading } =
+		useFetchTemplates(initialTemplates);
+
+	const createTemplateMutation = useCreateTemplate();
+	const updateTemplateMutation = useUpdateTemplate();
+	const deleteTemplateMutation = useDeleteTemplate();
 
 	// Form State
 	const activeTemplate = templates.find((t) => t.id === selectedId);
@@ -77,48 +86,13 @@ export function TemplateManager({
 
 		try {
 			if (isNew) {
-				// Add Optimistic
-				const tempId = crypto.randomUUID();
-				const {
-					data: { user },
-				} = await supabase.auth.getUser();
-				if (!user) throw new Error("User not found");
-
-				setTemplates((prev) => [
-					...prev,
-					{
-						id: tempId,
-						...payload,
-						user_id: user.id,
-						icon: null,
-						created_at: new Date().toISOString(),
-						updated_at: new Date().toISOString(),
-					} as Template,
-				]);
-
-				const { data, error } = await supabase
-					.from("sitecue_templates")
-					.insert({ ...payload, user_id: user.id })
-					.select()
-					.single();
-				if (error) throw error;
-
-				setTemplates((prev) =>
-					prev.map((t) => (t.id === tempId ? (data as Template) : t)),
-				);
+				const data = await createTemplateMutation.mutateAsync(payload);
 				router.push(`/templates?id=${data.id}`);
 			} else if (activeTemplate) {
-				// Update Optimistic
-				setTemplates((prev) =>
-					prev.map((t) =>
-						t.id === activeTemplate.id ? { ...t, ...payload } : t,
-					),
-				);
-				const { error } = await supabase
-					.from("sitecue_templates")
-					.update(payload)
-					.eq("id", activeTemplate.id);
-				if (error) throw error;
+				await updateTemplateMutation.mutateAsync({
+					id: activeTemplate.id,
+					updates: payload,
+				});
 			}
 			router.refresh();
 		} catch (err) {
@@ -133,19 +107,17 @@ export function TemplateManager({
 		if (!window.confirm("Are you sure you want to delete this template?"))
 			return;
 
-		// Optimistic delete
-		setTemplates((prev) => prev.filter((t) => t.id !== id));
 		if (selectedId === id) router.push("/templates");
 
-		const { error } = await supabase
-			.from("sitecue_templates")
-			.delete()
-			.eq("id", id);
-		if (error) {
+		try {
+			await deleteTemplateMutation.mutateAsync(id);
+		} catch (error) {
 			console.error("Delete failed", error);
-			router.refresh(); // Revert on failure
+			router.refresh();
 		}
 	};
+
+	if (isLoading) return null;
 
 	return (
 		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
