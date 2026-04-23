@@ -4,19 +4,14 @@ import { createClient } from "@/utils/supabase/client";
 import { normalizeUrlForGrouping } from "@/utils/url";
 
 interface NotesState {
-	notes: Note[];
 	drafts: Draft[];
-	groupedNotes: GroupedNotes | null;
-	isMetadataFetched: boolean;
+	isMetadataFetched: boolean; // Note: Still used for drafts for now
 	fetchMetadata: () => Promise<void>;
-	fetchContentForIds: (ids: string[]) => Promise<void>;
 	searchResults: Note[] | null;
 	setSearchResults: (results: Note[] | null) => void;
-	addNote: (note: Note) => void;
-	removeNote: (id: string) => void;
 }
 
-function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
+export function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
 	const grouped: GroupedNotes = {
 		inbox: [],
 		drafts: drafts,
@@ -54,30 +49,11 @@ function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
-	notes: [],
 	drafts: [],
-	groupedNotes: null,
 	isMetadataFetched: false,
 	searchResults: null,
 
 	setSearchResults: (results) => set({ searchResults: results }),
-
-	addNote: (note) => {
-		const newNotes = [note, ...get().notes];
-		set({
-			notes: newNotes,
-			groupedNotes: groupNotes(newNotes, get().drafts),
-		});
-	},
-
-	removeNote: (id) => {
-		const currentNotes = get().notes;
-		const updatedNotes = currentNotes.filter((note) => note.id !== id);
-		set({
-			notes: updatedNotes,
-			groupedNotes: groupNotes(updatedNotes, get().drafts),
-		});
-	},
 
 	fetchMetadata: async () => {
 		if (get().isMetadataFetched) return;
@@ -87,53 +63,14 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 		} = await supabase.auth.getUser();
 		if (!user) return;
 
-		const [notesRes, draftsRes] = await Promise.all([
-			// content を除外した Slim Fetching
-			supabase
-				.from("sitecue_notes")
-				.select(
-					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
-				)
-				.eq("user_id", user.id)
-				.order("is_pinned", { ascending: false })
-				.order("sort_order", { ascending: true })
-				.order("created_at", { ascending: false }),
-			supabase
-				.from("sitecue_drafts")
-				.select("*")
-				.eq("user_id", user.id)
-				.order("updated_at", { ascending: false }),
-		]);
+		const { data: draftsData } = await supabase
+			.from("sitecue_drafts")
+			.select("*")
+			.eq("user_id", user.id)
+			.order("updated_at", { ascending: false });
 
-		const notes = (notesRes.data as Note[]) || [];
-		const drafts = (draftsRes.data as Draft[]) || [];
-		const groupedNotes = groupNotes(notes, drafts);
+		const drafts = (draftsData as Draft[]) || [];
 
-		set({ notes, drafts, groupedNotes, isMetadataFetched: true });
-	},
-
-	fetchContentForIds: async (ids: string[]) => {
-		if (ids.length === 0) return;
-		const supabase = createClient();
-
-		const { data } = await supabase
-			.from("sitecue_notes")
-			.select("id, content")
-			.in("id", ids);
-
-		if (!data) return;
-
-		const contentMap = new Map(data.map((n) => [n.id, n.content]));
-
-		const updatedNotes = get().notes.map((note) =>
-			contentMap.has(note.id)
-				? { ...note, content: contentMap.get(note.id) as string }
-				: note,
-		);
-
-		set({
-			notes: updatedNotes,
-			groupedNotes: groupNotes(updatedNotes, get().drafts),
-		});
+		set({ drafts, isMetadataFetched: true });
 	},
 }));
