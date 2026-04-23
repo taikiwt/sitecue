@@ -99,9 +99,15 @@ export default function GlobalNewNoteDialog() {
 			let finalUrl = urlPattern.trim();
 			if (scope === "inbox") {
 				finalUrl = "";
-			} else if (scope === "domain" && finalUrl) {
-				// ドメインスコープの場合は URL をドメイン名のみにクレンジングする
-				finalUrl = normalizeUrlForGrouping(finalUrl).split("/")[0];
+			} else if (finalUrl) {
+				const normalizedFullUrl = normalizeUrlForGrouping(finalUrl);
+				if (scope === "domain") {
+					// ドメインスコープの場合はドメイン名のみを抽出
+					finalUrl = normalizedFullUrl.split("/")[0];
+				} else if (scope === "exact") {
+					// exactの場合は正規化されたフルURLをそのまま使用
+					finalUrl = normalizedFullUrl;
+				}
 			}
 
 			const { data, error } = await supabase
@@ -134,8 +140,7 @@ export default function GlobalNewNoteDialog() {
 				params.delete("exact");
 			} else {
 				// NotesContainer が正しくグループを引き当てられるよう、常に正規化されたドメインをセットする
-				const normalizedDomain =
-					normalizeUrlForGrouping(finalUrl).split("/")[0];
+				const normalizedDomain = finalUrl.split("/")[0];
 				params.set("domain", normalizedDomain);
 
 				if (scope === "exact") {

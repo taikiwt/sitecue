@@ -67,6 +67,7 @@ type Props = {
 
 export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const addNote = useNotesStore((state) => state.addNote);
+	const removeNote = useNotesStore((state) => state.removeNote);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
@@ -337,6 +338,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				.delete()
 				.eq("id", note.id);
 			if (error) throw error;
+
+			removeNote(note.id);
 			setIsDeleteDialogOpen(false);
 
 			const params = new URLSearchParams(searchParams.toString());
