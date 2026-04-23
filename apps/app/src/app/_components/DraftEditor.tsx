@@ -4,6 +4,11 @@ import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import {
+	Panel,
+	Group as PanelGroup,
+	Separator as PanelResizeHandle,
+} from "react-resizable-panels";
 import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -614,236 +619,253 @@ export default function DraftEditor({
 	};
 
 	return (
-		<div className="flex h-full overflow-hidden bg-base-bg text-action">
-			{/* 左ペイン: メインエディタ */}
-			<div className="flex flex-1 flex-col overflow-hidden border-r border-base-border bg-base-bg">
-				<header
-					className={cn(
-						"flex items-center justify-between border-b border-neutral-100 px-6 py-4 transition-all duration-300",
-						!isSidebarOpen && "md:pl-16",
-					)}
+		<div className="flex-1 h-full w-full flex flex-col min-h-0 relative">
+			<PanelGroup
+				orientation="horizontal"
+				className="flex-1 w-full h-full overflow-hidden bg-base-bg text-action"
+			>
+				{/* 左ペイン: メインエディタ */}
+				<Panel
+					defaultSize="65%"
+					minSize="30%"
+					className="flex h-full flex-col overflow-hidden border-r border-base-border bg-base-bg"
 				>
-					<div className="flex items-center gap-4">
-						<Link
-							href="/"
-							className={cn(
-								buttonVariants({ variant: "ghost", size: "sm" }),
-								"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
-							)}
-						>
-							<ArrowLeft className="w-4 h-4" aria-hidden="true" />
-							Home
-						</Link>
-					</div>
+					<header
+						className={cn(
+							"flex items-center justify-between border-b border-neutral-100 px-6 py-4 transition-all duration-300",
+							!isSidebarOpen && "md:pl-16",
+						)}
+					>
+						<div className="flex items-center gap-4">
+							<Link
+								href="/"
+								className={cn(
+									buttonVariants({ variant: "ghost", size: "sm" }),
+									"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
+								)}
+							>
+								<ArrowLeft className="w-4 h-4" aria-hidden="true" />
+								Home
+							</Link>
+						</div>
 
-					<div className="flex items-center gap-4">
-						<UndoRedoControls
-							canUndo={historyIndex > 0}
-							canRedo={historyIndex < history.length - 1}
-							onUndo={handleUndo}
-							onRedo={handleRedo}
-						/>
-
-						<Button
-							onClick={handleSave}
-							disabled={status === "saving" || status === "success"}
-							size="sm"
-							className="w-24 rounded-full"
-							type="button"
-						>
-							{status === "saving" ? (
-								"Saving..."
-							) : status === "success" ? (
-								<span className="flex items-center gap-1">
-									<Check
-										className="w-4 h-4 text-note-info"
-										aria-hidden="true"
-									/>
-									Saved
-								</span>
-							) : (
-								"Save"
-							)}
-						</Button>
-
-						<Popover>
-							<PopoverTrigger
-								render={
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-										aria-label="More options"
-									>
-										<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
-									</Button>
-								}
+						<div className="flex items-center gap-4">
+							<UndoRedoControls
+								canUndo={historyIndex > 0}
+								canRedo={historyIndex < history.length - 1}
+								onUndo={handleUndo}
+								onRedo={handleRedo}
 							/>
-							<PopoverContent align="end" className="w-48 p-2">
-								<div className="flex flex-col gap-1">
-									<Button
-										type="button"
-										variant="ghost"
-										className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
-										onClick={() => setIsSaveTemplateDialogOpen(true)}
-									>
-										Save as Template
-									</Button>
-									{initialDraft?.id && (
+
+							<Button
+								onClick={handleSave}
+								disabled={status === "saving" || status === "success"}
+								size="sm"
+								className="w-24 rounded-full"
+								type="button"
+							>
+								{status === "saving" ? (
+									"Saving..."
+								) : status === "success" ? (
+									<span className="flex items-center gap-1">
+										<Check
+											className="w-4 h-4 text-note-info"
+											aria-hidden="true"
+										/>
+										Saved
+									</span>
+								) : (
+									"Save"
+								)}
+							</Button>
+
+							<Popover>
+								<PopoverTrigger
+									render={
 										<Button
 											type="button"
 											variant="ghost"
-											className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
-											onClick={handleDeleteDraft}
+											size="icon"
+											className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+											aria-label="More options"
 										>
-											Delete Draft
+											<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
 										</Button>
-									)}
-								</div>
-							</PopoverContent>
-						</Popover>
-					</div>
-				</header>
-
-				<main className="flex-1 overflow-y-auto px-8 py-10">
-					<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
-						{/* Metadata & Title Area */}
-						<div className="flex flex-col gap-4">
-							<div className="flex items-center justify-between">
-								<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
-									{activeTemplate
-										? `Template: ${activeTemplate.name}`
-										: "Blank Canvas"}
-								</span>
-								{maxLength && (
-									<span
-										className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
-									>
-										{charCount} / {maxLength}
-									</span>
-								)}
-							</div>
-							<div className="grid gap-4">
-								<div className="flex items-start gap-2 group/title">
-									<TextareaAutosize
-										placeholder={
-											activeTemplate?.name === "Zenn"
-												? "Enter article title..."
-												: "Title (optional)"
-										}
-										value={title}
-										onChange={(e) => setTitle(e.target.value)}
-										className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
-									/>
-									<InlineCopyButton
-										text={title}
-										className="mt-2 opacity-0 group-hover/title:opacity-100 transition-opacity"
-									/>
-								</div>
-								{activeTemplate?.name === "Zenn" && (
-									<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
-										<span>slug:</span>
-										<input
-											type="text"
-											placeholder="example-article-slug"
-											value={slug}
-											onChange={(e) => setSlug(e.target.value)}
-											className="flex-1 bg-transparent font-mono focus:outline-none"
-										/>
-										<InlineCopyButton
-											text={slug}
-											className="opacity-0 group-hover/slug:opacity-100 transition-opacity"
-										/>
-									</div>
-								)}
-							</div>
-						</div>
-
-						{/* Editor Area */}
-						<div className="relative w-full">
-							<div className="absolute top-4 right-4 z-10">
-								<InlineCopyButton
-									text={content}
-									className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+									}
 								/>
-							</div>
-							<StudioEditor
-								value={content}
-								onChange={(val) => setContent(val)}
-								placeholder="Write down your thoughts..."
-								isDirty={isDirty}
-								onGenerateHint={handleGenerateHint}
-							/>
-						</div>
-					</div>
-				</main>
-			</div>
-			{/* 右ペイン: コンテキストバー (Desktop only) */}
-			{isDesktop && (
-				<aside className="w-96 flex-col overflow-hidden bg-base-surface border-l border-base-border flex">
-					<header className="border-b border-base-border p-2">
-						<div className="flex rounded-lg bg-base-border/50 p-1">
-							<button
-								type="button"
-								onClick={() => updatePane("review")}
-								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-									activePane === "review"
-										? "bg-base-bg text-action shadow-sm"
-										: "text-gray-500 hover:text-action"
-								}`}
-							>
-								SELF REVIEW
-							</button>
-							<button
-								type="button"
-								onClick={() => updatePane("materials")}
-								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-									activePane === "materials"
-										? "bg-base-bg text-action shadow-sm"
-										: "text-gray-500 hover:text-action"
-								}`}
-							>
-								GLOBAL MATERIALS
-							</button>
+								<PopoverContent align="end" className="w-48 p-2">
+									<div className="flex flex-col gap-1">
+										<Button
+											type="button"
+											variant="ghost"
+											className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
+											onClick={() => setIsSaveTemplateDialogOpen(true)}
+										>
+											Save as Template
+										</Button>
+										{initialDraft?.id && (
+											<Button
+												type="button"
+												variant="ghost"
+												className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
+												onClick={handleDeleteDraft}
+											>
+												Delete Draft
+											</Button>
+										)}
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 					</header>
 
-					{/* Tab Content */}
-					<div className="flex-1 overflow-hidden">
-						{activePane === "review" ? (
-							<StudioReviewPane
-								reviewNotes={reviewNotes}
-								isLoadingReview={isLoadingReview}
-								onAddNote={handleAddNote}
-								onUpdateNote={handleUpdateNote}
-								onDeleteNote={handleDeleteNote}
-								onDeleteAllNotes={handleDeleteAllNotes}
-								onReorderNotes={handleReorderNotes}
-								onInsertToEditor={handleInsertToEditor}
-								onWeave={handleWeave}
-								isWeaving={isWeaving}
-								onGenerateReview={handleGenerateReview}
-								isGeneratingReview={isGeneratingReview}
-							/>
-						) : (
-							<StudioMaterialsPane
-								searchKeyword={searchKeyword}
-								onSearchKeywordChange={setSearchKeyword}
-								onSearch={handleSearch}
-								searchResults={searchResults}
-								isSearching={isSearching}
-							/>
-						)}
-					</div>
+					<main className="flex-1 overflow-y-auto px-8 py-10">
+						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
+							{/* Metadata & Title Area */}
+							<div className="flex flex-col gap-4">
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+										{activeTemplate
+											? `Template: ${activeTemplate.name}`
+											: "Blank Canvas"}
+									</span>
+									{maxLength && (
+										<span
+											className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
+										>
+											{charCount} / {maxLength}
+										</span>
+									)}
+								</div>
+								<div className="grid gap-4">
+									<div className="flex items-start gap-2 group/title">
+										<TextareaAutosize
+											placeholder={
+												activeTemplate?.name === "Zenn"
+													? "Enter article title..."
+													: "Title (optional)"
+											}
+											value={title}
+											onChange={(e) => setTitle(e.target.value)}
+											className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
+										/>
+										<InlineCopyButton
+											text={title}
+											className="mt-2 opacity-100 md:opacity-0 md:group-hover/title:opacity-100 transition-opacity"
+										/>
+									</div>
+									{activeTemplate?.name === "Zenn" && (
+										<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
+											<span>slug:</span>
+											<input
+												type="text"
+												placeholder="example-article-slug"
+												value={slug}
+												onChange={(e) => setSlug(e.target.value)}
+												className="flex-1 bg-transparent font-mono focus:outline-none"
+											/>
+											<InlineCopyButton
+												text={slug}
+												className="opacity-100 md:opacity-0 md:group-hover/slug:opacity-100 transition-opacity"
+											/>
+										</div>
+									)}
+								</div>
+							</div>
 
-					<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
-						<p className="text-[10px] text-neutral-400 font-medium">
-							Weave Studio Power User Mode
-						</p>
-					</div>
-				</aside>
-			)}
+							{/* Editor Area */}
+							<div className="relative w-full">
+								<div className="absolute top-4 right-4 z-10">
+									<InlineCopyButton
+										text={content}
+										className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+									/>
+								</div>
+								<StudioEditor
+									value={content}
+									onChange={(val) => setContent(val)}
+									placeholder="Write down your thoughts..."
+									isDirty={isDirty}
+									onGenerateHint={handleGenerateHint}
+								/>
+							</div>
+						</div>
+					</main>
+				</Panel>
+				{/* 右ペイン: コンテキストバー (Desktop only) */}
+				{isDesktop && (
+					<PanelResizeHandle className="w-1 bg-transparent hover:bg-neutral-200 active:bg-neutral-300 transition-colors cursor-col-resize" />
+				)}
+				{isDesktop && (
+					<Panel
+						defaultSize="35%"
+						minSize="20%"
+						maxSize="50%"
+						className="flex h-full flex-col overflow-hidden bg-base-surface border-l border-base-border"
+					>
+						<header className="border-b border-base-border p-2">
+							<div className="flex rounded-lg bg-base-border/50 p-1">
+								<button
+									type="button"
+									onClick={() => updatePane("review")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "review"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									SELF REVIEW
+								</button>
+								<button
+									type="button"
+									onClick={() => updatePane("materials")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "materials"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									GLOBAL MATERIALS
+								</button>
+							</div>
+						</header>
+
+						{/* Tab Content */}
+						<div className="flex-1 overflow-hidden">
+							{activePane === "review" ? (
+								<StudioReviewPane
+									reviewNotes={reviewNotes}
+									isLoadingReview={isLoadingReview}
+									onAddNote={handleAddNote}
+									onUpdateNote={handleUpdateNote}
+									onDeleteNote={handleDeleteNote}
+									onDeleteAllNotes={handleDeleteAllNotes}
+									onReorderNotes={handleReorderNotes}
+									onInsertToEditor={handleInsertToEditor}
+									onWeave={handleWeave}
+									isWeaving={isWeaving}
+									onGenerateReview={handleGenerateReview}
+									isGeneratingReview={isGeneratingReview}
+								/>
+							) : (
+								<StudioMaterialsPane
+									searchKeyword={searchKeyword}
+									onSearchKeywordChange={setSearchKeyword}
+									onSearch={handleSearch}
+									searchResults={searchResults}
+									isSearching={isSearching}
+								/>
+							)}
+						</div>
+
+						<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
+							<p className="text-[10px] text-neutral-400 font-medium">
+								Weave Studio Power User Mode
+							</p>
+						</div>
+					</Panel>
+				)}
+			</PanelGroup>
 
 			{/* Floating Mobile Trigger */}
 			{!isDesktop && (

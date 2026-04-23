@@ -97,7 +97,7 @@ export default function StudioReviewPane({
 							size="sm"
 							onClick={onGenerateReview}
 							disabled={isGeneratingReview}
-							className="h-7 text-[10px] font-bold uppercase gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border-amber-200"
+							className="h-7 text-[10px] font-bold uppercase gap-1.5 text-action hover:bg-neutral-100 border-neutral-200"
 						>
 							{isGeneratingReview ? (
 								<Loader2 className="w-3 h-3 animate-spin" />
@@ -217,7 +217,7 @@ export default function StudioReviewPane({
 							{isWeaving ? (
 								<Loader2 className="h-5 w-5 animate-spin" />
 							) : (
-								<Sparkles className="h-5 w-5 text-amber-400" />
+								<Sparkles className="h-5 w-5 text-white" />
 							)}
 							<span className="text-sm tracking-tight">
 								{isWeaving ? "WEAVING..." : "WEAVE WITH AI"}

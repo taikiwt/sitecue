@@ -1,7 +1,7 @@
 "use client";
-import { Search, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { SearchInputBase } from "@/components/ui/search-input-base";
 
 function SearchInputInner() {
 	const router = useRouter();
@@ -97,16 +97,6 @@ function SearchInputInner() {
 		setInputValue(expected);
 	}, [searchParams]);
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value;
-		setInputValue(val);
-
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
-		timeoutRef.current = setTimeout(() => {
-			updateUrl(val);
-		}, 300);
-	};
-
 	const handleClear = () => {
 		setInputValue("");
 		if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -114,30 +104,19 @@ function SearchInputInner() {
 	};
 
 	return (
-		<div className="relative flex items-center w-full group">
-			<Search
-				className="absolute left-3 w-4 h-4 text-muted-foreground group-focus-within:text-action transition-colors"
-				aria-hidden="true"
-			/>
-			<input
-				ref={inputRef}
-				type="text"
-				value={inputValue}
-				onChange={handleInputChange}
-				placeholder="Search keywords or #tags..."
-				className="w-full pl-9 pr-8 py-2 text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg transition-all outline-none"
-			/>
-			{inputValue && (
-				<button
-					type="button"
-					onClick={handleClear}
-					className="absolute right-2 p-1 text-muted-foreground hover:text-action cursor-pointer transition-colors"
-					aria-label="Clear search"
-				>
-					<X className="w-3.5 h-3.5" aria-hidden="true" />
-				</button>
-			)}
-		</div>
+		<SearchInputBase
+			ref={inputRef}
+			value={inputValue}
+			onChange={(val) => {
+				setInputValue(val);
+				if (timeoutRef.current) clearTimeout(timeoutRef.current);
+				timeoutRef.current = setTimeout(() => {
+					updateUrl(val);
+				}, 300);
+			}}
+			onClear={handleClear}
+			placeholder="Search keywords or #tags..."
+		/>
 	);
 }
 
