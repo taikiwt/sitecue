@@ -74,7 +74,12 @@ ai.post("/review", async (c) => {
 	}
 
 	try {
-		const reviews = await generateReview(c.env.GEMINI_API_KEY, content);
+		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+		const reviews = await generateReview(
+			c.env.GEMINI_API_KEY,
+			modelName,
+			content,
+		);
 		return c.json({ reviews });
 	} catch (e) {
 		const _err = e as Error;
@@ -95,7 +100,12 @@ ai.post("/hint", async (c) => {
 	}
 
 	try {
-		const hint = await generateHint(c.env.GEMINI_API_KEY, textContext);
+		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+		const hint = await generateHint(
+			c.env.GEMINI_API_KEY,
+			modelName,
+			textContext,
+		);
 		return c.json({ hint });
 	} catch (e) {
 		const _err = e as Error;
