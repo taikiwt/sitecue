@@ -25,7 +25,11 @@ export function NotesContainer() {
 	const params: SearchParams = useMemo(() => {
 		return {
 			view: searchParams.get("view") as SearchParams["view"],
-			domain: searchParams.get("domain") || undefined,
+			domain:
+				searchParams.get("domain") ||
+				(!searchParams.get("view") && !searchParams.get("q")
+					? "inbox"
+					: undefined),
 			exact: searchParams.get("exact") || undefined,
 			noteId: searchParams.get("noteId") || undefined,
 			draftId: searchParams.get("draftId") || undefined,

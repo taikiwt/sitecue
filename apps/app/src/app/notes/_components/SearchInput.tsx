@@ -1,7 +1,8 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { SearchInputBase } from "@/components/ui/search-input-base";
+import { useEditorStore } from "@/store/useEditorStore";
 
 function SearchInputInner() {
 	const router = useRouter();
@@ -21,63 +22,41 @@ function SearchInputInner() {
 	);
 	const inputRef = useRef<HTMLInputElement>(null);
 
-	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const isDirty = useEditorStore((state) => state.isDirty);
 
-	const updateUrl = useCallback(
-		(value: string) => {
-			const tokens = value.split(/\s+/).filter(Boolean);
-			const tags = tokens
-				.filter((t) => t.startsWith("#"))
-				.map((t) => t.slice(1));
-			const keywords = tokens.filter((t) => !t.startsWith("#")).join(" ");
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+		if (isDirty) {
+			const confirm = window.confirm(
+				"Unsaved changes will be lost. Do you want to continue?",
+			);
+			if (!confirm) return;
+		}
 
-			const params = new URLSearchParams();
+		const params = new URLSearchParams(searchParams.toString());
+		const tokens = inputValue.split(/\s+/).filter(Boolean);
+		const tags = tokens.filter((t) => t.startsWith("#")).map((t) => t.slice(1));
+		const keywords = tokens.filter((t) => !t.startsWith("#")).join(" ");
 
-			// リストの表示フィルター（domain等）はリセットするが、右ペインの選択状態は保護する
-			if (searchParams.has("noteId")) {
-				params.set("noteId", searchParams.get("noteId") as string);
-			}
-			if (searchParams.has("draftId")) {
-				params.set("draftId", searchParams.get("draftId") as string);
-			}
-
+		if (keywords || tags.length > 0) {
 			if (keywords) params.set("q", keywords);
+			else params.delete("q");
 			if (tags.length > 0) params.set("tags", tags.join(","));
+			else params.delete("tags");
 
-			const newQueryString = params.toString();
+			// Clear selection params when doing a new global search
+			params.delete("domain");
+			params.delete("exact");
+			params.delete("noteId");
+			params.delete("draftId");
+		} else {
+			params.delete("q");
+			params.delete("tags");
+		}
 
-			// 重要：検索語が空、かつ現在のURLにも検索パラメータがない場合は何もしない
-			// これにより ?domain=inbox 等が勝手に消されてループすることを防ぐ
-			if (
-				!newQueryString &&
-				!searchParams.get("q") &&
-				!searchParams.get("tags")
-			) {
-				return;
-			}
-
-			const newQ = params.get("q") || "";
-			const newTags = params.get("tags") || "";
-			const currentQ = searchParams.get("q") || "";
-			const currentTags = searchParams.get("tags") || "";
-
-			// 検索状態（キーワードとタグ）に変化がない場合は何もしない（過剰防衛の防止）
-			// これにより、noteId等の別パラメータ追加時に勝手にURLが上書きされて詳細が閉じるのを防ぐ
-			if (newQ === currentQ && newTags === currentTags) {
-				return;
-			}
-
-			// 検索時は `/notes` へ強制（別画面からの検索対応）
-			const targetPath = pathname === "/notes" ? pathname : "/notes";
-
-			if (targetPath === pathname) {
-				router.replace(`${targetPath}?${newQueryString}`, { scroll: false });
-			} else {
-				router.push(`${targetPath}?${newQueryString}`, { scroll: false });
-			}
-		},
-		[pathname, router, searchParams],
-	);
+		const targetPath = pathname === "/notes" ? pathname : "/notes";
+		router.push(`${targetPath}?${params.toString()}`, { scroll: false });
+	};
 
 	// 外部からのURL変更（Inboxクリック等）に inputValue を追従させるだけの一方向同期
 	useEffect(() => {
@@ -99,24 +78,23 @@ function SearchInputInner() {
 
 	const handleClear = () => {
 		setInputValue("");
-		if (timeoutRef.current) clearTimeout(timeoutRef.current);
-		updateUrl("");
+		const params = new URLSearchParams(searchParams.toString());
+		params.delete("q");
+		params.delete("tags");
+		const targetPath = pathname === "/notes" ? pathname : "/notes";
+		router.push(`${targetPath}?${params.toString()}`, { scroll: false });
 	};
 
 	return (
-		<SearchInputBase
-			ref={inputRef}
-			value={inputValue}
-			onChange={(val) => {
-				setInputValue(val);
-				if (timeoutRef.current) clearTimeout(timeoutRef.current);
-				timeoutRef.current = setTimeout(() => {
-					updateUrl(val);
-				}, 300);
-			}}
-			onClear={handleClear}
-			placeholder="Search keywords or #tags..."
-		/>
+		<form onSubmit={handleSubmit} className="w-full">
+			<SearchInputBase
+				ref={inputRef}
+				value={inputValue}
+				onChange={(val) => setInputValue(val)}
+				onClear={handleClear}
+				placeholder="Search keywords or #tags..."
+			/>
+		</form>
 	);
 }
 

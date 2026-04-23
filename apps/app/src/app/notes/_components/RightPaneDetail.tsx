@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import {
@@ -37,6 +38,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,6 +54,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
@@ -63,6 +66,8 @@ type Props = {
 };
 
 export function RightPaneDetail({ note, draft, isNewNote }: Props) {
+	const addNote = useNotesStore((state) => state.addNote);
+	const removeNote = useNotesStore((state) => state.removeNote);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
@@ -258,6 +263,9 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 				if (error) throw error;
 
+				// 【追加】新規作成されたノートを Zustand ストアに即時反映する
+				addNote(data as Note);
+
 				setOptimisticContent(newContent);
 				const params = new URLSearchParams(searchParams.toString());
 				params.delete("new");
@@ -330,6 +338,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				.delete()
 				.eq("id", note.id);
 			if (error) throw error;
+
+			removeNote(note.id);
 			setIsDeleteDialogOpen(false);
 
 			const params = new URLSearchParams(searchParams.toString());
@@ -649,10 +659,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				</div>
 
 				{!note && draft?.title && (
-					<div className="mb-8">
+					<div className="mb-8 flex items-center gap-2">
 						<h1 className="text-3xl font-extrabold text-action tracking-tight">
 							{draft.title}
 						</h1>
+						<InlineCopyButton text={draft.title} />
 					</div>
 				)}
 
@@ -704,8 +715,27 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						currentResolved && "opacity-50 transition-opacity",
 					)}
 				>
-					<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">
-						{note ? "Note Content" : "Draft Content"}
+					<div className="flex items-center justify-between px-1">
+						<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+							{note ? "Note Content" : "Draft Content"}
+						</div>
+						{!note && draft && (
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								className="text-neutral-400 hover:text-action cursor-pointer"
+								onClick={() => {
+									if (draft.content) {
+										navigator.clipboard.writeText(draft.content);
+										toast.success("Copied!");
+									}
+								}}
+								title="Copy Content"
+							>
+								<Copy className="w-3.5 h-3.5" aria-hidden="true" />
+							</Button>
+						)}
 					</div>
 					{isNewNote && (
 						<div className="grid items-center gap-2 mb-4">

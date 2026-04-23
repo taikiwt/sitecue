@@ -13,7 +13,7 @@ import {
 	Plus,
 } from "lucide-react";
 import Image from "next/image";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { UserMenu } from "@/app/_components/UserMenu";
 import SearchInput from "@/app/notes/_components/SearchInput";
@@ -29,6 +29,7 @@ interface GlobalSidebarProps {
 
 export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const pathname = usePathname();
+	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { groupedNotes, searchResults } = useNotesStore();
 
@@ -102,13 +103,6 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 		});
 	}, [groupedNotes, normalizedQuery, searchResults, isSearchActive]);
 
-	const newNoteParams = new URLSearchParams();
-	if (currentView) newNoteParams.set("view", currentView);
-	if (currentDomain) newNoteParams.set("domain", currentDomain);
-	if (currentExact) newNoteParams.set("exact", currentExact);
-	newNoteParams.set("globalNew", "note");
-	const newNoteHref = `/notes?${newNoteParams.toString()}`;
-
 	// Accordion logic
 	const isAnyDomainActive = !!(currentDomain && currentDomain !== "inbox");
 	const shouldForceOpenDomains = isSearchActive || isAnyDomainActive;
@@ -156,13 +150,20 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					<SearchInput />
 				</div>
 
-				<Link
-					href={newNoteHref}
+				<Button
+					type="button"
+					variant="default"
 					className="flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
+					onClick={() => {
+						const currentPath = pathname;
+						const params = new URLSearchParams(searchParams.toString());
+						params.set("globalNew", "note");
+						router.push(`${currentPath}?${params.toString()}`);
+					}}
 				>
 					<Plus className="w-4 h-4" aria-hidden="true" />
 					New Note
-				</Link>
+				</Button>
 			</div>
 
 			<nav className="flex-1 flex flex-col py-4 overflow-hidden">
