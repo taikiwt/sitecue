@@ -1,13 +1,15 @@
 "use client";
 
-import { ArrowLeft, Check, Copy, MoreHorizontal, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import {
+	Panel,
+	Group as PanelGroup,
+	Separator as PanelResizeHandle,
+} from "react-resizable-panels";
 import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Drawer,
 	DrawerContent,
@@ -16,21 +18,20 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
+import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { cn } from "@/lib/utils";
+import { useDraftHistory } from "@/hooks/useDraftHistory";
+import { useStudioAI } from "@/hooks/useStudioAI";
+
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note, Template } from "../../../../../types/app.ts";
+import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
-import UndoRedoControls from "../studio/_components/UndoRedoControls";
+
 import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
 
 type NoteType = "info" | "alert" | "idea";
@@ -79,20 +80,26 @@ export default function DraftEditor({
 	const [searchResults, setSearchResults] = useState<Note[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 
-	// State for History (Undo/Redo)
-	const [history, setHistory] = useState<string[]>([
-		initialDraft?.content || "",
-	]);
-	const [historyIndex, setHistoryIndex] = useState(0);
-
 	// State for Quota
 	const [plan, setPlan] = useState<"free" | "pro">("free");
 	const [showPaywall, setShowPaywall] = useState(false);
 
-	// AISystem State
-	const [isWeaving, setIsWeaving] = useState(false);
-	const [isGeneratingReview, setIsGeneratingReview] = useState(false);
-	const [isGeneratingHint, setIsGeneratingHint] = useState(false);
+	// Custom Hooks
+	const {
+		historyIndex,
+		historyLength,
+		pushToHistory,
+		handleUndo: undoHistory,
+		handleRedo: redoHistory,
+	} = useDraftHistory(initialDraft?.content || template?.boilerplate || "");
+
+	const {
+		isWeaving,
+		isGeneratingReview,
+		generateWeave,
+		generateReview,
+		generateHint,
+	} = useStudioAI();
 
 	const isDirty =
 		content !== savedState.content ||
@@ -167,37 +174,15 @@ export default function DraftEditor({
 		fetchProfile();
 	}, [supabase]);
 
-	// Push to history logic
-	const pushToHistory = useCallback(
-		(newContent: string) => {
-			if (newContent === history[historyIndex]) return;
-
-			const newHistory = history.slice(0, historyIndex + 1);
-			newHistory.push(newContent);
-			if (newHistory.length > 20) {
-				newHistory.shift();
-			}
-			setHistory(newHistory);
-			setHistoryIndex(newHistory.length - 1);
-		},
-		[history, historyIndex],
-	);
-
 	const handleUndo = useCallback(() => {
-		if (historyIndex > 0) {
-			const targetIndex = historyIndex - 1;
-			setHistoryIndex(targetIndex);
-			setContent(history[targetIndex]);
-		}
-	}, [history, historyIndex]);
+		const previousContent = undoHistory();
+		if (previousContent !== null) setContent(previousContent);
+	}, [undoHistory]);
 
 	const handleRedo = useCallback(() => {
-		if (historyIndex < history.length - 1) {
-			const targetIndex = historyIndex + 1;
-			setHistoryIndex(targetIndex);
-			setContent(history[targetIndex]);
-		}
-	}, [history, historyIndex]);
+		const previousContent = redoHistory();
+		if (previousContent !== null) setContent(previousContent);
+	}, [redoHistory]);
 
 	const handleSearch = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -303,54 +288,29 @@ export default function DraftEditor({
 	const handleWeave = async () => {
 		if (isWeaving) return;
 
-		setIsWeaving(true);
-		try {
-			// Save current state before weave
-			pushToHistory(content);
+		// Save current state before weave
+		pushToHistory(content);
 
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) throw new Error("No session");
+		const {
+			newContent,
+			planError,
+			plan: errorPlan,
+			error,
+		} = await generateWeave(content, reviewNotes, activeTemplate);
 
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const response = await fetch(`${apiUrl}/ai/weave`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({
-					contexts: reviewNotes,
-					format: "markdown",
-					draft_content: content,
-					template_id: activeTemplate?.id || null,
-				}),
-			});
+		if (planError) {
+			if (errorPlan) setPlan(errorPlan as "free" | "pro");
+			setShowPaywall(true);
+			return;
+		}
 
-			if (response.status === 403) {
-				const errData = await response.json();
-				if (errData.plan) setPlan(errData.plan as "free" | "pro");
-				setShowPaywall(true);
-				return;
-			}
+		if (error) {
+			return;
+		}
 
-			if (!response.ok) {
-				const errData = await response.json();
-				throw new Error(errData.error || "Failed to weave");
-			}
-
-			const data = await response.json();
-			const newContent = data.result;
-
+		if (newContent) {
 			setContent(newContent);
-
-			// Add result to history
-			const newHistory = history.slice(0, historyIndex + 1);
-			newHistory.push(newContent);
-			if (newHistory.length > 20) newHistory.shift();
-			setHistory(newHistory);
-			setHistoryIndex(newHistory.length - 1);
+			pushToHistory(newContent);
 
 			// Auto-Consume Review Notes
 			const noteIdsToDelete = reviewNotes.map((note) => note.id);
@@ -365,76 +325,32 @@ export default function DraftEditor({
 					});
 			}
 			setReviewNotes([]);
-		} catch (error) {
-			const _err = error as Error;
-			console.error("Weave failed:", _err);
-			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
-			);
-		} finally {
-			setIsWeaving(false);
 		}
 	};
 
 	const handleGenerateReview = async () => {
 		if (isGeneratingReview) return;
 
-		setIsGeneratingReview(true);
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) throw new Error("No session");
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const res = await fetch(`${apiUrl}/ai/review`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({ draft_content: content }),
-			});
-			if (!res.ok) {
-				if (res.status === 403) {
-					const errData = await res.json();
-					if (errData.plan) setPlan(errData.plan as "free" | "pro");
-					setShowPaywall(true);
-					return;
-				}
-				throw new Error("API Error");
-			}
-			const data = await res.json();
+		const {
+			newNotes,
+			planError,
+			plan: errorPlan,
+			error,
+		} = await generateReview(content, initialDraft?.id);
 
-			// biome-ignore lint/suspicious/noExplicitAny: AI API response type
-			const newNotes: Note[] = data.reviews.map((r: any) => ({
-				id: crypto.randomUUID(),
-				content: r.content,
-				note_type: r.type,
-				draft_id: initialDraft?.id || null,
-				scope: "draft",
-				url_pattern: initialDraft?.id
-					? `sitecue://draft/${initialDraft.id}`
-					: "",
-				user_id: session.user.id,
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString(),
-				is_expanded: false,
-				is_favorite: false,
-				is_pinned: false,
-				is_resolved: false,
-				sort_order: 0,
-			}));
+		if (planError) {
+			if (errorPlan) setPlan(errorPlan as "free" | "pro");
+			setShowPaywall(true);
+			return;
+		}
 
+		if (error) {
+			return;
+		}
+
+		if (newNotes) {
 			setReviewNotes((prev) => [...newNotes, ...prev]);
 			setHasUnsavedNotesChanges(true);
-		} catch (error) {
-			const _err = error as Error;
-			console.error("Failed to generate review:", _err);
-			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
-			);
-		} finally {
-			setIsGeneratingReview(false);
 		}
 	};
 
@@ -442,45 +358,7 @@ export default function DraftEditor({
 		contextText: string,
 		isExplicit: boolean = false,
 	): Promise<string | null> => {
-		if (isGeneratingHint) return null;
-
-		setIsGeneratingHint(true);
-		try {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			if (!session) return null;
-			const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8787";
-			const res = await fetch(`${apiUrl}/ai/hint`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session.access_token}`,
-				},
-				body: JSON.stringify({ text: contextText }),
-			});
-			if (!res.ok) {
-				if (isExplicit) {
-					toast.error(
-						"AI補完の生成に失敗しました。時間をおいて再試行してください。",
-					);
-				}
-				return null;
-			}
-			const data = await res.json();
-			return data.hint;
-		} catch (e) {
-			const _err = e as Error;
-			console.error("Hint failed:", _err);
-			if (isExplicit) {
-				toast.error(
-					"AI補完の生成に失敗しました。時間をおいて再試行してください。",
-				);
-			}
-			return null;
-		} finally {
-			setIsGeneratingHint(false);
-		}
+		return generateHint(contextText, isExplicit);
 	};
 
 	const charCount = content.length;
@@ -614,236 +492,177 @@ export default function DraftEditor({
 	};
 
 	return (
-		<div className="flex h-full overflow-hidden bg-base-bg text-action">
-			{/* 左ペイン: メインエディタ */}
-			<div className="flex flex-1 flex-col overflow-hidden border-r border-base-border bg-base-bg">
-				<header
-					className={cn(
-						"flex items-center justify-between border-b border-neutral-100 px-6 py-4 transition-all duration-300",
-						!isSidebarOpen && "md:pl-16",
-					)}
+		<div className="flex-1 h-full w-full flex flex-col min-h-0 relative">
+			<PanelGroup
+				orientation="horizontal"
+				className="flex-1 w-full h-full overflow-hidden bg-base-bg text-action"
+			>
+				{/* 左ペイン: メインエディタ */}
+				<Panel
+					defaultSize="65%"
+					minSize="30%"
+					className="flex h-full flex-col overflow-hidden border-r border-base-border bg-base-bg"
 				>
-					<div className="flex items-center gap-4">
-						<Link
-							href="/"
-							className={cn(
-								buttonVariants({ variant: "ghost", size: "sm" }),
-								"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
-							)}
-						>
-							<ArrowLeft className="w-4 h-4" aria-hidden="true" />
-							Home
-						</Link>
-					</div>
+					<DraftEditorHeader
+						isSidebarOpen={isSidebarOpen}
+						canUndo={historyIndex > 0}
+						canRedo={historyIndex < historyLength - 1}
+						onUndo={handleUndo}
+						onRedo={handleRedo}
+						onSave={handleSave}
+						status={status}
+						hasDraftId={!!initialDraft?.id}
+						onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
+						onDeleteDraft={handleDeleteDraft}
+					/>
 
-					<div className="flex items-center gap-4">
-						<UndoRedoControls
-							canUndo={historyIndex > 0}
-							canRedo={historyIndex < history.length - 1}
-							onUndo={handleUndo}
-							onRedo={handleRedo}
-						/>
-
-						<Button
-							onClick={handleSave}
-							disabled={status === "saving" || status === "success"}
-							size="sm"
-							className="w-24 rounded-full"
-							type="button"
-						>
-							{status === "saving" ? (
-								"Saving..."
-							) : status === "success" ? (
-								<span className="flex items-center gap-1">
-									<Check
-										className="w-4 h-4 text-note-info"
-										aria-hidden="true"
-									/>
-									Saved
-								</span>
-							) : (
-								"Save"
-							)}
-						</Button>
-
-						<Popover>
-							<PopoverTrigger
-								render={
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-										aria-label="More options"
-									>
-										<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
-									</Button>
-								}
-							/>
-							<PopoverContent align="end" className="w-48 p-2">
-								<div className="flex flex-col gap-1">
-									<Button
-										type="button"
-										variant="ghost"
-										className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
-										onClick={() => setIsSaveTemplateDialogOpen(true)}
-									>
-										Save as Template
-									</Button>
-									{initialDraft?.id && (
-										<Button
-											type="button"
-											variant="ghost"
-											className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
-											onClick={handleDeleteDraft}
+					<main className="flex-1 overflow-y-auto px-8 py-10">
+						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
+							{/* Metadata & Title Area */}
+							<div className="flex flex-col gap-4">
+								<div className="flex items-center justify-between">
+									<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+										{activeTemplate
+											? `Template: ${activeTemplate.name}`
+											: "Blank Canvas"}
+									</span>
+									{maxLength && (
+										<span
+											className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
 										>
-											Delete Draft
-										</Button>
+											{charCount} / {maxLength}
+										</span>
 									)}
 								</div>
-							</PopoverContent>
-						</Popover>
-					</div>
-				</header>
-
-				<main className="flex-1 overflow-y-auto px-8 py-10">
-					<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
-						{/* Metadata & Title Area */}
-						<div className="flex flex-col gap-4">
-							<div className="flex items-center justify-between">
-								<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
-									{activeTemplate
-										? `Template: ${activeTemplate.name}`
-										: "Blank Canvas"}
-								</span>
-								{maxLength && (
-									<span
-										className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
-									>
-										{charCount} / {maxLength}
-									</span>
-								)}
-							</div>
-							<div className="grid gap-4">
-								<div className="flex items-start gap-2 group/title">
-									<TextareaAutosize
-										placeholder={
-											activeTemplate?.name === "Zenn"
-												? "Enter article title..."
-												: "Title (optional)"
-										}
-										value={title}
-										onChange={(e) => setTitle(e.target.value)}
-										className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
-									/>
-									<InlineCopyButton
-										text={title}
-										className="mt-2 opacity-0 group-hover/title:opacity-100 transition-opacity"
-									/>
-								</div>
-								{activeTemplate?.name === "Zenn" && (
-									<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
-										<span>slug:</span>
-										<input
-											type="text"
-											placeholder="example-article-slug"
-											value={slug}
-											onChange={(e) => setSlug(e.target.value)}
-											className="flex-1 bg-transparent font-mono focus:outline-none"
+								<div className="grid gap-4">
+									<div className="flex items-start gap-2 group/title">
+										<TextareaAutosize
+											placeholder={
+												activeTemplate?.name === "Zenn"
+													? "Enter article title..."
+													: "Title (optional)"
+											}
+											value={title}
+											onChange={(e) => setTitle(e.target.value)}
+											className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
 										/>
 										<InlineCopyButton
-											text={slug}
-											className="opacity-0 group-hover/slug:opacity-100 transition-opacity"
+											text={title}
+											className="mt-2 opacity-100 md:opacity-0 md:group-hover/title:opacity-100 transition-opacity"
 										/>
 									</div>
-								)}
+									{activeTemplate?.name === "Zenn" && (
+										<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
+											<span>slug:</span>
+											<input
+												type="text"
+												placeholder="example-article-slug"
+												value={slug}
+												onChange={(e) => setSlug(e.target.value)}
+												className="flex-1 bg-transparent font-mono focus:outline-none"
+											/>
+											<InlineCopyButton
+												text={slug}
+												className="opacity-100 md:opacity-0 md:group-hover/slug:opacity-100 transition-opacity"
+											/>
+										</div>
+									)}
+								</div>
 							</div>
-						</div>
 
-						{/* Editor Area */}
-						<div className="relative w-full">
-							<div className="absolute top-4 right-4 z-10">
-								<InlineCopyButton
-									text={content}
-									className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+							{/* Editor Area */}
+							<div className="relative w-full">
+								<div className="absolute top-4 right-4 z-10">
+									<InlineCopyButton
+										text={content}
+										className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+									/>
+								</div>
+								<StudioEditor
+									value={content}
+									onChange={(val) => setContent(val)}
+									placeholder="Write down your thoughts..."
+									isDirty={isDirty}
+									onGenerateHint={handleGenerateHint}
 								/>
 							</div>
-							<StudioEditor
-								value={content}
-								onChange={(val) => setContent(val)}
-								placeholder="Write down your thoughts..."
-								isDirty={isDirty}
-								onGenerateHint={handleGenerateHint}
-							/>
 						</div>
-					</div>
-				</main>
-			</div>
-			{/* 右ペイン: コンテキストバー (Desktop only) */}
-			{isDesktop && (
-				<aside className="w-96 flex-col overflow-hidden bg-base-surface border-l border-base-border flex">
-					<header className="border-b border-base-border p-2">
-						<div className="flex rounded-lg bg-base-border/50 p-1">
-							<button
-								type="button"
-								onClick={() => updatePane("review")}
-								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-									activePane === "review"
-										? "bg-base-bg text-action shadow-sm"
-										: "text-gray-500 hover:text-action"
-								}`}
-							>
-								SELF REVIEW
-							</button>
-							<button
-								type="button"
-								onClick={() => updatePane("materials")}
-								className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-									activePane === "materials"
-										? "bg-base-bg text-action shadow-sm"
-										: "text-gray-500 hover:text-action"
-								}`}
-							>
-								GLOBAL MATERIALS
-							</button>
+					</main>
+				</Panel>
+				{/* 右ペイン: コンテキストバー (Desktop only) */}
+				{isDesktop && (
+					<PanelResizeHandle className="w-1 bg-transparent hover:bg-neutral-200 active:bg-neutral-300 transition-colors cursor-col-resize" />
+				)}
+				{isDesktop && (
+					<Panel
+						defaultSize="35%"
+						minSize="20%"
+						maxSize="50%"
+						className="flex h-full flex-col overflow-hidden bg-base-surface border-l border-base-border"
+					>
+						<header className="border-b border-base-border p-2">
+							<div className="flex rounded-lg bg-base-border/50 p-1">
+								<button
+									type="button"
+									onClick={() => updatePane("review")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "review"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									SELF REVIEW
+								</button>
+								<button
+									type="button"
+									onClick={() => updatePane("materials")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "materials"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									GLOBAL MATERIALS
+								</button>
+							</div>
+						</header>
+
+						{/* Tab Content */}
+						<div className="flex-1 overflow-hidden">
+							{activePane === "review" ? (
+								<StudioReviewPane
+									reviewNotes={reviewNotes}
+									isLoadingReview={isLoadingReview}
+									onAddNote={handleAddNote}
+									onUpdateNote={handleUpdateNote}
+									onDeleteNote={handleDeleteNote}
+									onDeleteAllNotes={handleDeleteAllNotes}
+									onReorderNotes={handleReorderNotes}
+									onInsertToEditor={handleInsertToEditor}
+									onWeave={handleWeave}
+									isWeaving={isWeaving}
+									onGenerateReview={handleGenerateReview}
+									isGeneratingReview={isGeneratingReview}
+								/>
+							) : (
+								<StudioMaterialsPane
+									searchKeyword={searchKeyword}
+									onSearchKeywordChange={setSearchKeyword}
+									onSearch={handleSearch}
+									searchResults={searchResults}
+									isSearching={isSearching}
+								/>
+							)}
 						</div>
-					</header>
 
-					{/* Tab Content */}
-					<div className="flex-1 overflow-hidden">
-						{activePane === "review" ? (
-							<StudioReviewPane
-								reviewNotes={reviewNotes}
-								isLoadingReview={isLoadingReview}
-								onAddNote={handleAddNote}
-								onUpdateNote={handleUpdateNote}
-								onDeleteNote={handleDeleteNote}
-								onDeleteAllNotes={handleDeleteAllNotes}
-								onReorderNotes={handleReorderNotes}
-								onInsertToEditor={handleInsertToEditor}
-								onWeave={handleWeave}
-								isWeaving={isWeaving}
-								onGenerateReview={handleGenerateReview}
-								isGeneratingReview={isGeneratingReview}
-							/>
-						) : (
-							<StudioMaterialsPane
-								searchKeyword={searchKeyword}
-								onSearchKeywordChange={setSearchKeyword}
-								onSearch={handleSearch}
-								searchResults={searchResults}
-								isSearching={isSearching}
-							/>
-						)}
-					</div>
-
-					<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
-						<p className="text-[10px] text-neutral-400 font-medium">
-							Weave Studio Power User Mode
-						</p>
-					</div>
-				</aside>
-			)}
+						<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
+							<p className="text-[10px] text-neutral-400 font-medium">
+								Weave Studio Power User Mode
+							</p>
+						</div>
+					</Panel>
+				)}
+			</PanelGroup>
 
 			{/* Floating Mobile Trigger */}
 			{!isDesktop && (
@@ -938,40 +757,3 @@ export default function DraftEditor({
 		</div>
 	);
 }
-
-const InlineCopyButton = ({
-	text,
-	className,
-}: {
-	text: string;
-	className?: string;
-}) => {
-	const [copied, setCopied] = useState(false);
-
-	const handleCopy = async () => {
-		if (!text) return;
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(true);
-			setTimeout(() => setCopied(false), 2000);
-		} catch (err) {
-			console.error("Failed to copy text: ", err);
-		}
-	};
-
-	return (
-		<button
-			type="button"
-			onClick={handleCopy}
-			className={`p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer shrink-0 ${className || ""}`}
-			title="Copy to clipboard"
-			aria-label="Copy to clipboard"
-		>
-			{copied ? (
-				<Check className="w-4 h-4 text-green-500" aria-hidden="true" />
-			) : (
-				<Copy className="w-4 h-4" aria-hidden="true" />
-			)}
-		</button>
-	);
-};

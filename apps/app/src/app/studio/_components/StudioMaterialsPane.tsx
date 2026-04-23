@@ -1,7 +1,8 @@
 "use client";
 
 import type { Note } from "../../../../../../types/app.ts";
-import NoteCard from "./NoteCard";
+import ReadOnlyNoteCard from "./ReadOnlyNoteCard";
+import StudioSearchInput from "./StudioSearchInput";
 
 interface StudioMaterialsPaneProps {
 	searchKeyword: string;
@@ -22,24 +23,11 @@ export default function StudioMaterialsPane({
 		<div className="flex h-full flex-col bg-neutral-50/10">
 			{/* Search Bar */}
 			<div className="p-4 border-b border-neutral-200 bg-white/50 sticky top-0 z-10 backdrop-blur-md">
-				<form onSubmit={onSearch} className="relative">
-					<input
-						type="text"
-						placeholder="Search global materials..."
-						value={searchKeyword}
-						onChange={(e) => onSearchKeywordChange(e.target.value)}
-						className="w-full rounded-xl border border-neutral-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-neutral-900 focus:outline-none transition-all shadow-sm"
-					/>
-					<span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">
-						🔍
-					</span>
-					<button
-						type="submit"
-						className="hidden" // Submit via Enter
-					>
-						Search
-					</button>
-				</form>
+				<StudioSearchInput
+					searchKeyword={searchKeyword}
+					onSearchKeywordChange={onSearchKeywordChange}
+					onSearch={() => onSearch()}
+				/>
 			</div>
 
 			{/* Search Results */}
@@ -65,7 +53,9 @@ export default function StudioMaterialsPane({
 							</p>
 						</div>
 					) : (
-						searchResults.map((note) => <NoteCard key={note.id} note={note} />)
+						searchResults.map((note) => (
+							<ReadOnlyNoteCard key={note.id} note={note} />
+						))
 					)}
 				</div>
 			</div>
