@@ -54,6 +54,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useNotesStore } from "@/store/useNotesStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
@@ -65,6 +66,7 @@ type Props = {
 };
 
 export function RightPaneDetail({ note, draft, isNewNote }: Props) {
+	const addNote = useNotesStore((state) => state.addNote);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [isEditing, setIsEditing] = useState(false);
@@ -259,6 +261,9 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					.single();
 
 				if (error) throw error;
+
+				// 【追加】新規作成されたノートを Zustand ストアに即時反映する
+				addNote(data as Note);
 
 				setOptimisticContent(newContent);
 				const params = new URLSearchParams(searchParams.toString());
