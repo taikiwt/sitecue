@@ -20,6 +20,9 @@ import {
 	ArrowLeft,
 	CheckCircle2,
 	CheckSquare,
+	Copy,
+	FileJson,
+	FileText,
 	GripVertical,
 	Inbox,
 	Info,
@@ -30,8 +33,15 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
+import { useUpdateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
@@ -99,8 +109,20 @@ export function MiddlePaneList(props: Props) {
 		"all" | "info" | "alert" | "idea"
 	>("all");
 
+	// ★ 修正箇所：親コンポーネントでフックを1回だけ呼び出す
+	const { mutate: updateNote } = useUpdateNote();
+
+	const handleTodoToggle = (
+		e: React.MouseEvent,
+		noteId: string,
+		currentResolved: boolean,
+	) => {
+		e.preventDefault();
+		e.stopPropagation();
+		updateNote({ id: noteId, updates: { is_resolved: !currentResolved } });
+	};
+
 	useEffect(() => {
-		// Ensure items have an id and are unique to prevent key warnings and dnd-kit crashes
 		const validItems = items.filter((item) => item?.id);
 		const uniqueItems = validItems.filter(
 			(item, index, self) => index === self.findIndex((t) => t.id === item.id),
@@ -108,13 +130,35 @@ export function MiddlePaneList(props: Props) {
 		setLocalItems(uniqueItems);
 	}, [items]);
 
-	// Reset Select Mode and selection state when category changes
 	useEffect(() => {
 		const _unused = { currentView, currentDomain, currentExact };
 		setIsSelectMode(false);
 		setSelectedIds(new Set());
 		setFilterType("all");
 	}, [currentView, currentDomain, currentExact]);
+
+	const displayItems = localItems.filter((item) => {
+		const isNote = "note_type" in item;
+		if (isNote && item.is_resolved && !showResolved) return false;
+
+		if (filterType !== "all") {
+			if (!isNote || item.note_type !== filterType) return false;
+		}
+
+		return true;
+	});
+
+	const handleCopyAsText = async () => {
+		const text = displayItems.map((item) => item.content).join("\n\n---\n\n");
+		await navigator.clipboard.writeText(text);
+		toast.success("Copied as Text");
+	};
+
+	const handleCopyAsJson = async () => {
+		const json = JSON.stringify(displayItems, null, 2);
+		await navigator.clipboard.writeText(json);
+		toast.success("Copied as JSON");
+	};
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -155,7 +199,6 @@ export function MiddlePaneList(props: Props) {
 		const updatedItems = arrayMove(localItems, oldIndex, newIndex);
 		setLocalItems(updatedItems);
 
-		// Fractional Indexing Calculation
 		let newOrder: number;
 
 		if (newIndex === 0) {
@@ -175,7 +218,7 @@ export function MiddlePaneList(props: Props) {
 
 		if (error) {
 			console.error("Failed to update sort order:", error);
-			setLocalItems(items); // Revert on error
+			setLocalItems(items);
 		} else {
 			router.refresh();
 		}
@@ -211,17 +254,6 @@ export function MiddlePaneList(props: Props) {
 		}
 		setSelectedIds(newSelected);
 	};
-
-	const displayItems = localItems.filter((item) => {
-		const isNote = "note_type" in item;
-		if (isNote && item.is_resolved && !showResolved) return false;
-
-		if (filterType !== "all") {
-			if (!isNote || item.note_type !== filterType) return false;
-		}
-
-		return true;
-	});
 
 	return (
 		<div className="flex flex-col h-full bg-base-bg border-r border-base-border w-96">
@@ -270,6 +302,45 @@ export function MiddlePaneList(props: Props) {
 							>
 								<CheckSquare className="w-4 h-4" />
 							</Button>
+							<Popover>
+								<PopoverTrigger
+									render={
+										<Button
+											type="button"
+											variant="ghost"
+											size="icon-sm"
+											className="text-gray-400 hover:text-action cursor-pointer"
+											title="Bulk Copy"
+										>
+											<Copy className="w-4 h-4" />
+										</Button>
+									}
+								/>
+								<PopoverContent className="w-48 p-2" align="end">
+									<div className="flex flex-col gap-1">
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleCopyAsText}
+											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+										>
+											<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+											as Text
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleCopyAsJson}
+											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+										>
+											<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
+											as JSON
+										</Button>
+									</div>
+								</PopoverContent>
+							</Popover>
 						</div>
 					)}
 				</div>
@@ -374,6 +445,7 @@ export function MiddlePaneList(props: Props) {
 									selectedDraftId={selectedDraftId}
 									searchParams={searchParams}
 									selectable={false}
+									onTodoToggle={handleTodoToggle}
 								/>
 							))
 						) : (
@@ -400,6 +472,7 @@ export function MiddlePaneList(props: Props) {
 											selectable={currentView !== "drafts" && isSelectMode}
 											isSelected={selectedIds.has(item.id)}
 											onSelectChange={toggleSelect}
+											onTodoToggle={handleTodoToggle}
 										/>
 									))}
 								</SortableContext>
@@ -434,6 +507,7 @@ function NoteItem({
 	selectable = false,
 	isSelected = false,
 	onSelectChange,
+	onTodoToggle,
 }: {
 	item: Note | Draft;
 	currentExact: string | null;
@@ -445,6 +519,7 @@ function NoteItem({
 	selectable?: boolean;
 	isSelected?: boolean;
 	onSelectChange?: (id: string, checked: boolean) => void;
+	onTodoToggle?: (e: React.MouseEvent, id: string, resolved: boolean) => void;
 }) {
 	const isNote = "note_type" in item;
 	const isResolved = isNote && item.is_resolved;
@@ -463,12 +538,18 @@ function NoteItem({
 
 	return (
 		<div
-			className={`group relative flex items-stretch transition-colors ${
-				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
-			} ${isResolved ? "opacity-50" : ""}`}
+			className={`group relative flex items-stretch transition-colors ${isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
+				} ${isResolved ? "opacity-50" : ""}`}
 		>
-			{/* Left Action Area (DnD & Checkbox) */}
-			<div className="flex items-center pl-2 shrink-0">
+			{/* 透明なリンクを絶対配置(absolute)にしてカード全体を覆う（HTML規約違反を回避） */}
+			<Link
+				href={`/notes?${params.toString()}`}
+				className="absolute inset-0 z-0"
+				aria-label="View details"
+			/>
+
+			{/* ドラッグやチェックボックスはリンクより上の層(z-10)に浮かせる */}
+			<div className="flex items-center pl-2 shrink-0 relative z-10 pointer-events-auto">
 				{isSortable && isNote && (
 					<button
 						type="button"
@@ -495,26 +576,31 @@ function NoteItem({
 				)}
 			</div>
 
-			<Link
-				href={`/notes?${params.toString()}`}
-				className="flex-1 block py-4 pr-4 pl-2"
-			>
+			{/* テキスト領域はクリックを透過させ、TODOボタンだけクリックを受け付ける */}
+			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
 				<div className="flex justify-between items-start mb-1">
 					{isNote ? (
-						<span
-							className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase ${
-								getNoteTypeStyles(item.note_type).className
-							}`}
+						<button
+							type="button"
+							onClick={(e) => {
+								e.preventDefault();
+								onTodoToggle?.(e, item.id, item.is_resolved);
+							}}
+							className={cn(
+								"relative z-10 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all",
+								"hover:opacity-80 active:scale-95 cursor-pointer",
+								getNoteTypeStyles(item.note_type).className,
+							)}
 						>
 							{(() => {
 								const { Icon } = getNoteTypeStyles(item.note_type);
 								return <Icon className="w-3.5 h-3.5" aria-hidden="true" />;
 							})()}
 							{item.note_type}
-						</span>
+						</button>
 					) : (
-						<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-							Draft
+						<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+							{(!item.title && !item.content) ? "NEW" : "DRAFT"}
 						</span>
 					)}
 					<span className="text-[10px] text-gray-400">
@@ -532,12 +618,12 @@ function NoteItem({
 					{item.content}
 				</p>
 				{isNote && item.scope === "exact" && !currentExact && (
-					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1">
+					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none">
 						<MapPin className="w-3 h-3" aria-hidden="true" />
 						{getSafeUrl(item.url_pattern)?.pathname ?? item.url_pattern}
 					</div>
 				)}
-			</Link>
+			</div>
 		</div>
 	);
 }
@@ -553,6 +639,7 @@ function SortableNoteItem({
 	selectable,
 	isSelected,
 	onSelectChange,
+	onTodoToggle,
 }: {
 	item: Note | Draft;
 	currentView: string | null;
@@ -564,6 +651,7 @@ function SortableNoteItem({
 	selectable?: boolean;
 	isSelected?: boolean;
 	onSelectChange?: (id: string, checked: boolean) => void;
+	onTodoToggle?: (e: React.MouseEvent, id: string, resolved: boolean) => void;
 }) {
 	const {
 		setNodeRef,
@@ -596,6 +684,7 @@ function SortableNoteItem({
 				selectable={selectable}
 				isSelected={isSelected}
 				onSelectChange={onSelectChange}
+				onTodoToggle={onTodoToggle}
 			/>
 		</div>
 	);

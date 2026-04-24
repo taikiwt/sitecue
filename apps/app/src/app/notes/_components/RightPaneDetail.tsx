@@ -386,10 +386,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									className={cn(
 										"flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all hover:opacity-80 active:scale-95 cursor-pointer",
 										currentNoteType === "alert"
-											? "bg-note-alert/10 text-note-alert border border-note-alert/20"
+											? "bg-note-alert/10 text-note-alert"
 											: currentNoteType === "idea"
-												? "bg-note-idea/10 text-note-idea border border-note-idea/20"
-												: "bg-note-info/10 text-note-info border border-note-info/20",
+												? "bg-note-idea/10 text-note-idea"
+												: "bg-note-info/10 text-note-info",
 									)}
 								>
 									{currentResolved ? (
@@ -404,8 +404,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									{currentNoteType}
 								</button>
 							) : (
-								<span className="bg-purple-50 text-purple-500 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-									Draft
+								<span className="bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+									NEW
 								</span>
 							)}
 							<span className="text-sm text-gray-400">
@@ -732,6 +732,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 										onChange={(val) => setEditContent(val)}
 										placeholder="What's on your mind?"
 										isDirty={editContent !== baseContent}
+										onSave={handleSave}
 									/>
 								);
 							})()}
@@ -743,12 +744,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					)}
 				</div>
 
-				<div className="mt-12 pt-8 border-t border-base-border text-xs text-gray-400">
-					<p>ID: {id}</p>
-					<p>Last updated: {formatDate(updatedAt)}</p>
-					<p className="mt-1 uppercase tracking-widest font-bold">
-						sitecue base camp
-					</p>
+				<div className="mt-8 pt-4 border-t border-base-border text-xs text-gray-400">
+					Last updated: {formatDate(updatedAt)}
 				</div>
 			</div>
 
