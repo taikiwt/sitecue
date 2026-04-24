@@ -9,7 +9,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -137,10 +137,32 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
+
   html {
     @apply font-sans;
+  }
+}
+
+@layer base {
+  .prose {
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+  }
+
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6,
+  .prose p,
+  .prose a,
+  .prose li,
+  .prose strong,
+  .prose blockquote {
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
   }
 }

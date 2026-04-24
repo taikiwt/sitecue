@@ -344,7 +344,7 @@ export default function NoteItem({
 
 							{/* 縮小時に下部を背景色へフェードアウトさせるグラデーション */}
 							{isCollapsed && (
-								<div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-base-bg to-transparent pointer-events-none" />
+								<div className="absolute bottom-0 left-0 w-full h-12 bg-linear-to-t from-base-bg to-transparent pointer-events-none" />
 							)}
 						</div>
 
