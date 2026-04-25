@@ -175,7 +175,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				: draft?.content || "";
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";
-	const id = note ? note.id : draft?.id || "";
+	const _id = note ? note.id : draft?.id || "";
 
 	const currentResolved =
 		optimisticResolved !== null
@@ -622,11 +622,16 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				</div>
 
 				{!note && draft?.title && (
-					<div className="mb-8 flex items-center gap-2">
-						<h1 className="text-3xl font-extrabold text-action tracking-tight">
+					<div className="mb-8 flex flex-col gap-2">
+						<div className="flex items-center justify-between px-1">
+							<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+								Draft Title
+							</div>
+							<InlineCopyButton text={draft.title} />
+						</div>
+						<h1 className="text-3xl font-extrabold text-action tracking-tight px-1">
 							{draft.title}
 						</h1>
-						<InlineCopyButton text={draft.title} />
 					</div>
 				)}
 
