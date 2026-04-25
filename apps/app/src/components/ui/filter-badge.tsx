@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { ListFilter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type FilterBadgeProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -32,7 +32,7 @@ export function FilterBadge({
 					isActive && "w-3 opacity-100 mr-1",
 				)}
 			>
-				<Check className="w-3 h-3" aria-hidden="true" />
+				<ListFilter className="w-3 h-3" aria-hidden="true" />
 			</div>
 			{icon && <div className="flex-shrink-0">{icon}</div>}
 			{children && <span>{children}</span>}

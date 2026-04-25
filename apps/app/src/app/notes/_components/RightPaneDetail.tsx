@@ -1,13 +1,9 @@
 "use client";
 
 import {
-	AlertTriangle,
 	Check,
-	CheckCircle2,
 	Clipboard,
 	Copy,
-	Info,
-	Lightbulb,
 	MoreHorizontal,
 	MousePointerClick,
 	Pencil,
@@ -41,6 +37,7 @@ import {
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import {
 	Popover,
 	PopoverContent,
@@ -378,31 +375,13 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">
 							{note ? (
-								<button
-									type="button"
+								<NoteStatusBadge
+									type={currentNoteType}
+									isResolved={currentResolved}
 									onClick={() =>
 										handleUpdateProperty({ is_resolved: !currentResolved })
 									}
-									className={cn(
-										"flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all hover:opacity-80 active:scale-95 cursor-pointer",
-										currentNoteType === "alert"
-											? "bg-note-alert/10 text-note-alert"
-											: currentNoteType === "idea"
-												? "bg-note-idea/10 text-note-idea"
-												: "bg-note-info/10 text-note-info",
-									)}
-								>
-									{currentResolved ? (
-										<CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
-									) : currentNoteType === "alert" ? (
-										<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-									) : currentNoteType === "idea" ? (
-										<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
-									) : (
-										<Info className="w-3.5 h-3.5" aria-hidden="true" />
-									)}
-									{currentNoteType}
-								</button>
+								/>
 							) : (
 								<span className="bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
 									NEW

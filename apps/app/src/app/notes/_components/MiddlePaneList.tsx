@@ -37,6 +37,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { FilterBadge } from "@/components/ui/filter-badge";
+import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import {
 	Popover,
 	PopoverContent,
@@ -66,26 +67,6 @@ const formatDate = (dateStr: string) => {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-};
-
-const getNoteTypeStyles = (type: string | null) => {
-	switch (type) {
-		case "alert":
-			return {
-				className: "bg-note-alert/5 text-note-alert",
-				Icon: AlertTriangle,
-			};
-		case "idea":
-			return {
-				className: "bg-note-idea/5 text-note-idea",
-				Icon: Lightbulb,
-			};
-		default:
-			return {
-				className: "bg-note-info/5 text-note-info",
-				Icon: Info,
-			};
-	}
 };
 
 export function MiddlePaneList(props: Props) {
@@ -580,24 +561,14 @@ function NoteItem({
 			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
 				<div className="flex justify-between items-start mb-1">
 					{isNote ? (
-						<button
-							type="button"
+						<NoteStatusBadge
+							type={item.note_type ?? "info"}
+							isResolved={item.is_resolved}
 							onClick={(e) => {
 								e.preventDefault();
 								onTodoToggle?.(e, item.id, item.is_resolved);
 							}}
-							className={cn(
-								"relative z-10 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all",
-								"hover:opacity-80 active:scale-95 cursor-pointer",
-								getNoteTypeStyles(item.note_type).className,
-							)}
-						>
-							{(() => {
-								const { Icon } = getNoteTypeStyles(item.note_type);
-								return <Icon className="w-3.5 h-3.5" aria-hidden="true" />;
-							})()}
-							{item.note_type}
-						</button>
+						/>
 					) : (
 						<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
 							{!item.title && !item.content ? "NEW" : "DRAFT"}
