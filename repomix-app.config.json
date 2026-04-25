@@ -1,0 +1,34 @@
+{
+	"include": [
+		"project-tree.txt",
+		".agent/**/*",
+		"package.json",
+		"turbo.json",
+		"**/package.json",
+		"**/tsconfig.json",
+		"schema.sql",
+		"types/**/*",
+		"apps/api/**/*",
+		"apps/app/**/*",
+		"apps/extension/**/*"
+	],
+	"ignore": {
+		"useGitignore": true,
+		"useDefaultPatterns": true,
+		"customPatterns": [
+			"apps/extension/src/components/**/*",
+			"apps/extension/entrypoints/sidepanel/**/*",
+			"**/*.test.{ts,tsx}",
+			"**/*.spec.{ts,tsx}",
+			"**/e2e/**/*",
+			"docs/archive/**/*"
+		]
+	},
+	"output": {
+		"filePath": "repomix-app-focused.md",
+		"style": "markdown",
+		"removeComments": true,
+		"removeEmptyLines": true,
+		"topHeader": "PROJECT CONTEXT: Contains the full project tree structure, global rules/types, API, Web App implementation, and Extension logic (excluding Extension UI)."
+	}
+}

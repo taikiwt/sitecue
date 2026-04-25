@@ -7,7 +7,9 @@
 		"build": "turbo build",
 		"db:start": "bun x supabase start",
 		"db:stop": "bun x supabase stop",
-		"stop": "bun x supabase stop"
+		"stop": "bun x supabase stop",
+		"repomix:app": "tree -I \"node_modules|.git|.next|dist|build|.turbo|coverage|public|migrations|snippets|test_output.txt\" > project-tree.txt && repomix -c repomix-app.config.json && rm project-tree.txt",
+		"repomix:ext": "tree -I \"node_modules|.git|.next|dist|build|.turbo|coverage|public|migrations|snippets|test_output.txt\" > project-tree.txt && repomix -c repomix-ext.config.json && rm project-tree.txt"
 	},
 	"workspaces": [
 		"apps/*",
