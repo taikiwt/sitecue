@@ -56,7 +56,7 @@ export default async function LaunchpadPage() {
 								className="w-5 h-5 text-neutral-400"
 								aria-hidden="true"
 							/>
-							<h1 className="text-xl font-light tracking-tight text-neutral-800">
+							<h1 className="text-xl font-light text-action tracking-tight">
 								Overview
 							</h1>
 						</div>
@@ -88,7 +88,7 @@ export default async function LaunchpadPage() {
 									className="w-4 h-4 text-neutral-400"
 									aria-hidden="true"
 								/>
-								<h2 className="text-lg font-medium tracking-tight text-neutral-800">
+								<h2 className="text-lg text-action tracking-tight">
 									Recent Drafts
 								</h2>
 							</div>
@@ -114,7 +114,7 @@ export default async function LaunchpadPage() {
 									className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 transition-colors hover:bg-base-surface -mx-3 px-3 rounded-lg"
 								>
 									<div className="min-w-0 flex-1">
-										<h3 className="text-sm font-medium text-action truncate group-hover:text-action-hover">
+										<h3 className="text-sm text-action truncate group-hover:text-action-hover">
 											{draft.title || "Untitled Draft"}
 										</h3>
 									</div>
@@ -141,7 +141,7 @@ export default async function LaunchpadPage() {
 								className="w-5 h-5 text-neutral-400"
 								aria-hidden="true"
 							/>
-							<h2 className="text-xl font-light tracking-tight text-neutral-800">
+							<h2 className="text-xl text-action font-light tracking-tight">
 								Start a Draft
 							</h2>
 						</div>
@@ -159,7 +159,7 @@ export default async function LaunchpadPage() {
 						>
 							<div className="flex items-center gap-2 mb-1">
 								<Plus className="w-4 h-4 text-action" aria-hidden="true" />
-								<h3 className="text-sm font-bold text-action group-hover:text-action-hover transition-colors">
+								<h3 className="text-base text-action group-hover:text-action-hover transition-colors">
 									Blank Canvas
 								</h3>
 							</div>
@@ -174,7 +174,7 @@ export default async function LaunchpadPage() {
 								href={`/studio/new?template_id=${template.id}`}
 								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 transition-all hover:border-neutral-400 cursor-pointer"
 							>
-								<h3 className="mb-1 text-sm font-bold text-action group-hover:text-action-hover transition-colors">
+								<h3 className="mb-1 text-base text-action group-hover:text-action-hover transition-colors">
 									{template.name}
 								</h3>
 								{template.max_length && (
@@ -202,7 +202,7 @@ export default async function LaunchpadPage() {
 								aria-hidden="true"
 							/>
 							<div>
-								<h3 className="text-sm font-bold text-action">Manage Notes</h3>
+								<h3 className="text-base text-action">Manage Notes</h3>
 								<p className="text-xs text-neutral-500">
 									View and organize all your created notes and drafts.
 								</p>
