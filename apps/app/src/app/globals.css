@@ -150,6 +150,7 @@
 @layer base {
   .prose {
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+    @apply max-w-none;
   }
 
   .prose h1,
@@ -164,5 +165,19 @@
   .prose strong,
   .prose blockquote {
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+  }
+
+  .prose h1, .prose h2, .prose h3, .prose h4 {
+    @apply font-bold text-action mt-6 mb-3 tracking-tight;
+  }
+  .prose h1 { @apply text-2xl; }
+  .prose h2 { @apply text-xl; }
+  .prose h3 { @apply text-lg; }
+  
+  .prose pre {
+    @apply bg-base-surface border border-base-border text-foreground p-4 rounded-lg;
+  }
+  .prose code {
+    @apply bg-base-surface border border-base-border px-1.5 py-0.5 rounded-md text-sm text-foreground;
   }
 }

@@ -17,9 +17,8 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
 	AlertTriangle,
+	Archive,
 	ArrowLeft,
-	CheckCircle2,
-	CheckSquare,
 	Copy,
 	FileJson,
 	FileText,
@@ -27,6 +26,7 @@ import {
 	Inbox,
 	Info,
 	Lightbulb,
+	ListChecks,
 	MapPin,
 	Plus,
 	Trash2,
@@ -36,6 +36,8 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { FilterBadge } from "@/components/ui/filter-badge";
+import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import {
 	Popover,
 	PopoverContent,
@@ -65,26 +67,6 @@ const formatDate = (dateStr: string) => {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-};
-
-const getNoteTypeStyles = (type: string | null) => {
-	switch (type) {
-		case "alert":
-			return {
-				className: "bg-note-alert/5 text-note-alert",
-				Icon: AlertTriangle,
-			};
-		case "idea":
-			return {
-				className: "bg-note-idea/5 text-note-idea",
-				Icon: Lightbulb,
-			};
-		default:
-			return {
-				className: "bg-note-info/5 text-note-info",
-				Icon: Info,
-			};
-	}
 };
 
 export function MiddlePaneList(props: Props) {
@@ -281,16 +263,6 @@ export function MiddlePaneList(props: Props) {
 							</Link>
 							<Button
 								type="button"
-								variant={showResolved ? "secondary" : "ghost"}
-								size="icon-sm"
-								onClick={() => setShowResolved(!showResolved)}
-								className="transition-colors cursor-pointer"
-								title="Show Resolved Notes"
-							>
-								<CheckCircle2 className="w-4 h-4" />
-							</Button>
-							<Button
-								type="button"
 								variant={isSelectMode ? "secondary" : "ghost"}
 								size="icon-sm"
 								onClick={() => {
@@ -300,7 +272,7 @@ export function MiddlePaneList(props: Props) {
 								className="transition-colors cursor-pointer"
 								title="Select Mode"
 							>
-								<CheckSquare className="w-4 h-4" />
+								<ListChecks className="w-4 h-4" aria-hidden="true" />
 							</Button>
 							<Popover>
 								<PopoverTrigger
@@ -345,38 +317,46 @@ export function MiddlePaneList(props: Props) {
 					)}
 				</div>
 				{currentView !== "drafts" && (
-					<div className="mt-3 flex items-center gap-1 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
-						<button
+					<div className="mt-3 flex items-center justify-between w-full">
+						<div className="flex items-center gap-0.5 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
+							<FilterBadge
+								isActive={filterType === "all"}
+								onClick={() => setFilterType("all")}
+							>
+								All
+							</FilterBadge>
+							<FilterBadge
+								isActive={filterType === "info"}
+								onClick={() => setFilterType("info")}
+								icon={<Info className="w-3.5 h-3.5" aria-hidden="true" />}
+								aria-label="Info"
+							/>
+							<FilterBadge
+								isActive={filterType === "alert"}
+								onClick={() => setFilterType("alert")}
+								icon={
+									<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+								}
+								aria-label="Alert"
+							/>
+							<FilterBadge
+								isActive={filterType === "idea"}
+								onClick={() => setFilterType("idea")}
+								icon={<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />}
+								aria-label="Idea"
+							/>
+						</div>
+						<Button
 							type="button"
-							onClick={() => setFilterType("all")}
-							className={`px-3 py-1 text-xs font-bold rounded-md transition-colors cursor-pointer ${filterType === "all" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
+							variant={showResolved ? "secondary" : "ghost"}
+							size="sm"
+							onClick={() => setShowResolved(!showResolved)}
+							className="transition-colors cursor-pointer text-xs font-bold text-gray-500 hover:text-action"
+							title="Show Resolved Notes"
 						>
-							All
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("info")}
-							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "info" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
-							title="Info"
-						>
-							<Info className="w-3.5 h-3.5" aria-hidden="true" />
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("alert")}
-							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "alert" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
-							title="Alert"
-						>
-							<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("idea")}
-							className={`p-1.5 rounded-md transition-colors cursor-pointer ${filterType === "idea" ? "bg-action text-action-text shadow-sm" : "text-gray-500 hover:text-action"}`}
-							title="Idea"
-						>
-							<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
-						</button>
+							<Archive className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+							Resolved
+						</Button>
 					</div>
 				)}
 				{selectedIds.size > 0 ? (
@@ -538,8 +518,9 @@ function NoteItem({
 
 	return (
 		<div
-			className={`group relative flex items-stretch transition-colors ${isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
-				} ${isResolved ? "opacity-50" : ""}`}
+			className={`group/card relative flex items-stretch transition-colors ${
+				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
+			} ${isResolved ? "opacity-50" : ""}`}
 		>
 			{/* 透明なリンクを絶対配置(absolute)にしてカード全体を覆う（HTML規約違反を回避） */}
 			<Link
@@ -555,7 +536,7 @@ function NoteItem({
 						type="button"
 						{...dragHandleProps}
 						style={{ touchAction: "none" }}
-						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover/card:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
 						aria-label="Drag to reorder"
 					>
 						<GripVertical className="w-4 h-4" aria-hidden="true" />
@@ -580,27 +561,17 @@ function NoteItem({
 			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
 				<div className="flex justify-between items-start mb-1">
 					{isNote ? (
-						<button
-							type="button"
+						<NoteStatusBadge
+							type={item.note_type ?? "info"}
+							isResolved={item.is_resolved}
 							onClick={(e) => {
 								e.preventDefault();
 								onTodoToggle?.(e, item.id, item.is_resolved);
 							}}
-							className={cn(
-								"relative z-10 pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all",
-								"hover:opacity-80 active:scale-95 cursor-pointer",
-								getNoteTypeStyles(item.note_type).className,
-							)}
-						>
-							{(() => {
-								const { Icon } = getNoteTypeStyles(item.note_type);
-								return <Icon className="w-3.5 h-3.5" aria-hidden="true" />;
-							})()}
-							{item.note_type}
-						</button>
+						/>
 					) : (
 						<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-							{(!item.title && !item.content) ? "NEW" : "DRAFT"}
+							{!item.title && !item.content ? "NEW" : "DRAFT"}
 						</span>
 					)}
 					<span className="text-[10px] text-gray-400">
