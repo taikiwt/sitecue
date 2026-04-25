@@ -8,6 +8,7 @@ import {
 	MousePointerClick,
 	Pencil,
 	Pin,
+	PinOff,
 	Star,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,6 +26,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
 import { CustomLink } from "@/components/ui/custom-link";
 import {
@@ -34,6 +36,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
+import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
+import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -395,30 +399,26 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
 							<>
-								<Button
+								<HoverSwapButton
 									type="button"
-									variant="ghost"
-									size="icon"
 									onClick={handleCopyAll}
-									className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-									title="Copy all content"
-								>
-									{isCopying ? (
-										<Check className="w-4 h-4 text-green-500" />
-									) : (
-										<Clipboard className="w-4 h-4" />
+									defaultIcon={
+										<Clipboard className="w-4 h-4" aria-hidden="true" />
+									}
+									hoverIcon={<Check className="w-4 h-4" aria-hidden="true" />}
+									className={cn(
+										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
+										isCopying && "text-green-500",
 									)}
-								</Button>
-								<Button
+									title="Copy all content"
+								/>
+								<HoverRevealButton
 									type="button"
-									variant="default"
-									size="sm"
 									onClick={handleEdit}
-									className="flex items-center gap-1.5 cursor-pointer shadow-sm ml-1 bg-action hover:bg-action-hover text-action-text"
-								>
-									<Pencil className="size-3.5" aria-hidden="true" />
-									Edit
-								</Button>
+									icon={<Pencil className="size-3.5" aria-hidden="true" />}
+									text="Edit"
+									className="cursor-pointer shadow-sm ml-1 bg-action hover:bg-action text-action-text hover:text-action-text"
+								/>
 
 								<Popover>
 									<PopoverTrigger
@@ -547,53 +547,50 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						<div className="flex gap-1 ml-2">
 							{note && (
 								<>
-									<Button
+									<AnimatedIconButton
 										type="button"
-										variant="ghost"
-										size="icon-sm"
 										onClick={() =>
 											handleUpdateProperty({ is_pinned: !currentPinned })
 										}
+										isActive={currentPinned}
+										icon={<Pin className="w-4 h-4" aria-hidden="true" />}
+										activeIcon={
+											<PinOff className="w-4 h-4" aria-hidden="true" />
+										}
 										className={cn(
-											"transition-all active:scale-90 cursor-pointer",
+											"cursor-pointer",
 											currentPinned
 												? "text-neutral-800 bg-neutral-100"
-												: "text-neutral-300 hover:text-neutral-50 hover:bg-neutral-50",
+												: "text-neutral-300 hover:text-neutral-900",
 										)}
 										title={currentPinned ? "Unpin" : "Pin"}
-									>
-										<Pin
-											className={cn("w-4 h-4", currentPinned && "fill-current")}
-											aria-hidden="true"
-										/>
-									</Button>
-									<Button
+									/>
+									<AnimatedIconButton
 										type="button"
-										variant="ghost"
-										size="icon-sm"
 										onClick={() =>
 											handleUpdateProperty({
 												is_favorite: !currentFavorite,
 											})
 										}
+										isActive={currentFavorite}
+										icon={<Star className="w-4 h-4" aria-hidden="true" />}
+										activeIcon={
+											<Star
+												className="w-4 h-4"
+												aria-hidden="true"
+												fill="currentColor"
+											/>
+										}
 										className={cn(
-											"transition-all active:scale-90 cursor-pointer",
+											"cursor-pointer",
 											currentFavorite
 												? "text-amber-400 bg-amber-50"
-												: "text-neutral-300 hover:text-amber-400 hover:bg-amber-50",
+												: "text-neutral-300 hover:text-amber-400",
 										)}
 										title={
 											currentFavorite ? "Remove from Favorites" : "Favorite"
 										}
-									>
-										<Star
-											className={cn(
-												"w-4 h-4",
-												currentFavorite && "fill-current",
-											)}
-											aria-hidden="true"
-										/>
-									</Button>
+									/>
 								</>
 							)}
 						</div>
