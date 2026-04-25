@@ -1,30 +1,35 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { NoteStatusBadge } from "./note-status-badge";
 
 describe("NoteStatusBadge", () => {
-	it("renders correctly and handles click event", () => {
-		const handleClick = vi.fn();
-		render(
-			<NoteStatusBadge type="info" isResolved={false} onClick={handleClick} />,
-		);
-
-		const button = screen.getByRole("button");
+	it("renders correctly with unresolved state", () => {
+		render(<NoteStatusBadge type="info" isResolved={false} />);
+		const button = screen.getByRole("button", { name: /info/i });
 		expect(button).toBeInTheDocument();
-		expect(button).toHaveTextContent("info");
-
-		fireEvent.click(button);
-		expect(handleClick).toHaveBeenCalledTimes(1);
+		expect(button).toHaveAttribute("title", "Mark as resolved");
+		expect(button).toHaveClass("text-note-info");
 	});
 
-	it("renders resolved state correctly", () => {
-		const { container } = render(
-			<NoteStatusBadge type="idea" isResolved={true} />,
+	it("renders correctly with resolved state", () => {
+		render(<NoteStatusBadge type="alert" isResolved={true} />);
+		const button = screen.getByRole("button", { name: /alert/i });
+		expect(button).toBeInTheDocument();
+		expect(button).toHaveAttribute("title", "Mark as unresolved");
+		expect(button).toHaveClass("text-note-alert");
+	});
+
+	it("calls onClick handler when clicked", async () => {
+		const handleClick = vi.fn();
+		const user = userEvent.setup();
+		render(
+			<NoteStatusBadge type="idea" isResolved={false} onClick={handleClick} />,
 		);
 
-		const button = screen.getByRole("button");
-		expect(button).toHaveTextContent("idea");
-		// CheckCircle2用のクラス（SVG）が含まれているかなど基本的なレンダー確認
-		expect(container.querySelector("svg")).toBeInTheDocument();
+		const button = screen.getByRole("button", { name: /idea/i });
+		await user.click(button);
+
+		expect(handleClick).toHaveBeenCalledTimes(1);
 	});
 });

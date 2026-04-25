@@ -1,17 +1,34 @@
-import {
-	AlertTriangle,
-	Check,
-	CheckCircle2,
-	Info,
-	Lightbulb,
-} from "lucide-react";
+import { AlertTriangle, Check, Info, Lightbulb, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type NoteStatusBadgeProps = {
-	type: "info" | "alert" | "idea" | string;
+export type NoteType = "info" | "alert" | "idea";
+
+interface NoteStatusBadgeProps {
+	type: NoteType | string;
 	isResolved: boolean;
-	onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+	onClick?: (e: React.MouseEvent) => void;
 	className?: string;
+}
+
+const badgeConfig = {
+	info: {
+		icon: Info,
+		bgClass: "bg-note-info/10",
+		textClass: "text-note-info",
+		label: "Info",
+	},
+	alert: {
+		icon: AlertTriangle,
+		bgClass: "bg-note-alert/10",
+		textClass: "text-note-alert",
+		label: "Alert",
+	},
+	idea: {
+		icon: Lightbulb,
+		bgClass: "bg-note-idea/10",
+		textClass: "text-note-idea",
+		label: "Idea",
+	},
 };
 
 export function NoteStatusBadge({
@@ -20,48 +37,51 @@ export function NoteStatusBadge({
 	onClick,
 	className,
 }: NoteStatusBadgeProps) {
-	const getStyles = () => {
-		switch (type) {
-			case "alert":
-				return "bg-note-alert/10 text-note-alert";
-			case "idea":
-				return "bg-note-idea/10 text-note-idea";
-			default:
-				return "bg-note-info/10 text-note-info";
-		}
-	};
-
-	const getIcon = () => {
-		if (isResolved)
-			return <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />;
-		switch (type) {
-			case "alert":
-				return <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />;
-			case "idea":
-				return <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />;
-			default:
-				return <Info className="w-3.5 h-3.5" aria-hidden="true" />;
-		}
-	};
+	const {
+		icon: BaseIcon,
+		bgClass,
+		textClass,
+		label,
+	} = badgeConfig[type as NoteType] ?? badgeConfig.info;
 
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			className={cn(
-				"group relative z-10 pointer-events-auto flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-all hover:opacity-80 active:scale-95 cursor-pointer overflow-hidden",
-				getStyles(),
+				"group/badge relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-colors overflow-hidden cursor-pointer pointer-events-auto",
+				bgClass,
+				textClass,
 				className,
 			)}
+			title={isResolved ? "Mark as unresolved" : "Mark as resolved"}
 		>
-			{/* ホバー時に滑らかに出現するCheckアイコン */}
-			<div className="flex items-center overflow-hidden transition-all duration-300 w-0 opacity-0 group-hover:w-4 group-hover:opacity-100 group-hover:mr-1">
-				<Check className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+			<div className="relative w-3.5 h-3.5 flex items-center justify-center shrink-0 overflow-hidden">
+				{!isResolved ? (
+					<>
+						<BaseIcon
+							className="absolute inset-0 w-full h-full transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
+							aria-hidden="true"
+						/>
+						<Check
+							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
+							aria-hidden="true"
+						/>
+					</>
+				) : (
+					<>
+						<Check
+							className="absolute inset-0 w-full h-full text-emerald-500 transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
+							aria-hidden="true"
+						/>
+						<RotateCcw
+							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
+							aria-hidden="true"
+						/>
+					</>
+				)}
 			</div>
-			<div className="flex items-center gap-1.5 shrink-0">
-				{getIcon()}
-				<span>{type}</span>
-			</div>
+			<span>{label}</span>
 		</button>
 	);
 }

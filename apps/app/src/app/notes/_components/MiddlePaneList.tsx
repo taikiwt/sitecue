@@ -518,7 +518,7 @@ function NoteItem({
 
 	return (
 		<div
-			className={`group relative flex items-stretch transition-colors ${
+			className={`group/card relative flex items-stretch transition-colors ${
 				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
 			} ${isResolved ? "opacity-50" : ""}`}
 		>
@@ -536,7 +536,7 @@ function NoteItem({
 						type="button"
 						{...dragHandleProps}
 						style={{ touchAction: "none" }}
-						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover/card:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
 						aria-label="Drag to reorder"
 					>
 						<GripVertical className="w-4 h-4" aria-hidden="true" />
