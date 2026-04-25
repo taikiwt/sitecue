@@ -47,6 +47,7 @@ Tailwindのデフォルトカラースケール（例: `bg-blue-500`, `text-red-
 ### 3.2. Button Components & Interactive Feedback
 - **App Basecamp (`apps/app/`)**:
   - 生の `<button>` タグの使用は原則禁止。必ず共通の `<Button>` コンポーネントを使用し、`variant` (default, outline, ghost, link等) を指定してセマンティックカラーと振る舞いを一元管理すること。
+  - **アニメーション共通ボタン**: `HoverRevealButton`, `HoverSwapButton`, `AnimatedIconButton` を使用する際は、[.agent/rules/ui-micro-interactions.md](file:///.agent/rules/ui-micro-interactions.md) の設計思想と実装ルールを必ず遵守すること。
 - **Extension (`apps/extension/`)**:
   - 共通Buttonコンポーネントが未導入のため、生の `<button>` タグを使用してよい。
   - その場合も、クラス名には必ずセマンティックカラー（例: `bg-action hover:bg-action-hover`）を使用し、心地よいトランジション（`transition-colors duration-200 cursor-pointer`）を付与すること。

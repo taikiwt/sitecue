@@ -31,9 +31,11 @@ import {
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { FilterBadge } from "@/components/ui/filter-badge";
+import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import {
 	Popover,
 	PopoverContent,
@@ -282,29 +284,39 @@ export function MiddlePaneList(props: Props) {
 							>
 								<Plus className="w-4 h-4" />
 							</Link>
-							<Button
+							<AnimatedIconButton
 								type="button"
-								variant={isSelectMode ? "secondary" : "ghost"}
-								size="icon-sm"
 								onClick={() => {
 									setIsSelectMode(!isSelectMode);
 									if (!isSelectMode === false) setSelectedIds(new Set());
 								}}
-								className="transition-colors cursor-pointer"
+								isActive={isSelectMode}
+								icon={<ListChecks className="w-4 h-4" aria-hidden="true" />}
+								activeIcon={
+									<ListChecks className="w-4 h-4" aria-hidden="true" />
+								}
+								className={cn(
+									"cursor-pointer",
+									isSelectMode
+										? "text-neutral-900 bg-neutral-100"
+										: "text-gray-400 hover:text-action",
+								)}
 								title="Select Mode"
-							>
-								<ListChecks className="w-4 h-4" aria-hidden="true" />
-							</Button>
+							/>
 							<Popover
 								open={isCopyPopoverOpen}
 								onOpenChange={setIsCopyPopoverOpen}
 							>
 								<PopoverTrigger
 									render={
-										<Button
+										<HoverSwapButton
 											type="button"
-											variant="ghost"
-											size="icon-sm"
+											defaultIcon={
+												<Copy className="w-4 h-4" aria-hidden="true" />
+											}
+											hoverIcon={
+												<Check className="w-4 h-4" aria-hidden="true" />
+											}
 											className={cn(
 												"transition-colors cursor-pointer",
 												copiedType !== null
@@ -312,13 +324,7 @@ export function MiddlePaneList(props: Props) {
 													: "text-gray-400 hover:text-action",
 											)}
 											title="Bulk Copy"
-										>
-											{copiedType !== null ? (
-												<Check className="w-4 h-4" />
-											) : (
-												<Copy className="w-4 h-4" />
-											)}
-										</Button>
+										/>
 									}
 								/>
 								<PopoverContent className="w-48 p-2" align="end">
