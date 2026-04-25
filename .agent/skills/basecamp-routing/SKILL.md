@@ -7,8 +7,6 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 
 - **Bad:** 既存の `apps/app/src/app/page.tsx` の中に、モーダルや条件分岐で新しいAI機能をねじ込む。
 - **Good:** `apps/app/src/app/studio/page.tsx` のような新しいルーティングを作成し、既存のコードと物理的に切り離す。
-※旧 `/weave` パスは拡張機能の古いバージョンとの後方互換性を保つために物理的に残存させているため、新規開発でこのディレクトリを改修してはならない。
-
 
 ## 2. コンポーネントの隔離 (Feature Colocation)
 
