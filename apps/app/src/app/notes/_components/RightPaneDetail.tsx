@@ -383,8 +383,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									}
 								/>
 							) : (
-								<span className="bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-									NEW
+								<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
+									{isNewNote ? "NEW" : "DRAFT"}
 								</span>
 							)}
 							<span className="text-sm text-gray-400">

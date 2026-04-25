@@ -11,33 +11,29 @@ import {
 import {
 	arrayMove,
 	SortableContext,
-	useSortable,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
 	AlertTriangle,
 	Archive,
 	ArrowLeft,
+	Check,
 	Copy,
 	FileJson,
 	FileText,
-	GripVertical,
 	Inbox,
 	Info,
 	Lightbulb,
 	ListChecks,
-	MapPin,
 	Plus,
 	Trash2,
 } from "lucide-react";
+
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { FilterBadge } from "@/components/ui/filter-badge";
-import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import {
 	Popover,
 	PopoverContent,
@@ -49,6 +45,7 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
+import { NoteItem, SortableNoteItem } from "./NoteItem";
 
 type Props = {
 	items: (Note | Draft)[];
@@ -57,16 +54,6 @@ type Props = {
 	currentExact: string | null;
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
-};
-
-const formatDate = (dateStr: string) => {
-	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
 };
 
 export function MiddlePaneList(props: Props) {
@@ -91,6 +78,10 @@ export function MiddlePaneList(props: Props) {
 		"all" | "info" | "alert" | "idea"
 	>("all");
 
+	const [isCopyPopoverOpen, setIsCopyPopoverOpen] = useState(false);
+	const [copiedType, setCopiedType] = useState<"text" | "json" | null>(null);
+	const copyTimerRef = useRef<NodeJS.Timeout | null>(null);
+
 	// ★ 修正箇所：親コンポーネントでフックを1回だけ呼び出す
 	const { mutate: updateNote } = useUpdateNote();
 
@@ -113,6 +104,12 @@ export function MiddlePaneList(props: Props) {
 	}, [items]);
 
 	useEffect(() => {
+		return () => {
+			if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+		};
+	}, []);
+
+	useEffect(() => {
 		const _unused = { currentView, currentDomain, currentExact };
 		setIsSelectMode(false);
 		setSelectedIds(new Set());
@@ -131,15 +128,39 @@ export function MiddlePaneList(props: Props) {
 	});
 
 	const handleCopyAsText = async () => {
-		const text = displayItems.map((item) => item.content).join("\n\n---\n\n");
+		// 未完了のノートのみを抽出
+		const itemsToCopy = displayItems.filter(
+			(item): item is Note => "note_type" in item && !item.is_resolved,
+		);
+		const text = itemsToCopy.map((item) => item.content).join("\n\n---\n\n");
 		await navigator.clipboard.writeText(text);
-		toast.success("Copied as Text");
+		setCopiedType("text");
+
+		if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+		copyTimerRef.current = setTimeout(() => {
+			setIsCopyPopoverOpen(false);
+			setCopiedType(null);
+		}, 1000);
 	};
 
 	const handleCopyAsJson = async () => {
-		const json = JSON.stringify(displayItems, null, 2);
+		// 未完了のノートのみを抽出し、AI連携用にデータを軽量化（type, contentのみ）
+		const simplifiedItems = displayItems
+			.filter((item): item is Note => "note_type" in item && !item.is_resolved)
+			.map((note) => ({
+				type: note.note_type,
+				content: note.content,
+			}));
+
+		const json = JSON.stringify(simplifiedItems, null, 2);
 		await navigator.clipboard.writeText(json);
-		toast.success("Copied as JSON");
+		setCopiedType("json");
+
+		if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+		copyTimerRef.current = setTimeout(() => {
+			setIsCopyPopoverOpen(false);
+			setCopiedType(null);
+		}, 1000);
 	};
 
 	const sensors = useSensors(
@@ -274,17 +295,29 @@ export function MiddlePaneList(props: Props) {
 							>
 								<ListChecks className="w-4 h-4" aria-hidden="true" />
 							</Button>
-							<Popover>
+							<Popover
+								open={isCopyPopoverOpen}
+								onOpenChange={setIsCopyPopoverOpen}
+							>
 								<PopoverTrigger
 									render={
 										<Button
 											type="button"
 											variant="ghost"
 											size="icon-sm"
-											className="text-gray-400 hover:text-action cursor-pointer"
+											className={cn(
+												"transition-colors cursor-pointer",
+												copiedType !== null
+													? "text-note-info"
+													: "text-gray-400 hover:text-action",
+											)}
 											title="Bulk Copy"
 										>
-											<Copy className="w-4 h-4" />
+											{copiedType !== null ? (
+												<Check className="w-4 h-4" />
+											) : (
+												<Copy className="w-4 h-4" />
+											)}
 										</Button>
 									}
 								/>
@@ -297,8 +330,15 @@ export function MiddlePaneList(props: Props) {
 											onClick={handleCopyAsText}
 											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
 										>
-											<FileText className="w-3.5 h-3.5" aria-hidden="true" />
-											as Text
+											{copiedType === "text" ? (
+												<Check
+													className="w-3.5 h-3.5 text-note-info"
+													aria-hidden="true"
+												/>
+											) : (
+												<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+											)}
+											{copiedType === "text" ? "Copied!" : "as Text"}
 										</Button>
 										<Button
 											type="button"
@@ -307,8 +347,15 @@ export function MiddlePaneList(props: Props) {
 											onClick={handleCopyAsJson}
 											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
 										>
-											<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
-											as JSON
+											{copiedType === "json" ? (
+												<Check
+													className="w-3.5 h-3.5 text-note-info"
+													aria-hidden="true"
+												/>
+											) : (
+												<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
+											)}
+											{copiedType === "json" ? "Copied!" : "as JSON"}
 										</Button>
 									</div>
 								</PopoverContent>
@@ -472,191 +519,6 @@ export function MiddlePaneList(props: Props) {
 					</div>
 				)}
 			</div>
-		</div>
-	);
-}
-
-function NoteItem({
-	item,
-	currentExact,
-	selectedNoteId,
-	selectedDraftId,
-	searchParams,
-	isSortable = false,
-	dragHandleProps = {},
-	selectable = false,
-	isSelected = false,
-	onSelectChange,
-	onTodoToggle,
-}: {
-	item: Note | Draft;
-	currentExact: string | null;
-	selectedNoteId: string | null;
-	selectedDraftId: string | null;
-	searchParams: URLSearchParams;
-	isSortable?: boolean;
-	dragHandleProps?: React.HTMLAttributes<HTMLButtonElement>;
-	selectable?: boolean;
-	isSelected?: boolean;
-	onSelectChange?: (id: string, checked: boolean) => void;
-	onTodoToggle?: (e: React.MouseEvent, id: string, resolved: boolean) => void;
-}) {
-	const isNote = "note_type" in item;
-	const isResolved = isNote && item.is_resolved;
-	const isActive = isNote
-		? selectedNoteId === item.id
-		: selectedDraftId === item.id;
-
-	const params = new URLSearchParams(searchParams.toString());
-	if (isNote) {
-		params.set("noteId", item.id);
-		params.delete("draftId");
-	} else {
-		params.set("draftId", item.id);
-		params.delete("noteId");
-	}
-
-	return (
-		<div
-			className={`group/card relative flex items-stretch transition-colors ${
-				isActive ? "bg-base-surface" : "hover:bg-base-surface/50"
-			} ${isResolved ? "opacity-50" : ""}`}
-		>
-			{/* 透明なリンクを絶対配置(absolute)にしてカード全体を覆う（HTML規約違反を回避） */}
-			<Link
-				href={`/notes?${params.toString()}`}
-				className="absolute inset-0 z-0"
-				aria-label="View details"
-			/>
-
-			{/* ドラッグやチェックボックスはリンクより上の層(z-10)に浮かせる */}
-			<div className="flex items-center pl-2 shrink-0 relative z-10 pointer-events-auto">
-				{isSortable && isNote && (
-					<button
-						type="button"
-						{...dragHandleProps}
-						style={{ touchAction: "none" }}
-						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover/card:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-						aria-label="Drag to reorder"
-					>
-						<GripVertical className="w-4 h-4" aria-hidden="true" />
-					</button>
-				)}
-				{!isSortable && isNote && <div className="w-6" />}
-
-				{selectable && (
-					<div className="flex items-center justify-center px-1">
-						<input
-							type="checkbox"
-							checked={isSelected}
-							onChange={(e) => onSelectChange?.(item.id, e.target.checked)}
-							onPointerDown={(e) => e.stopPropagation()}
-							className="w-4 h-4 cursor-pointer accent-action"
-						/>
-					</div>
-				)}
-			</div>
-
-			{/* テキスト領域はクリックを透過させ、TODOボタンだけクリックを受け付ける */}
-			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
-				<div className="flex justify-between items-start mb-1">
-					{isNote ? (
-						<NoteStatusBadge
-							type={item.note_type ?? "info"}
-							isResolved={item.is_resolved}
-							onClick={(e) => {
-								e.preventDefault();
-								onTodoToggle?.(e, item.id, item.is_resolved);
-							}}
-						/>
-					) : (
-						<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-							{!item.title && !item.content ? "NEW" : "DRAFT"}
-						</span>
-					)}
-					<span className="text-[10px] text-gray-400">
-						{formatDate(isNote ? item.created_at : item.updated_at)}
-					</span>
-				</div>
-				<h3
-					className={`text-sm font-bold text-action truncate mb-0.5 ${isResolved ? "line-through" : ""}`}
-				>
-					{!isNote && (item.title || "Untitled Draft")}
-				</h3>
-				<p
-					className={`text-sm text-action line-clamp-2 wrap-break-word ${isResolved ? "line-through" : ""}`}
-				>
-					{item.content}
-				</p>
-				{isNote && item.scope === "exact" && !currentExact && (
-					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none">
-						<MapPin className="w-3 h-3" aria-hidden="true" />
-						{getSafeUrl(item.url_pattern)?.pathname ?? item.url_pattern}
-					</div>
-				)}
-			</div>
-		</div>
-	);
-}
-
-function SortableNoteItem({
-	item,
-	currentView,
-	isSearchActive,
-	currentExact,
-	selectedNoteId,
-	selectedDraftId,
-	searchParams,
-	selectable,
-	isSelected,
-	onSelectChange,
-	onTodoToggle,
-}: {
-	item: Note | Draft;
-	currentView: string | null;
-	currentExact: string | null;
-	selectedNoteId: string | null;
-	selectedDraftId: string | null;
-	searchParams: URLSearchParams;
-	isSearchActive: boolean;
-	selectable?: boolean;
-	isSelected?: boolean;
-	onSelectChange?: (id: string, checked: boolean) => void;
-	onTodoToggle?: (e: React.MouseEvent, id: string, resolved: boolean) => void;
-}) {
-	const {
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-		attributes,
-		listeners,
-	} = useSortable({
-		id: item.id,
-	});
-
-	const style = {
-		transform: CSS.Translate.toString(transform),
-		transition,
-		zIndex: isDragging ? 50 : undefined,
-		position: "relative" as const,
-	};
-
-	return (
-		<div ref={setNodeRef} style={style}>
-			<NoteItem
-				item={item}
-				currentExact={currentExact}
-				selectedNoteId={selectedNoteId}
-				selectedDraftId={selectedDraftId}
-				searchParams={searchParams}
-				isSortable={currentView !== "drafts" && !isSearchActive}
-				dragHandleProps={{ ...attributes, ...listeners }}
-				selectable={selectable}
-				isSelected={isSelected}
-				onSelectChange={onSelectChange}
-				onTodoToggle={onTodoToggle}
-			/>
 		</div>
 	);
 }
