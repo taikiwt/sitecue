@@ -30,7 +30,7 @@ export const NotesEditor = ({
 	const extensions = useMemo(
 		() => [
 			...editorExtensions,
-			sitecueTheme,
+			...(Array.isArray(sitecueTheme) ? sitecueTheme : [sitecueTheme]),
 			keymap.of([
 				{
 					key: "Mod-Enter",
@@ -58,7 +58,7 @@ export const NotesEditor = ({
 					foldGutter: false,
 				}}
 				className="text-base"
-				theme="light"
+				// theme="light"
 			/>
 		</div>
 	);

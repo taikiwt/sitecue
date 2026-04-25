@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin, Plus, Trash2, X } from "lucide-react";
+import { Pin, Bookmark, Plus, Trash2, X, Rocket } from "lucide-react";
 import Image from "next/image";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
@@ -78,9 +78,9 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 		<section className="mb-16">
 			<div className="mb-8 flex items-center justify-between">
 				<div className="flex items-center gap-2">
-					<Pin className="w-5 h-5 text-neutral-400" aria-hidden="true" />
-					<h2 className="text-xl font-light tracking-tight text-neutral-800">
-						Pinned Sites
+					<Rocket className="w-5 h-5 text-neutral-400" aria-hidden="true" />
+					<h2 className="text-xl text-action font-light tracking-tight text-neutral-800">
+						Favorite Sites
 					</h2>
 				</div>
 				<Button
@@ -185,7 +185,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								/>
 							</div>
 							<div className="min-w-0">
-								<h3 className="text-sm font-bold text-action line-clamp-1 group-hover:underline">
+								<h3 className="text-sm text-action line-clamp-1 group-hover:underline">
 									{site.title}
 								</h3>
 								<p className="text-[10px] text-neutral-500 truncate">

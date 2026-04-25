@@ -108,7 +108,7 @@ export function UserMenu() {
 							<Sparkles className="w-3 h-3" />
 							AI Usage
 						</p>
-						<p className="text-sm font-bold text-action">
+						<p className="text-sm text-action">
 							{usageCount !== null
 								? `${usageCount} / ${plan === "pro" ? 100 : 3}`
 								: "..."}
