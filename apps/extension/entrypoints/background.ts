@@ -11,7 +11,7 @@ export default defineBackground(() => {
 		.setPanelBehavior({ openPanelOnActionClick: true })
 		.catch((error: unknown) => console.error(error));
 
-	console.log("SiteCue background script loaded.");
+	console.log("sitecue background script loaded.");
 
 	// --- Helper Functions ---
 
@@ -80,7 +80,7 @@ export default defineBackground(() => {
 			}
 		} catch (error) {
 			console.debug(
-				"[SiteCue] Tab closed or unavailable before badge update:",
+				"[sitecue] Tab closed or unavailable before badge update:",
 				error,
 			);
 		}
@@ -112,7 +112,7 @@ export default defineBackground(() => {
 					}
 					sendResponse({ status: "ok" });
 				} catch (error) {
-					console.error("[SiteCue] Failed to refresh badge:", error);
+					console.error("[sitecue] Failed to refresh badge:", error);
 					sendResponse({ status: "error", error });
 				}
 			})();

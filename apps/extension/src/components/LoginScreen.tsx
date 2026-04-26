@@ -13,7 +13,7 @@ export default function LoginScreen({
 		<div className="w-full h-screen bg-base-bg flex flex-col items-center justify-center p-6 font-sans">
 			<div className="w-full max-w-xs bg-base-surface p-6 rounded-lg shadow-md border border-base-border">
 				<h1 className="text-xl font-bold text-center mb-2 text-action">
-					Welcome to SiteCue
+					Welcome to sitecue
 				</h1>
 				<p className="text-xs text-center text-muted-foreground mb-6">
 					Sign in to sync your notes across devices

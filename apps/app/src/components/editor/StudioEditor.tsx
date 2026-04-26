@@ -13,7 +13,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import React from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { type EditorProps, editorExtensions } from "./EditorBase";
 import { sitecueTheme } from "./sitecueTheme";
@@ -65,6 +65,12 @@ const hintField = StateField.define<DecorationSet>({
 	provide: (f) => EditorView.decorations.from(f),
 });
 
+// ★ ポイント1: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+const basicSetupConfig = {
+	lineNumbers: false,
+	foldGutter: false,
+};
+
 export const StudioEditor = ({
 	value,
 	onChange,
@@ -74,24 +80,24 @@ export const StudioEditor = ({
 }: StudioEditorProps) => {
 	useUnsavedChanges(isDirty);
 
-	// Keymap拡張を定義
-	const hintExtension = React.useMemo(() => {
-		if (!onGenerateHint) return [];
+	// 最新の onGenerateHint 関数を常に保持する
+	const onGenerateHintRef = useRef(onGenerateHint);
+	useEffect(() => {
+		onGenerateHintRef.current = onGenerateHint;
+	}, [onGenerateHint]);
 
+	// ★ ポイント2: 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
+	const hintExtension = useMemo(() => {
 		const requestHint = (view: EditorView) => {
+			// 実行時にRefの中身を確認する（拡張機能自体を作り直す必要はない）
+			if (!onGenerateHintRef.current) return false;
+
 			const pos = view.state.selection.main.head;
 			const textBefore = view.state.sliceDoc(Math.max(0, pos - 500), pos);
 			const initialDocLength = view.state.doc.length;
 
-			onGenerateHint(textBefore, true).then((hintText) => {
-				if (hintText) {
-					if (view.state.doc.length !== initialDocLength) {
-						console.info(
-							"Editor state changed during AI fetch. Discarding hint.",
-						);
-						return;
-					}
-
+			onGenerateHintRef.current(textBefore, true).then((hintText) => {
+				if (hintText && view.state.doc.length === initialDocLength) {
 					view.dispatch({
 						effects: [
 							setHintEffect.of({
@@ -146,19 +152,27 @@ export const StudioEditor = ({
 				]),
 			),
 		];
-	}, [onGenerateHint]);
+	}, []);
+
+	// すべての extensions を一つの安定した配列にまとめる
+	const extensions = React.useMemo(
+		() => [
+			...editorExtensions,
+			// sitecueTheme が配列の場合はスプレッド展開する（一貫性のため）
+			...(Array.isArray(sitecueTheme) ? sitecueTheme : [sitecueTheme]),
+			...hintExtension,
+		],
+		[hintExtension],
+	);
 
 	return (
 		<div className="w-full rounded-xl bg-base-surface/50 focus-within:bg-base-bg focus-within:shadow-sm border border-transparent focus-within:border-base-border transition-all duration-200 p-6">
 			<CodeMirror
 				value={value}
 				onChange={onChange}
-				extensions={[...editorExtensions, sitecueTheme, ...hintExtension]}
+				extensions={extensions}
 				placeholder={placeholder}
-				basicSetup={{
-					lineNumbers: false,
-					foldGutter: false,
-				}}
+				basicSetup={basicSetupConfig}
 				className="text-base"
 				theme="light"
 			/>

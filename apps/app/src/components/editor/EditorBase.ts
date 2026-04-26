@@ -1,15 +1,20 @@
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import { EditorView } from "@uiw/react-codemirror";
+// import { EditorView } from "@uiw/react-codemirror";
+import { EditorView } from "@codemirror/view";
+import type { Extension } from "@codemirror/state";
+import { Strikethrough } from "@lezer/markdown";
+import { allMarkersExtension } from "./sitecueTheme";
 
 /**
  * Common extensions for CodeMirror Markdown editor.
  */
-export const editorExtensions = [
+export const editorExtensions: Extension[] = [
 	markdown({
 		base: markdownLanguage,
 		codeLanguages: languages,
 		addKeymap: true,
+		extensions: [Strikethrough, allMarkersExtension],
 	}),
 	EditorView.lineWrapping,
 ];

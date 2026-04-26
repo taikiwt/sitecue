@@ -1,6 +1,6 @@
 # App Basecamp (Next.js) Implementation Rules
 
-SiteCueの活動拠点となるApp Basecamp（`apps/app/`）側の実装において、AIエディタが遵守すべきUI/UXおよびNext.js固有の実装ルールを定義する。
+sitecueの活動拠点となるApp Basecamp（`apps/app/`）側の実装において、AIエディタが遵守すべきUI/UXおよびNext.js固有の実装ルールを定義する。
 
 ## エディタ（Markdown）の実装方針
 1. **WYSIWYGの禁止とCodeMirrorの採用:**

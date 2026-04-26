@@ -1,17 +1,35 @@
+/* --- 1. フレームワークとプラグインの読み込み --- */
 @import "tailwindcss";
+/* Tailwind CSS v4 のベース機能を読み込み */
 @source "../";
+/* クラス名をスキャンする対象ディレクトリ（プロジェクト全域）を指定 */
 @import "tw-animate-css";
+/* アニメーション用ユーティリティのインポート */
 @import "shadcn/tailwind.css";
+/* shadcn/ui の基本スタイルを読み込み */
 @plugin "@tailwindcss/typography";
+/* 記事本文などの装飾用プラグイン（.prose クラス）を有効化 */
 
+/* 親要素に .dark クラスがある場合にダークモードを適用するカスタムバリアントを定義 */
 @custom-variant dark (&:is(.dark *));
 
+/* --- 2. Tailwind クラスと CSS 変数の紐付け --- */
 @theme inline {
+  /* ここで定義した --color-* は、自動的に bg-* や text-* クラスとして使えるようになります */
   --color-background: var(--background);
+  /* 背景色 */
   --color-foreground: var(--foreground);
+  /* 前景色（テキスト色） */
+
+  /* フォント定義：Geist Sans を優先し、予備としてシステムフォントを指定 */
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  /* 等幅フォント */
   --font-mono: var(--font-geist-mono);
+  /* 見出し用フォント（現在は sans と同じ） */
   --font-heading: var(--font-sans);
+
+
+  /* サイドバー関連のカラー定義（shadcn/ui のコンポーネント用） */
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -20,28 +38,37 @@
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar: var(--sidebar);
+
+  /* チャート（グラフ）用のカラー定義 */
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+
+  /* UI要素の境界線やフォーカスリングなどの定義 */
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  /* 破壊的アクション（削除等）の色 */
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
+  /* 補助テキスト（薄い色） */
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-hover: var(--primary-hover);
   --color-primary: var(--primary);
+  /* メインのブランドカラー */
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* 角丸（Border Radius）の定義：--radius を基準に計算 */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,28 +77,45 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
+  /* プロジェクト独自の追加カラー */
   --color-base-bg: #ffffff;
   --color-base-surface: #f9fafb;
   --color-base-border: #e5e7eb;
-  --color-action: #262626;
-  --color-action-hover: #737373;
+  --color-action: var(--action);
+  --color-action-hover: oklch(from var(--action) calc(l + 0.2) c h);
   --color-action-text: #ffffff;
 
-  --color-note-info: #38A8F8;
-  --color-note-alert: #FB7176;
-  --color-note-idea: #ff8104;
+  /* ノートやアラート用のアクセントカラー */
+  --color-note-info: oklch(0.7058 0.1529 244.55);
+  --color-note-alert: oklch(0.7159 0.169 20.16);
+  --color-note-idea: oklch(0.7335 0.1848 53.22);
+
+  /* Success（成功・完了） */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  /* Warning（警告・注意） */
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
 }
 
+/* --- 3. ライトモード（標準）の具体的な色指定（OKLCH形式） --- */
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* ベース背景 */
+  --foreground: oklch(0.3132 0 0);
+  /* ベーステキストカラー */
+  --action: oklch(0.3132 0 0);
+  /* 見出しや黒ボタン */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.269 0 0);
+  /* 濃いグレー（メインカラー） */
   --primary-hover: oklch(0.556 0 0);
   --primary-foreground: oklch(0.985 0 0);
+  /* プライマリボタン上の文字色（白に近い） */
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -79,6 +123,7 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+  /* 警告用の赤色 */
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
@@ -88,6 +133,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
+  /* 基本となる角丸サイズ（10px） */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -96,16 +142,33 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Success: 穏やかな緑色 */
+  --success: oklch(0.627 0.194 149.214);
+  --success-foreground: oklch(0.985 0 0);
+  /* 背景が緑なので文字は白系 */
+
+  /* Warning: 注意を引くアンバー（琥珀色） */
+  --warning: oklch(0.769 0.188 70);
+  --warning-foreground: oklch(0.145 0 0);
+  /* 背景が明るい黄色系なので文字は黒系 */
 }
 
+/* --- 4. ダークモードの具体的な色指定 --- */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  --background: oklch(1 0 0);
+  /* ベース背景 */
+  --foreground: oklch(0.9 0 0);
+  /* ベーステキストカラー */
+  --action: oklch(0.98 0 0);
+  /* 見出しや黒ボタン */
+
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
+  /* ダークモードではプライマリを明るく反転 */
   --primary-hover: oklch(0.708 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
@@ -116,6 +179,7 @@
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
+  /* 透明度10%の白 */
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.87 0 0);
@@ -131,15 +195,45 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Success: 穏やかな緑色 */
+  --success: oklch(0.723 0.16 149.214);
+  --success-foreground: oklch(0.145 0 0);
+  /* 背景が明るくなる場合は文字を黒系に */
+
+  /* Warning: 注意を引くアンバー（琥珀色） */
+  --warning: oklch(0.85 0.15 70);
+  --warning-foreground: oklch(0.145 0 0);
 }
 
+/* --- 5. 基本要素のデフォルトスタイル（リセット/ベース） --- */
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* 全要素にデフォルトの境界線色とフォーカス時の影を設定 */
+
+    /* マウス操作時はアウトラインを消し、キーボード操作時のみ表示する */
+    :focus:not(:focus-visible) {
+      outline: none;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* iOSやAndroidでボタンをタップしたときに出る青い枠（ハイライト）を消し、独自のアクションカラー（--action）での反応を優先 */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-background text-foreground font-sans;
+    /* 背景色、文字色、フォントを適用 */
+    /* モダンなブラウザでのテキスト表示をより美しく、読みやすくする */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* テキストの折り返しを最適化 */
+    text-wrap: pretty;
   }
 
   html {
@@ -147,12 +241,16 @@
   }
 }
 
+/* --- 6. Typographyプラグイン（.prose）の高度なカスタマイズ --- */
 @layer base {
   .prose {
+    /* Geist Sans を最優先。!important でプラグインのデフォルトを上書き */
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
     @apply max-w-none;
+    /* 記事の最大幅制限を解除して全幅表示に */
   }
 
+  /* 文章内の各要素にフォントを一括適用 */
   .prose h1,
   .prose h2,
   .prose h3,
@@ -167,16 +265,32 @@
     font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
   }
 
-  .prose h1, .prose h2, .prose h3, .prose h4 {
+  /* 見出し（h1-h4）の共通スタイル：太字、アクションカラー、余白、字間詰め */
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4 {
     @apply font-bold text-action mt-6 mb-3 tracking-tight;
   }
-  .prose h1 { @apply text-2xl; }
-  .prose h2 { @apply text-xl; }
-  .prose h3 { @apply text-lg; }
-  
+
+  .prose h1 {
+    @apply text-2xl;
+  }
+
+  .prose h2 {
+    @apply text-xl;
+  }
+
+  .prose h3 {
+    @apply text-lg;
+  }
+
+  /* コードブロック（複数行）の装飾 */
   .prose pre {
     @apply bg-base-surface border border-base-border text-foreground p-4 rounded-lg;
   }
+
+  /* インラインコード（文中のコード）の装飾 */
   .prose code {
     @apply bg-base-surface border border-base-border px-1.5 py-0.5 rounded-md text-sm text-foreground;
   }

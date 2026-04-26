@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# Project: SiteCue
+# Project: sitecue
 
 # 🚨 開発ルールの絶対遵守事項 (CRITICAL: PACKAGE MANAGER)
 
@@ -13,7 +13,7 @@ trigger: always_on
 
 ## Overview
 
-SiteCueは、Webで日々活動する人向けの「コンテキスト認識型メモアプリ」です。
+sitecueは、Webで日々活動する人向けの「コンテキスト認識型メモアプリ」です。
 現在開いているURLやドメインに紐付いたメモを瞬時に表示・記録する「Chrome拡張機能」と、蓄積したメモを俯瞰して本格的な執筆や情報整理を行うWebアプリケーション「App Basecamp」の両輪で動作します。
 
 ## Architecture Overview

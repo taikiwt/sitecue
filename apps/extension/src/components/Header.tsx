@@ -142,8 +142,8 @@ export default function Header({
 								}}
 							/>
 						)}
-						<span className="truncate" title={title || "SiteCue"}>
-							{title || "SiteCue"}
+						<span className="truncate" title={title || "sitecue"}>
+							{title || "sitecue"}
 						</span>
 						{settings?.label && (
 							<span className="text-[10px] bg-action text-action-text px-1.5 py-0.5 rounded border border-base-border font-mono shrink-0">
