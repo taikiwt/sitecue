@@ -1,8 +1,8 @@
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
+import type { Extension } from "@codemirror/state";
 // import { EditorView } from "@uiw/react-codemirror";
 import { EditorView } from "@codemirror/view";
-import type { Extension } from "@codemirror/state";
 import { Strikethrough } from "@lezer/markdown";
 import { allMarkersExtension } from "./sitecueTheme";
 

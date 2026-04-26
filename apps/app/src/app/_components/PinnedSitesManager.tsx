@@ -1,6 +1,6 @@
 "use client";
 
-import { Pin, Bookmark, Plus, Trash2, X, Rocket } from "lucide-react";
+import { Plus, Rocket, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useOptimistic, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";

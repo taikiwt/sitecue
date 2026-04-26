@@ -1,6 +1,6 @@
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
-import { tags as t, Tag, styleTags } from "@lezer/highlight";
+import { styleTags, Tag, tags as t } from "@lezer/highlight";
 
 // カスタムタグの定義
 // const listMarkTag = Tag.define();

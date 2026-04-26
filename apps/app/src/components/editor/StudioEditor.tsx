@@ -13,7 +13,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
-import React, { useEffect, useRef, useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { type EditorProps, editorExtensions } from "./EditorBase";
 import { sitecueTheme } from "./sitecueTheme";

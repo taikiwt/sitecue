@@ -173,9 +173,7 @@ export function useStudioAI() {
 			const _err = e as Error;
 			console.error("Hint failed:", _err);
 			if (isExplicit) {
-				toast.error(
-					"AI completion generation failed. Please try again later.",
-				);
+				toast.error("AI completion generation failed. Please try again later.");
 			}
 			return null;
 		} finally {
