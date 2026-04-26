@@ -61,7 +61,7 @@ export function useStudioAI() {
 			const _err = error as Error;
 			console.error("Weave failed:", _err);
 			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
+				"The AI server is currently busy. Please wait a moment and try again.",
 			);
 			return { error: _err };
 		} finally {
@@ -130,7 +130,7 @@ export function useStudioAI() {
 			const _err = error as Error;
 			console.error("Failed to generate review:", _err);
 			toast.error(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
+				"The AI server is currently busy. Please wait a moment and try again.",
 			);
 			return { error: _err };
 		} finally {
@@ -162,7 +162,7 @@ export function useStudioAI() {
 			if (!res.ok) {
 				if (isExplicit) {
 					toast.error(
-						"AI補完の生成に失敗しました。時間をおいて再試行してください。",
+						"AI completion generation failed. Please try again later.",
 					);
 				}
 				return null;
@@ -174,7 +174,7 @@ export function useStudioAI() {
 			console.error("Hint failed:", _err);
 			if (isExplicit) {
 				toast.error(
-					"AI補完の生成に失敗しました。時間をおいて再試行してください。",
+					"AI completion generation failed. Please try again later.",
 				);
 			}
 			return null;

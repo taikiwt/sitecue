@@ -18,7 +18,7 @@ app.use(
 );
 
 app.get("/", (c) => {
-	return c.text("SiteCue API is running.");
+	return c.text("sitecue API is running.");
 });
 
 // Auth Middleware (Global except for /) - handled inside middleware for specificity

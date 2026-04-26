@@ -5,7 +5,7 @@ describe("API Router", () => {
 	it("should return running status on /", async () => {
 		const res = await app.request("/");
 		expect(res.status).toBe(200);
-		expect(await res.text()).toBe("SiteCue API is running.");
+		expect(await res.text()).toBe("sitecue API is running.");
 	});
 
 	it("should block /notes without authorization", async () => {

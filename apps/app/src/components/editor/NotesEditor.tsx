@@ -11,6 +11,12 @@ interface NotesEditorProps extends EditorProps {
 	onSave?: () => void;
 }
 
+// ★ ポイント: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+const basicSetupConfig = {
+	lineNumbers: false,
+	foldGutter: false,
+};
+
 export const NotesEditor = ({
 	value,
 	onChange,
@@ -53,10 +59,7 @@ export const NotesEditor = ({
 				onChange={onChange}
 				extensions={extensions} // 固定した配列を渡す
 				placeholder={placeholder}
-				basicSetup={{
-					lineNumbers: false,
-					foldGutter: false,
-				}}
+				basicSetup={basicSetupConfig}
 				className="text-base"
 				// theme="light"
 			/>

@@ -100,4 +100,4 @@ export default defineConfig({
 
 1. **Supabase SSRの特殊なCookie仕様（Chunking）** `@supabase/ssr` は、Cookieにトークンを保存する際、サイズ制限を回避するために `sb-127-auth-token.0`, `sb-127-auth-token.1` のように分割（チャンク化）し、さらに値の先頭に `base64-` を付けてBase64URLエンコードするというマニアックな仕様を持っています。もしSupabaseのメジャーアップデート等でこの仕様が変わるとシナリオBが落ちるため、Cookieの生成ロジックを見直す必要があります。
 2. **URLパラメータのエンコード不一致** ブラウザのリダイレクトをテストで検証（`expect`）する際は、`://` などが `%3A%2F%2F` に自動変換されます。文字列を比較する際は、必ず `encodeURIComponent` を通した値と比較する必要があります（シナリオAで引っかかった罠です）。
-3. **`localhost` vs `127.0.0.1` のすれ違い** SiteCueプロジェクトの絶対ルールとして、ローカルテストのアクセス先は `127.0.0.1` に厳格に固定しています（Supabase AuthのCookieのDomain仕様や、Next.jsの内部ルーティングバグを回避するため）。Playwright内で `localhost` という文字列が使われていないか常に注意してください。
+3. **`localhost` vs `127.0.0.1` のすれ違い** sitecueプロジェクトの絶対ルールとして、ローカルテストのアクセス先は `127.0.0.1` に厳格に固定しています（Supabase AuthのCookieのDomain仕様や、Next.jsの内部ルーティングバグを回避するため）。Playwright内で `localhost` という文字列が使われていないか常に注意してください。

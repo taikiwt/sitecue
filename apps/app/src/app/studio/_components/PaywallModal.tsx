@@ -76,7 +76,7 @@ export default function PaywallModal({
 
 				<div className="bg-neutral-50 px-8 py-4 text-center">
 					<p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400">
-						Stay creative with SiteCue
+						Stay creative with sitecue
 					</p>
 				</div>
 			</div>
