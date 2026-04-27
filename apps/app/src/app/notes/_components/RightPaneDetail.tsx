@@ -3,6 +3,7 @@
 import {
 	Check,
 	Clipboard,
+	ClipboardCopy,
 	Copy,
 	MoreHorizontal,
 	MousePointerClick,
@@ -399,25 +400,27 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
 							<>
-								<HoverSwapButton
-									type="button"
-									onClick={handleCopyAll}
-									defaultIcon={
-										<Clipboard className="w-4 h-4" aria-hidden="true" />
-									}
-									hoverIcon={<Check className="w-4 h-4" aria-hidden="true" />}
-									className={cn(
-										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
-										isCopying && "text-green-500",
-									)}
-									title="Copy all content"
-								/>
 								<HoverRevealButton
 									type="button"
 									onClick={handleEdit}
 									icon={<Pencil className="size-3.5" aria-hidden="true" />}
 									text="Edit"
 									className="cursor-pointer shadow-sm ml-1 bg-action hover:bg-action text-action-text hover:text-action-text"
+								/>
+								<HoverSwapButton
+									type="button"
+									onClick={handleCopyAll}
+									defaultIcon={
+										<Clipboard className="w-4 h-4" aria-hidden="true" />
+									}
+									hoverIcon={
+										<ClipboardCopy className="w-4 h-4" aria-hidden="true" />
+									}
+									className={cn(
+										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
+										isCopying && "text-green-500",
+									)}
+									title="Copy all content"
 								/>
 
 								<Popover>
@@ -441,7 +444,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 													Note Type
 												</div>
 												<div className="flex flex-col gap-1">
-													{["info", "idea", "alert"].map((type) => (
+													{["info", "alert", "idea"].map((type) => (
 														<Button
 															key={type}
 															type="button"
