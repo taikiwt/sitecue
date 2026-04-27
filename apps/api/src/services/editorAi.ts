@@ -23,9 +23,9 @@ export const generateReview = async (
 				type: {
 					type: SchemaType.STRING,
 					format: "enum",
-					enum: ["info", "alert", "idea"],
+					enum: ["alert", "idea"],
 					description:
-						"Categorize as 'info' (objective/structural), 'alert' (warnings/flaws), or 'idea' (new perspectives).",
+						"Categorize as 'alert' (warnings/flaws/critiques) or 'idea' (new perspectives/extensions).",
 				},
 				content: {
 					type: SchemaType.STRING,
@@ -45,7 +45,7 @@ export const generateReview = async (
 
 	const responseText = result.response.text();
 	return JSON.parse(responseText) as Array<{
-		type: "info" | "alert" | "idea";
+		type: "alert" | "idea";
 		content: string;
 	}>;
 };

@@ -1,10 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const checkAndConsumeQuota = async (
+export const getQuotaStatus = async (
 	supabaseUrl: string,
 	supabaseAnonKey: string,
 	authHeader: string,
-): Promise<{ allowed: boolean; reason?: string; plan?: string }> => {
+): Promise<{
+	allowed: boolean;
+	reason?: string;
+	plan?: string;
+	userId?: string;
+	currentCount?: number;
+	newResetAt?: string;
+}> => {
 	// ユーザーの権限（RLS）でSupabaseクライアントを作成
 	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		global: { headers: { Authorization: authHeader } },
@@ -49,19 +56,39 @@ export const checkAndConsumeQuota = async (
 		};
 	}
 
-	// カウントアップとリセット日時の更新
+	return {
+		allowed: true,
+		plan: profile.plan,
+		userId: user.id,
+		currentCount,
+		newResetAt,
+	};
+};
+
+/**
+ * AI利用回数をインクリメントする（API通信成功後に呼び出す）
+ */
+export const consumeQuota = async (
+	supabaseUrl: string,
+	supabaseAnonKey: string,
+	authHeader: string,
+	userId: string,
+	currentCount: number,
+	newResetAt: string,
+): Promise<void> => {
+	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+		global: { headers: { Authorization: authHeader } },
+	});
+
 	const { error: updateError } = await supabase
 		.from("sitecue_profiles")
 		.update({
 			ai_usage_count: currentCount + 1,
 			ai_usage_reset_at: newResetAt,
 		})
-		.eq("id", user.id);
+		.eq("id", userId);
 
 	if (updateError) {
-		console.error("Quota update error:", updateError);
-		return { allowed: false, reason: "Failed to update quota" };
+		console.error("Failed to update AI usage count:", updateError);
 	}
-
-	return { allowed: true, plan: profile.plan };
 };

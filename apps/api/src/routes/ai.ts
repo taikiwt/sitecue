@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { weaveDocument } from "../services/ai";
 import { generateHint, generateReview } from "../services/editorAi";
-import { checkAndConsumeQuota } from "../services/quota";
+import { consumeQuota, getQuotaStatus } from "../services/quota";
 import type { Bindings, Variables } from "../types";
 
 const ai = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -14,7 +14,7 @@ ai.post("/weave", async (c) => {
 	if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
 
 	// 🌟 AI Weave実行前のQuotaチェック
-	const quota = await checkAndConsumeQuota(
+	const quota = await getQuotaStatus(
 		c.env.SUPABASE_URL,
 		c.env.SUPABASE_ANON_KEY,
 		authHeader,
@@ -35,6 +35,18 @@ ai.post("/weave", async (c) => {
 
 		const result = await weaveDocument(c.env, authHeader, body);
 
+		// ⭐️ 通信成功後にQuotaを消費
+		if (quota.userId && quota.currentCount !== undefined && quota.newResetAt) {
+			await consumeQuota(
+				c.env.SUPABASE_URL,
+				c.env.SUPABASE_ANON_KEY,
+				authHeader,
+				quota.userId,
+				quota.currentCount,
+				quota.newResetAt,
+			);
+		}
+
 		return c.json({ result });
 	} catch (err: unknown) {
 		const error = err as Error;
@@ -51,7 +63,7 @@ ai.post("/review", async (c) => {
 	if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
 
 	// 🌟 AI Review実行前のQuotaチェック
-	const quota = await checkAndConsumeQuota(
+	const quota = await getQuotaStatus(
 		c.env.SUPABASE_URL,
 		c.env.SUPABASE_ANON_KEY,
 		authHeader,
@@ -80,6 +92,19 @@ ai.post("/review", async (c) => {
 			modelName,
 			content,
 		);
+
+		// ⭐️ 通信成功後にQuotaを消費
+		if (quota.userId && quota.currentCount !== undefined && quota.newResetAt) {
+			await consumeQuota(
+				c.env.SUPABASE_URL,
+				c.env.SUPABASE_ANON_KEY,
+				authHeader,
+				quota.userId,
+				quota.currentCount,
+				quota.newResetAt,
+			);
+		}
+
 		return c.json({ reviews });
 	} catch (e) {
 		const _err = e as Error;

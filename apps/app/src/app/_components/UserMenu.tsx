@@ -5,6 +5,7 @@ import { LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 
 export function UserMenu() {
@@ -12,8 +13,7 @@ export function UserMenu() {
 	const supabase = createClient();
 	const [user, setUser] = useState<SupabaseUser | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const [usageCount, setUsageCount] = useState<number | null>(null);
-	const [plan, setPlan] = useState<"free" | "pro">("free");
+	const { aiUsageCount, plan, setUserData } = useUserStore();
 	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -32,13 +32,15 @@ export function UserMenu() {
 					.single();
 
 				if (data) {
-					setPlan((data.plan as "free" | "pro") || "free");
-					setUsageCount(data.ai_usage_count || 0);
+					setUserData(
+						data.ai_usage_count || 0,
+						(data.plan as "free" | "pro") || "free",
+					);
 				}
 			}
 		};
 		getUserAndProfile();
-	}, [supabase]);
+	}, [supabase, setUserData]);
 
 	// Close menu on click outside or Esc key
 	useEffect(() => {
@@ -109,8 +111,8 @@ export function UserMenu() {
 							AI Usage
 						</p>
 						<p className="text-sm text-action">
-							{usageCount !== null
-								? `${usageCount} / ${plan === "pro" ? 100 : 3}`
+							{aiUsageCount !== null
+								? `${aiUsageCount} / ${plan === "pro" ? 100 : 3}`
 								: "..."}
 							<span className="text-[10px] font-normal text-neutral-400 ml-1">
 								uses
