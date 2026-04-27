@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { Toaster } from "react-hot-toast";
 import { vi } from "vitest";
-import { server } from "../../../vitest.setup";
+import { server } from "../../../../vitest.setup";
 import DraftEditor from "./DraftEditor";
 
 // Mock next/navigation

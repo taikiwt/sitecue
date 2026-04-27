@@ -1,13 +1,38 @@
 /** @vitest-environment jsdom */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import GlobalNewNoteDialog from "./GlobalNewNoteDialog";
+import { GlobalNewNoteDialog } from "./GlobalNewNoteDialog";
 
 // next/navigation のモック (URLパラメータでモーダルを開いた状態を再現)
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
 	useSearchParams: () =>
 		new URLSearchParams("globalNew=note&exact=https://example.com/page"),
+}));
+
+// useCreateNote のモック
+vi.mock("@/hooks/useNotesQuery", () => ({
+	useCreateNote: vi.fn(() => ({
+		mutateAsync: vi.fn(),
+		isLoading: false,
+	})),
+}));
+
+// NotesEditor のモック (内部で複雑なことが行われるのを防ぐ)
+vi.mock("@/components/editor/NotesEditor", () => ({
+	NotesEditor: ({
+		value,
+		onChange,
+	}: {
+		value: string;
+		onChange: (v: string) => void;
+	}) => (
+		<textarea
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			data-testid="mock-editor"
+		/>
+	),
 }));
 
 describe("GlobalNewNoteDialog UI Verification", () => {

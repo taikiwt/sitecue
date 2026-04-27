@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
-import type { Note } from "../../../../../../types/app.ts";
+import type { Note } from "../../../../../../../types/app.ts";
 
 export default function ReadOnlyNoteCard({ note }: { note: Note }) {
 	const [isExpanded, setIsExpanded] = useState(false);

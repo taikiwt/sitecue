@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateTemplate } from "@/hooks/useTemplatesQuery";
-import type { Template } from "../../../../../types/app";
+import type { Template } from "../../../../../../types/app";
 
 interface SaveAsTemplateDialogProps {
 	isOpen: boolean;

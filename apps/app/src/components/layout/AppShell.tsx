@@ -3,7 +3,7 @@
 import { Menu, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-
+import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
 import {
 	Sheet,
@@ -17,27 +17,20 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+	const pathname = usePathname();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-	const pathname = usePathname();
 
-	// Close mobile menu on route change
-	useEffect(() => {
-		if (pathname) {
-			setIsMobileMenuOpen(false);
-		}
-	}, [pathname]);
 
 	return (
-		<div className="flex h-screen w-full overflow-hidden bg-base-bg">
+		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
 			{/* PC Sidebar */}
 			<aside
-				className={`hidden md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out bg-base-surface ${
-					isSidebarOpen
+				className={`hidden md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out bg-base-surface ${isSidebarOpen
 						? "w-72 border-r border-base-border"
 						: "w-0 border-r-0 opacity-0"
-				}`}
+					}`}
 			>
 				<div className="w-72 h-full">
 					<Suspense fallback={null}>
@@ -46,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</div>
 			</aside>
 
-			{/* Mobile Sidebar (Sheet / Drawer) */}
+			{/* Mobile Menu */}
 			<Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
 				<SheetContent side="left" className="p-0 w-72">
 					<SheetHeader className="sr-only">
@@ -61,9 +54,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</SheetContent>
 			</Sheet>
 
-			{/* Main Content Area */}
 			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-				{/* PC用 Floating Open Button (アニメーション対応) */}
+				{/* PC Toggle Button */}
 				<Button
 					variant="ghost"
 					size="icon"
@@ -72,14 +64,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					className={cn(
 						"hidden md:flex absolute top-[14px] left-4 z-50 text-neutral-500 hover:text-neutral-900 transition-all duration-300 cursor-pointer",
 						isSidebarOpen
-							? "opacity-0 -translate-x-4 pointer-events-none scale-95" // 開いている時は左にズレながら消える
-							: "opacity-100 translate-x-0 pointer-events-auto delay-[200ms] scale-100", // 閉じた"後"にフワッと現れる
+							? "opacity-0 -translate-x-4 pointer-events-none scale-95"
+							: "opacity-100 translate-x-0 pointer-events-auto delay-[200ms] scale-100",
 					)}
 				>
 					<PanelLeftOpen className="w-5 h-5" aria-hidden="true" />
 				</Button>
 
-				{/* Mobile Header */}
+				{/* Mobile Toggle Header */}
 				<header className="md:hidden h-12 flex items-center px-4 shrink-0 bg-transparent absolute top-0 left-0 z-10">
 					<Button
 						variant="ghost"
@@ -91,13 +83,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 					</Button>
 				</header>
 
-				{/* Page Content */}
+				{/* Content Area */}
 				<div
 					className={`flex-1 overflow-y-auto relative flex flex-col ${isSidebarOpen ? "" : "md:pt-0"} pt-12 md:pt-0`}
 				>
 					{children}
 				</div>
 			</main>
+
+			{/* Global Dialog */}
+			<Suspense fallback={null}>
+				<GlobalNewNoteDialog />
+			</Suspense>
 		</div>
 	);
 }

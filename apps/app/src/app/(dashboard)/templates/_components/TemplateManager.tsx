@@ -17,7 +17,7 @@ import {
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import type { Template } from "../../../../../../types/app";
+import type { Template } from "../../../../../../../types/app";
 
 export function TemplateManager({
 	initialTemplates,
@@ -141,7 +141,7 @@ export function TemplateManager({
 				<div className="p-4">
 					<Link
 						href="/templates?id=new"
-						className="flex items-center justify-center gap-2 w-full bg-action text-action-text py-2 rounded-lg text-sm font-bold hover:bg-action-hover transition-colors"
+						className="flex items-center justify-center gap-2 w-full border border-dashed border-base-border bg-transparent text-neutral-500 py-2 rounded-lg text-sm font-bold hover:text-action hover:border-action transition-colors"
 					>
 						<Plus className="w-4 h-4" aria-hidden="true" /> New Template
 					</Link>

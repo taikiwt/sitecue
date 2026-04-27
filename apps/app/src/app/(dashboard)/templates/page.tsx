@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import type { Template } from "../../../../../types/app";
+import type { Template } from "../../../../../../types/app";
 import { TemplateManager } from "./_components/TemplateManager";
 
 export default async function TemplatesPage({

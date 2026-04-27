@@ -59,22 +59,5 @@ export async function updateSession(request: NextRequest) {
 		return NextResponse.redirect(redirectUrl);
 	}
 
-	if (user && request.nextUrl.pathname.startsWith("/login")) {
-		// logged in user should not see login page
-		let baseUrl = request.url;
-		const host =
-			request.headers.get("x-forwarded-host") || request.headers.get("host");
-		if (host) {
-			const protocol = request.headers.get("x-forwarded-proto") || "http";
-			baseUrl = `${protocol}://${host}`;
-		}
-
-		const redirectUrl = new URL("/", baseUrl);
-		if (redirectUrl.hostname === "localhost") {
-			redirectUrl.hostname = "127.0.0.1";
-		}
-		return NextResponse.redirect(redirectUrl);
-	}
-
 	return supabaseResponse;
 }

@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
-import { CustomLink } from "@/components/ui/custom-link";
 import {
 	Dialog,
 	DialogContent,
@@ -38,6 +37,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
+import { HoverRevealLink } from "@/components/ui/hover-reveal-link";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
@@ -539,13 +539,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						)}
 
 						{!note && draft && (
-							<CustomLink
+							<HoverRevealLink
 								href={`/studio/${draft.id}`}
-								className="flex items-center gap-1.5 px-3 py-1.5 bg-action text-action-text hover:bg-action-hover rounded-md text-sm font-medium shadow-sm transition-colors cursor-pointer"
-							>
-								<Pencil className="size-3.5" aria-hidden="true" />
-								Edit in Studio
-							</CustomLink>
+								icon={<Pencil aria-hidden="true" />}
+								text="Edit in Studio"
+								className="bg-action text-action-text hover:bg-action-hover ml-1"
+							/>
 						)}
 						<div className="flex gap-1 ml-2">
 							{note && (
