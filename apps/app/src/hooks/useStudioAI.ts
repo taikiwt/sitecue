@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 import type { Note, Template } from "../../../../types/app";
 
@@ -55,6 +56,9 @@ export function useStudioAI() {
 				throw new Error(errData.error || "Failed to weave");
 			}
 
+			// Increment AI usage count immediately on success
+			useUserStore.getState().incrementAiUsage();
+
 			const data = await response.json();
 			return { newContent: data.result };
 		} catch (error) {
@@ -105,6 +109,10 @@ export function useStudioAI() {
 				}
 				throw new Error("API Error");
 			}
+
+			// Increment AI usage count immediately on success
+			useUserStore.getState().incrementAiUsage();
+
 			const data = await res.json();
 
 			// biome-ignore lint/suspicious/noExplicitAny: AI API response type
