@@ -186,7 +186,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isInboxActive
 								? "bg-base-bg text-action shadow-sm"
-								: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
+								: "text-gray-600 hover:bg-base-bg hover:text-action"
 						}`}
 					>
 						<Inbox className="w-4 h-4" aria-hidden="true" />
@@ -204,7 +204,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isDraftsActive
 								? "bg-base-bg text-action shadow-sm"
-								: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
+								: "text-gray-600 hover:bg-base-bg hover:text-action"
 						}`}
 					>
 						<PenSquare className="w-4 h-4" aria-hidden="true" />
@@ -222,7 +222,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					<button
 						type="button"
 						onClick={() => setIsDomainsOpen(!isDomainsOpen)}
-						className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg/50 hover:text-action rounded-md transition-colors cursor-pointer group"
+						className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg hover:text-action rounded-md transition-colors cursor-pointer group"
 					>
 						<div className="flex items-center gap-2">
 							<Globe className="w-4 h-4" aria-hidden="true" />
@@ -333,8 +333,8 @@ function DomainAccordionItem({
 				aria-expanded={effectiveIsOpen}
 				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
 					isUnderThisDomain && !currentExact
-						? "bg-base-bg text-action font-medium shadow-sm"
-						: "text-gray-600 hover:bg-base-bg/50 hover:text-action"
+						? "text-action font-medium"
+						: "text-gray-600 hover:bg-base-bg hover:text-action"
 				}`}
 			>
 				<div className="flex items-center gap-2 overflow-hidden">
@@ -373,7 +373,7 @@ function DomainAccordionItem({
 						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 							isUnderThisDomain && !currentExact
 								? "bg-base-bg text-action font-medium shadow-sm"
-								: "text-gray-500 hover:bg-base-bg/50 hover:text-action"
+								: "text-gray-500 hover:bg-base-bg hover:text-action"
 						}`}
 					>
 						<Globe
@@ -410,7 +410,7 @@ function DomainAccordionItem({
 								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 									isActive
 										? "bg-base-bg text-action font-medium shadow-sm"
-										: "text-gray-500 hover:bg-base-bg/50 hover:text-action"
+										: "text-gray-500 hover:bg-base-bg hover:text-action"
 								}`}
 								title={url}
 							>

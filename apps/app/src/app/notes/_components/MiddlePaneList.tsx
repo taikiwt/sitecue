@@ -19,6 +19,7 @@ import {
 	ArrowLeft,
 	Check,
 	Copy,
+	ClipboardCopy,
 	FileJson,
 	FileText,
 	Inbox,
@@ -315,7 +316,7 @@ export function MiddlePaneList(props: Props) {
 												<Copy className="w-4 h-4" aria-hidden="true" />
 											}
 											hoverIcon={
-												<Check className="w-4 h-4" aria-hidden="true" />
+												<ClipboardCopy className="w-4 h-4" aria-hidden="true" />
 											}
 											className={cn(
 												"transition-colors cursor-pointer",
