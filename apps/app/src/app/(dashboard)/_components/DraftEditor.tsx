@@ -31,7 +31,7 @@ import { useStudioAI } from "@/hooks/useStudioAI";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
-import type { Draft, Note, Template } from "../../../../../types/app.ts";
+import type { Draft, Note, Template } from "../../../../../../types/app.ts";
 import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";

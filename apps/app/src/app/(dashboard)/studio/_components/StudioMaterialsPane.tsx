@@ -1,6 +1,6 @@
 "use client";
 
-import type { Note } from "../../../../../../types/app.ts";
+import type { Note } from "../../../../../../../types/app.ts";
 import ReadOnlyNoteCard from "./ReadOnlyNoteCard";
 import StudioSearchInput from "./StudioSearchInput";
 

@@ -1,5 +1,5 @@
-import type { Note as AppNote } from "../../../../../types/app";
-import type { Tables } from "../../../../../types/supabase";
+import type { Note as AppNote } from "../../../../../../types/app";
+import type { Tables } from "../../../../../../types/supabase";
 
 export type Note = Omit<AppNote, "content"> & {
 	content?: string;

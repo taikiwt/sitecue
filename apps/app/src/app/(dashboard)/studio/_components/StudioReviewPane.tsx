@@ -28,7 +28,7 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { Note } from "../../../../../../types/app.ts";
+import type { Note } from "../../../../../../../types/app.ts";
 import NoteEditor from "../../_components/NoteEditor";
 import NoteCard from "./NoteCard";
 

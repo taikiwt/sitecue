@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Note } from "@/app/notes/types";
+import type { Note } from "@/app/(dashboard)/notes/types";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];

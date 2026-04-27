@@ -13,7 +13,7 @@ import {
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { cn } from "@/lib/utils";
-import type { Note } from "../../../../../../types/app.ts";
+import type { Note } from "../../../../../../../types/app.ts";
 
 interface NoteCardProps {
 	note: Note;

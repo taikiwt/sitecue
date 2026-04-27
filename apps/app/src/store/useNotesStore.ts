@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Draft, GroupedNotes, Note } from "@/app/notes/types";
+import type { Draft, GroupedNotes, Note } from "@/app/(dashboard)/notes/types";
 import { normalizeUrlForGrouping } from "@/utils/url";
 
 interface NotesState {

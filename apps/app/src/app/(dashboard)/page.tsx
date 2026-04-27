@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { createClient } from "@/utils/supabase/server";
-import type { PinnedSite } from "../../../../types/app";
+import type { PinnedSite } from "../../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
 
 export default async function LaunchpadPage() {

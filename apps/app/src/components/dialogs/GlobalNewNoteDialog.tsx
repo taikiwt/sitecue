@@ -25,7 +25,7 @@ import { useCreateNote } from "@/hooks/useNotesQuery";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
-export default function GlobalNewNoteDialog() {
+export function GlobalNewNoteDialog() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const isOpen = searchParams.get("globalNew") === "note";

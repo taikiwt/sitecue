@@ -35,11 +35,8 @@ export const metadata: Metadata = {
 	description: "The simplest context-aware notepad for your browser.",
 };
 
-import { Suspense } from "react";
 import { Toaster } from "react-hot-toast";
-import { AppShell } from "@/components/layout/AppShell";
 import { QueryProvider } from "@/providers/QueryProvider";
-import GlobalNewNoteDialog from "./_components/GlobalNewNoteDialog";
 
 export default function RootLayout({
 	children,
@@ -52,16 +49,11 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} ${hackFont.variable} antialiased`}
 			>
 				<QueryProvider>
+					{children}
 					<Toaster
 						position="top-center"
 						toastOptions={{ duration: 4000, style: { fontSize: "14px" } }}
 					/>
-					<Suspense fallback={null}>
-						<GlobalNewNoteDialog />
-					</Suspense>
-					<Suspense fallback={null}>
-						<AppShell>{children}</AppShell>
-					</Suspense>
 				</QueryProvider>
 			</body>
 		</html>

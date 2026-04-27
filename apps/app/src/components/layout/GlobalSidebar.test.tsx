@@ -1,7 +1,9 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useMemo, useState, useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { useNotesStore } from "@/store/useNotesStore";
@@ -17,6 +19,13 @@ vi.mock("next/navigation", () => ({
 			>,
 	),
 	useRouter: vi.fn(() => ({ push: vi.fn() })),
+}));
+
+// Mock react-query
+vi.mock("@tanstack/react-query", () => ({
+	useQueryClient: vi.fn(() => ({
+		invalidateQueries: vi.fn(),
+	})),
 }));
 
 // Mock Hooks
@@ -41,7 +50,7 @@ vi.mock("@/store/useNotesStore", async () => {
 });
 
 // Mock UserMenu to avoid Supabase calls
-vi.mock("@/app/_components/UserMenu", () => ({
+vi.mock("@/app/(dashboard)/_components/UserMenu", () => ({
 	UserMenu: () => <div data-testid="user-menu" />,
 }));
 
@@ -116,5 +125,30 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		// Inbox should be active
 		const inboxLink = screen.getByText("Inbox").closest("a");
 		expect(inboxLink?.className).toContain("bg-base-bg text-action shadow-sm");
+	});
+
+	it("should invalidate notes and drafts queries when pathname is present", () => {
+		const mockInvalidateQueries = vi.fn();
+		vi.mocked(useQueryClient).mockReturnValue({
+			invalidateQueries: mockInvalidateQueries,
+		} as any);
+
+		vi.mocked(usePathname).mockReturnValue("/notes");
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as any);
+		vi.mocked(useFetchDrafts).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as any);
+		vi.mocked(useNotesStore).mockReturnValue({
+			searchResults: null,
+		} as any);
+
+		render(<GlobalSidebar />);
+
+		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notes"] });
+		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["drafts"] });
 	});
 });

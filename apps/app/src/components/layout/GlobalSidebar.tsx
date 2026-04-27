@@ -14,10 +14,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-import { UserMenu } from "@/app/_components/UserMenu";
-import SearchInput from "@/app/notes/_components/SearchInput";
-import type { DomainGroup, Note } from "@/app/notes/types";
+import { useMemo, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
+import SearchInput from "@/app/(dashboard)/notes/_components/SearchInput";
+import type { DomainGroup, Note } from "@/app/(dashboard)/notes/types";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
@@ -33,14 +34,26 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const pathname = usePathname();
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const queryClient = useQueryClient();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
 	const { searchResults } = useNotesStore();
+
+	// 画面遷移（戻る/進むを含む）が発生した際に、Next.jsのフリーズを破り
+	// バックグラウンドで最新データを再取得してキャッシュを上書きする
+	useEffect(() => {
+		if (pathname) {
+			queryClient.invalidateQueries({ queryKey: ["notes"] });
+			queryClient.invalidateQueries({ queryKey: ["drafts"] });
+		}
+	}, [pathname, queryClient]);
 
 	const groupedNotes = useMemo(() => {
 		if (isNotesLoading || isDraftsLoading) return null;
 		return groupNotes(notes, drafts);
 	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
+
+	const safeGroupedNotes = groupedNotes || { inbox: [], drafts: [], domains: {} };
 
 	const isDataReady = !isNotesLoading && !isDraftsLoading;
 
@@ -82,8 +95,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const isSearchActive = !!qParam || !!tagsParam;
 
 	const filteredDomains = useMemo(() => {
-		if (!groupedNotes) return [];
-		return Object.entries(groupedNotes.domains).filter(([domain, data]) => {
+		return Object.entries(safeGroupedNotes.domains).filter(([domain, data]) => {
 			if (!isSearchActive) return true;
 
 			// 1. URL・ドメイン名によるマッチ
@@ -112,7 +124,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 
 			return false;
 		});
-	}, [groupedNotes, normalizedQuery, searchResults, isSearchActive]);
+	}, [safeGroupedNotes, normalizedQuery, searchResults, isSearchActive]);
 
 	// Accordion logic
 	const isAnyDomainActive = !!(currentDomain && currentDomain !== "inbox");
@@ -122,11 +134,11 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	);
 	const effectiveIsDomainsOpen = isDomainsOpen || shouldForceOpenDomains;
 
-	if (!isDataReady || !groupedNotes) return null;
 
 	return (
-		<div className="flex flex-col h-full bg-base-surface w-full overflow-hidden border-r border-base-border">
-			<div className="p-4 border-b border-base-border bg-base-bg">
+		<div className="flex flex-col h-full w-full bg-base-surface border-r border-base-border overflow-hidden">
+			{/* 1. Header Area: Fixed at top */}
+			<div className="shrink-0 p-4 border-b border-base-border bg-base-bg">
 				<div className="flex items-center justify-between mb-6">
 					<Link
 						href="/"
@@ -177,23 +189,22 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				</Button>
 			</div>
 
-			<nav className="flex-1 flex flex-col py-4 overflow-hidden">
-				{/* Fixed Area: Inbox and Drafts */}
-				<div className="shrink-0 px-2 space-y-1 mb-2">
+			{/* 2. Middle Area: Scrollable List (Always mounted to prevent layout shift/freeze) */}
+			<div className="flex-1 overflow-y-auto p-2">
+				<div className="space-y-1">
 					{/* Inbox */}
 					<Link
 						href="/notes?domain=inbox"
-						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-							isInboxActive
+						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isInboxActive
 								? "bg-base-bg text-action shadow-sm"
 								: "text-gray-600 hover:bg-base-bg hover:text-action"
-						}`}
+							}`}
 					>
 						<Inbox className="w-4 h-4" aria-hidden="true" />
 						<span>Inbox</span>
-						{groupedNotes.inbox.length > 0 && (
+						{safeGroupedNotes.inbox.length > 0 && (
 							<span className="ml-auto text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
-								{groupedNotes.inbox.length}
+								{safeGroupedNotes.inbox.length}
 							</span>
 						)}
 					</Link>
@@ -201,73 +212,73 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					{/* Drafts */}
 					<Link
 						href="/notes?view=drafts"
-						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-							isDraftsActive
+						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDraftsActive
 								? "bg-base-bg text-action shadow-sm"
 								: "text-gray-600 hover:bg-base-bg hover:text-action"
-						}`}
+							}`}
 					>
 						<PenSquare className="w-4 h-4" aria-hidden="true" />
 						<span>Drafts</span>
-						{groupedNotes.drafts.length > 0 && (
+						{safeGroupedNotes.drafts.length > 0 && (
 							<span className="ml-auto text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
-								{groupedNotes.drafts.length}
+								{safeGroupedNotes.drafts.length}
 							</span>
 						)}
 					</Link>
+
+					{/* Domains Accordion */}
+					<div className="mt-2">
+						<button
+							type="button"
+							onClick={() => setIsDomainsOpen(!isDomainsOpen)}
+							className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg hover:text-action rounded-md transition-colors cursor-pointer group"
+						>
+							<div className="flex items-center gap-2">
+								<Globe className="w-4 h-4" aria-hidden="true" />
+								<span>Domains</span>
+							</div>
+							<div className="flex items-center gap-1">
+								<span className="text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
+									{Object.keys(safeGroupedNotes.domains).length}
+								</span>
+								{effectiveIsDomainsOpen ? (
+									<ChevronDown
+										className="w-4 h-4 text-gray-400 group-hover:text-action"
+										aria-hidden="true"
+									/>
+								) : (
+									<ChevronRight
+										className="w-4 h-4 text-gray-400 group-hover:text-action"
+										aria-hidden="true"
+									/>
+								)}
+							</div>
+						</button>
+
+						{/* DOMAINS Child List */}
+						{effectiveIsDomainsOpen && (
+							<div className="mt-1 space-y-1">
+								{filteredDomains.map(([domain, data]) => (
+									<DomainAccordionItem
+										key={domain}
+										domainName={domain}
+										domainData={data}
+										normalizedQuery={normalizedQuery}
+										currentDomain={currentDomain}
+										currentExact={currentExact}
+										createHref={createHref}
+										searchResults={searchResults}
+										isSearchActive={isSearchActive}
+									/>
+								))}
+							</div>
+						)}
+					</div>
 				</div>
+			</div>
 
-				{/* Independent Scroll Area: DOMAINS Accordion */}
-				<div className="flex flex-col flex-1 overflow-hidden px-2">
-					<button
-						type="button"
-						onClick={() => setIsDomainsOpen(!isDomainsOpen)}
-						className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg hover:text-action rounded-md transition-colors cursor-pointer group"
-					>
-						<div className="flex items-center gap-2">
-							<Globe className="w-4 h-4" aria-hidden="true" />
-							<span>Domains</span>
-						</div>
-						<div className="flex items-center gap-1">
-							<span className="text-xs bg-base-surface text-gray-500 px-1.5 py-0.5 rounded-full border border-base-border">
-								{Object.keys(groupedNotes.domains).length}
-							</span>
-							{effectiveIsDomainsOpen ? (
-								<ChevronDown
-									className="w-4 h-4 text-gray-400 group-hover:text-action"
-									aria-hidden="true"
-								/>
-							) : (
-								<ChevronRight
-									className="w-4 h-4 text-gray-400 group-hover:text-action"
-									aria-hidden="true"
-								/>
-							)}
-						</div>
-					</button>
-
-					{/* DOMAINS Child List */}
-					{effectiveIsDomainsOpen && (
-						<div className="flex-1 overflow-y-auto mt-1 pr-1 space-y-1">
-							{filteredDomains.map(([domain, data]) => (
-								<DomainAccordionItem
-									key={domain}
-									domainName={domain}
-									domainData={data}
-									normalizedQuery={normalizedQuery}
-									currentDomain={currentDomain}
-									currentExact={currentExact}
-									createHref={createHref}
-									searchResults={searchResults}
-									isSearchActive={isSearchActive}
-								/>
-							))}
-						</div>
-					)}
-				</div>
-			</nav>
-
-			<div className="p-4 border-t border-base-border bg-base-bg">
+			{/* 3. Footer Area: Fixed at bottom */}
+			<div className="shrink-0 p-4 border-t border-base-border mt-auto bg-base-surface">
 				<UserMenu />
 			</div>
 		</div>
@@ -331,11 +342,10 @@ function DomainAccordionItem({
 				onClick={() => handleOpenChange(!isOpen)}
 				aria-label={`${effectiveIsOpen ? "Close" : "Open"} accordion for ${domainName}`}
 				aria-expanded={effectiveIsOpen}
-				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
-					isUnderThisDomain && !currentExact
+				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${isUnderThisDomain && !currentExact
 						? "text-action font-medium"
 						: "text-gray-600 hover:bg-base-bg hover:text-action"
-				}`}
+					}`}
 			>
 				<div className="flex items-center gap-2 overflow-hidden">
 					{effectiveIsOpen ? (
@@ -370,11 +380,10 @@ function DomainAccordionItem({
 				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-base-border pl-3">
 					<Link
 						href={createHref(domainName)}
-						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
-							isUnderThisDomain && !currentExact
+						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${isUnderThisDomain && !currentExact
 								? "bg-base-bg text-action font-medium shadow-sm"
 								: "text-gray-500 hover:bg-base-bg hover:text-action"
-						}`}
+							}`}
 					>
 						<Globe
 							className="w-3.5 h-3.5 opacity-60 shrink-0"
@@ -407,11 +416,10 @@ function DomainAccordionItem({
 							<Link
 								key={url}
 								href={createHref(domainName, url)}
-								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
-									isActive
+								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${isActive
 										? "bg-base-bg text-action font-medium shadow-sm"
 										: "text-gray-500 hover:bg-base-bg hover:text-action"
-								}`}
+									}`}
 								title={url}
 							>
 								<FileText
