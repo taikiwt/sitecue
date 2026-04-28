@@ -27,3 +27,8 @@ description: アニメーション共通ボタン（HoverRevealButton, HoverSwap
 - **[DO] レイアウトシフトの防止:** `HoverRevealButton` など横幅が変動する要素を配置する際は、Flexコンテナ等で隣接要素がガタつかないようレイアウトを保護すること。
 - **[DO] アクセシビリティ:** 装飾目的のSVGアイコンには必ず `aria-hidden="true"` を付与すること。
 - **[DON'T] 過剰な装飾の禁止:** スライド等のアニメーション自体が十分なフィードバックとなるため、ホバー時の背景色変化などは無効化（`hover:bg-transparent`）し、情報の衝突を防ぐこと。
+
+## 4. Touch-Safe Implementation (スマホでのホバー張り付き防止)
+- **カスタムバリアントの必須使用**: Tailwindのデフォルトの `hover:` や `group-hover:` は、タッチデバイス（スマホやタブレット）でタップした後に背景色などのスタイルが張り付く（Sticky Hover）原因となり、UXを著しく損ねる。そのため、アプリ全体のアクティブ要素には、必ず `globals.css` で定義されたタッチセーフなカスタムバリアント（`hover-safe:`, `group-hover-safe:`, `group-card-hover-safe:`）を使用すること。
+- **呼び出し側のバリアント統一**: 共通コンポーネント（`HoverRevealButton` 等）を呼び出す親側でホバー時の色を上書きする際も、必ず `hover-safe:bg-action` のように内部と同じバリアントを用いて「世界線（優先度）」を合わせること。通常の `hover:` を混ぜると内部のスタイルと競合し意図せぬ表示崩れを招く。
+- **タッチデバイス向けフォールバック**: PCではホバー時のみ出現する要素（ドラッグハンドルや操作アイコンなど）は、スマホではタップ不可能な隠し要素になってしまう。そのため `opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100` のように、`pointer-fine:` バリアントを組み合わせて「タッチデバイスでは常時表示する」等の安全なフォールバックを必ず実装すること。

@@ -21,7 +21,7 @@ export function AnimatedIconButton({
 			type={type}
 			variant="ghost"
 			size="icon"
-			className={`relative rounded-full transition-all duration-200 hover:scale-110 active:scale-95 ${className || ""}`}
+			className={`relative rounded-full transition-all duration-200 hover-safe:scale-110 active:scale-95 ${className || ""}`}
 			{...props}
 		>
 			<div className="relative flex items-center justify-center">

@@ -59,22 +59,37 @@ export function HoverSwapButton({
 			variant="ghost"
 			size="icon"
 			className={`group relative flex items-center justify-center overflow-hidden ${className || ""}`}
-			data-success={isSuccess}
 			onClick={handleClick}
 			{...props}
 		>
 			{/* 1. 上側（デフォルト）のアイコン */}
-			<span className="absolute transition-all duration-300 ease-in-out opacity-100 group-hover:-translate-y-full group-hover:opacity-0 group-data-[success=true]:-translate-y-full group-data-[success=true]:opacity-0">
+			<span
+				className={`absolute transition-all duration-300 ease-in-out ${
+					isSuccess
+						? "-translate-y-full opacity-0"
+						: "opacity-100 group-hover-safe:-translate-y-full group-hover-safe:opacity-0"
+				}`}
+			>
 				{defaultIcon}
 			</span>
 
 			{/* 2. 下側（ホバー時）のアイコン */}
-			<span className="absolute transition-all duration-300 ease-in-out opacity-0 translate-y-full group-hover:translate-y-0 group-hover:opacity-100 group-data-[success=true]:-translate-y-full group-data-[success=true]:opacity-0">
+			<span
+				className={`absolute transition-all duration-300 ease-in-out ${
+					isSuccess
+						? "-translate-y-full opacity-0"
+						: "translate-y-full opacity-0 group-hover-safe:translate-y-0 group-hover-safe:opacity-100"
+				}`}
+			>
 				{hoverIcon}
 			</span>
 
 			{/* 3. クリック時（完了時）のアイコン */}
-			<span className="absolute transition-all duration-300 ease-in-out opacity-0 translate-y-full group-data-[success=true]:translate-y-0 group-data-[success=true]:opacity-100">
+			<span
+				className={`absolute transition-all duration-300 ease-in-out ${
+					isSuccess ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+				}`}
+			>
 				{successIcon}
 			</span>
 		</Button>

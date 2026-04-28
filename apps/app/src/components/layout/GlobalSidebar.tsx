@@ -152,7 +152,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 							alt="sitecue logo"
 							width={28}
 							height={28}
-							className="drop-shadow-sm transition-transform group-hover:scale-105"
+							className="drop-shadow-sm transition-transform group-hover-safe:scale-105"
 						/>
 						<span className="text-xl font-bold tracking-tight text-action">
 							sitecue
@@ -163,7 +163,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 							variant="ghost"
 							size="icon"
 							onClick={onClose}
-							className="text-neutral-400 hover:text-neutral-900 cursor-pointer hidden md:flex"
+							className="text-neutral-400 hover-safe:text-neutral-900 cursor-pointer hidden md:flex"
 							title="Close Sidebar"
 						>
 							<PanelLeftClose className="w-5 h-5" aria-hidden="true" />
@@ -179,7 +179,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				<Button
 					type="button"
 					variant="default"
-					className="group flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text cursor-pointer transition-all hover:bg-primary hover:scale-[1.06] active:scale-[0.96]"
+					className="group flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text cursor-pointer transition-all hover-safe:bg-primary hover-safe:scale-[1.06] active:scale-[0.96]"
 					onClick={() => {
 						const currentPath = pathname;
 						const params = new URLSearchParams(searchParams.toString());
@@ -188,7 +188,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					}}
 				>
 					<Plus
-						className="w-4 h-4 transition-transform group-hover:rotate-90"
+						className="w-4 h-4 transition-transform group-hover-safe:rotate-90"
 						aria-hidden="true"
 					/>
 					New Note
@@ -204,7 +204,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isInboxActive
 								? "bg-base-bg text-action shadow-sm"
-								: "text-gray-600 hover:bg-base-bg hover:text-action"
+								: "text-gray-600 hover-safe:bg-base-bg hover-safe:text-action"
 						}`}
 					>
 						<Inbox className="w-4 h-4" aria-hidden="true" />
@@ -222,7 +222,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
 							isDraftsActive
 								? "bg-base-bg text-action shadow-sm"
-								: "text-gray-600 hover:bg-base-bg hover:text-action"
+								: "text-gray-600 hover-safe:bg-base-bg hover-safe:text-action"
 						}`}
 					>
 						<PenSquare className="w-4 h-4" aria-hidden="true" />
@@ -239,7 +239,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						<button
 							type="button"
 							onClick={() => setIsDomainsOpen(!isDomainsOpen)}
-							className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover:bg-base-bg hover:text-action rounded-md transition-colors cursor-pointer group"
+							className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-600 hover-safe:bg-base-bg hover-safe:text-action rounded-md transition-colors cursor-pointer group"
 						>
 							<div className="flex items-center gap-2">
 								<Globe className="w-4 h-4" aria-hidden="true" />
@@ -251,12 +251,12 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 								</span>
 								{effectiveIsDomainsOpen ? (
 									<ChevronDown
-										className="w-4 h-4 text-gray-400 group-hover:text-action"
+										className="w-4 h-4 text-gray-400 group-hover-safe:text-action"
 										aria-hidden="true"
 									/>
 								) : (
 									<ChevronRight
-										className="w-4 h-4 text-gray-400 group-hover:text-action"
+										className="w-4 h-4 text-gray-400 group-hover-safe:text-action"
 										aria-hidden="true"
 									/>
 								)}
@@ -353,7 +353,7 @@ function DomainAccordionItem({
 				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
 					isUnderThisDomain && !currentExact
 						? "text-action font-medium"
-						: "text-gray-600 hover:bg-base-bg hover:text-action"
+						: "text-gray-600 hover-safe:bg-base-bg hover-safe:text-action"
 				}`}
 			>
 				<div className="flex items-center gap-2 overflow-hidden">
@@ -374,12 +374,12 @@ function DomainAccordionItem({
 				</div>
 				{effectiveIsOpen ? (
 					<ChevronDown
-						className="w-4 h-4 text-gray-400 group-hover:text-action"
+						className="w-4 h-4 text-gray-400 group-hover-safe:text-action"
 						aria-hidden="true"
 					/>
 				) : (
 					<ChevronRight
-						className="w-4 h-4 text-gray-400 group-hover:text-action"
+						className="w-4 h-4 text-gray-400 group-hover-safe:text-action"
 						aria-hidden="true"
 					/>
 				)}
@@ -392,7 +392,7 @@ function DomainAccordionItem({
 						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 							isUnderThisDomain && !currentExact
 								? "bg-base-bg text-action font-medium shadow-sm"
-								: "text-gray-500 hover:bg-base-bg hover:text-action"
+								: "text-gray-500 hover-safe:bg-base-bg hover-safe:text-action"
 						}`}
 					>
 						<Globe
@@ -429,7 +429,7 @@ function DomainAccordionItem({
 								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
 									isActive
 										? "bg-base-bg text-action font-medium shadow-sm"
-										: "text-gray-500 hover:bg-base-bg hover:text-action"
+										: "text-gray-500 hover-safe:bg-base-bg hover-safe:text-action"
 								}`}
 								title={url}
 							>

@@ -28,7 +28,7 @@ export function HoverRevealButton({
 
 	// ButtonとLinkで共有するベースのクラス
 	const sharedClassName = cn(
-		"group flex items-center gap-0 overflow-hidden px-4 hover:bg-transparent dark:hover:bg-transparent",
+		"group flex items-center gap-0 overflow-hidden px-4 hover-safe:bg-transparent dark:hover-safe:bg-transparent",
 		className,
 	);
 
@@ -43,13 +43,13 @@ export function HoverRevealButton({
 	const revealText = (
 		<span
 			// Gridの 0fr -> 1fr トランジションで、中身の自然な幅に合わせて滑らかに展開する
-			className="grid grid-cols-[0fr] group-hover:grid-cols-[1fr] transition-all ease-out group-hover:delay-100"
+			className="grid grid-cols-[0fr] group-hover-safe:grid-cols-[1fr] transition-all ease-out group-hover-safe:delay-100"
 			style={{ transitionDuration: `${duration}ms` }}
 		>
 			<span className="overflow-hidden">
 				{/* truncate を削除し、展開中のチラつきを解消 */}
 				<span
-					className="block max-w-37.5 whitespace-nowrap opacity-0 transition-opacity ease-out group-hover:delay-100 group-hover:opacity-100 pl-2 text-inherit"
+					className="block max-w-37.5 whitespace-nowrap opacity-0 transition-opacity ease-out group-hover-safe:delay-100 group-hover-safe:opacity-100 pl-2 text-inherit"
 					style={{ transitionDuration: `${duration}ms` }}
 				>
 					{text}

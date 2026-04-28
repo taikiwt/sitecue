@@ -91,7 +91,7 @@ export function NoteItem({
 			data-testid="note-item"
 			className={cn(
 				"group/card relative flex items-stretch transition-all duration-400 ease-in-out",
-				isActive ? "bg-base-surface" : "hover:bg-base-surface/50",
+				isActive ? "bg-base-surface" : "hover-safe:bg-base-surface/50",
 				(isResolved || isExiting) && "opacity-50",
 				isExiting && "line-through pointer-events-none",
 			)}
@@ -110,7 +110,7 @@ export function NoteItem({
 						type="button"
 						{...dragHandleProps}
 						style={{ touchAction: "none" }}
-						className="flex items-center justify-center p-1 text-base-border hover:text-action opacity-0 group-hover/card:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+						className="flex items-center justify-center p-1 text-base-border hover-safe:text-action opacity-100 pointer-fine:opacity-0 group-card-hover-safe:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
 						aria-label="Drag to reorder"
 					>
 						<GripVertical className="w-4 h-4" aria-hidden="true" />
