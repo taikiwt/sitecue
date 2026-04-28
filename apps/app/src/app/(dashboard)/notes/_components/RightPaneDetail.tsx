@@ -37,7 +37,6 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
-import { HoverRevealLink } from "@/components/ui/hover-reveal-link";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
@@ -539,11 +538,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						)}
 
 						{!note && draft && (
-							<HoverRevealLink
+							<HoverRevealButton
 								href={`/studio/${draft.id}`}
 								icon={<Pencil aria-hidden="true" />}
 								text="Edit in Studio"
-								className="bg-action text-action-text hover:bg-action-hover ml-1"
+								className="cursor-pointer shadow-sm ml-1 bg-action hover:bg-action text-action-text hover:text-action-text"
 							/>
 						)}
 						<div className="flex gap-1 ml-2">

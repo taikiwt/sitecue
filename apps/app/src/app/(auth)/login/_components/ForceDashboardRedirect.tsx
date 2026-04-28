@@ -1,7 +1,7 @@
 "use client";
 
-import { createClient } from "@/utils/supabase/client";
 import { useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 /**
  * ForceDashboardRedirect
