@@ -295,3 +295,50 @@
     @apply bg-base-surface border border-base-border px-1.5 py-0.5 rounded-md text-sm text-foreground;
   }
 }
+
+/* --- 7. Touch-safe Micro-interactions (Launchpad) --- */
+@layer components {
+  /* 共通のトランジション定義 */
+  .launchpad-transition {
+    @apply transition-all duration-300 ease-out;
+  }
+  .draft-icon {
+    @apply transition-transform duration-300 ease-out;
+  }
+
+  /* ▼▼ 新規追加: translate時のホバー外れ（カクつき）を防止する見えない当たり判定 ▼▼ */
+  .launchpad-card-favorite::after {
+    @apply content-[''] absolute -inset-2 bg-transparent z-[-1];
+  }
+  /* ▲▲ 新規追加 ▲▲ */
+
+  /* ホバー対応かつ精細なポインターを持つデバイス（PC等）のみ適用 */
+  @media (hover: hover) and (pointer: fine) {
+    /* 1. Favorite Sites: 右上への浮き上がりと影の強調 */
+    .launchpad-card-favorite:hover {
+      @apply translate-x-1 -translate-y-1 border-action shadow-sm;
+    }
+    
+    /* 2. Recent Drafts: 右方向へのスムーズなスライド */
+    .launchpad-card-recent:hover {
+      @apply translate-x-1.5 bg-base-surface;
+    }
+    
+    /* 3. Start a Draft: 全体の微拡大 */
+    .launchpad-card-start:hover {
+      @apply scale-[1.02] border-neutral-400;
+    }
+    .launchpad-card-start.border-dashed:hover {
+      @apply bg-base-surface/50;
+    }
+    /* Start a Draft内のアイコンアニメーション */
+    .launchpad-card-start:hover .draft-icon {
+      @apply rotate-12 scale-110;
+    }
+    
+    /* 4. Manage Notes: 落ち着いた沈み込み */
+    .launchpad-card-manage:hover {
+      @apply border-neutral-400 shadow-inner opacity-90;
+    }
+  }
+}

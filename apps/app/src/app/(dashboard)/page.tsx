@@ -111,7 +111,7 @@ export default async function LaunchpadPage() {
 								<Link
 									key={draft.id}
 									href={`/studio/${draft.id}`}
-									className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 transition-colors hover:bg-base-surface -mx-3 px-3 rounded-lg"
+									className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 -mx-3 px-3 rounded-lg launchpad-transition launchpad-card-recent"
 								>
 									<div className="min-w-0 flex-1">
 										<h3 className="text-sm text-action truncate group-hover:text-action-hover">
@@ -155,10 +155,13 @@ export default async function LaunchpadPage() {
 					<div className="grid gap-6 sm:grid-cols-3">
 						<Link
 							href="/studio/new"
-							className="group relative flex flex-col items-start rounded-xl border-2 border-dashed border-base-border bg-transparent p-5 transition-all hover:border-neutral-400 hover:bg-base-surface/50 cursor-pointer"
+							className="group relative flex flex-col items-start rounded-xl border-2 border-dashed border-base-border bg-transparent p-5 cursor-pointer launchpad-transition launchpad-card-start"
 						>
 							<div className="flex items-center gap-2 mb-1">
-								<Plus className="w-4 h-4 text-action" aria-hidden="true" />
+								<Plus
+									className="w-4 h-4 text-action draft-icon"
+									aria-hidden="true"
+								/>
 								<h3 className="text-base text-action group-hover:text-action-hover transition-colors">
 									Blank Canvas
 								</h3>
@@ -172,7 +175,7 @@ export default async function LaunchpadPage() {
 							<Link
 								key={template.id}
 								href={`/studio/new?template_id=${template.id}`}
-								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 transition-all hover:border-neutral-400 cursor-pointer"
+								className="group relative flex flex-col items-start rounded-xl border border-base-border bg-base-surface p-5 cursor-pointer launchpad-transition launchpad-card-start"
 							>
 								<h3 className="mb-1 text-base text-action group-hover:text-action-hover transition-colors">
 									{template.name}
@@ -194,7 +197,7 @@ export default async function LaunchpadPage() {
 				<section className="mb-12">
 					<Link
 						href="/notes"
-						className="group flex w-full items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 transition-all hover:border-neutral-400 cursor-pointer"
+						className="group flex w-full items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 cursor-pointer launchpad-transition launchpad-card-manage"
 					>
 						<div className="flex items-center gap-3">
 							<Library
