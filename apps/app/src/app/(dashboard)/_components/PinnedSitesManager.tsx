@@ -185,7 +185,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								/>
 							</div>
 							<div className="min-w-0">
-								<h3 className="text-sm text-action line-clamp-1 group-hover:underline">
+								<h3 className="text-sm text-action line-clamp-1">
 									{site.title}
 								</h3>
 								<p className="text-[10px] text-neutral-500 truncate">

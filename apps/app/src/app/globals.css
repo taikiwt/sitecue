@@ -306,6 +306,12 @@
     @apply transition-transform duration-300 ease-out;
   }
 
+  /* ▼▼ 新規追加: translate時のホバー外れ（カクつき）を防止する見えない当たり判定 ▼▼ */
+  .launchpad-card-favorite::after {
+    @apply content-[''] absolute -inset-2 bg-transparent z-[-1];
+  }
+  /* ▲▲ 新規追加 ▲▲ */
+
   /* ホバー対応かつ精細なポインターを持つデバイス（PC等）のみ適用 */
   @media (hover: hover) and (pointer: fine) {
     /* 1. Favorite Sites: 右上への浮き上がりと影の強調 */
