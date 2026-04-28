@@ -417,7 +417,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									}
 									className={cn(
 										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
-										isCopying && "text-green-500",
 									)}
 									title="Copy all content"
 								/>

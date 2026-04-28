@@ -179,7 +179,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				<Button
 					type="button"
 					variant="default"
-					className="flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
+					className="group flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text cursor-pointer transition-all hover:bg-primary hover:scale-[1.06] active:scale-[0.96]"
 					onClick={() => {
 						const currentPath = pathname;
 						const params = new URLSearchParams(searchParams.toString());
@@ -187,7 +187,10 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						router.push(`${currentPath}?${params.toString()}`);
 					}}
 				>
-					<Plus className="w-4 h-4" aria-hidden="true" />
+					<Plus
+						className="w-4 h-4 transition-transform group-hover:rotate-90"
+						aria-hidden="true"
+					/>
 					New Note
 				</Button>
 			</div>
