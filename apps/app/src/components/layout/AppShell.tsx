@@ -2,7 +2,7 @@
 
 import { Menu, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,20 +17,20 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-	const pathname = usePathname();
+	const _pathname = usePathname();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
 
 	return (
 		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
 			{/* PC Sidebar */}
 			<aside
-				className={`hidden md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out bg-base-surface ${isSidebarOpen
+				className={`hidden md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out bg-base-surface ${
+					isSidebarOpen
 						? "w-72 border-r border-base-border"
 						: "w-0 border-r-0 opacity-0"
-					}`}
+				}`}
 			>
 				<div className="w-72 h-full">
 					<Suspense fallback={null}>

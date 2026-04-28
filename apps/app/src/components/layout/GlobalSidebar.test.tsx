@@ -1,9 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo, useState, useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { useQueryClient } from "@tanstack/react-query";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { useNotesStore } from "@/store/useNotesStore";
@@ -149,6 +148,8 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		render(<GlobalSidebar />);
 
 		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notes"] });
-		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["drafts"] });
+		expect(mockInvalidateQueries).toHaveBeenCalledWith({
+			queryKey: ["drafts"],
+		});
 	});
 });

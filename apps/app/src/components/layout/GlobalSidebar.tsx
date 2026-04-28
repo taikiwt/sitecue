@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	ChevronDown,
 	ChevronRight,
@@ -14,8 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import SearchInput from "@/app/(dashboard)/notes/_components/SearchInput";
 import type { DomainGroup, Note } from "@/app/(dashboard)/notes/types";
@@ -53,9 +53,13 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 		return groupNotes(notes, drafts);
 	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
-	const safeGroupedNotes = groupedNotes || { inbox: [], drafts: [], domains: {} };
+	const safeGroupedNotes = groupedNotes || {
+		inbox: [],
+		drafts: [],
+		domains: {},
+	};
 
-	const isDataReady = !isNotesLoading && !isDraftsLoading;
+	const _isDataReady = !isNotesLoading && !isDraftsLoading;
 
 	const qParam = searchParams.get("q") || "";
 	const tagsParam = searchParams.get("tags") || "";
@@ -134,7 +138,6 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	);
 	const effectiveIsDomainsOpen = isDomainsOpen || shouldForceOpenDomains;
 
-
 	return (
 		<div className="flex flex-col h-full w-full bg-base-surface border-r border-base-border overflow-hidden">
 			{/* 1. Header Area: Fixed at top */}
@@ -176,7 +179,7 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 				<Button
 					type="button"
 					variant="default"
-					className="flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text transition-colors hover:bg-action-hover cursor-pointer"
+					className="group flex w-full items-center justify-center gap-2 rounded-md bg-action px-3 py-2 text-sm font-medium text-action-text cursor-pointer transition-all hover:bg-primary hover:scale-[1.06] active:scale-[0.96]"
 					onClick={() => {
 						const currentPath = pathname;
 						const params = new URLSearchParams(searchParams.toString());
@@ -184,7 +187,10 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 						router.push(`${currentPath}?${params.toString()}`);
 					}}
 				>
-					<Plus className="w-4 h-4" aria-hidden="true" />
+					<Plus
+						className="w-4 h-4 transition-transform group-hover:rotate-90"
+						aria-hidden="true"
+					/>
 					New Note
 				</Button>
 			</div>
@@ -195,10 +201,11 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					{/* Inbox */}
 					<Link
 						href="/notes?domain=inbox"
-						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isInboxActive
+						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+							isInboxActive
 								? "bg-base-bg text-action shadow-sm"
 								: "text-gray-600 hover:bg-base-bg hover:text-action"
-							}`}
+						}`}
 					>
 						<Inbox className="w-4 h-4" aria-hidden="true" />
 						<span>Inbox</span>
@@ -212,10 +219,11 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 					{/* Drafts */}
 					<Link
 						href="/notes?view=drafts"
-						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${isDraftsActive
+						className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+							isDraftsActive
 								? "bg-base-bg text-action shadow-sm"
 								: "text-gray-600 hover:bg-base-bg hover:text-action"
-							}`}
+						}`}
 					>
 						<PenSquare className="w-4 h-4" aria-hidden="true" />
 						<span>Drafts</span>
@@ -342,10 +350,11 @@ function DomainAccordionItem({
 				onClick={() => handleOpenChange(!isOpen)}
 				aria-label={`${effectiveIsOpen ? "Close" : "Open"} accordion for ${domainName}`}
 				aria-expanded={effectiveIsOpen}
-				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${isUnderThisDomain && !currentExact
+				className={`w-full flex items-center justify-between group px-2 py-1.5 rounded-md text-sm transition-colors cursor-pointer ${
+					isUnderThisDomain && !currentExact
 						? "text-action font-medium"
 						: "text-gray-600 hover:bg-base-bg hover:text-action"
-					}`}
+				}`}
 			>
 				<div className="flex items-center gap-2 overflow-hidden">
 					{effectiveIsOpen ? (
@@ -380,10 +389,11 @@ function DomainAccordionItem({
 				<div className="ml-3.5 mt-0.5 space-y-0.5 border-l-2 border-base-border pl-3">
 					<Link
 						href={createHref(domainName)}
-						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${isUnderThisDomain && !currentExact
+						className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
+							isUnderThisDomain && !currentExact
 								? "bg-base-bg text-action font-medium shadow-sm"
 								: "text-gray-500 hover:bg-base-bg hover:text-action"
-							}`}
+						}`}
 					>
 						<Globe
 							className="w-3.5 h-3.5 opacity-60 shrink-0"
@@ -416,10 +426,11 @@ function DomainAccordionItem({
 							<Link
 								key={url}
 								href={createHref(domainName, url)}
-								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${isActive
+								className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
+									isActive
 										? "bg-base-bg text-action font-medium shadow-sm"
 										: "text-gray-500 hover:bg-base-bg hover:text-action"
-									}`}
+								}`}
 								title={url}
 							>
 								<FileText

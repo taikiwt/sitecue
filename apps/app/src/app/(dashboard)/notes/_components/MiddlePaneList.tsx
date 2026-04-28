@@ -318,6 +318,7 @@ export function MiddlePaneList(props: Props) {
 											hoverIcon={
 												<ClipboardCopy className="w-4 h-4" aria-hidden="true" />
 											}
+											disableSuccessState={true}
 											className={cn(
 												"transition-colors cursor-pointer",
 												copiedType !== null
