@@ -151,14 +151,15 @@ export function NotesContainer() {
 	// 選択されたノートまたはドラフトの取得
 	const selectedNote = useMemo(() => {
 		if (!params.noteId) return undefined;
-		// まず全体データから探す
-		const foundInNotes = notes.find((n) => n.id === params.noteId);
-		if (foundInNotes) return foundInNotes;
-		// なければ検索結果（ローカル状態）から探す
+
+		// 1. 検索結果（ローカル状態・完全なデータ）を先に評価する
 		if (searchResults) {
-			return searchResults.find((n) => n.id === params.noteId);
+			const foundInSearch = searchResults.find((n) => n.id === params.noteId);
+			if (foundInSearch) return foundInSearch;
 		}
-		return undefined;
+
+		// 2. なければ全体データ（Slim Fetchingキャッシュ等）から探す
+		return notes.find((n) => n.id === params.noteId);
 	}, [notes, searchResults, params.noteId]);
 	const selectedDraft = useMemo(
 		() =>
