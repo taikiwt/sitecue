@@ -3,6 +3,7 @@
 import { Menu, PanelLeftOpen } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
+import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
+import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -21,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
 	return (
 		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
@@ -95,6 +98,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			<Suspense fallback={null}>
 				<GlobalNewNoteDialog />
 			</Suspense>
+
+			<PaywallModal
+				isOpen={isPaywallOpen}
+				onClose={closePaywall}
+				plan={plan as "free" | "pro"}
+				limitType={paywallType}
+			/>
 		</div>
 	);
 }

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { useCreateNote } from "@/hooks/useNotesQuery";
+import { useUserStore } from "@/store/useUserStore";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
@@ -36,6 +38,7 @@ export function GlobalNewNoteDialog() {
 	const [isSaving, setIsSaving] = useState(false);
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 	const createNoteMutation = useCreateNote();
+	const openPaywall = useUserStore((state) => state.openPaywall);
 
 	// Load initial state from URL parameters
 	useEffect(() => {
@@ -129,9 +132,22 @@ export function GlobalNewNoteDialog() {
 			}
 
 			router.push(`/notes?${params.toString()}`);
-		} catch (err) {
+		} catch (err: unknown) {
 			console.error("Failed to save note:", err);
-			alert("Failed to save the note.");
+			const errorMessage =
+				err instanceof Error
+					? err.message.toLowerCase()
+					: typeof err === "object" && err !== null && "message" in err
+						? String((err as { message: unknown }).message).toLowerCase()
+						: String(err).toLowerCase();
+
+			if (errorMessage.includes("limit reached")) {
+				// モーダルの衝突を防ぐため、Paywallを開く前に現在のダイアログを閉じる
+				handleCancel();
+				openPaywall("notes");
+			} else {
+				toast.error("Failed to save the note.");
+			}
 		} finally {
 			setIsSaving(false);
 		}

@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import { NotesContainer } from "./NotesContainer";
-import { useNotesStore } from "@/store/useNotesStore";
+import { describe, expect, it, vi } from "vitest";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
+import { useNotesStore } from "@/store/useNotesStore";
+import { NotesContainer } from "./NotesContainer";
 
 vi.mock("@/store/useNotesStore", () => ({
 	useNotesStore: vi.fn(),
@@ -82,11 +82,17 @@ describe("NotesContainer selectedNote resolution", () => {
 
 		// 検索結果（本文あり）をモック
 		(useNotesStore as any).mockReturnValue({
-			searchResults: [{ id: "note-1", url_pattern: "example.com", content: "Full text content" }],
+			searchResults: [
+				{
+					id: "note-1",
+					url_pattern: "example.com",
+					content: "Full text content",
+				},
+			],
 			setSearchResults: vi.fn(),
 		});
 
-		render(<NotesContainer/>);
+		render(<NotesContainer />);
 
 		// 検索結果のコンテンツが右ペインに表示されることを確認（findByTextで非同期待機）
 		const detailContent = await screen.findByTestId("right-pane");

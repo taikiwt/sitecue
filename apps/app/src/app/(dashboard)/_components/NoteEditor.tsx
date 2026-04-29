@@ -2,7 +2,9 @@
 
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
+import { useUserStore } from "@/store/useUserStore";
 
 type NoteType = "info" | "alert" | "idea";
 
@@ -11,6 +13,7 @@ interface NoteEditorProps {
 }
 
 export default function NoteEditor({ onSubmit }: NoteEditorProps) {
+	const openPaywall = useUserStore((state) => state.openPaywall);
 	const [content, setContent] = useState("");
 	const [noteType, setNoteType] = useState<NoteType>("info");
 	const [isSaving, setIsSaving] = useState(false);
@@ -23,9 +26,20 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 		try {
 			await onSubmit(content.trim(), noteType);
 			setContent("");
-		} catch (error) {
-			console.error("Failed to save note:", error);
-			alert("Failed to save the note.");
+		} catch (err: unknown) {
+			console.error("Failed to save note:", err);
+			const errorMessage =
+				err instanceof Error
+					? err.message.toLowerCase()
+					: typeof err === "object" && err !== null && "message" in err
+						? String((err as { message: unknown }).message).toLowerCase()
+						: String(err).toLowerCase();
+
+			if (errorMessage.includes("limit reached")) {
+				openPaywall("notes");
+			} else {
+				toast.error("Failed to save the note.");
+			}
 		} finally {
 			setIsSaving(false);
 		}
@@ -44,7 +58,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-gray-400 hover:text-action"
 						}`}
 					>
-						<Info className="h-3 w-3" />
+						<Info className="h-3 w-3" aria-hidden="true" />
 						Info
 					</button>
 					<button
@@ -56,7 +70,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-gray-400 hover:text-action"
 						}`}
 					>
-						<AlertTriangle className="h-3 w-3" />
+						<AlertTriangle className="h-3 w-3" aria-hidden="true" />
 						Alert
 					</button>
 					<button
@@ -68,7 +82,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-gray-400 hover:text-action"
 						}`}
 					>
-						<Lightbulb className="h-3 w-3" />
+						<Lightbulb className="h-3 w-3" aria-hidden="true" />
 						Idea
 					</button>
 				</div>
@@ -85,9 +99,10 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 					type="button"
 					onClick={() => handleSave()}
 					disabled={!content.trim() || isSaving}
+					aria-label="Save note"
 					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
-					<Send className="h-4 w-4" />
+					<Send className="h-4 w-4" aria-hidden="true" />
 				</button>
 			</div>
 			<p className="text-[10px] text-gray-400">

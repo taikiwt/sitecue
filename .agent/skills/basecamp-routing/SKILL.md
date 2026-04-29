@@ -27,3 +27,7 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 - **`useSearchParams` のラップ必須化**:
   Client Component (`"use client"`) 内で `useSearchParams()` フックを使用する場合、そのコンポーネントまたは呼び出し元を必ず React の `<Suspense fallback={...}>` でラップしてください。
   これを行わないと、OpenNext のビルドプロセス中の静的生成 (Prerendering) がクライアント側のパラメータに依存してしまい、ビルドが完全に失敗します。
+
+## 5. Server Component Constraints (RSCの掟)
+- **イベントハンドラの禁止**: `page.tsx` や `layout.tsx` などの Server Component 内で、直接 `onClick` や `onChange` などのイベントハンドラを記述したり、`useState` などの React Hooks を呼び出したりすることは**厳禁**。
+- **解決策 (Expand & Contract)**: ボタンのクリックによるトースト通知や状態変更など、インタラクティブな処理が必要な場合は、そのボタン部分のみを純粋な Client Component (`"use client"`) として別ファイル（例: `_components/HogeButton.tsx`）に切り出し、Server Component にインポートして配置すること。
