@@ -60,6 +60,7 @@ import {
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
+import { useUserStore } from "@/store/useUserStore";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
 
@@ -79,7 +80,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
-	const [isCopying, setIsCopying] = useState(false);
+	const [_isCopying, setIsCopying] = useState(false);
 	const [optimisticContent, setOptimisticContent] = useState<string | null>(
 		null,
 	);
@@ -103,6 +104,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [editScope, setEditScope] = useState<Note["scope"]>(
 		note?.scope || "inbox",
 	);
+	const openPaywall = useUserStore((state) => state.openPaywall);
 
 	// Sync edit states when note changes
 	useEffect(() => {
@@ -264,9 +266,20 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					},
 				});
 			}
-		} catch (err) {
+		} catch (err: unknown) {
 			console.error("Failed to save note:", err);
-			alert("Failed to save the note.");
+			const errorMessage =
+				err instanceof Error
+					? err.message.toLowerCase()
+					: typeof err === "object" && err !== null && "message" in err
+						? String((err as { message: unknown }).message).toLowerCase()
+						: String(err).toLowerCase();
+
+			if (errorMessage.includes("limit reached")) {
+				openPaywall(errorMessage.includes("draft") ? "drafts" : "notes");
+			} else {
+				toast.error("Failed to save the note.");
+			}
 			setOptimisticContent(null);
 			setIsEditing(true);
 		} finally {
@@ -315,7 +328,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 			router.replace(`/notes?${params.toString()}`);
 		} catch (err) {
 			console.error("Failed to delete note:", err);
-			alert("Failed to delete the note.");
+			toast.error("Failed to delete the note.");
 		} finally {
 			setIsSaving(false);
 		}
@@ -349,7 +362,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 			setIsEditMetaDialogOpen(false);
 		} catch (err) {
 			console.error("Failed to save metadata:", err);
-			alert("Failed to save metadata.");
+			toast.error("Failed to save metadata.");
 		} finally {
 			setIsSaving(false);
 		}
@@ -431,7 +444,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
 												aria-label="More options"
 											>
-												<MoreHorizontal className="w-4 h-4" />
+												<MoreHorizontal
+													className="w-4 h-4"
+													aria-hidden="true"
+												/>
 											</Button>
 										}
 									/>
@@ -622,7 +638,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									note.url_pattern.startsWith("http")
 										? note.url_pattern
 										: note.url_pattern.includes("localhost") ||
-											note.url_pattern.includes("127.0.0.1")
+												note.url_pattern.includes("127.0.0.1")
 											? `http://${note.url_pattern}`
 											: `https://${note.url_pattern}`
 								}

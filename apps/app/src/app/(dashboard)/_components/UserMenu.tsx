@@ -1,10 +1,15 @@
 "use client";
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { LogOut, Settings, Sparkles, User } from "lucide-react";
+import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { AI_LIMIT, DRAFTS_LIMIT, NOTES_LIMIT } from "@/constants/limits";
+import { useFetchDrafts } from "@/hooks/useDraftsQuery";
+import { useFetchNotes } from "@/hooks/useNotesQuery";
+import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 
@@ -14,6 +19,8 @@ export function UserMenu() {
 	const [user, setUser] = useState<SupabaseUser | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const { aiUsageCount, plan, setUserData } = useUserStore();
+	const { data: notes = [] } = useFetchNotes();
+	const { data: drafts = [] } = useFetchDrafts();
 	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -106,19 +113,73 @@ export function UserMenu() {
 			{isMenuOpen && (
 				<div className="absolute bottom-full left-0 mb-2 w-full origin-bottom-left rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100] animate-in fade-in zoom-in-95 duration-200">
 					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
-						<p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+						<p
+							className={cn(
+								"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
+								aiUsageCount !== null &&
+									aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+									? "text-amber-600"
+									: "text-neutral-400",
+							)}
+						>
 							<Sparkles className="w-3 h-3" />
 							AI Usage
 						</p>
-						<p className="text-sm text-action">
+						<p
+							className={cn(
+								"text-sm",
+								aiUsageCount !== null &&
+									aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+									? "text-amber-700"
+									: "text-action",
+							)}
+						>
 							{aiUsageCount !== null
-								? `${aiUsageCount} / ${plan === "pro" ? 100 : 3}`
+								? `${aiUsageCount} / ${AI_LIMIT.MAX_FREE}`
 								: "..."}
-							<span className="text-[10px] font-normal text-neutral-400 ml-1">
+							<span
+								className={cn(
+									"text-[10px] font-normal ml-1",
+									aiUsageCount !== null &&
+										aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+										? "text-amber-500"
+										: "text-neutral-400",
+								)}
+							>
 								uses
 							</span>
 						</p>
 					</div>
+
+					{notes.length >= NOTES_LIMIT.WARNING_THRESHOLD && (
+						<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+							<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+								<Activity className="w-3 h-3" aria-hidden="true" />
+								Note Storage
+							</p>
+							<p className="text-sm text-amber-700">
+								{notes.length} / {NOTES_LIMIT.MAX_FREE}
+								<span className="text-[10px] font-normal text-amber-500 ml-1">
+									notes
+								</span>
+							</p>
+						</div>
+					)}
+
+					{drafts.length >= DRAFTS_LIMIT.WARNING_THRESHOLD && (
+						<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+							<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+								<Activity className="w-3 h-3" aria-hidden="true" />
+								Draft Storage
+							</p>
+							<p className="text-sm text-amber-700">
+								{drafts.length} / {DRAFTS_LIMIT.MAX_FREE}
+								<span className="text-[10px] font-normal text-amber-500 ml-1">
+									drafts
+								</span>
+							</p>
+						</div>
+					)}
 
 					<Link
 						href="/templates"

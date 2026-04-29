@@ -29,11 +29,11 @@ import {
 import { useDeleteNotes, useUpsertNotes } from "@/hooks/useNotesQuery";
 import { useStudioAI } from "@/hooks/useStudioAI";
 import { useLayoutStore } from "@/store/useLayoutStore";
+import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note, Template } from "../../../../../../types/app.ts";
 import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
-import PaywallModal from "../studio/_components/PaywallModal";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
 
@@ -85,9 +85,7 @@ export default function DraftEditor({
 	const [searchResults, setSearchResults] = useState<Note[]>([]);
 	const [isSearching, setIsSearching] = useState(false);
 
-	// State for Quota
-	const [plan, setPlan] = useState<"free" | "pro">("free");
-	const [showPaywall, setShowPaywall] = useState(false);
+	const openPaywall = useUserStore((state) => state.openPaywall);
 
 	// Custom Hooks
 	const {
@@ -127,7 +125,7 @@ export default function DraftEditor({
 			router.refresh();
 		} catch (err) {
 			console.error("Failed to delete draft:", err);
-			alert("Failed to delete draft.");
+			toast.error("Failed to delete draft.");
 		}
 	};
 
@@ -160,26 +158,7 @@ export default function DraftEditor({
 		fetchReviewNotes();
 	}, [supabase, initialDraft?.id]);
 
-	// Fetch Profile for Quota
-	useEffect(() => {
-		const fetchProfile = async () => {
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-			if (!user) return;
-
-			const { data, error } = await supabase
-				.from("sitecue_profiles")
-				.select("plan, ai_usage_count")
-				.eq("id", user.id)
-				.single();
-
-			if (!error && data) {
-				setPlan((data.plan as "free" | "pro") || "free");
-			}
-		};
-		fetchProfile();
-	}, [supabase]);
+	// Initialize state from profile if needed (handled by AppShell/Store)
 
 	const handleUndo = useCallback(() => {
 		const previousContent = undoHistory();
@@ -298,16 +277,14 @@ export default function DraftEditor({
 		// Save current state before weave
 		pushToHistory(content);
 
-		const {
-			newContent,
-			planError,
-			plan: errorPlan,
-			error,
-		} = await generateWeave(content, reviewNotes, activeTemplate);
+		const { newContent, planError, error } = await generateWeave(
+			content,
+			reviewNotes,
+			activeTemplate,
+		);
 
 		if (planError) {
-			if (errorPlan) setPlan(errorPlan as "free" | "pro");
-			setShowPaywall(true);
+			openPaywall("ai");
 			return;
 		}
 
@@ -331,16 +308,13 @@ export default function DraftEditor({
 	const handleGenerateReview = async () => {
 		if (isGeneratingReview) return;
 
-		const {
-			newNotes,
-			planError,
-			plan: errorPlan,
-			error,
-		} = await generateReview(content, initialDraft?.id);
+		const { newNotes, planError, error } = await generateReview(
+			content,
+			initialDraft?.id,
+		);
 
 		if (planError) {
-			if (errorPlan) setPlan(errorPlan as "free" | "pro");
-			setShowPaywall(true);
+			openPaywall("ai");
 			return;
 		}
 
@@ -447,9 +421,20 @@ export default function DraftEditor({
 			setTimeout(() => {
 				setStatus("idle");
 			}, 2000);
-		} catch (error) {
-			console.error("Failed to save draft:", error);
-			alert("Failed to save the draft. Check the console for details.");
+		} catch (err: unknown) {
+			console.error("Failed to save draft:", err);
+			const errorMessage =
+				err instanceof Error
+					? err.message.toLowerCase()
+					: typeof err === "object" && err !== null && "message" in err
+						? String((err as { message: unknown }).message).toLowerCase()
+						: String(err).toLowerCase();
+
+			if (errorMessage.includes("limit reached")) {
+				openPaywall(errorMessage.includes("draft") ? "drafts" : "notes");
+			} else {
+				toast.error("Failed to save the draft.");
+			}
 			setStatus("error");
 		}
 	};
@@ -721,12 +706,6 @@ export default function DraftEditor({
 					</Drawer>
 				</div>
 			)}
-
-			<PaywallModal
-				isOpen={showPaywall}
-				onClose={() => setShowPaywall(false)}
-				plan={plan}
-			/>
 
 			<SaveAsTemplateDialog
 				isOpen={isSaveTemplateDialogOpen}

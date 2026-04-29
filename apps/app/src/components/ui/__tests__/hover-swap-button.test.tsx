@@ -1,7 +1,7 @@
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Check, Copy, Search } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
 import { HoverSwapButton } from "../hover-swap-button";
-import { Search, Check, Copy } from "lucide-react";
 
 describe("HoverSwapButton", () => {
 	it("should apply success classes when clicked", async () => {
@@ -15,7 +15,7 @@ describe("HoverSwapButton", () => {
 		);
 
 		const button = screen.getByRole("button");
-		
+
 		// Initial state: default icon is visible, others are hidden/translated
 		const defaultSpan = screen.getByTestId("default-icon").parentElement;
 		const hoverSpan = screen.getByTestId("hover-icon").parentElement;

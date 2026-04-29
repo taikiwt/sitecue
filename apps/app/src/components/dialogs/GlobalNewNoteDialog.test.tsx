@@ -1,48 +1,73 @@
-/** @vitest-environment jsdom */
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import toast from "react-hot-toast";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useUserStore } from "@/store/useUserStore";
 import { GlobalNewNoteDialog } from "./GlobalNewNoteDialog";
 
-// next/navigation のモック (URLパラメータでモーダルを開いた状態を再現)
+// next/navigation のモック
+const mockReplace = vi.fn();
+const searchParams = new URLSearchParams("globalNew=note");
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }),
-	useSearchParams: () =>
-		new URLSearchParams("globalNew=note&exact=https://example.com/page"),
+	useRouter: () => ({ replace: mockReplace }),
+	useSearchParams: () => searchParams,
 }));
 
-// useCreateNote のモック
+vi.mock("react-hot-toast", () => ({
+	default: { error: vi.fn() },
+}));
+
+// カスタムフックのモック
+const mockMutateAsync = vi.fn().mockRejectedValue({
+	message: "note storage limit reached",
+	code: "P0001",
+});
+
 vi.mock("@/hooks/useNotesQuery", () => ({
-	useCreateNote: vi.fn(() => ({
-		mutateAsync: vi.fn(),
-		isLoading: false,
-	})),
+	useCreateNote: () => ({
+		mutateAsync: mockMutateAsync,
+	}),
 }));
 
-// NotesEditor のモック (内部で複雑なことが行われるのを防ぐ)
+// NotesEditor のモック
 vi.mock("@/components/editor/NotesEditor", () => ({
 	NotesEditor: ({
-		value,
 		onChange,
+		value,
 	}: {
+		onChange: (val: string) => void;
 		value: string;
-		onChange: (v: string) => void;
 	}) => (
 		<textarea
+			data-testid="notes-editor"
 			value={value}
 			onChange={(e) => onChange(e.target.value)}
-			data-testid="mock-editor"
 		/>
 	),
 }));
 
-describe("GlobalNewNoteDialog UI Verification", () => {
-	it("renders correct labels and correctly maps exact scope to Page", async () => {
+describe("GlobalNewNoteDialog", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		useUserStore.setState({ isPaywallOpen: false });
+	});
+
+	it("closes itself and opens paywall when limit reached error occurs", async () => {
 		render(<GlobalNewNoteDialog />);
 
-		// 課題5: "Note"ラベルの検証
-		expect(await screen.findByText("Note")).toBeInTheDocument();
+		const editor = screen.getByTestId("notes-editor");
+		fireEvent.change(editor, { target: { value: "Test note" } });
 
-		// 課題2: "exact" の値が "Page" として画面に表示されているか検証
-		expect(await screen.findByText("Page")).toBeInTheDocument();
+		const saveButton = screen.getByRole("button", { name: "Save Note" });
+		fireEvent.click(saveButton);
+
+		await waitFor(() => {
+			// 1. handleCancel が呼ばれ、URLのパラメータから globalNew が消去されること
+			expect(mockReplace).toHaveBeenCalled();
+			// 2. Paywall が開くこと
+			expect(useUserStore.getState().isPaywallOpen).toBe(true);
+			expect(useUserStore.getState().paywallType).toBe("notes");
+			// 3. 汎用エラーが出ないこと
+			expect(toast.error).not.toHaveBeenCalled();
+		});
 	});
 });

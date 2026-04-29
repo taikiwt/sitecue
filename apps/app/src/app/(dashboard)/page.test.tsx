@@ -1,30 +1,35 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { NOTES_LIMIT } from "@/constants/limits";
 import LaunchpadPage from "./page";
 
-// 非同期コンポーネントのテスト用モックアップ
-vi.mock("@/utils/supabase/server", () => ({
-	createClient: vi.fn(() => ({
-		from: vi.fn().mockReturnThis(),
+// Next.js Server Component 用の Supabase モック
+vi.mock("@/utils/supabase/server", () => {
+	const mockSupabaseBuilder = {
 		select: vi.fn().mockReturnThis(),
 		order: vi.fn().mockReturnThis(),
-		limit: vi.fn().mockResolvedValue({ data: [], count: 0 }),
-	})),
-}));
+		limit: vi.fn().mockReturnThis(),
+		// biome-ignore lint/suspicious/noThenProperty: Supabase mock needs to be thenable
+		then: vi.fn().mockImplementation((onFulfilled) => {
+			return Promise.resolve(onFulfilled({ count: 450, data: [] }));
+		}),
+	};
+	return {
+		createClient: vi.fn().mockResolvedValue({
+			from: vi.fn().mockReturnValue(mockSupabaseBuilder),
+		}),
+	};
+});
 
-describe("LaunchpadPage UI Micro-interactions", () => {
-	it("Start a Draftカードにタッチセーフなアニメーションクラスが付与されていること", async () => {
-		// サーバーコンポーネントの解決をシミュレート
+describe("LaunchpadPage - Note Limit Warning", () => {
+	it("renders warning banner when notesCount is at or above WARNING_THRESHOLD", async () => {
+		// Async Server Component を解決してレンダリング
 		const Page = await LaunchpadPage();
-		const { container } = render(Page);
+		render(Page);
 
-		// Blank Canvasのリンクが対象クラスを持っているか確認
-		const blankCanvasCard = screen.getByText("Blank Canvas").closest("a");
-		expect(blankCanvasCard).toHaveClass("launchpad-transition");
-		expect(blankCanvasCard).toHaveClass("launchpad-card-start");
-
-		// アイコンにも専用クラスが付与されているか
-		const icon = container.querySelector(".draft-icon");
-		expect(icon).toBeInTheDocument();
+		// 警告メッセージが表示されていることを確認
+		const warningText = `Note storage almost full (450/${NOTES_LIMIT.MAX_FREE}). Upgrade to unlock unlimited notes.`;
+		expect(screen.getByText(warningText)).toBeInTheDocument();
+		expect(screen.getByText("Upgrade")).toBeInTheDocument();
 	});
 });

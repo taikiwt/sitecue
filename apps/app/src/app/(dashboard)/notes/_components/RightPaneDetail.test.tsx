@@ -1,9 +1,27 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import {
+	useCreateNote,
+	useDeleteNote,
+	useUpdateNote,
+} from "@/hooks/useNotesQuery";
 import type { Draft } from "../types";
 import { RightPaneDetail } from "./RightPaneDetail";
+
+// useNotesQuery のモック
+vi.mock("@/hooks/useNotesQuery", () => ({
+	useCreateNote: vi.fn(),
+	useUpdateNote: vi.fn(),
+	useDeleteNote: vi.fn(),
+}));
+
+// next/navigation のモック
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({ replace: vi.fn() }),
+	useSearchParams: () => new URLSearchParams("?new=true"),
+}));
 
 // CustomLink のモックが必要な場合は適宜追加
 vi.mock("@/components/ui/custom-link", () => ({
@@ -22,9 +40,9 @@ vi.mock("@/components/ui/custom-link", () => ({
 	),
 }));
 
-// HoverRevealLink のモック
-vi.mock("@/components/ui/hover-reveal-link", () => ({
-	HoverRevealLink: ({
+// HoverRevealButton のモック
+vi.mock("@/components/ui/hover-reveal-button", () => ({
+	HoverRevealButton: ({
 		href,
 		text,
 		icon,
@@ -42,6 +60,10 @@ vi.mock("@/components/ui/hover-reveal-link", () => ({
 
 describe("RightPaneDetail", () => {
 	it("renders Edit in Studio link for drafts with correct href", async () => {
+		vi.mocked(useCreateNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
+		vi.mocked(useUpdateNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
+		vi.mocked(useDeleteNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
+
 		const mockDraft: Draft = {
 			id: "draft-123",
 			content: "Test content",
@@ -64,5 +86,34 @@ describe("RightPaneDetail", () => {
 		const editLink = await screen.findByTestId("hover-reveal-link");
 		expect(editLink).toHaveAttribute("href", "/studio/draft-123");
 		expect(editLink).toHaveTextContent("Edit in Studio");
+	});
+
+	it("shows paywall modal when storage limit is reached", async () => {
+		// Supabase クライアントが投げるエラーをシミュレート
+		vi.mocked(useCreateNote).mockReturnValue({
+			mutateAsync: vi
+				.fn()
+				.mockRejectedValue(new Error("note storage limit reached")),
+		} as any);
+
+		const queryClient = new QueryClient();
+
+		render(
+			<QueryClientProvider client={queryClient}>
+				<RightPaneDetail isNewNote={true} />
+			</QueryClientProvider>,
+		);
+
+		// コンテンツを入力してSaveを発火
+		const saveButton = screen.getByRole("button", { name: "Save" });
+		fireEvent.click(saveButton);
+
+		// モーダルが表示されることを検証
+		expect(
+			await screen.findByText("Storage Limit Reached"),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/You've reached the maximum number of notes/),
+		).toBeInTheDocument();
 	});
 });

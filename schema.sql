@@ -59,6 +59,28 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+CREATE OR REPLACE FUNCTION "public"."check_draft_limit"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+declare
+  user_plan text;
+  draft_count int;
+begin
+  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
+  if user_plan = 'free' then
+    select count(*) into draft_count from public.sitecue_drafts where user_id = auth.uid();
+    if draft_count >= 3 then -- テスト用に3件へ引き下げ
+      raise exception 'draft storage limit reached';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."check_draft_limit"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."check_note_limit"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -66,28 +88,62 @@ declare
   user_plan text;
   note_count int;
 begin
-  -- Get user plan
-  select plan into user_plan
-  from public.sitecue_profiles
-  where id = auth.uid();
-
-  -- If plan is free, check count
+  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
   if user_plan = 'free' then
-    select count(*) into note_count
-    from public.sitecue_notes
-    where user_id = auth.uid();
-
-    if note_count >= 200 then
-      raise exception 'Free plan limit reached (200 notes). Please upgrade to Pro.';
+    select count(*) into note_count from public.sitecue_notes where user_id = auth.uid();
+    if note_count >= 5 then -- テスト用に5件へ引き下げ
+      raise exception 'note storage limit reached';
     end if;
   end if;
-
   return new;
 end;
 $$;
 
 
 ALTER FUNCTION "public"."check_note_limit"() OWNER TO "postgres";
+
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."sitecue_notes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "url_pattern" "text" NOT NULL,
+    "content" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "scope" "text" DEFAULT 'domain'::"text" NOT NULL,
+    "note_type" "text" DEFAULT 'info'::"text" NOT NULL,
+    "is_resolved" boolean DEFAULT false NOT NULL,
+    "is_pinned" boolean DEFAULT false NOT NULL,
+    "is_favorite" boolean DEFAULT false NOT NULL,
+    "sort_order" double precision DEFAULT 0 NOT NULL,
+    "is_expanded" boolean DEFAULT false NOT NULL,
+    "draft_id" "uuid",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    CONSTRAINT "sitecue_notes_note_type_check" CHECK (("note_type" = ANY (ARRAY['info'::"text", 'alert'::"text", 'idea'::"text"]))),
+    CONSTRAINT "sitecue_notes_scope_check" CHECK (("scope" = ANY (ARRAY['domain'::"text", 'exact'::"text", 'inbox'::"text", 'draft'::"text"])))
+);
+
+
+ALTER TABLE "public"."sitecue_notes" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_exact" "text") RETURNS SETOF "public"."sitecue_notes"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+  return query
+  select * from sitecue_notes
+  where (scope = 'domain' and url_pattern = p_domain)
+     or (scope = 'exact' and url_pattern = p_exact);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_exact" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
@@ -117,10 +173,6 @@ $$;
 
 ALTER FUNCTION "public"."handle_new_user_todo01"() OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
 
 CREATE TABLE IF NOT EXISTS "public"."sitecue_domain_settings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -141,11 +193,11 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_drafts" (
     "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
     "title" "text",
     "content" "text",
-    "target_platform" "text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "metadata" "jsonb" DEFAULT '{}'::"jsonb",
-    CONSTRAINT "sitecue_drafts_platform_check" CHECK (("target_platform" = ANY (ARRAY['x'::"text", 'zenn'::"text", 'generic'::"text"])))
+    "template_id" "uuid",
+    "tags" "text"[] DEFAULT '{}'::"text"[]
 );
 
 
@@ -165,29 +217,6 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_links" (
 
 
 ALTER TABLE "public"."sitecue_links" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."sitecue_notes" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "url_pattern" "text" NOT NULL,
-    "content" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
-    "scope" "text" DEFAULT 'domain'::"text" NOT NULL,
-    "note_type" "text" DEFAULT 'info'::"text" NOT NULL,
-    "is_resolved" boolean DEFAULT false NOT NULL,
-    "is_pinned" boolean DEFAULT false NOT NULL,
-    "is_favorite" boolean DEFAULT false NOT NULL,
-    "sort_order" double precision DEFAULT 0 NOT NULL,
-    "is_expanded" boolean DEFAULT false NOT NULL,
-    "draft_id" "uuid",
-    CONSTRAINT "sitecue_notes_note_type_check" CHECK (("note_type" = ANY (ARRAY['info'::"text", 'alert'::"text", 'idea'::"text"]))),
-    CONSTRAINT "sitecue_notes_scope_check" CHECK (("scope" = ANY (ARRAY['domain'::"text", 'exact'::"text", 'inbox'::"text", 'draft'::"text"])))
-);
-
-
-ALTER TABLE "public"."sitecue_notes" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."sitecue_page_contents" (
@@ -225,6 +254,22 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_profiles" (
 
 
 ALTER TABLE "public"."sitecue_profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."sitecue_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "icon" "text",
+    "max_length" integer,
+    "boilerplate" "text",
+    "weave_prompt" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."sitecue_templates" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."todo01_profiles" (
@@ -290,6 +335,11 @@ ALTER TABLE ONLY "public"."sitecue_profiles"
 
 
 
+ALTER TABLE ONLY "public"."sitecue_templates"
+    ADD CONSTRAINT "sitecue_templates_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."todo01_profiles"
     ADD CONSTRAINT "todo01_profiles_pkey" PRIMARY KEY ("id");
 
@@ -297,6 +347,10 @@ ALTER TABLE ONLY "public"."todo01_profiles"
 
 ALTER TABLE ONLY "public"."todo01_tasks"
     ADD CONSTRAINT "todo01_tasks_pkey" PRIMARY KEY ("id");
+
+
+
+CREATE INDEX "idx_sitecue_drafts_template_id" ON "public"."sitecue_drafts" USING "btree" ("template_id");
 
 
 
@@ -316,12 +370,21 @@ CREATE INDEX "sitecue_notes_user_idx" ON "public"."sitecue_notes" USING "btree" 
 
 
 
+CREATE OR REPLACE TRIGGER "on_draft_created_check_limit" BEFORE INSERT ON "public"."sitecue_drafts" FOR EACH ROW EXECUTE FUNCTION "public"."check_draft_limit"();
+
+
+
 CREATE OR REPLACE TRIGGER "on_note_created_check_limit" BEFORE INSERT ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."check_note_limit"();
 
 
 
 ALTER TABLE ONLY "public"."sitecue_domain_settings"
     ADD CONSTRAINT "sitecue_domain_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."sitecue_drafts"
+    ADD CONSTRAINT "sitecue_drafts_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."sitecue_templates"("id") ON DELETE SET NULL;
 
 
 
@@ -357,6 +420,11 @@ ALTER TABLE ONLY "public"."sitecue_pinned_sites"
 
 ALTER TABLE ONLY "public"."sitecue_profiles"
     ADD CONSTRAINT "sitecue_profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."sitecue_templates"
+    ADD CONSTRAINT "sitecue_templates_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -407,6 +475,10 @@ CREATE POLICY "Users can insert their own page contents" ON "public"."sitecue_pa
 
 
 CREATE POLICY "Users can insert their own pinned sites" ON "public"."sitecue_pinned_sites" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can manage their own templates" ON "public"."sitecue_templates" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
@@ -481,6 +553,9 @@ ALTER TABLE "public"."sitecue_pinned_sites" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."sitecue_profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."sitecue_templates" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."todo01_profiles" ENABLE ROW LEVEL SECURITY;
@@ -675,9 +750,27 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "anon";
+GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "anon";
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sitecue_notes" TO "anon";
+GRANT ALL ON TABLE "public"."sitecue_notes" TO "authenticated";
+GRANT ALL ON TABLE "public"."sitecue_notes" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_exact" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_exact" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_exact" "text") TO "service_role";
 
 
 
@@ -732,12 +825,6 @@ GRANT ALL ON TABLE "public"."sitecue_links" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."sitecue_notes" TO "anon";
-GRANT ALL ON TABLE "public"."sitecue_notes" TO "authenticated";
-GRANT ALL ON TABLE "public"."sitecue_notes" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."sitecue_page_contents" TO "anon";
 GRANT ALL ON TABLE "public"."sitecue_page_contents" TO "authenticated";
 GRANT ALL ON TABLE "public"."sitecue_page_contents" TO "service_role";
@@ -753,6 +840,12 @@ GRANT ALL ON TABLE "public"."sitecue_pinned_sites" TO "service_role";
 GRANT ALL ON TABLE "public"."sitecue_profiles" TO "anon";
 GRANT ALL ON TABLE "public"."sitecue_profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."sitecue_profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sitecue_templates" TO "anon";
+GRANT ALL ON TABLE "public"."sitecue_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."sitecue_templates" TO "service_role";
 
 
 

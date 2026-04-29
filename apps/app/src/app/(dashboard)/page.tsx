@@ -7,8 +7,10 @@ import {
 	Plus,
 } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { NOTES_LIMIT } from "@/constants/limits";
 import { createClient } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../../types/app";
+import { ComingSoonButton } from "./_components/ComingSoonButton";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
 
 export default async function LaunchpadPage() {
@@ -60,6 +62,25 @@ export default async function LaunchpadPage() {
 								Overview
 							</h1>
 						</div>
+
+						{/* ✅ 警告バナーをOverviewの直下（左カラム内）へ移動 */}
+						{notesCount !== null &&
+							notesCount >= NOTES_LIMIT.WARNING_THRESHOLD && (
+								<div className="mb-8 rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center justify-between">
+									<div className="flex items-center gap-2 text-amber-800">
+										<Activity className="w-4 h-4" aria-hidden="true" />
+										<span className="text-sm font-medium">
+											Note storage almost full ({notesCount}/
+											{NOTES_LIMIT.MAX_FREE}). Upgrade to unlock unlimited
+											notes.
+										</span>
+									</div>
+									<ComingSoonButton
+										text="Upgrade"
+										className="text-xs font-bold text-amber-900 hover:text-amber-700 underline underline-offset-2 cursor-pointer"
+									/>
+								</div>
+							)}
 						<div className="flex flex-col gap-4 text-sm text-neutral-500">
 							<div className="flex items-center justify-between border-b border-base-border pb-2">
 								<span className="font-semibold text-neutral-400 uppercase tracking-widest text-[10px]">
