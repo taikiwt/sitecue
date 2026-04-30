@@ -22,7 +22,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { APP_LIMITS } from "@/constants/limits";
 import { useCreateNote } from "@/hooks/useNotesQuery";
+import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
@@ -39,6 +41,10 @@ export function GlobalNewNoteDialog() {
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 	const createNoteMutation = useCreateNote();
 	const openPaywall = useUserStore((state) => state.openPaywall);
+
+	const charCount = content.length;
+	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
+	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
 
 	// Load initial state from URL parameters
 	useEffect(() => {
@@ -87,7 +93,7 @@ export function GlobalNewNoteDialog() {
 	};
 
 	const handleSave = async () => {
-		if (!content.trim()) return;
+		if (!content.trim() || isOverLimit) return;
 
 		setIsSaving(true);
 		try {
@@ -243,6 +249,19 @@ export function GlobalNewNoteDialog() {
 							placeholder="What's on your mind?"
 							isDirty={content.length > 0}
 						/>
+						{isNearLimit && (
+							<div className="flex justify-end">
+								<span
+									className={cn(
+										"text-[10px] font-bold",
+										isOverLimit ? "text-note-alert" : "text-note-idea",
+									)}
+								>
+									{charCount.toLocaleString()} /{" "}
+									{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
+								</span>
+							</div>
+						)}
 					</div>
 				</div>
 
@@ -259,7 +278,7 @@ export function GlobalNewNoteDialog() {
 						type="button"
 						variant="default"
 						onClick={handleSave}
-						disabled={isSaving || !content.trim()}
+						disabled={isSaving || !content.trim() || isOverLimit}
 						className="min-w-[100px]"
 					>
 						{isSaving ? "Saving..." : "Save Note"}

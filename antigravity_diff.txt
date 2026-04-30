@@ -1,0 +1,918 @@
+diff --git a/apps/api/src/services/ai.ts b/apps/api/src/services/ai.ts
+index 021d74f..e84bdd0 100644
+--- a/apps/api/src/services/ai.ts
++++ b/apps/api/src/services/ai.ts
+@@ -14,7 +14,6 @@ export async function weaveDocument(
+ 			type?: string;
+ 		}[];
+ 		format: string;
+-		context_id?: string;
+ 		draft_content?: string;
+ 		template_id?: string;
+ 	},
+@@ -25,29 +24,13 @@ export async function weaveDocument(
+ 		},
+ 	});
+ 
+-	const { contexts, format, context_id, draft_content, template_id } = body;
++	const { contexts, format, draft_content, template_id } = body;
+ 
+ 	if (!Array.isArray(contexts) || typeof format !== "string") {
+ 		throw new Error("Invalid request body");
+ 	}
+ 
+ 	let referenceContent = "";
+-	if (context_id) {
+-		const { data: pageData, error: pageError } = await supabase
+-			.from("sitecue_page_contents")
+-			.select("content")
+-			.eq("id", context_id)
+-			.single();
+-
+-		if (!pageError && pageData) {
+-			referenceContent = `【現在のページ内容】\n${pageData.content}`;
+-
+-			await supabase
+-				.from("sitecue_page_contents")
+-				.delete()
+-				.eq("id", context_id);
+-		}
+-	}
+ 
+ 	if (draft_content) {
+ 		referenceContent += `${referenceContent ? "\n\n" : ""}【現在のドラフト本文】\n${draft_content}`;
+diff --git a/apps/app/src/app/(dashboard)/_components/DraftEditor.test.tsx b/apps/app/src/app/(dashboard)/_components/DraftEditor.test.tsx
+index 5a4697b..18ce5a4 100644
+--- a/apps/app/src/app/(dashboard)/_components/DraftEditor.test.tsx
++++ b/apps/app/src/app/(dashboard)/_components/DraftEditor.test.tsx
+@@ -62,6 +62,7 @@ const mockDraft = {
+ 	updated_at: new Date().toISOString(),
+ 	user_id: "test-user-id",
+ 	template_id: null,
++	tags: null,
+ };
+ 
+ describe("DraftEditor - Error Handling", () => {
+diff --git a/apps/app/src/app/(dashboard)/_components/DraftEditor.tsx b/apps/app/src/app/(dashboard)/_components/DraftEditor.tsx
+index 98efe77..1368cfc 100644
+--- a/apps/app/src/app/(dashboard)/_components/DraftEditor.tsx
++++ b/apps/app/src/app/(dashboard)/_components/DraftEditor.tsx
+@@ -1,9 +1,9 @@
+ "use client";
+ 
+-import { toast } from "react-hot-toast";
+ import { Sparkles } from "lucide-react";
+ import { useRouter, useSearchParams } from "next/navigation";
+ import { useCallback, useEffect, useState } from "react";
++import { toast } from "react-hot-toast";
+ import {
+ 	Panel,
+ 	Group as PanelGroup,
+@@ -20,6 +20,7 @@ import {
+ 	DrawerTrigger,
+ } from "@/components/ui/drawer";
+ import { InlineCopyButton } from "@/components/ui/inline-copy-button";
++import { APP_LIMITS } from "@/constants/limits";
+ import { useMediaQuery } from "@/hooks/use-media-query";
+ import { useDraftHistory } from "@/hooks/useDraftHistory";
+ import {
+@@ -37,7 +38,6 @@ import type { Draft, Note, Template } from "../../../../../../types/app.ts";
+ import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
+ import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
+ import StudioReviewPane from "../studio/_components/StudioReviewPane";
+-
+ import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
+ 
+ type NoteType = "info" | "alert" | "idea";
+@@ -222,6 +222,7 @@ export default function DraftEditor({
+ 				is_pinned: false,
+ 				is_resolved: false,
+ 				sort_order: reviewNotes.length,
++				tags: null,
+ 			};
+ 			setReviewNotes((prev) => [tempNote, ...prev]);
+ 			setHasUnsavedNotesChanges(true);
+@@ -337,9 +338,15 @@ export default function DraftEditor({
+ 	};
+ 
+ 	const charCount = content.length;
+-	const maxLength = activeTemplate?.max_length;
++	const templateLimit = activeTemplate?.max_length;
++	const absoluteLimit = APP_LIMITS.MAX_DRAFT_LENGTH;
++	const effectiveLimit = templateLimit ?? absoluteLimit;
++
++	const isNearLimit = charCount >= effectiveLimit * 0.9;
++	const isOverLimit = charCount > effectiveLimit;
+ 
+ 	const handleSave = async () => {
++		if (isOverLimit) return;
+ 		setStatus("saving");
+ 		try {
+ 			const {
+@@ -481,6 +488,7 @@ export default function DraftEditor({
+ 						hasDraftId={!!initialDraft?.id}
+ 						onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
+ 						onDeleteDraft={handleDeleteDraft}
++						isOverLimit={isOverLimit}
+ 					/>
+ 
+ 					<main className="flex-1 overflow-y-auto px-8 py-10">
+@@ -493,11 +501,12 @@ export default function DraftEditor({
+ 											? `Template: ${activeTemplate.name}`
+ 											: "Blank Canvas"}
+ 									</span>
+-									{maxLength && (
++									{isNearLimit && (
+ 										<span
+-											className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
++											className={`text-sm font-mono font-bold ${isOverLimit ? "text-note-alert" : "text-neutral-400"}`}
+ 										>
+-											{charCount} / {maxLength}
++											{charCount.toLocaleString()} /{" "}
++											{effectiveLimit.toLocaleString()}
+ 										</span>
+ 									)}
+ 								</div>
+diff --git a/apps/app/src/app/(dashboard)/_components/NoteEditor.test.tsx b/apps/app/src/app/(dashboard)/_components/NoteEditor.test.tsx
+index afc6eda..5862f5f 100644
+--- a/apps/app/src/app/(dashboard)/_components/NoteEditor.test.tsx
++++ b/apps/app/src/app/(dashboard)/_components/NoteEditor.test.tsx
+@@ -1,73 +1,58 @@
+-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+-import toast from "react-hot-toast";
+-import { beforeEach, describe, expect, it, vi } from "vitest";
+-import { useUserStore } from "@/store/useUserStore";
++import { render, screen } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import { describe, expect, it, vi } from "vitest";
+ import NoteEditor from "./NoteEditor";
++import { APP_LIMITS } from "@/constants/limits";
++
++// Mock the limits
++vi.mock("@/constants/limits", () => ({
++	APP_LIMITS: {
++		MAX_NOTE_LENGTH: 100,
++		MAX_DRAFT_LENGTH: 1000,
++		MAX_TEMPLATE_LENGTH: 50,
++	},
++}));
+ 
+-// Mock dependencies
+-vi.mock("react-hot-toast", () => ({
+-	default: { error: vi.fn() },
++// Mock the store
++vi.mock("@/store/useUserStore", () => ({
++	useUserStore: (selector: any) => selector({ openPaywall: vi.fn() }),
+ }));
+ 
+-// NoteEditor内部の NotesEditor コンポーネントをモック
++// Mock the editor to be a simple textarea for tests
+ vi.mock("@/components/editor/NotesEditor", () => ({
+-	NotesEditor: ({
+-		onChange,
+-		value,
+-	}: {
+-		onChange: (val: string) => void;
+-		value: string;
+-	}) => (
++	NotesEditor: ({ value, onChange, placeholder }: any) => (
+ 		<textarea
+-			data-testid="notes-editor"
+ 			value={value}
+ 			onChange={(e) => onChange(e.target.value)}
++			placeholder={placeholder}
+ 		/>
+ 	),
+ }));
+ 
+-describe("NoteEditor Error Handling", () => {
+-	beforeEach(() => {
+-		vi.clearAllMocks();
+-		useUserStore.setState({ isPaywallOpen: false });
++describe("NoteEditor Progressive Warning", () => {
++	it("通常時は文字数カウンターが表示されないこと", async () => {
++		render(<NoteEditor onSubmit={vi.fn()} />);
++		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
++		await userEvent.type(input, "通常のメモ");
++		expect(screen.queryByText(/100/)).not.toBeInTheDocument();
+ 	});
+ 
+-	it("opens paywall on PostgrestError format (object without Error prototype)", async () => {
+-		// Supabaseの PostgrestError を模倣したオブジェクトをスローさせる
+-		const mockOnSubmit = vi.fn().mockRejectedValue({
+-			message: "note storage limit reached",
+-			code: "P0001",
+-		});
+-
+-		render(<NoteEditor onSubmit={mockOnSubmit} />);
+-
+-		const editor = screen.getByTestId("notes-editor");
+-		fireEvent.change(editor, { target: { value: "Test note" } });
+-
+-		const saveButton = screen.getByRole("button", { name: "Save note" });
+-		fireEvent.click(saveButton);
+-
+-		await waitFor(() => {
+-			expect(useUserStore.getState().isPaywallOpen).toBe(true);
+-			expect(useUserStore.getState().paywallType).toBe("notes");
+-			expect(toast.error).not.toHaveBeenCalled();
+-		});
+-	});
+-
+-	it("shows generic toast for other errors", async () => {
+-		const mockOnSubmit = vi.fn().mockRejectedValue(new Error("Network Error"));
+-
+-		render(<NoteEditor onSubmit={mockOnSubmit} />);
+-
+-		const editor = screen.getByTestId("notes-editor");
+-		fireEvent.change(editor, { target: { value: "Test note" } });
+-
+-		const saveButton = screen.getByRole("button", { name: "Save note" });
+-		fireEvent.click(saveButton);
+-
+-		await waitFor(() => {
+-			expect(toast.error).toHaveBeenCalledWith("Failed to save the note.");
+-			expect(useUserStore.getState().isPaywallOpen).toBe(false);
+-		});
++	it("上限の90%に達するとカウンターが表示され、超過するとボタンがdisabledになること", async () => {
++		render(<NoteEditor onSubmit={vi.fn()} />);
++		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
++		
++		// 90%以上の文字を入力 (90文字)
++		const nearLimitText = "a".repeat(90);
++		await userEvent.type(input, nearLimitText);
++		
++		expect(screen.getByText(/90 \/ 100/)).toBeInTheDocument();
++		
++		// 超過入力 (101文字)
++		const overLimitText = "a".repeat(11);
++		await userEvent.type(input, overLimitText);
++		
++		const submitButton = screen.getByRole("button", { name: /Save note/i });
++		expect(submitButton).toBeDisabled();
++		expect(screen.getByText(/101 \/ 100/)).toBeInTheDocument();
+ 	});
+ });
+diff --git a/apps/app/src/app/(dashboard)/_components/NoteEditor.tsx b/apps/app/src/app/(dashboard)/_components/NoteEditor.tsx
+index a0167fd..3d6781d 100644
+--- a/apps/app/src/app/(dashboard)/_components/NoteEditor.tsx
++++ b/apps/app/src/app/(dashboard)/_components/NoteEditor.tsx
+@@ -4,6 +4,8 @@ import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
+ import { useState } from "react";
+ import toast from "react-hot-toast";
+ import { NotesEditor } from "@/components/editor/NotesEditor";
++import { APP_LIMITS } from "@/constants/limits";
++import { cn } from "@/lib/utils";
+ import { useUserStore } from "@/store/useUserStore";
+ 
+ type NoteType = "info" | "alert" | "idea";
+@@ -18,9 +20,13 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
+ 	const [noteType, setNoteType] = useState<NoteType>("info");
+ 	const [isSaving, setIsSaving] = useState(false);
+ 
++	const charCount = content.length;
++	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
++	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
++
+ 	const handleSave = async (e?: React.FormEvent) => {
+ 		e?.preventDefault();
+-		if (!content.trim() || isSaving) return;
++		if (!content.trim() || isSaving || isOverLimit) return;
+ 
+ 		setIsSaving(true);
+ 		try {
+@@ -98,16 +104,29 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
+ 				<button
+ 					type="button"
+ 					onClick={() => handleSave()}
+-					disabled={!content.trim() || isSaving}
++					disabled={!content.trim() || isSaving || isOverLimit}
+ 					aria-label="Save note"
+ 					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
+ 				>
+ 					<Send className="h-4 w-4" aria-hidden="true" />
+ 				</button>
+ 			</div>
+-			<p className="text-[10px] text-gray-400">
+-				{isSaving ? "Saving..." : "Markdown supported"}
+-			</p>
++			<div className="flex justify-between items-center">
++				<p className="text-[10px] text-gray-400">
++					{isSaving ? "Saving..." : "Markdown supported"}
++				</p>
++				{isNearLimit && (
++					<span
++						className={cn(
++							"text-[10px] font-bold transition-opacity duration-300",
++							isOverLimit ? "text-note-alert" : "text-note-idea",
++						)}
++					>
++						{charCount.toLocaleString()} /{" "}
++						{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
++					</span>
++				)}
++			</div>
+ 		</div>
+ 	);
+ }
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/MiddlePaneList.test.tsx b/apps/app/src/app/(dashboard)/notes/_components/MiddlePaneList.test.tsx
+index daa4fdf..9c925d9 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/MiddlePaneList.test.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/MiddlePaneList.test.tsx
+@@ -39,6 +39,7 @@ const mockItems: Note[] = [
+ 		is_resolved: false,
+ 		sort_order: 0,
+ 		draft_id: null,
++		tags: null,
+ 	},
+ 	{
+ 		id: "note-2",
+@@ -55,6 +56,7 @@ const mockItems: Note[] = [
+ 		is_resolved: false,
+ 		sort_order: 1,
+ 		draft_id: null,
++		tags: null,
+ 	},
+ ];
+ 
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/NoteItem.tsx b/apps/app/src/app/(dashboard)/notes/_components/NoteItem.tsx
+index 15fe36b..2f9060c 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/NoteItem.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/NoteItem.tsx
+@@ -132,7 +132,7 @@ export function NoteItem({
+ 			</div>
+ 
+ 			{/* テキスト領域はクリックを透過させ、TODOボタンだけクリックを受け付ける */}
+-			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
++			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10 min-w-0">
+ 				<div className="flex justify-between items-start mb-1">
+ 					{isNote ? (
+ 						<NoteStatusBadge
+@@ -148,7 +148,7 @@ export function NoteItem({
+ 							{!item.title && !item.content ? "NEW" : "DRAFT"}
+ 						</span>
+ 					)}
+-					<span className="text-[10px] text-gray-400">
++					<span className="text-[10px] text-gray-400 shrink-0">
+ 						{formatDate(isNote ? item.created_at : item.updated_at)}
+ 					</span>
+ 				</div>
+@@ -162,14 +162,14 @@ export function NoteItem({
+ 				</h3>
+ 				<p
+ 					className={cn(
+-						"text-sm text-action line-clamp-2 wrap-break-word",
++						"text-sm text-action line-clamp-2 break-words",
+ 						(isResolved || isExiting) && "line-through",
+ 					)}
+ 				>
+ 					{item.content}
+ 				</p>
+ 				{isNote && item.scope === "exact" && !currentExact && (
+-					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none">
++					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none break-all">
+ 						<MapPin className="w-3 h-3" aria-hidden="true" />
+ 						{getSafeUrl(item.url_pattern)?.pathname ?? item.url_pattern}
+ 					</div>
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/RightPaneDetail.test.tsx b/apps/app/src/app/(dashboard)/notes/_components/RightPaneDetail.test.tsx
+index 264612d..f1c3859 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/RightPaneDetail.test.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/RightPaneDetail.test.tsx
+@@ -73,6 +73,7 @@ describe("RightPaneDetail", () => {
+ 			user_id: "user-1",
+ 			metadata: null,
+ 			template_id: null,
++			tags: null,
+ 		};
+ 
+ 		const queryClient = new QueryClient();
+diff --git a/apps/app/src/app/(dashboard)/studio/_components/DraftEditorHeader.tsx b/apps/app/src/app/(dashboard)/studio/_components/DraftEditorHeader.tsx
+index aa3ded6..199e2c1 100644
+--- a/apps/app/src/app/(dashboard)/studio/_components/DraftEditorHeader.tsx
++++ b/apps/app/src/app/(dashboard)/studio/_components/DraftEditorHeader.tsx
+@@ -20,6 +20,7 @@ interface DraftEditorHeaderProps {
+ 	hasDraftId: boolean;
+ 	onSaveAsTemplate: () => void;
+ 	onDeleteDraft: () => void;
++	isOverLimit?: boolean;
+ }
+ 
+ export function DraftEditorHeader({
+@@ -33,6 +34,7 @@ export function DraftEditorHeader({
+ 	hasDraftId,
+ 	onSaveAsTemplate,
+ 	onDeleteDraft,
++	isOverLimit = false,
+ }: DraftEditorHeaderProps) {
+ 	return (
+ 		<header
+@@ -64,7 +66,7 @@ export function DraftEditorHeader({
+ 
+ 				<Button
+ 					onClick={onSave}
+-					disabled={status === "saving" || status === "success"}
++					disabled={status === "saving" || status === "success" || isOverLimit}
+ 					size="sm"
+ 					className="w-24 rounded-full"
+ 					type="button"
+diff --git a/apps/app/src/app/(dashboard)/templates/_components/TemplateManager.tsx b/apps/app/src/app/(dashboard)/templates/_components/TemplateManager.tsx
+index be22a61..ae5c38a 100644
+--- a/apps/app/src/app/(dashboard)/templates/_components/TemplateManager.tsx
++++ b/apps/app/src/app/(dashboard)/templates/_components/TemplateManager.tsx
+@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
+ import { CustomLink as Link } from "@/components/ui/custom-link";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
++import { APP_LIMITS } from "@/constants/limits";
+ import {
+ 	useCreateTemplate,
+ 	useDeleteTemplate,
+@@ -45,6 +46,21 @@ export function TemplateManager({
+ 	const [weavePrompt, setWeavePrompt] = useState("");
+ 	const [isSaving, setIsSaving] = useState(false);
+ 
++	const boilerplateCharCount = boilerplate.length;
++	const weavePromptCharCount = weavePrompt.length;
++
++	const isBoilerplateNearLimit =
++		boilerplateCharCount >= APP_LIMITS.MAX_TEMPLATE_LENGTH * 0.9;
++	const isBoilerplateOverLimit =
++		boilerplateCharCount > APP_LIMITS.MAX_TEMPLATE_LENGTH;
++
++	const isWeavePromptNearLimit =
++		weavePromptCharCount >= APP_LIMITS.MAX_TEMPLATE_LENGTH * 0.9;
++	const isWeavePromptOverLimit =
++		weavePromptCharCount > APP_LIMITS.MAX_TEMPLATE_LENGTH;
++
++	const isOverLimit = isBoilerplateOverLimit || isWeavePromptOverLimit;
++
+ 	// Sync form when selection changes
+ 	useEffect(() => {
+ 		if (activeTemplate) {
+@@ -182,7 +198,7 @@ export function TemplateManager({
+ 							</h2>
+ 							<Button
+ 								onClick={handleSave}
+-								disabled={isSaving || !name.trim()}
++								disabled={isSaving || !name.trim() || isOverLimit}
+ 								type="button"
+ 							>
+ 								{isSaving ? "Saving..." : "Save Template"}
+@@ -223,6 +239,21 @@ export function TemplateManager({
+ 									className="w-full rounded-lg border border-base-border bg-transparent p-3 text-sm focus:outline-none focus:ring-2 focus:ring-base-border"
+ 									placeholder="# Target Audience&#10;&#10;# Key Message"
+ 								/>
++								{isBoilerplateNearLimit && (
++									<div className="flex justify-end">
++										<span
++											className={cn(
++												"text-[10px] font-bold",
++												isBoilerplateOverLimit
++													? "text-note-alert"
++													: "text-note-idea",
++											)}
++										>
++											{boilerplateCharCount.toLocaleString()} /{" "}
++											{APP_LIMITS.MAX_TEMPLATE_LENGTH.toLocaleString()}
++										</span>
++									</div>
++								)}
+ 							</div>
+ 
+ 							<div className="space-y-2">
+@@ -237,6 +268,21 @@ export function TemplateManager({
+ 									className="w-full rounded-lg border border-base-border bg-base-surface p-3 text-sm focus:outline-none font-mono text-xs"
+ 									placeholder="Provide context for the AI when generating from this template."
+ 								/>
++								{isWeavePromptNearLimit && (
++									<div className="flex justify-end">
++										<span
++											className={cn(
++												"text-[10px] font-bold",
++												isWeavePromptOverLimit
++													? "text-note-alert"
++													: "text-note-idea",
++											)}
++										>
++											{weavePromptCharCount.toLocaleString()} /{" "}
++											{APP_LIMITS.MAX_TEMPLATE_LENGTH.toLocaleString()}
++										</span>
++									</div>
++								)}
+ 							</div>
+ 						</div>
+ 					</div>
+diff --git a/apps/app/src/components/dialogs/GlobalNewNoteDialog.tsx b/apps/app/src/components/dialogs/GlobalNewNoteDialog.tsx
+index 1771ea7..2b7d4fc 100644
+--- a/apps/app/src/components/dialogs/GlobalNewNoteDialog.tsx
++++ b/apps/app/src/components/dialogs/GlobalNewNoteDialog.tsx
+@@ -22,7 +22,9 @@ import {
+ 	SelectTrigger,
+ 	SelectValue,
+ } from "@/components/ui/select";
++import { APP_LIMITS } from "@/constants/limits";
+ import { useCreateNote } from "@/hooks/useNotesQuery";
++import { cn } from "@/lib/utils";
+ import { useUserStore } from "@/store/useUserStore";
+ import { normalizeUrlForGrouping } from "@/utils/url";
+ import type { Note, NoteScope } from "../../../../../types/app";
+@@ -40,6 +42,10 @@ export function GlobalNewNoteDialog() {
+ 	const createNoteMutation = useCreateNote();
+ 	const openPaywall = useUserStore((state) => state.openPaywall);
+ 
++	const charCount = content.length;
++	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
++	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
++
+ 	// Load initial state from URL parameters
+ 	useEffect(() => {
+ 		if (isOpen) {
+@@ -87,7 +93,7 @@ export function GlobalNewNoteDialog() {
+ 	};
+ 
+ 	const handleSave = async () => {
+-		if (!content.trim()) return;
++		if (!content.trim() || isOverLimit) return;
+ 
+ 		setIsSaving(true);
+ 		try {
+@@ -243,6 +249,19 @@ export function GlobalNewNoteDialog() {
+ 							placeholder="What's on your mind?"
+ 							isDirty={content.length > 0}
+ 						/>
++						{isNearLimit && (
++							<div className="flex justify-end">
++								<span
++									className={cn(
++										"text-[10px] font-bold",
++										isOverLimit ? "text-note-alert" : "text-note-idea",
++									)}
++								>
++									{charCount.toLocaleString()} /{" "}
++									{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
++								</span>
++							</div>
++						)}
+ 					</div>
+ 				</div>
+ 
+@@ -259,7 +278,7 @@ export function GlobalNewNoteDialog() {
+ 						type="button"
+ 						variant="default"
+ 						onClick={handleSave}
+-						disabled={isSaving || !content.trim()}
++						disabled={isSaving || !content.trim() || isOverLimit}
+ 						className="min-w-[100px]"
+ 					>
+ 						{isSaving ? "Saving..." : "Save Note"}
+diff --git a/apps/app/src/components/editor/NotesEditor.test.tsx b/apps/app/src/components/editor/NotesEditor.test.tsx
+new file mode 100644
+index 0000000..8b54b78
+--- /dev/null
++++ b/apps/app/src/components/editor/NotesEditor.test.tsx
+@@ -0,0 +1,23 @@
++import { render } from "@testing-library/react";
++import { describe, expect, it, vi } from "vitest";
++import { NotesEditor } from "./NotesEditor";
++
++// CodeMirrorがjsdom環境でクラッシュするのを防ぐ簡易モック
++vi.mock("@uiw/react-codemirror", () => ({
++	default: ({
++		value: _value,
++		onChange: _onChange,
++	}: {
++		value: string;
++		onChange: () => void;
++	}) => <div data-testid="mock-codemirror" />,
++}));
++
++describe("NotesEditor", () => {
++	it("レンダリングの無限ループを起こさずマウントされること", () => {
++		const { getByTestId } = render(
++			<NotesEditor value="test" onChange={vi.fn()} />,
++		);
++		expect(getByTestId("mock-codemirror")).toBeInTheDocument();
++	});
++});
+diff --git a/apps/app/src/components/editor/NotesEditor.tsx b/apps/app/src/components/editor/NotesEditor.tsx
+index 4c5937d..c25d17e 100644
+--- a/apps/app/src/components/editor/NotesEditor.tsx
++++ b/apps/app/src/components/editor/NotesEditor.tsx
+@@ -11,7 +11,7 @@ interface NotesEditorProps extends EditorProps {
+ 	onSave?: () => void;
+ }
+ 
+-// ★ ポイント: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
++// basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+ const basicSetupConfig = {
+ 	lineNumbers: false,
+ 	foldGutter: false,
+@@ -26,13 +26,13 @@ export const NotesEditor = ({
+ }: NotesEditorProps) => {
+ 	useUnsavedChanges(isDirty);
+ 
+-	// 最新の onSave 関数を追跡するための ref を作成
+ 	const onSaveRef = useRef(onSave);
+ 	useEffect(() => {
+ 		onSaveRef.current = onSave;
+ 	}, [onSave]);
+ 
+ 	// extensions 配列を useMemo で 1回だけ生成して固定する（無限ループを完全防止）
++	// ※絶対にここに文字数制限等の動的な拡張を追加しないこと
+ 	const extensions = useMemo(
+ 		() => [
+ 			...editorExtensions,
+@@ -44,24 +44,23 @@ export const NotesEditor = ({
+ 						if (onSaveRef.current) {
+ 							onSaveRef.current();
+ 						}
+-						return true; // デフォルトの改行挙動をストップ
++						return true;
+ 					},
+ 				},
+ 			]),
+ 		],
+-		[],
+-	); // 依存配列を空にすることで、再描画時にも絶対に再生成させない
++		[], // 依存配列を空にすることで、再描画時にも絶対に再生成させない
++	);
+ 
+ 	return (
+ 		<div className="w-full rounded-xl bg-base-surface/50 focus-within:bg-base-bg focus-within:shadow-sm border border-transparent focus-within:border-base-border transition-all duration-200 p-6">
+ 			<CodeMirror
+ 				value={value}
+ 				onChange={onChange}
+-				extensions={extensions} // 固定した配列を渡す
++				extensions={extensions}
+ 				placeholder={placeholder}
+ 				basicSetup={basicSetupConfig}
+ 				className="text-base"
+-				// theme="light"
+ 			/>
+ 		</div>
+ 	);
+diff --git a/apps/app/src/components/editor/StudioEditor.tsx b/apps/app/src/components/editor/StudioEditor.tsx
+index 9eed61a..9e9b1b7 100644
+--- a/apps/app/src/components/editor/StudioEditor.tsx
++++ b/apps/app/src/components/editor/StudioEditor.tsx
+@@ -65,7 +65,7 @@ const hintField = StateField.define<DecorationSet>({
+ 	provide: (f) => EditorView.decorations.from(f),
+ });
+ 
+-// ★ ポイント1: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
++// basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+ const basicSetupConfig = {
+ 	lineNumbers: false,
+ 	foldGutter: false,
+@@ -80,13 +80,12 @@ export const StudioEditor = ({
+ }: StudioEditorProps) => {
+ 	useUnsavedChanges(isDirty);
+ 
+-	// 最新の onGenerateHint 関数を常に保持する
+ 	const onGenerateHintRef = useRef(onGenerateHint);
+ 	useEffect(() => {
+ 		onGenerateHintRef.current = onGenerateHint;
+ 	}, [onGenerateHint]);
+ 
+-	// ★ ポイント2: 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
++	// 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
+ 	const hintExtension = useMemo(() => {
+ 		const requestHint = (view: EditorView) => {
+ 			// 実行時にRefの中身を確認する（拡張機能自体を作り直す必要はない）
+@@ -158,7 +157,6 @@ export const StudioEditor = ({
+ 	const extensions = React.useMemo(
+ 		() => [
+ 			...editorExtensions,
+-			// sitecueTheme が配列の場合はスプレッド展開する（一貫性のため）
+ 			...(Array.isArray(sitecueTheme) ? sitecueTheme : [sitecueTheme]),
+ 			...hintExtension,
+ 		],
+diff --git a/apps/app/src/constants/limits.ts b/apps/app/src/constants/limits.ts
+index bbd8e33..c8aa78a 100644
+--- a/apps/app/src/constants/limits.ts
++++ b/apps/app/src/constants/limits.ts
+@@ -13,3 +13,9 @@ export const AI_LIMIT = {
+ 	MAX_FREE: 3,
+ 	WARNING_THRESHOLD: 3,
+ } as const;
++
++export const APP_LIMITS = {
++	MAX_NOTE_LENGTH: 10000,
++	MAX_DRAFT_LENGTH: 100000,
++	MAX_TEMPLATE_LENGTH: 5000,
++} as const;
+diff --git a/apps/extension/src/components/NoteInput.tsx b/apps/extension/src/components/NoteInput.tsx
+index 4a65bab..a134d0a 100644
+--- a/apps/extension/src/components/NoteInput.tsx
++++ b/apps/extension/src/components/NoteInput.tsx
+@@ -1,6 +1,7 @@
+ import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
+ import { useRef, useState } from "react";
+ import TextareaAutosize from "react-textarea-autosize";
++import { APP_LIMITS } from "../constants/limits";
+ import { useAutoIndent } from "../hooks/useAutoIndent";
+ import type { NoteScope, NoteType } from "../hooks/useNotes";
+ 
+@@ -30,10 +31,14 @@ export default function NoteInput({
+ 	const isNearLimit = totalNoteCount >= maxFreeNotes * 0.9;
+ 	const isLimitReached = totalNoteCount >= maxFreeNotes;
+ 
++	const charCount = newNote.length;
++	const isCharNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
++	const isCharOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
++
+ 	const handleSubmit = async (e: React.FormEvent) => {
+ 		e.preventDefault();
+ 		const content = newNote.trim();
+-		if (!content) return;
++		if (!content || isCharOverLimit) return;
+ 
+ 		// 即座に入力欄をクリアしてUXを向上（オプティミスティック更新）
+ 		setNewNote("");
+@@ -168,13 +173,23 @@ export default function NoteInput({
+ 								}
+ 							}}
+ 						/>
++						{isCharNearLimit && (
++							<div className="absolute right-12 bottom-2 pointer-events-none">
++								<span
++									className={`text-[10px] font-bold ${isCharOverLimit ? "text-note-alert" : "text-note-idea"}`}
++								>
++									{charCount.toLocaleString()} /{" "}
++									{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
++								</span>
++							</div>
++						)}
+ 						<button
+-							disabled={!newNote.trim()}
++							disabled={!newNote.trim() || isCharOverLimit}
+ 							type="submit"
+-							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:cursor-not-allowed transition-colors"
++							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
+ 							title="Add Note"
+ 						>
+-							<Send className="w-4 h-4" />
++							<Send className="w-4 h-4" aria-hidden="true" />
+ 						</button>
+ 					</>
+ 				)}
+diff --git a/apps/extension/src/constants/limits.ts b/apps/extension/src/constants/limits.ts
+new file mode 100644
+index 0000000..09819d3
+--- /dev/null
++++ b/apps/extension/src/constants/limits.ts
+@@ -0,0 +1,5 @@
++export const APP_LIMITS = {
++	MAX_NOTE_LENGTH: 10000,
++	MAX_DRAFT_LENGTH: 100000,
++	MAX_TEMPLATE_LENGTH: 5000,
++} as const;
+diff --git a/schema.sql b/schema.sql
+index 9c1f3f0..808922e 100644
+--- a/schema.sql
++++ b/schema.sql
+@@ -66,13 +66,20 @@ declare
+   user_plan text;
+   draft_count int;
+ begin
+-  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
++  select plan into user_plan
++  from public.sitecue_profiles
++  where id = auth.uid();
++
+   if user_plan = 'free' then
+-    select count(*) into draft_count from public.sitecue_drafts where user_id = auth.uid();
+-    if draft_count >= 3 then -- テスト用に3件へ引き下げ
++    select count(*) into draft_count
++    from public.sitecue_drafts
++    where user_id = auth.uid();
++
++    if draft_count >= 50 then
+       raise exception 'draft storage limit reached';
+     end if;
+   end if;
++
+   return new;
+ end;
+ $$;
+@@ -88,13 +95,21 @@ declare
+   user_plan text;
+   note_count int;
+ begin
+-  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
++  select plan into user_plan
++  from public.sitecue_profiles
++  where id = auth.uid();
++
+   if user_plan = 'free' then
+-    select count(*) into note_count from public.sitecue_notes where user_id = auth.uid();
+-    if note_count >= 5 then -- テスト用に5件へ引き下げ
++    select count(*) into note_count
++    from public.sitecue_notes
++    where user_id = auth.uid();
++
++    -- Note limit is 500 as per latest migration
++    if note_count >= 500 then
+       raise exception 'note storage limit reached';
+     end if;
+   end if;
++
+   return new;
+ end;
+ $$;
+diff --git a/supabase/migrations/20260430210935_add_length_constraints_and_drop_page_contents.sql b/supabase/migrations/20260430210935_add_length_constraints_and_drop_page_contents.sql
+new file mode 100644
+index 0000000..2bdf566
+--- /dev/null
++++ b/supabase/migrations/20260430210935_add_length_constraints_and_drop_page_contents.sql
+@@ -0,0 +1,8 @@
++-- 不要テーブルの削除
++DROP TABLE IF EXISTS "public"."sitecue_page_contents";
++
++-- 文字数制限のCHECK制約追加
++ALTER TABLE "public"."sitecue_notes" ADD CONSTRAINT "sitecue_notes_content_len_check" CHECK (char_length(content) <= 10000);
++ALTER TABLE "public"."sitecue_drafts" ADD CONSTRAINT "sitecue_drafts_content_len_check" CHECK (char_length(content) <= 100000);
++ALTER TABLE "public"."sitecue_templates" ADD CONSTRAINT "sitecue_templates_boilerplate_len_check" CHECK (char_length(boilerplate) <= 5000);
++ALTER TABLE "public"."sitecue_templates" ADD CONSTRAINT "sitecue_templates_weave_prompt_len_check" CHECK (char_length(weave_prompt) <= 5000);
+diff --git a/types/app.ts b/types/app.ts
+index e72ddf7..7179ee5 100644
+--- a/types/app.ts
++++ b/types/app.ts
+@@ -7,7 +7,7 @@ export type Note = Omit<
+ 	"scope"
+ > & {
+ 	scope: NoteScope;
+-	tags?: string[];
++	tags: string[] | null;
+ };
+ 
+ export type Template = Database["public"]["Tables"]["sitecue_templates"]["Row"];
+@@ -18,7 +18,7 @@ export type Draft = Database["public"]["Tables"]["sitecue_drafts"]["Row"] & {
+ 		[key: string]: unknown;
+ 	} | null;
+ 	sitecue_templates?: Template | null;
+-	tags?: string[];
++	tags: string[] | null;
+ };
+ 
+ export type PinnedSite =
+diff --git a/types/supabase.ts b/types/supabase.ts
+index 594f56c..e76e636 100644
+--- a/types/supabase.ts
++++ b/types/supabase.ts
+@@ -70,6 +70,7 @@ export type Database = {
+ 					created_at: string;
+ 					id: string;
+ 					metadata: Json | null;
++					tags: string[] | null;
+ 					template_id: string | null;
+ 					title: string | null;
+ 					updated_at: string;
+@@ -80,6 +81,7 @@ export type Database = {
+ 					created_at?: string;
+ 					id?: string;
+ 					metadata?: Json | null;
++					tags?: string[] | null;
+ 					template_id?: string | null;
+ 					title?: string | null;
+ 					updated_at?: string;
+@@ -90,6 +92,7 @@ export type Database = {
+ 					created_at?: string;
+ 					id?: string;
+ 					metadata?: Json | null;
++					tags?: string[] | null;
+ 					template_id?: string | null;
+ 					title?: string | null;
+ 					updated_at?: string;
+@@ -148,6 +151,7 @@ export type Database = {
+ 					note_type: string;
+ 					scope: string;
+ 					sort_order: number;
++					tags: string[] | null;
+ 					updated_at: string;
+ 					url_pattern: string;
+ 					user_id: string;
+@@ -164,6 +168,7 @@ export type Database = {
+ 					note_type?: string;
+ 					scope?: string;
+ 					sort_order?: number;
++					tags?: string[] | null;
+ 					updated_at?: string;
+ 					url_pattern: string;
+ 					user_id: string;
+@@ -180,6 +185,7 @@ export type Database = {
+ 					note_type?: string;
+ 					scope?: string;
+ 					sort_order?: number;
++					tags?: string[] | null;
+ 					updated_at?: string;
+ 					url_pattern?: string;
+ 					user_id?: string;
+@@ -374,6 +380,7 @@ export type Database = {
+ 					note_type: string;
+ 					scope: string;
+ 					sort_order: number;
++					tags: string[] | null;
+ 					updated_at: string;
+ 					url_pattern: string;
+ 					user_id: string;

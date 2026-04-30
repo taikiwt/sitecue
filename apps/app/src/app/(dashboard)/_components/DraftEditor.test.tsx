@@ -62,6 +62,7 @@ const mockDraft = {
 	updated_at: new Date().toISOString(),
 	user_id: "test-user-id",
 	template_id: null,
+	tags: null,
 };
 
 describe("DraftEditor - Error Handling", () => {

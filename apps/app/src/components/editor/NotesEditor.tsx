@@ -11,7 +11,7 @@ interface NotesEditorProps extends EditorProps {
 	onSave?: () => void;
 }
 
-// ★ ポイント: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+// basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
 const basicSetupConfig = {
 	lineNumbers: false,
 	foldGutter: false,
@@ -26,13 +26,13 @@ export const NotesEditor = ({
 }: NotesEditorProps) => {
 	useUnsavedChanges(isDirty);
 
-	// 最新の onSave 関数を追跡するための ref を作成
 	const onSaveRef = useRef(onSave);
 	useEffect(() => {
 		onSaveRef.current = onSave;
 	}, [onSave]);
 
 	// extensions 配列を useMemo で 1回だけ生成して固定する（無限ループを完全防止）
+	// ※絶対にここに文字数制限等の動的な拡張を追加しないこと
 	const extensions = useMemo(
 		() => [
 			...editorExtensions,
@@ -44,24 +44,23 @@ export const NotesEditor = ({
 						if (onSaveRef.current) {
 							onSaveRef.current();
 						}
-						return true; // デフォルトの改行挙動をストップ
+						return true;
 					},
 				},
 			]),
 		],
-		[],
-	); // 依存配列を空にすることで、再描画時にも絶対に再生成させない
+		[], // 依存配列を空にすることで、再描画時にも絶対に再生成させない
+	);
 
 	return (
 		<div className="w-full rounded-xl bg-base-surface/50 focus-within:bg-base-bg focus-within:shadow-sm border border-transparent focus-within:border-base-border transition-all duration-200 p-6">
 			<CodeMirror
 				value={value}
 				onChange={onChange}
-				extensions={extensions} // 固定した配列を渡す
+				extensions={extensions}
 				placeholder={placeholder}
 				basicSetup={basicSetupConfig}
 				className="text-base"
-				// theme="light"
 			/>
 		</div>
 	);

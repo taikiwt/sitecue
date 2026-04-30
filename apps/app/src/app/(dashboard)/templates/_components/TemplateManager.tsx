@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { APP_LIMITS } from "@/constants/limits";
 import {
 	useCreateTemplate,
 	useDeleteTemplate,
@@ -44,6 +45,21 @@ export function TemplateManager({
 	const [boilerplate, setBoilerplate] = useState("");
 	const [weavePrompt, setWeavePrompt] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+
+	const boilerplateCharCount = boilerplate.length;
+	const weavePromptCharCount = weavePrompt.length;
+
+	const isBoilerplateNearLimit =
+		boilerplateCharCount >= APP_LIMITS.MAX_TEMPLATE_LENGTH * 0.9;
+	const isBoilerplateOverLimit =
+		boilerplateCharCount > APP_LIMITS.MAX_TEMPLATE_LENGTH;
+
+	const isWeavePromptNearLimit =
+		weavePromptCharCount >= APP_LIMITS.MAX_TEMPLATE_LENGTH * 0.9;
+	const isWeavePromptOverLimit =
+		weavePromptCharCount > APP_LIMITS.MAX_TEMPLATE_LENGTH;
+
+	const isOverLimit = isBoilerplateOverLimit || isWeavePromptOverLimit;
 
 	// Sync form when selection changes
 	useEffect(() => {
@@ -182,7 +198,7 @@ export function TemplateManager({
 							</h2>
 							<Button
 								onClick={handleSave}
-								disabled={isSaving || !name.trim()}
+								disabled={isSaving || !name.trim() || isOverLimit}
 								type="button"
 							>
 								{isSaving ? "Saving..." : "Save Template"}
@@ -223,6 +239,21 @@ export function TemplateManager({
 									className="w-full rounded-lg border border-base-border bg-transparent p-3 text-sm focus:outline-none focus:ring-2 focus:ring-base-border"
 									placeholder="# Target Audience&#10;&#10;# Key Message"
 								/>
+								{isBoilerplateNearLimit && (
+									<div className="flex justify-end">
+										<span
+											className={cn(
+												"text-[10px] font-bold",
+												isBoilerplateOverLimit
+													? "text-note-alert"
+													: "text-note-idea",
+											)}
+										>
+											{boilerplateCharCount.toLocaleString()} /{" "}
+											{APP_LIMITS.MAX_TEMPLATE_LENGTH.toLocaleString()}
+										</span>
+									</div>
+								)}
 							</div>
 
 							<div className="space-y-2">
@@ -237,6 +268,21 @@ export function TemplateManager({
 									className="w-full rounded-lg border border-base-border bg-base-surface p-3 text-sm focus:outline-none font-mono text-xs"
 									placeholder="Provide context for the AI when generating from this template."
 								/>
+								{isWeavePromptNearLimit && (
+									<div className="flex justify-end">
+										<span
+											className={cn(
+												"text-[10px] font-bold",
+												isWeavePromptOverLimit
+													? "text-note-alert"
+													: "text-note-idea",
+											)}
+										>
+											{weavePromptCharCount.toLocaleString()} /{" "}
+											{APP_LIMITS.MAX_TEMPLATE_LENGTH.toLocaleString()}
+										</span>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>

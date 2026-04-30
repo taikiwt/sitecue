@@ -20,6 +20,7 @@ interface DraftEditorHeaderProps {
 	hasDraftId: boolean;
 	onSaveAsTemplate: () => void;
 	onDeleteDraft: () => void;
+	isOverLimit?: boolean;
 }
 
 export function DraftEditorHeader({
@@ -33,6 +34,7 @@ export function DraftEditorHeader({
 	hasDraftId,
 	onSaveAsTemplate,
 	onDeleteDraft,
+	isOverLimit = false,
 }: DraftEditorHeaderProps) {
 	return (
 		<header
@@ -64,7 +66,7 @@ export function DraftEditorHeader({
 
 				<Button
 					onClick={onSave}
-					disabled={status === "saving" || status === "success"}
+					disabled={status === "saving" || status === "success" || isOverLimit}
 					size="sm"
 					className="w-24 rounded-full"
 					type="button"
