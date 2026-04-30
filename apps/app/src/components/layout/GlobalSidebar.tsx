@@ -22,8 +22,12 @@ import type { DomainGroup, Note } from "@/app/(dashboard)/notes/types";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
-import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
-import { groupNotes, useNotesStore } from "@/store/useNotesStore";
+import {
+	useFetchNoteContents,
+	useFetchNotes,
+	useSearchNotes,
+} from "@/hooks/useNotesQuery";
+import { groupNotes } from "@/store/useNotesStore";
 import { getSafeUrl, normalizeUrlForGrouping } from "@/utils/url";
 
 interface GlobalSidebarProps {
@@ -37,7 +41,10 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 	const queryClient = useQueryClient();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
-	const { searchResults } = useNotesStore();
+	const qParam = searchParams.get("q") || "";
+	const tagsParam = searchParams.get("tags") || "";
+
+	const { data: searchResults = [] } = useSearchNotes(qParam, tagsParam);
 
 	// 画面遷移（戻る/進むを含む）が発生した際に、Next.jsのフリーズを破り
 	// バックグラウンドで最新データを再取得してキャッシュを上書きする
@@ -61,8 +68,6 @@ export function GlobalSidebar({ onClose }: GlobalSidebarProps) {
 
 	const _isDataReady = !isNotesLoading && !isDraftsLoading;
 
-	const qParam = searchParams.get("q") || "";
-	const tagsParam = searchParams.get("tags") || "";
 
 	// Helper to create href with search state (q, tags) preserved
 	const createHref = (domain: string, exactUrl?: string) => {
@@ -310,7 +315,7 @@ function DomainAccordionItem({
 	currentDomain: string | null;
 	currentExact: string | null;
 	createHref: (domain: string, exactUrl?: string) => string;
-	searchResults: Note[] | null;
+	searchResults: Note[];
 	isSearchActive: boolean;
 }) {
 	const isUnderThisDomain = currentDomain === domainName;

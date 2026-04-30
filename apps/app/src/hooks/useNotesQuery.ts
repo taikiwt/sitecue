@@ -147,14 +147,17 @@ export function useFetchNoteContents() {
 
 			const contentMap = new Map(contents.map((n) => [n.id, n.content]));
 
-			queryClient.setQueryData<Note[]>(NOTES_QUERY_KEY, (old) => {
-				if (!old) return old;
-				return old.map((note) =>
-					contentMap.has(note.id)
-						? { ...note, content: contentMap.get(note.id) as string }
-						: note,
-				);
-			});
+			queryClient.setQueriesData<Note[]>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					return old.map((note) =>
+						contentMap.has(note.id)
+							? { ...note, content: contentMap.get(note.id) as string }
+							: note,
+					);
+				},
+			);
 		},
 	});
 }
@@ -198,5 +201,38 @@ export function useDeleteNotes() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 		},
+	});
+}
+
+export function useSearchNotes(q?: string, tags?: string) {
+	return useQuery({
+		queryKey: [...NOTES_QUERY_KEY, "search", q, tags],
+		queryFn: async () => {
+			if (!q && !tags) return [];
+			const supabase = createClient();
+
+			let query = supabase
+				.from("sitecue_notes")
+				.select(
+					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
+				);
+
+			if (q) {
+				query = query.ilike("content", `%${q}%`);
+			}
+			if (tags) {
+				const tagsArray = tags.split(",");
+				query = query.contains("tags", tagsArray);
+			}
+
+			const { data, error } = await query
+				.order("is_pinned", { ascending: false })
+				.order("created_at", { ascending: false });
+
+			if (error) throw error;
+			return (data as Note[]) || [];
+		},
+		staleTime: 5 * 60 * 1000, // 5分間のキャッシュでブラウザバック時の再描画を高速化
+		enabled: !!q || !!tags,
 	});
 }
