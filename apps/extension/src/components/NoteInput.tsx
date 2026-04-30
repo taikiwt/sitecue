@@ -1,6 +1,7 @@
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { APP_LIMITS } from "../constants/limits";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { NoteScope, NoteType } from "../hooks/useNotes";
 
@@ -30,10 +31,14 @@ export default function NoteInput({
 	const isNearLimit = totalNoteCount >= maxFreeNotes * 0.9;
 	const isLimitReached = totalNoteCount >= maxFreeNotes;
 
+	const charCount = newNote.length;
+	const isCharNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
+	const isCharOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		const content = newNote.trim();
-		if (!content) return;
+		if (!content || isCharOverLimit) return;
 
 		// 即座に入力欄をクリアしてUXを向上（オプティミスティック更新）
 		setNewNote("");
@@ -168,13 +173,23 @@ export default function NoteInput({
 								}
 							}}
 						/>
+						{isCharNearLimit && (
+							<div className="absolute right-12 bottom-2 pointer-events-none">
+								<span
+									className={`text-[10px] font-bold ${isCharOverLimit ? "text-note-alert" : "text-note-idea"}`}
+								>
+									{charCount.toLocaleString()} /{" "}
+									{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
+								</span>
+							</div>
+						)}
 						<button
-							disabled={!newNote.trim()}
+							disabled={!newNote.trim() || isCharOverLimit}
 							type="submit"
-							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:cursor-not-allowed transition-colors"
+							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
 							title="Add Note"
 						>
-							<Send className="w-4 h-4" />
+							<Send className="w-4 h-4" aria-hidden="true" />
 						</button>
 					</>
 				)}

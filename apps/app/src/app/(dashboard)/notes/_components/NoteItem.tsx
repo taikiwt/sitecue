@@ -132,7 +132,7 @@ export function NoteItem({
 			</div>
 
 			{/* テキスト領域はクリックを透過させ、TODOボタンだけクリックを受け付ける */}
-			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10">
+			<div className="flex-1 block py-4 pr-4 pl-2 pointer-events-none relative z-10 min-w-0">
 				<div className="flex justify-between items-start mb-1">
 					{isNote ? (
 						<NoteStatusBadge
@@ -148,7 +148,7 @@ export function NoteItem({
 							{!item.title && !item.content ? "NEW" : "DRAFT"}
 						</span>
 					)}
-					<span className="text-[10px] text-gray-400">
+					<span className="text-[10px] text-gray-400 shrink-0">
 						{formatDate(isNote ? item.created_at : item.updated_at)}
 					</span>
 				</div>
@@ -162,14 +162,14 @@ export function NoteItem({
 				</h3>
 				<p
 					className={cn(
-						"text-sm text-action line-clamp-2 wrap-break-word",
+						"text-sm text-action line-clamp-2 break-words",
 						(isResolved || isExiting) && "line-through",
 					)}
 				>
 					{item.content}
 				</p>
 				{isNote && item.scope === "exact" && !currentExact && (
-					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none">
+					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none break-all">
 						<MapPin className="w-3 h-3" aria-hidden="true" />
 						{getSafeUrl(item.url_pattern)?.pathname ?? item.url_pattern}
 					</div>

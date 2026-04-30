@@ -13,3 +13,9 @@ export const AI_LIMIT = {
 	MAX_FREE: 3,
 	WARNING_THRESHOLD: 3,
 } as const;
+
+export const APP_LIMITS = {
+	MAX_NOTE_LENGTH: 10000,
+	MAX_DRAFT_LENGTH: 100000,
+	MAX_TEMPLATE_LENGTH: 5000,
+} as const;

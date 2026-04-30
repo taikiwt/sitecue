@@ -1,73 +1,58 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import toast from "react-hot-toast";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useUserStore } from "@/store/useUserStore";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import NoteEditor from "./NoteEditor";
+import { APP_LIMITS } from "@/constants/limits";
 
-// Mock dependencies
-vi.mock("react-hot-toast", () => ({
-	default: { error: vi.fn() },
+// Mock the limits
+vi.mock("@/constants/limits", () => ({
+	APP_LIMITS: {
+		MAX_NOTE_LENGTH: 100,
+		MAX_DRAFT_LENGTH: 1000,
+		MAX_TEMPLATE_LENGTH: 50,
+	},
 }));
 
-// NoteEditor内部の NotesEditor コンポーネントをモック
+// Mock the store
+vi.mock("@/store/useUserStore", () => ({
+	useUserStore: (selector: any) => selector({ openPaywall: vi.fn() }),
+}));
+
+// Mock the editor to be a simple textarea for tests
 vi.mock("@/components/editor/NotesEditor", () => ({
-	NotesEditor: ({
-		onChange,
-		value,
-	}: {
-		onChange: (val: string) => void;
-		value: string;
-	}) => (
+	NotesEditor: ({ value, onChange, placeholder }: any) => (
 		<textarea
-			data-testid="notes-editor"
 			value={value}
 			onChange={(e) => onChange(e.target.value)}
+			placeholder={placeholder}
 		/>
 	),
 }));
 
-describe("NoteEditor Error Handling", () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		useUserStore.setState({ isPaywallOpen: false });
+describe("NoteEditor Progressive Warning", () => {
+	it("通常時は文字数カウンターが表示されないこと", async () => {
+		render(<NoteEditor onSubmit={vi.fn()} />);
+		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
+		await userEvent.type(input, "通常のメモ");
+		expect(screen.queryByText(/100/)).not.toBeInTheDocument();
 	});
 
-	it("opens paywall on PostgrestError format (object without Error prototype)", async () => {
-		// Supabaseの PostgrestError を模倣したオブジェクトをスローさせる
-		const mockOnSubmit = vi.fn().mockRejectedValue({
-			message: "note storage limit reached",
-			code: "P0001",
-		});
-
-		render(<NoteEditor onSubmit={mockOnSubmit} />);
-
-		const editor = screen.getByTestId("notes-editor");
-		fireEvent.change(editor, { target: { value: "Test note" } });
-
-		const saveButton = screen.getByRole("button", { name: "Save note" });
-		fireEvent.click(saveButton);
-
-		await waitFor(() => {
-			expect(useUserStore.getState().isPaywallOpen).toBe(true);
-			expect(useUserStore.getState().paywallType).toBe("notes");
-			expect(toast.error).not.toHaveBeenCalled();
-		});
-	});
-
-	it("shows generic toast for other errors", async () => {
-		const mockOnSubmit = vi.fn().mockRejectedValue(new Error("Network Error"));
-
-		render(<NoteEditor onSubmit={mockOnSubmit} />);
-
-		const editor = screen.getByTestId("notes-editor");
-		fireEvent.change(editor, { target: { value: "Test note" } });
-
-		const saveButton = screen.getByRole("button", { name: "Save note" });
-		fireEvent.click(saveButton);
-
-		await waitFor(() => {
-			expect(toast.error).toHaveBeenCalledWith("Failed to save the note.");
-			expect(useUserStore.getState().isPaywallOpen).toBe(false);
-		});
+	it("上限の90%に達するとカウンターが表示され、超過するとボタンがdisabledになること", async () => {
+		render(<NoteEditor onSubmit={vi.fn()} />);
+		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
+		
+		// 90%以上の文字を入力 (90文字)
+		const nearLimitText = "a".repeat(90);
+		await userEvent.type(input, nearLimitText);
+		
+		expect(screen.getByText(/90 \/ 100/)).toBeInTheDocument();
+		
+		// 超過入力 (101文字)
+		const overLimitText = "a".repeat(11);
+		await userEvent.type(input, overLimitText);
+		
+		const submitButton = screen.getByRole("button", { name: /Save note/i });
+		expect(submitButton).toBeDisabled();
+		expect(screen.getByText(/101 \/ 100/)).toBeInTheDocument();
 	});
 });

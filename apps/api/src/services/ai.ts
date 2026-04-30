@@ -14,7 +14,6 @@ export async function weaveDocument(
 			type?: string;
 		}[];
 		format: string;
-		context_id?: string;
 		draft_content?: string;
 		template_id?: string;
 	},
@@ -25,29 +24,13 @@ export async function weaveDocument(
 		},
 	});
 
-	const { contexts, format, context_id, draft_content, template_id } = body;
+	const { contexts, format, draft_content, template_id } = body;
 
 	if (!Array.isArray(contexts) || typeof format !== "string") {
 		throw new Error("Invalid request body");
 	}
 
 	let referenceContent = "";
-	if (context_id) {
-		const { data: pageData, error: pageError } = await supabase
-			.from("sitecue_page_contents")
-			.select("content")
-			.eq("id", context_id)
-			.single();
-
-		if (!pageError && pageData) {
-			referenceContent = `【現在のページ内容】\n${pageData.content}`;
-
-			await supabase
-				.from("sitecue_page_contents")
-				.delete()
-				.eq("id", context_id);
-		}
-	}
 
 	if (draft_content) {
 		referenceContent += `${referenceContent ? "\n\n" : ""}【現在のドラフト本文】\n${draft_content}`;

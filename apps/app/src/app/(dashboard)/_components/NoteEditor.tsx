@@ -4,6 +4,8 @@ import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
+import { APP_LIMITS } from "@/constants/limits";
+import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 
 type NoteType = "info" | "alert" | "idea";
@@ -18,9 +20,13 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 	const [noteType, setNoteType] = useState<NoteType>("info");
 	const [isSaving, setIsSaving] = useState(false);
 
+	const charCount = content.length;
+	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
+	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
+
 	const handleSave = async (e?: React.FormEvent) => {
 		e?.preventDefault();
-		if (!content.trim() || isSaving) return;
+		if (!content.trim() || isSaving || isOverLimit) return;
 
 		setIsSaving(true);
 		try {
@@ -98,16 +104,29 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 				<button
 					type="button"
 					onClick={() => handleSave()}
-					disabled={!content.trim() || isSaving}
+					disabled={!content.trim() || isSaving || isOverLimit}
 					aria-label="Save note"
 					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
 					<Send className="h-4 w-4" aria-hidden="true" />
 				</button>
 			</div>
-			<p className="text-[10px] text-gray-400">
-				{isSaving ? "Saving..." : "Markdown supported"}
-			</p>
+			<div className="flex justify-between items-center">
+				<p className="text-[10px] text-gray-400">
+					{isSaving ? "Saving..." : "Markdown supported"}
+				</p>
+				{isNearLimit && (
+					<span
+						className={cn(
+							"text-[10px] font-bold transition-opacity duration-300",
+							isOverLimit ? "text-note-alert" : "text-note-idea",
+						)}
+					>
+						{charCount.toLocaleString()} /{" "}
+						{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
+					</span>
+				)}
+			</div>
 		</div>
 	);
 }

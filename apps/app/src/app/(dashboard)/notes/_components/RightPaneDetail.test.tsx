@@ -73,6 +73,7 @@ describe("RightPaneDetail", () => {
 			user_id: "user-1",
 			metadata: null,
 			template_id: null,
+			tags: null,
 		};
 
 		const queryClient = new QueryClient();

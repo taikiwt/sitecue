@@ -1,9 +1,9 @@
 "use client";
 
-import { toast } from "react-hot-toast";
 import { Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -20,6 +20,7 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
+import { APP_LIMITS } from "@/constants/limits";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDraftHistory } from "@/hooks/useDraftHistory";
 import {
@@ -37,7 +38,6 @@ import type { Draft, Note, Template } from "../../../../../../types/app.ts";
 import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
-
 import { SaveAsTemplateDialog } from "./SaveAsTemplateDialog";
 
 type NoteType = "info" | "alert" | "idea";
@@ -222,6 +222,7 @@ export default function DraftEditor({
 				is_pinned: false,
 				is_resolved: false,
 				sort_order: reviewNotes.length,
+				tags: null,
 			};
 			setReviewNotes((prev) => [tempNote, ...prev]);
 			setHasUnsavedNotesChanges(true);
@@ -337,9 +338,15 @@ export default function DraftEditor({
 	};
 
 	const charCount = content.length;
-	const maxLength = activeTemplate?.max_length;
+	const templateLimit = activeTemplate?.max_length;
+	const absoluteLimit = APP_LIMITS.MAX_DRAFT_LENGTH;
+	const effectiveLimit = templateLimit ?? absoluteLimit;
+
+	const isNearLimit = charCount >= effectiveLimit * 0.9;
+	const isOverLimit = charCount > effectiveLimit;
 
 	const handleSave = async () => {
+		if (isOverLimit) return;
 		setStatus("saving");
 		try {
 			const {
@@ -481,6 +488,7 @@ export default function DraftEditor({
 						hasDraftId={!!initialDraft?.id}
 						onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
 						onDeleteDraft={handleDeleteDraft}
+						isOverLimit={isOverLimit}
 					/>
 
 					<main className="flex-1 overflow-y-auto px-8 py-10">
@@ -493,11 +501,12 @@ export default function DraftEditor({
 											? `Template: ${activeTemplate.name}`
 											: "Blank Canvas"}
 									</span>
-									{maxLength && (
+									{isNearLimit && (
 										<span
-											className={`text-sm font-mono font-bold ${charCount > maxLength ? "text-note-alert" : "text-neutral-400"}`}
+											className={`text-sm font-mono font-bold ${isOverLimit ? "text-note-alert" : "text-neutral-400"}`}
 										>
-											{charCount} / {maxLength}
+											{charCount.toLocaleString()} /{" "}
+											{effectiveLimit.toLocaleString()}
 										</span>
 									)}
 								</div>

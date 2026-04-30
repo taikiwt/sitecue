@@ -65,7 +65,7 @@ const hintField = StateField.define<DecorationSet>({
 	provide: (f) => EditorView.decorations.from(f),
 });
 
-// ★ ポイント1: basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
+// basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
 const basicSetupConfig = {
 	lineNumbers: false,
 	foldGutter: false,
@@ -80,13 +80,12 @@ export const StudioEditor = ({
 }: StudioEditorProps) => {
 	useUnsavedChanges(isDirty);
 
-	// 最新の onGenerateHint 関数を常に保持する
 	const onGenerateHintRef = useRef(onGenerateHint);
 	useEffect(() => {
 		onGenerateHintRef.current = onGenerateHint;
 	}, [onGenerateHint]);
 
-	// ★ ポイント2: 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
+	// 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
 	const hintExtension = useMemo(() => {
 		const requestHint = (view: EditorView) => {
 			// 実行時にRefの中身を確認する（拡張機能自体を作り直す必要はない）
@@ -158,7 +157,6 @@ export const StudioEditor = ({
 	const extensions = React.useMemo(
 		() => [
 			...editorExtensions,
-			// sitecueTheme が配列の場合はスプレッド展開する（一貫性のため）
 			...(Array.isArray(sitecueTheme) ? sitecueTheme : [sitecueTheme]),
 			...hintExtension,
 		],

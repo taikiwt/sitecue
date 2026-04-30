@@ -39,6 +39,7 @@ const mockItems: Note[] = [
 		is_resolved: false,
 		sort_order: 0,
 		draft_id: null,
+		tags: null,
 	},
 	{
 		id: "note-2",
@@ -55,6 +56,7 @@ const mockItems: Note[] = [
 		is_resolved: false,
 		sort_order: 1,
 		draft_id: null,
+		tags: null,
 	},
 ];
 
