@@ -3,8 +3,7 @@ import type { Draft, GroupedNotes, Note } from "@/app/(dashboard)/notes/types";
 import { normalizeUrlForGrouping } from "@/utils/url";
 
 interface NotesState {
-	searchResults: Note[] | null;
-	setSearchResults: (results: Note[] | null) => void;
+	_initialized?: boolean;
 }
 
 export function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
@@ -44,8 +43,4 @@ export function groupNotes(notes: Note[], drafts: Draft[]): GroupedNotes {
 	return grouped;
 }
 
-export const useNotesStore = create<NotesState>((set, _get) => ({
-	searchResults: null,
-
-	setSearchResults: (results) => set({ searchResults: results }),
-}));
+export const useNotesStore = create<NotesState>((_set, _get) => ({}));

@@ -1,11 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
-import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
-import { groupNotes, useNotesStore } from "@/store/useNotesStore";
-import { createClient } from "@/utils/supabase/client";
+import {
+	useFetchNoteContents,
+	useFetchNotes,
+	useSearchNotes,
+} from "@/hooks/useNotesQuery";
+import { groupNotes } from "@/store/useNotesStore";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
@@ -16,7 +19,6 @@ export function NotesContainer() {
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
 	const { mutate: fetchContentForIds } = useFetchNoteContents();
-	const { searchResults, setSearchResults } = useNotesStore();
 
 	const groupedNotes = useMemo(() => {
 		if (isNotesLoading || isDraftsLoading) return null;
@@ -43,44 +45,14 @@ export function NotesContainer() {
 		};
 	}, [searchParams]);
 
-	const [_isSearching, setIsSearching] = useState(false);
-
-	// Implement database-level search
-	useEffect(() => {
-		if (!params.q && !params.tags) {
-			setSearchResults(null);
-			return;
-		}
-
-		const fetchSearch = async () => {
-			setIsSearching(true);
-			try {
-				const supabase = createClient();
-				let query = supabase.from("sitecue_notes").select("*");
-
-				if (params.q) {
-					query = query.ilike("content", `%${params.q}%`);
-				}
-				if (params.tags) {
-					const tagsArray = params.tags.split(",");
-					query = query.contains("tags", tagsArray);
-				}
-
-				const { data, error } = await query
-					.order("is_pinned", { ascending: false })
-					.order("created_at", { ascending: false });
-
-				if (error) throw error;
-				setSearchResults((data as Note[]) || []);
-			} catch (err) {
-				console.error("Search failed:", err);
-			} finally {
-				setIsSearching(false);
-			}
-		};
-
-		fetchSearch();
-	}, [params.q, params.tags, setSearchResults]);
+	// 1. TanStack Queryによる検索の宣言的実行
+	const isSearchActive = !!params.q || !!params.tags;
+	const {
+		data: searchResults = [],
+		isLoading: isSearchLoading,
+		isFetching: isSearchFetching,
+	} = useSearchNotes(params.q, params.tags);
+	const isSearching = isSearchLoading || isSearchFetching;
 
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
@@ -92,7 +64,7 @@ export function NotesContainer() {
 
 	// フィルタリングされた一覧の計算 (既存の page.tsx から移植)
 	const filteredItems = useMemo(() => {
-		if (searchResults !== null) return searchResults;
+		if (isSearchActive) return searchResults;
 		if (!groupedNotes) return [];
 
 		let items: (Note | Draft)[] = [];
@@ -130,7 +102,14 @@ export function NotesContainer() {
 			}
 		}
 		return items;
-	}, [groupedNotes, effectiveView, domain, exact, searchResults]);
+	}, [
+		groupedNotes,
+		effectiveView,
+		domain,
+		exact,
+		searchResults,
+		isSearchActive,
+	]);
 
 	// フォールバック: 表示されているリストの中に本文(content)がないものがあれば自動取得
 	useEffect(() => {
@@ -153,14 +132,15 @@ export function NotesContainer() {
 		if (!params.noteId) return undefined;
 
 		// 1. 検索結果（ローカル状態・完全なデータ）を先に評価する
-		if (searchResults) {
+		if (isSearchActive) {
 			const foundInSearch = searchResults.find((n) => n.id === params.noteId);
 			if (foundInSearch) return foundInSearch;
 		}
 
 		// 2. なければ全体データ（Slim Fetchingキャッシュ等）から探す
 		return notes.find((n) => n.id === params.noteId);
-	}, [notes, searchResults, params.noteId]);
+	}, [notes, searchResults, params.noteId, isSearchActive]);
+
 	const selectedDraft = useMemo(
 		() =>
 			params.draftId ? drafts.find((d) => d.id === params.draftId) : undefined,
@@ -171,20 +151,41 @@ export function NotesContainer() {
 		return null; // Initial loading state (handled by Suspense if we want a better fallback)
 	}
 
+	// 5. ローディング中のスケルトンUIコンポーネント (MiddleNode用)
+	const MiddleNodeContent =
+		isSearchActive && isSearching ? (
+			<div
+				className="flex flex-col h-full bg-base-bg border-r border-base-border w-96 p-4 gap-4"
+				role="status"
+				aria-busy="true"
+				aria-label="Loading search results"
+			>
+				<div className="h-6 bg-base-surface border border-base-border rounded w-1/3 animate-pulse" />
+				<div className="flex flex-col gap-2 mt-4">
+					{[1, 2, 3, 4, 5].map((i) => (
+						<div
+							key={i}
+							className="h-24 bg-base-surface border border-base-border rounded-lg w-full animate-pulse"
+						/>
+					))}
+				</div>
+			</div>
+		) : (
+			<MiddlePaneList
+				items={filteredItems}
+				currentView={effectiveView}
+				currentDomain={domain ?? null}
+				currentExact={exact ?? null}
+				selectedNoteId={params.noteId ?? null}
+				selectedDraftId={params.draftId ?? null}
+			/>
+		);
+
 	return (
 		<ResponsiveNotesLayout
 			selectedNoteId={params.noteId ?? null}
 			selectedDraftId={params.draftId ?? null}
-			middleNode={
-				<MiddlePaneList
-					items={filteredItems}
-					currentView={effectiveView}
-					currentDomain={domain ?? null}
-					currentExact={exact ?? null}
-					selectedNoteId={params.noteId ?? null}
-					selectedDraftId={params.draftId ?? null}
-				/>
-			}
+			middleNode={MiddleNodeContent}
 			rightNode={
 				<RightPaneDetail
 					note={selectedNote}
