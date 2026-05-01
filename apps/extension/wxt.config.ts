@@ -14,6 +14,13 @@ export default defineConfig({
 		plugins: [tailwindcss()],
 	}),
 
+	// 開発サーバー用
+	dev: {
+		server: {
+			port: 3001,
+		},
+	},
+
 	// manifest.json の完全な代わり
 	manifest: ({ command }) => ({
 		name: command === "serve" ? "[DEV] sitecue" : "sitecue",

@@ -54,6 +54,8 @@ export function useAuth() {
 			if (error) throw error;
 			if (!data?.url) throw new Error("No OAuth URL returned");
 
+			// console.log("【デバッグ用】実際に渡されるURL:", data.url);
+
 			// 3. Launch Chrome Web Auth Flow
 			chrome.identity.launchWebAuthFlow(
 				{
