@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
@@ -53,20 +54,13 @@ export default async function LoginPage({
 			<ForceDashboardRedirect />
 			<div className="w-full max-w-sm space-y-8 text-center">
 				<div className="flex justify-center">
-					<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-action text-action-text shadow-sm">
-						<svg
-							className="h-6 w-6"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							aria-hidden="true"
-						>
-							<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-						</svg>
-					</div>
+					<Image
+						src="/logo.svg"
+						alt="sitecue logo"
+						width={56}
+						height={56}
+						priority
+					/>
 				</div>
 				<div className="space-y-2">
 					<h1 className="text-2xl font-bold text-neutral-900">
