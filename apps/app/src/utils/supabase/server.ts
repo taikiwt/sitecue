@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function createClient() {
 	const cookieStore = await cookies();
@@ -26,4 +27,22 @@ export async function createClient() {
 			},
 		},
 	);
+}
+
+/**
+ * 認証済みユーザーを要求するData Access Layer (DAL)。
+ * 未認証時は指定された currentPath を next パラメータに付与して /login へリダイレクトする。
+ */
+export async function requireUser(currentPath: string) {
+	const supabase = await createClient();
+	const {
+		data: { user },
+		error,
+	} = await supabase.auth.getUser();
+
+	if (error || !user) {
+		redirect(`/login?next=${encodeURIComponent(currentPath)}`);
+	}
+
+	return { supabase, user };
 }

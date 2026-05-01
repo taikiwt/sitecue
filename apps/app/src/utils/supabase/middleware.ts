@@ -35,12 +35,13 @@ export async function updateSession(request: NextRequest) {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const protectedRoutes = ["/", "/notes", "/studio"];
-	const isProtectedRoute =
-		protectedRoutes.includes(request.nextUrl.pathname) ||
-		request.nextUrl.pathname.startsWith("/studio/");
+	// オプトアウト方式: 認証不要な公開ルートをホワイトリストとして定義
+	const publicRoutes = ["/login", "/auth/callback", "/pricing"];
+	const isPublicRoute =
+		publicRoutes.includes(request.nextUrl.pathname) ||
+		request.nextUrl.pathname.startsWith("/api/");
 
-	if (!user && isProtectedRoute) {
+	if (!user && !isPublicRoute) {
 		// no user, potentially respond by redirecting the user to the login page
 		let baseUrl = request.url;
 		const host =
@@ -61,3 +62,10 @@ export async function updateSession(request: NextRequest) {
 
 	return supabaseResponse;
 }
+
+// 静的アセット等の除外設定
+export const config = {
+	matcher: [
+		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+	],
+};

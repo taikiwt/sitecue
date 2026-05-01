@@ -8,13 +8,13 @@ import {
 } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { NOTES_LIMIT } from "@/constants/limits";
-import { createClient } from "@/utils/supabase/server";
+import { requireUser } from "@/utils/supabase/server";
 import type { PinnedSite } from "../../../../../types/app";
 import { ComingSoonButton } from "./_components/ComingSoonButton";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
 
 export default async function LaunchpadPage() {
-	const supabase = await createClient();
+	const { supabase } = await requireUser("/");
 	const [
 		{ count: notesCount },
 		{ count: draftsCount },

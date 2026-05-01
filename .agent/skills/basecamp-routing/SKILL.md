@@ -31,3 +31,12 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 ## 5. Server Component Constraints (RSCの掟)
 - **イベントハンドラの禁止**: `page.tsx` や `layout.tsx` などの Server Component 内で、直接 `onClick` や `onChange` などのイベントハンドラを記述したり、`useState` などの React Hooks を呼び出したりすることは**厳禁**。
 - **解決策 (Expand & Contract)**: ボタンのクリックによるトースト通知や状態変更など、インタラクティブな処理が必要な場合は、そのボタン部分のみを純粋な Client Component (`"use client"`) として別ファイル（例: `_components/HogeButton.tsx`）に切り出し、Server Component にインポートして配置すること。
+
+## 6. Route Protection & Auth Constraints (多層防御の掟)
+- **オプトアウト方式の Middleware**:
+  Middleware（`middleware.ts`）でのルート保護は、ホワイトリスト（公開ルート）を定義し、「それ以外のルートはすべてデフォルトで保護対象（ログイン必須）」とするオプトアウト方式を維持すること。手動で保護ルートを列挙（オプトイン）してはならない。
+- **Data Access Layer (DAL) による二重チェック**:
+  Middlewareによる保護に加え、ログインが前提となるすべての Server Component（`page.tsx` 等）において、他のDBクエリを実行する前に必ず `requireUser()` などの共通認証ユーティリティを呼び出すこと。
+  未認証時は早期リターンで即座に `redirect('/login')` などを発火させ、RLSによる空データの描画（Ghost UI）を確実に防ぐ。
+- **`getUser()` の絶対使用**:
+  セッションの有効性をサーバー側で正確に検証するため、認証ユーティリティの内部では `getSession()` ではなく、必ず `supabase.auth.getUser()` を使用すること。

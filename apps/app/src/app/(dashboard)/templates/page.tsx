@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { requireUser } from "@/utils/supabase/server";
 import type { Template } from "../../../../../../types/app";
 import { TemplateManager } from "./_components/TemplateManager";
 
@@ -9,14 +8,11 @@ export default async function TemplatesPage({
 	searchParams: Promise<{ id?: string }>;
 }) {
 	const resolvedParams = await searchParams;
-	const supabase = await createClient();
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
+	const currentPath = resolvedParams.id
+		? `/templates?id=${resolvedParams.id}`
+		: "/templates";
 
-	if (!user) {
-		return redirect("/login?next=/templates");
-	}
+	const { supabase } = await requireUser(currentPath);
 
 	const { data: templates } = await supabase
 		.from("sitecue_templates")
