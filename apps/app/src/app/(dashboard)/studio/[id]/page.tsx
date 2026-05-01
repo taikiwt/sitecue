@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import type { Draft } from "../../../../../../../types/app.ts";
@@ -32,9 +33,11 @@ export default async function DraftEditPage({ params }: DraftPageProps) {
 	};
 
 	return (
-		<DraftEditor
-			initialDraft={formattedDraft}
-			template={formattedDraft.sitecue_templates}
-		/>
+		<Suspense fallback={null}>
+			<DraftEditor
+				initialDraft={formattedDraft}
+				template={formattedDraft.sitecue_templates}
+			/>
+		</Suspense>
 	);
 }
