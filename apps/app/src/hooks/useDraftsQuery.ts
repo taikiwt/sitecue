@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Draft } from "@/../../../../types/app";
+import type { Draft } from "@/../../../types/app";
 import { createClient } from "@/utils/supabase/client";
 
 export const DRAFTS_QUERY_KEY = ["drafts"];
