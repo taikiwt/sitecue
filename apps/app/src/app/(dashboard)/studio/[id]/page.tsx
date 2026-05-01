@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { requireUser } from "@/utils/supabase/server";
 import type { Draft } from "../../../../../../../types/app.ts";
 import DraftEditor from "../../_components/DraftEditor";
 
@@ -12,7 +12,7 @@ interface DraftPageProps {
 
 export default async function DraftEditPage({ params }: DraftPageProps) {
 	const { id } = await params;
-	const supabase = await createClient();
+	const { supabase } = await requireUser(`/studio/${id}`);
 
 	const { data: draft, error } = await supabase
 		.from("sitecue_drafts")

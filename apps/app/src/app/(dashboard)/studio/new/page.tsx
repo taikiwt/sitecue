@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { createClient } from "@/utils/supabase/server";
+import { requireUser } from "@/utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
 
 export default async function FocusModePage({
@@ -8,14 +8,19 @@ export default async function FocusModePage({
 	searchParams: Promise<{ template_id?: string }>;
 }) {
 	const resolvedParams = await searchParams;
-	let template = null;
+	const templateId = resolvedParams.template_id;
+	const currentPath = templateId
+		? `/studio/new?template_id=${templateId}`
+		: "/studio/new";
 
-	if (resolvedParams.template_id) {
-		const supabase = await createClient();
+	const { supabase } = await requireUser(currentPath);
+
+	let template = null;
+	if (templateId) {
 		const { data } = await supabase
 			.from("sitecue_templates")
 			.select("*")
-			.eq("id", resolvedParams.template_id)
+			.eq("id", templateId)
 			.single();
 		template = data;
 	}
