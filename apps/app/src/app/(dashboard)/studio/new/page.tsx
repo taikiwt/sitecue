@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
 
@@ -19,5 +20,9 @@ export default async function FocusModePage({
 		template = data;
 	}
 
-	return <DraftEditor template={template} />;
+	return (
+		<Suspense fallback={null}>
+			<DraftEditor template={template} />
+		</Suspense>
+	);
 }
