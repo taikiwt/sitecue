@@ -75,11 +75,11 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 	};
 
 	return (
-		<section className="mb-16">
-			<div className="mb-8 flex items-center justify-between">
+		<section className="mb-8 md:mb-16">
+			<div className="mb-4 md:mb-8 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<Rocket className="w-5 h-5 text-neutral-400" aria-hidden="true" />
-					<h2 className="text-xl text-action font-light tracking-tight text-neutral-800">
+					<h2 className="text-xl text-action font-light tracking-tight">
 						Favorite Sites
 					</h2>
 				</div>
@@ -108,7 +108,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 					onSubmit={handleSubmit}
 					className="mb-8 p-6 rounded-2xl border border-base-border bg-base-surface shadow-sm animate-in fade-in slide-in-from-top-2 duration-200"
 				>
-					<div className="grid gap-4 sm:grid-cols-2">
+					<div className="grid gap-2 md:gap-4 sm:grid-cols-2">
 						<div className="space-y-2">
 							<label
 								htmlFor="title"
@@ -165,13 +165,13 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				{optimisticSites.map((site) => (
 					<div
 						key={site.id}
-						className="group relative flex items-center justify-between rounded-lg border border-base-border bg-base-surface p-2.5 launchpad-transition launchpad-card-favorite"
+						className="group relative flex items-center justify-between rounded-lg border border-base-border bg-base-surface p-1 md:p-2.5 launchpad-transition launchpad-card-favorite"
 					>
 						<a
 							href={site.url}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="flex items-center gap-2.5 flex-1 min-w-0 outline-none cursor-pointer"
+							className="flex items-center gap-2 md:gap-2.5 flex-1 min-w-0 outline-none cursor-pointer"
 						>
 							<div className="shrink-0 rounded bg-base-bg p-1.5 group-hover:bg-white transition-colors">
 								<Image
@@ -199,7 +199,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							size="icon-xs"
 							onClick={() => handleDelete(site.id)}
 							disabled={isPending}
-							className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer ml-2 shrink-0"
+							className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer ml-2 shrink-0"
 							title="Delete"
 						>
 							<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />

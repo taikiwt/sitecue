@@ -262,7 +262,7 @@ export function MiddlePaneList(props: Props) {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-base-bg border-r border-base-border w-96">
+		<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
 			<div
 				className={cn(
 					"p-4 border-b border-base-border sticky top-0 bg-base-bg z-10 transition-all duration-300",
@@ -271,7 +271,7 @@ export function MiddlePaneList(props: Props) {
 			>
 				<div className="flex items-center justify-between">
 					<h2
-						className="text-lg font-bold text-action truncate"
+						className="text-xl md:text-lg font-bold text-action truncate"
 						title={getTitle()}
 					>
 						{getTitle()}
@@ -283,7 +283,7 @@ export function MiddlePaneList(props: Props) {
 								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
 								title="New Note here"
 							>
-								<Plus className="w-4 h-4" />
+								<Plus className="size-5 md:size-4" />
 							</Link>
 							<AnimatedIconButton
 								type="button"
@@ -292,9 +292,11 @@ export function MiddlePaneList(props: Props) {
 									if (!isSelectMode === false) setSelectedIds(new Set());
 								}}
 								isActive={isSelectMode}
-								icon={<ListChecks className="w-4 h-4" aria-hidden="true" />}
+								icon={
+									<ListChecks className="size-5 md:size-4" aria-hidden="true" />
+								}
 								activeIcon={
-									<ListChecks className="w-4 h-4" aria-hidden="true" />
+									<ListChecks className="size-5 md:size-4" aria-hidden="true" />
 								}
 								className={cn(
 									"cursor-pointer",
@@ -313,10 +315,13 @@ export function MiddlePaneList(props: Props) {
 										<HoverSwapButton
 											type="button"
 											defaultIcon={
-												<Copy className="w-4 h-4" aria-hidden="true" />
+												<Copy className="size-5 md:size-4" aria-hidden="true" />
 											}
 											hoverIcon={
-												<ClipboardCopy className="w-4 h-4" aria-hidden="true" />
+												<ClipboardCopy
+													className="size-5 md:size-4"
+													aria-hidden="true"
+												/>
 											}
 											disableSuccessState={true}
 											className={cn(

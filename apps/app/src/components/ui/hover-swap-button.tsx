@@ -14,7 +14,7 @@ export interface HoverSwapButtonProps
 export function HoverSwapButton({
 	defaultIcon,
 	hoverIcon,
-	successIcon = <Check className="w-4 h-4 text-success" />,
+	successIcon = <Check className="size-5 md:size-4 text-success" />,
 	className,
 	type = "button",
 	stayDuration = 1500,

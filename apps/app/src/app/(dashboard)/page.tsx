@@ -41,19 +41,19 @@ export default async function LaunchpadPage() {
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans">
-			<main className="mx-auto max-w-4xl px-6 py-12">
+			<main className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-12">
 				{/* 1段目: Pinned Sites */}
-				<div className="mb-16">
+				<div className="mb-8 md:mb-16">
 					<PinnedSitesManager
 						initialSites={(pinnedSites as PinnedSite[]) ?? []}
 					/>
 				</div>
 
 				{/* 2段目: 統計 & Recent Drafts (2カラム) */}
-				<div className="mb-20 grid gap-12 md:grid-cols-[1fr_2fr] items-start">
+				<div className="mb-8 md:mb-20 grid gap-8 md:gap-12 md:grid-cols-[1fr_2fr] items-start">
 					{/* 左: Overview */}
 					<div>
-						<div className="mb-8 flex items-center gap-2">
+						<div className="mb-4 md:mb-8 flex items-center gap-2">
 							<Activity
 								className="w-5 h-5 text-neutral-400"
 								aria-hidden="true"
@@ -103,7 +103,7 @@ export default async function LaunchpadPage() {
 
 					{/* 右: Recent Drafts */}
 					<div>
-						<div className="mb-6 flex items-center justify-between">
+						<div className="mb-4 md:mb-6 flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<Clock
 									className="w-4 h-4 text-neutral-400"
@@ -155,8 +155,8 @@ export default async function LaunchpadPage() {
 				</div>
 
 				{/* 3段目: Start a Draft */}
-				<section className="mb-20">
-					<div className="mb-8 flex items-center justify-between">
+				<section className="mb-12 md:mb-20">
+					<div className="mb-6 md:mb-8 flex items-center justify-between">
 						<div className="flex items-center gap-2">
 							<PenSquare
 								className="w-5 h-5 text-neutral-400"

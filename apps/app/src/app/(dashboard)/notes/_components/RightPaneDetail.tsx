@@ -387,7 +387,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-y-auto">
-			<div className="p-8 max-w-3xl mx-auto w-full">
+			<div className="px-4 py-12 md:p-8 max-w-3xl mx-auto w-full">
 				<div className="flex items-center justify-between mb-8 pb-4 border-b border-base-border">
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									{isNewNote ? "NEW" : "DRAFT"}
 								</span>
 							)}
-							<span className="text-sm text-gray-400">
+							<span className="hidden md:inline text-sm text-gray-400">
 								{formatDate(createdAt)}
 							</span>
 						</div>
@@ -415,7 +415,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								<HoverRevealButton
 									type="button"
 									onClick={handleEdit}
-									icon={<Pencil className="size-3.5" aria-hidden="true" />}
+									icon={<Pencil className="size-4" aria-hidden="true" />}
 									text="Edit"
 									className="cursor-pointer shadow-sm ml-1 bg-action hover-safe:bg-action! text-action-text hover-safe:text-action-text!"
 								/>
@@ -423,10 +423,16 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									type="button"
 									onClick={handleCopyAll}
 									defaultIcon={
-										<Clipboard className="w-4 h-4" aria-hidden="true" />
+										<Clipboard
+											className="size-5 md:size-4"
+											aria-hidden="true"
+										/>
 									}
 									hoverIcon={
-										<ClipboardCopy className="w-4 h-4" aria-hidden="true" />
+										<ClipboardCopy
+											className="size-5 md:size-4"
+											aria-hidden="true"
+										/>
 									}
 									className={cn(
 										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
@@ -445,7 +451,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 												aria-label="More options"
 											>
 												<MoreHorizontal
-													className="w-4 h-4"
+													className="size-5 md:size-4"
 													aria-hidden="true"
 												/>
 											</Button>
@@ -569,9 +575,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											handleUpdateProperty({ is_pinned: !currentPinned })
 										}
 										isActive={currentPinned}
-										icon={<Pin className="w-4 h-4" aria-hidden="true" />}
+										icon={
+											<Pin className="size-5 md:size-4" aria-hidden="true" />
+										}
 										activeIcon={
-											<PinOff className="w-4 h-4" aria-hidden="true" />
+											<PinOff className="size-5 md:size-4" aria-hidden="true" />
 										}
 										className={cn(
 											"cursor-pointer",
@@ -589,10 +597,12 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											})
 										}
 										isActive={currentFavorite}
-										icon={<Star className="w-4 h-4" aria-hidden="true" />}
+										icon={
+											<Star className="size-5 md:size-4" aria-hidden="true" />
+										}
 										activeIcon={
 											<Star
-												className="w-4 h-4"
+												className="size-5 md:size-4"
 												aria-hidden="true"
 												fill="currentColor"
 											/>
@@ -658,11 +668,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							>
 								{isCopyingUrl ? (
 									<Check
-										className="w-4 h-4 text-green-500"
+										className="size-5 md:size-4 text-green-500"
 										aria-hidden="true"
 									/>
 								) : (
-									<Copy className="w-4 h-4" aria-hidden="true" />
+									<Copy className="size-5 md:size-4" aria-hidden="true" />
 								)}
 							</Button>
 						</div>
@@ -735,7 +745,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							})()}
 						</div>
 					) : (
-						<div className="min-h-[200px] rounded-2xl">
+						<div className="min-h-50 rounded-2xl">
 							<MarkdownRenderer content={content} />
 						</div>
 					)}
@@ -778,7 +788,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				open={isEditMetaDialogOpen}
 				onOpenChange={setIsEditMetaDialogOpen}
 			>
-				<DialogContent className="sm:max-w-[425px]">
+				<DialogContent className="sm:max-w-106.25">
 					<DialogHeader>
 						<DialogTitle>Edit Note Scope & URL</DialogTitle>
 					</DialogHeader>
