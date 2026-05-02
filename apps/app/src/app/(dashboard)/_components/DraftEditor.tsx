@@ -491,7 +491,7 @@ export default function DraftEditor({
 						isOverLimit={isOverLimit}
 					/>
 
-					<main className="flex-1 overflow-y-auto px-8 py-10">
+					<main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10">
 						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
 							{/* Metadata & Title Area */}
 							<div className="flex flex-col gap-4">

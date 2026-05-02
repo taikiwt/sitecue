@@ -93,7 +93,10 @@ export function DraftEditorHeader({
 								className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
 								aria-label="More options"
 							>
-								<MoreHorizontal className="w-5 h-5" aria-hidden="true" />
+								<MoreHorizontal
+									className="size-5 md:size-4"
+									aria-hidden="true"
+								/>
 							</Button>
 						}
 					/>

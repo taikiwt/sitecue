@@ -53,7 +53,7 @@ export const NotesEditor = ({
 	);
 
 	return (
-		<div className="w-full rounded-xl bg-base-surface/50 focus-within:bg-base-bg focus-within:shadow-sm border border-transparent focus-within:border-base-border transition-all duration-200 p-6">
+		<div className="w-full rounded-xl bg-base-surface/50 focus-within:bg-base-bg focus-within:shadow-sm border border-transparent focus-within:border-base-border transition-all duration-200 p-2 md:p-6">
 			<CodeMirror
 				value={value}
 				onChange={onChange}
