@@ -1,0 +1,757 @@
+diff --git a/apps/app/src/app/(dashboard)/_components/UserMenu.tsx b/apps/app/src/app/(dashboard)/_components/UserMenu.tsx
+index 617716d..9ca73b3 100644
+--- a/apps/app/src/app/(dashboard)/_components/UserMenu.tsx
++++ b/apps/app/src/app/(dashboard)/_components/UserMenu.tsx
+@@ -3,8 +3,9 @@
+ import type { User as SupabaseUser } from "@supabase/supabase-js";
+ import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
+ import { useRouter } from "next/navigation";
+-import { useEffect, useRef, useState } from "react";
++import { useEffect, useState } from "react";
+ import toast from "react-hot-toast";
++import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+ import { CustomLink as Link } from "@/components/ui/custom-link";
+ import { AI_LIMIT, DRAFTS_LIMIT, NOTES_LIMIT } from "@/constants/limits";
+ import { useFetchDrafts } from "@/hooks/useDraftsQuery";
+@@ -21,7 +22,6 @@ export function UserMenu() {
+ 	const { aiUsageCount, plan, setUserData } = useUserStore();
+ 	const { data: notes = [] } = useFetchNotes();
+ 	const { data: drafts = [] } = useFetchDrafts();
+-	const menuRef = useRef<HTMLDivElement>(null);
+ 
+ 	useEffect(() => {
+ 		const getUserAndProfile = async () => {
+@@ -49,30 +49,6 @@ export function UserMenu() {
+ 		getUserAndProfile();
+ 	}, [supabase, setUserData]);
+ 
+-	// Close menu on click outside or Esc key
+-	useEffect(() => {
+-		const handleClickOutside = (event: MouseEvent) => {
+-			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+-				setIsMenuOpen(false);
+-			}
+-		};
+-
+-		const handleEscKey = (event: KeyboardEvent) => {
+-			if (event.key === "Escape") {
+-				setIsMenuOpen(false);
+-			}
+-		};
+-
+-		if (isMenuOpen) {
+-			document.addEventListener("mousedown", handleClickOutside);
+-			document.addEventListener("keydown", handleEscKey);
+-		}
+-
+-		return () => {
+-			document.removeEventListener("mousedown", handleClickOutside);
+-			document.removeEventListener("keydown", handleEscKey);
+-		};
+-	}, [isMenuOpen]);
+ 
+ 	const handleSignOut = async () => {
+ 		await supabase.auth.signOut();
+@@ -83,122 +59,128 @@ export function UserMenu() {
+ 	if (!user) return null;
+ 
+ 	return (
+-		<div className="relative w-full" ref={menuRef}>
+-			<button
+-				type="button"
+-				onClick={() => setIsMenuOpen(!isMenuOpen)}
+-				className="flex w-full items-center gap-3 rounded-xl p-2 transition-colors hover:bg-base-surface cursor-pointer text-left border border-transparent hover:border-base-border"
+-				aria-label="User menu"
++		<Popover open={isMenuOpen} onOpenChange={setIsMenuOpen}>
++			<PopoverTrigger
++				render={
++					<button
++						type="button"
++						className="flex w-full items-center gap-3 rounded-xl p-2 transition-colors hover:bg-base-surface cursor-pointer text-left border border-transparent hover:border-base-border"
++						aria-label="User menu"
++					>
++						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors shadow-sm overflow-hidden">
++							{user.user_metadata?.avatar_url ? (
++								// biome-ignore lint/performance/noImgElement: External OAuth avatar
++								<img
++									src={user.user_metadata.avatar_url}
++									alt=""
++									className="h-full w-full object-cover"
++								/>
++							) : (
++								<User className="h-4 w-4" aria-hidden="true" />
++							)}
++						</div>
++						<div className="flex-1 min-w-0">
++							<p className="text-sm font-semibold text-action truncate">
++								{user.email}
++							</p>
++							<p className="text-[10px] text-neutral-400 font-medium">
++								My Account
++							</p>
++						</div>
++					</button>
++				}
++			/>
++
++			<PopoverContent
++				side="right"
++				align="end"
++				sideOffset={16}
++				className="w-64 p-2 z-[100]"
+ 			>
+-				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors shadow-sm overflow-hidden">
+-					{user.user_metadata?.avatar_url ? (
+-						// biome-ignore lint/performance/noImgElement: External OAuth avatar
+-						<img
+-							src={user.user_metadata.avatar_url}
+-							alt=""
+-							className="h-full w-full object-cover"
+-						/>
+-					) : (
+-						<User className="h-4 w-4" aria-hidden="true" />
+-					)}
+-				</div>
+-				<div className="flex-1 min-w-0">
+-					<p className="text-sm font-semibold text-action truncate">
+-						{user.email}
++				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
++					<p
++						className={cn(
++							"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
++							aiUsageCount !== null && aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
++								? "text-amber-600"
++								: "text-neutral-400",
++						)}
++					>
++						<Sparkles className="w-3 h-3" />
++						AI Usage
+ 					</p>
+-					<p className="text-[10px] text-neutral-400 font-medium">My Account</p>
+-				</div>
+-			</button>
+-
+-			{isMenuOpen && (
+-				<div className="absolute bottom-full left-0 mb-2 w-full origin-bottom-left rounded-xl border border-base-border bg-base-surface p-2 shadow-xl ring-1 ring-action/5 z-[100] animate-in fade-in zoom-in-95 duration-200">
+-					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+-						<p
++					<p
++						className={cn(
++							"text-sm",
++							aiUsageCount !== null && aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
++								? "text-amber-700"
++								: "text-action",
++						)}
++					>
++						{aiUsageCount !== null
++							? `${aiUsageCount} / ${AI_LIMIT.MAX_FREE}`
++							: "..."}
++						<span
+ 							className={cn(
+-								"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
++								"text-[10px] font-normal ml-1",
+ 								aiUsageCount !== null &&
+ 									aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+-									? "text-amber-600"
++									? "text-amber-500"
+ 									: "text-neutral-400",
+ 							)}
+ 						>
+-							<Sparkles className="w-3 h-3" />
+-							AI Usage
++							uses
++						</span>
++					</p>
++				</div>
++
++				{notes.length >= NOTES_LIMIT.WARNING_THRESHOLD && (
++					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
++						<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
++							<Activity className="w-3 h-3" aria-hidden="true" />
++							Note Storage
+ 						</p>
+-						<p
+-							className={cn(
+-								"text-sm",
+-								aiUsageCount !== null &&
+-									aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+-									? "text-amber-700"
+-									: "text-action",
+-							)}
+-						>
+-							{aiUsageCount !== null
+-								? `${aiUsageCount} / ${AI_LIMIT.MAX_FREE}`
+-								: "..."}
+-							<span
+-								className={cn(
+-									"text-[10px] font-normal ml-1",
+-									aiUsageCount !== null &&
+-										aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+-										? "text-amber-500"
+-										: "text-neutral-400",
+-								)}
+-							>
+-								uses
++						<p className="text-sm text-amber-700">
++							{notes.length} / {NOTES_LIMIT.MAX_FREE}
++							<span className="text-[10px] font-normal text-amber-500 ml-1">
++								notes
+ 							</span>
+ 						</p>
+ 					</div>
++				)}
+ 
+-					{notes.length >= NOTES_LIMIT.WARNING_THRESHOLD && (
+-						<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+-							<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+-								<Activity className="w-3 h-3" aria-hidden="true" />
+-								Note Storage
+-							</p>
+-							<p className="text-sm text-amber-700">
+-								{notes.length} / {NOTES_LIMIT.MAX_FREE}
+-								<span className="text-[10px] font-normal text-amber-500 ml-1">
+-									notes
+-								</span>
+-							</p>
+-						</div>
+-					)}
+-
+-					{drafts.length >= DRAFTS_LIMIT.WARNING_THRESHOLD && (
+-						<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+-							<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
+-								<Activity className="w-3 h-3" aria-hidden="true" />
+-								Draft Storage
+-							</p>
+-							<p className="text-sm text-amber-700">
+-								{drafts.length} / {DRAFTS_LIMIT.MAX_FREE}
+-								<span className="text-[10px] font-normal text-amber-500 ml-1">
+-									drafts
+-								</span>
+-							</p>
+-						</div>
+-					)}
+-
+-					<Link
+-						href="/templates"
+-						onClick={() => setIsMenuOpen(false)}
+-						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
+-					>
+-						<Settings className="h-4 w-4" aria-hidden="true" />
+-						Manage Templates
+-					</Link>
+-					<button
+-						type="button"
+-						onClick={handleSignOut}
+-						className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-note-alert transition-colors hover:bg-note-alert/10 cursor-pointer"
+-					>
+-						<LogOut className="h-4 w-4" aria-hidden="true" />
+-						Log out
+-					</button>
+-				</div>
+-			)}
+-		</div>
++				{drafts.length >= DRAFTS_LIMIT.WARNING_THRESHOLD && (
++					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
++						<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
++							<Activity className="w-3 h-3" aria-hidden="true" />
++							Draft Storage
++						</p>
++						<p className="text-sm text-amber-700">
++							{drafts.length} / {DRAFTS_LIMIT.MAX_FREE}
++							<span className="text-[10px] font-normal text-amber-500 ml-1">
++								drafts
++							</span>
++						</p>
++					</div>
++				)}
++
++				<Link
++					href="/templates"
++					onClick={() => setIsMenuOpen(false)}
++					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
++				>
++					<Settings className="h-4 w-4" aria-hidden="true" />
++					Manage Templates
++				</Link>
++				<button
++					type="button"
++					onClick={handleSignOut}
++					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-note-alert transition-colors hover:bg-note-alert/10 cursor-pointer"
++				>
++					<LogOut className="h-4 w-4" aria-hidden="true" />
++					Log out
++				</button>
++			</PopoverContent>
++		</Popover>
+ 	);
+ }
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/NotesContainer.tsx b/apps/app/src/app/(dashboard)/notes/_components/NotesContainer.tsx
+index 0c3bc30..0c15f14 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/NotesContainer.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/NotesContainer.tsx
+@@ -70,6 +70,8 @@ export function NotesContainer() {
+ 		let items: (Note | Draft)[] = [];
+ 		if (effectiveView === "drafts") {
+ 			items = groupedNotes.drafts;
++		} else if (exact === "all") {
++			items = groupedNotes.domains[domain || ""]?.domainNotes || [];
+ 		} else if (exact) {
+ 			items = groupedNotes.domains[domain || ""]?.pages[exact] || [];
+ 		} else if (effectiveView === "inbox" || domain === "inbox") {
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/SearchModal.test.tsx b/apps/app/src/app/(dashboard)/notes/_components/SearchModal.test.tsx
+index 9b6b89c..1492288 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/SearchModal.test.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/SearchModal.test.tsx
+@@ -45,6 +45,9 @@ describe("SearchModal Context Jump", () => {
+ 		// Type in search box
+ 		const input = screen.getByPlaceholderText(/search notes/i);
+ 		await user.type(input, "Test");
++		
++		// Press Enter to trigger search
++		await user.keyboard("{Enter}");
+ 
+ 		// Wait for result to appear
+ 		const noteResult = await screen.findByText("Test Note Content");
+@@ -83,6 +86,10 @@ describe("SearchModal Context Jump", () => {
+ 
+ 		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+ 
++		const input = screen.getByPlaceholderText(/search notes/i);
++		await user.type(input, "Inbox");
++		await user.keyboard("{Enter}");
++
+ 		const noteResult = await screen.findByText("Inbox Note");
+ 		await user.click(noteResult);
+ 
+@@ -95,4 +102,25 @@ describe("SearchModal Context Jump", () => {
+ 			);
+ 		});
+ 	});
++
++	it("should not trigger search on input change, only on submit", async () => {
++		const user = userEvent.setup();
++		mockSearchNotes.mockReturnValue({ data: [], isLoading: false });
++
++		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
++
++		const input = screen.getByPlaceholderText(/search notes/i);
++		await user.type(input, "Test");
++
++		// useSearchNotes should have been called initially with "", but NOT with "Test" yet
++		expect(mockSearchNotes).toHaveBeenCalledWith("");
++		expect(mockSearchNotes).not.toHaveBeenCalledWith("Test");
++
++		// hit enter
++		await user.keyboard("{Enter}");
++
++		await waitFor(() => {
++			expect(mockSearchNotes).toHaveBeenCalledWith("Test");
++		});
++	});
+ });
+diff --git a/apps/app/src/app/(dashboard)/notes/_components/SearchModal.tsx b/apps/app/src/app/(dashboard)/notes/_components/SearchModal.tsx
+index 7a4ac1b..93f39a4 100644
+--- a/apps/app/src/app/(dashboard)/notes/_components/SearchModal.tsx
++++ b/apps/app/src/app/(dashboard)/notes/_components/SearchModal.tsx
+@@ -20,8 +20,9 @@ interface SearchModalProps {
+ 
+ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+ 	const router = useRouter();
+-	const [query, setQuery] = useState("");
+-	const { data: results = [], isLoading } = useSearchNotes(query);
++	const [inputValue, setInputValue] = useState("");
++	const [searchQuery, setSearchQuery] = useState("");
++	const { data: results = [], isLoading } = useSearchNotes(searchQuery);
+ 	const { mutate: fetchContents } = useFetchNoteContents();
+ 
+ 	// Fetch contents for search results to show snippets
+@@ -53,18 +54,31 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+ 		router.push(`/notes?${params.toString()}`);
+ 	};
+ 
++	const handleSearch = (e: React.FormEvent) => {
++		e.preventDefault();
++		setSearchQuery(inputValue);
++	};
++
+ 	return (
+ 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+ 			<DialogOverlay className="z-50 bg-black/20 backdrop-blur-sm" />
+ 			<DialogContent className="z-50 sm:max-w-xl top-[20%] translate-y-0 p-0 overflow-hidden border-none shadow-2xl">
+ 				<div className="flex flex-col bg-base-bg rounded-xl overflow-hidden">
+-					<div className="flex items-center px-4 py-3 border-b border-base-border">
+-						<Search className="w-5 h-5 text-gray-400 mr-3" aria-hidden="true" />
++					<form
++						onSubmit={handleSearch}
++						className="flex items-center px-4 py-3 border-b border-base-border w-full"
++					>
++						<button type="submit" className="p-1 cursor-pointer">
++							<Search
++								className="w-5 h-5 text-gray-400 mr-2 hover:text-action transition-colors"
++								aria-hidden="true"
++							/>
++						</button>
+ 						<Input
+ 							autoFocus
+ 							placeholder="Search notes..."
+-							value={query}
+-							onChange={(e) => setQuery(e.target.value)}
++							value={inputValue}
++							onChange={(e) => setInputValue(e.target.value)}
+ 							className="flex-1 border-none focus-visible:ring-0 text-lg p-0 h-auto bg-transparent"
+ 						/>
+ 						<button
+@@ -74,16 +88,16 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+ 						>
+ 							<X className="w-5 h-5" aria-hidden="true" />
+ 						</button>
+-					</div>
++					</form>
+ 
+ 					<div className="max-h-[60vh] overflow-y-auto p-2">
+ 						{isLoading ? (
+ 							<div className="p-4 text-center text-gray-400 animate-pulse">
+ 								Searching...
+ 							</div>
+-						) : query && results.length === 0 ? (
++						) : searchQuery && results.length === 0 ? (
+ 							<div className="p-8 text-center text-gray-400">
+-								No results found for "{query}"
++								No results found for "{searchQuery}"
+ 							</div>
+ 						) : (
+ 							<div className="space-y-1">
+@@ -114,9 +128,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+ 						)}
+ 					</div>
+ 
+-					{!query && (
++					{!searchQuery && (
+ 						<div className="p-4 text-center text-xs text-gray-400 border-t border-base-border">
+-							Type to start searching your notes across domains
++							Type and press Enter to search your notes across domains
+ 						</div>
+ 					)}
+ 				</div>
+diff --git a/apps/app/src/components/layout/AppShell.tsx b/apps/app/src/components/layout/AppShell.tsx
+index 2cf1d1e..152bac1 100644
+--- a/apps/app/src/components/layout/AppShell.tsx
++++ b/apps/app/src/components/layout/AppShell.tsx
+@@ -1,8 +1,12 @@
+ "use client";
+ 
+-import { Menu, PanelLeftOpen } from "lucide-react";
+-import { usePathname } from "next/navigation";
++import { FileText, Menu, PanelLeftOpen, PenSquare, Plus } from "lucide-react";
++import Image from "next/image";
++import { usePathname, useRouter, useSearchParams } from "next/navigation";
+ import { Suspense, useState } from "react";
++import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
++import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
++import { CustomLink as Link } from "@/components/ui/custom-link";
+ import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
+ import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
+ import { Button } from "@/components/ui/button";
+@@ -26,6 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
+ 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
+ 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+ 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
++	const router = useRouter();
++	const searchParams = useSearchParams();
+ 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
+ 
+ 	return (
+@@ -47,22 +53,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
+ 						</SheetDescription>
+ 					</SheetHeader>
+ 					<Suspense fallback={null}>
+-						<GlobalSidebar />
++						<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
+ 					</Suspense>
+ 				</SheetContent>
+ 			</Sheet>
+ 
+ 			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+ 				{/* Mobile Toggle Header */}
+-				<header className="md:hidden h-12 flex items-center px-4 shrink-0 bg-transparent absolute top-0 left-0 z-10">
+-					<Button
+-						variant="ghost"
+-						size="icon"
+-						onClick={() => setIsMobileMenuOpen(true)}
+-						className="text-neutral-500 cursor-pointer"
+-					>
+-						<Menu className="w-5 h-5" aria-hidden="true" />
+-					</Button>
++				<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border absolute top-0 left-0 right-0 z-10">
++					<Link href="/notes?domain=inbox" className="flex items-center">
++						<Image src="/logo.svg" alt="sitecue" width={28} height={28} />
++					</Link>
++					<div className="w-10 h-10">
++						<Suspense fallback={null}>
++							<UserMenu />
++						</Suspense>
++					</div>
+ 				</header>
+ 
+ 				{/* Content Area */}
+@@ -81,6 +87,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
+ 				onClose={() => setIsSearchModalOpen(false)}
+ 			/>
+ 
++			{/* FAB (Mobile Only) */}
++			<div className="md:hidden fixed bottom-20 right-4 z-40">
++				<Popover>
++					<PopoverTrigger
++						render={
++							<Button
++								size="icon"
++								className="h-14 w-14 rounded-full shadow-xl bg-action text-action-text hover-safe:bg-action-hover cursor-pointer transition-transform active:scale-95"
++							>
++								<Plus className="w-6 h-6" aria-hidden="true" />
++							</Button>
++						}
++					/>
++					<PopoverContent
++						side="top"
++						align="end"
++						sideOffset={12}
++						className="w-48 p-2 flex flex-col gap-1 z-50"
++					>
++						<Button
++							type="button"
++							variant="ghost"
++							size="sm"
++							onClick={() => {
++								const params = new URLSearchParams(searchParams.toString());
++								params.set("globalNew", "note");
++								router.push(`/notes?${params.toString()}`);
++							}}
++							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
++						>
++							<FileText className="w-4 h-4" aria-hidden="true" />
++							New Note
++						</Button>
++						<Button
++							type="button"
++							variant="ghost"
++							size="sm"
++							onClick={() => {
++								const params = new URLSearchParams(searchParams.toString());
++								params.set("globalNew", "draft");
++								router.push(`/notes?${params.toString()}`);
++							}}
++							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
++						>
++							<PenSquare className="w-4 h-4" aria-hidden="true" />
++							New Draft
++						</Button>
++					</PopoverContent>
++				</Popover>
++			</div>
++
+ 			<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
+ 
+ 			<PaywallModal
+diff --git a/apps/app/src/components/layout/GlobalSidebar.test.tsx b/apps/app/src/components/layout/GlobalSidebar.test.tsx
+index 37a70d0..1e9ce59 100644
+--- a/apps/app/src/components/layout/GlobalSidebar.test.tsx
++++ b/apps/app/src/components/layout/GlobalSidebar.test.tsx
+@@ -64,40 +64,6 @@ const mockNotes = [
+ ];
+ 
+ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
+-	it("should open Domains parent, then open child domain, and trigger prefetch", async () => {
+-		const user = userEvent.setup();
+-		const mockMutate = vi.fn();
+-
+-		vi.mocked(useFetchNotes).mockReturnValue({
+-			data: mockNotes,
+-			isLoading: false,
+-		} as unknown as ReturnType<typeof useFetchNotes>);
+-		vi.mocked(useFetchDrafts).mockReturnValue({
+-			data: [],
+-			isLoading: false,
+-		} as unknown as ReturnType<typeof useFetchDrafts>);
+-		vi.mocked(useFetchNoteContents).mockReturnValue({
+-			mutate: mockMutate,
+-		} as unknown as ReturnType<typeof useFetchNoteContents>);
+-		vi.mocked(useNotesStore).mockReturnValue({
+-			searchResults: null,
+-		} as unknown as ReturnType<typeof useNotesStore>);
+-
+-		render(<GlobalSidebar />);
+-
+-		// 1. 親の Domains アコーディオンを開く
+-		const domainsParentButton = screen.getByRole("button", {
+-			name: /Domains/i,
+-		});
+-		await user.click(domainsParentButton);
+-
+-		// 2. 子の github.com アコーディオンを探して開く
+-		const childDomainButton = screen.getByText("github.com");
+-		await user.click(childDomainButton);
+-
+-		// 開いた瞬間にプリフェッチが発火することを検証
+-		expect(mockMutate).toHaveBeenCalledWith(["n1"]);
+-	});
+ 
+ 	it("should determine active state from pathname and searchParams", () => {
+ 		vi.mocked(usePathname).mockReturnValue("/notes");
+@@ -119,10 +85,10 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
+ 			searchResults: null,
+ 		} as unknown as ReturnType<typeof useNotesStore>);
+ 
+-		render(<GlobalSidebar />);
++		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
+ 
+ 		// Inbox should be active
+-		const inboxLink = screen.getByText("Inbox").closest("a");
++		const inboxLink = screen.getByTitle("Inbox").closest("a");
+ 		expect(inboxLink?.className).toContain("bg-base-bg text-action shadow-sm");
+ 	});
+ 
+@@ -145,7 +111,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
+ 			searchResults: null,
+ 		} as any);
+ 
+-		render(<GlobalSidebar />);
++		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
+ 
+ 		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notes"] });
+ 		expect(mockInvalidateQueries).toHaveBeenCalledWith({
+diff --git a/apps/app/src/components/layout/GlobalSidebar.tsx b/apps/app/src/components/layout/GlobalSidebar.tsx
+index c5f1fee..8f0e849 100644
+--- a/apps/app/src/components/layout/GlobalSidebar.tsx
++++ b/apps/app/src/components/layout/GlobalSidebar.tsx
+@@ -1,9 +1,12 @@
+ "use client";
+ 
+-import { Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
++import { FileText, Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
+ import Image from "next/image";
+ import { usePathname, useRouter, useSearchParams } from "next/navigation";
++import { useEffect } from "react";
++import { useQueryClient } from "@tanstack/react-query";
+ import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
++import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+ import { Button } from "@/components/ui/button";
+ import { CustomLink as Link } from "@/components/ui/custom-link";
+ 
+@@ -16,6 +19,14 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
+ 	const pathname = usePathname();
+ 	const router = useRouter();
+ 	const searchParams = useSearchParams();
++	const queryClient = useQueryClient();
++
++	useEffect(() => {
++		if (pathname) {
++			queryClient.invalidateQueries({ queryKey: ["notes"] });
++			queryClient.invalidateQueries({ queryKey: ["drafts"] });
++		}
++	}, [pathname, queryClient]);
+ 
+ 	const isNotes = pathname.startsWith("/notes");
+ 	const domainParam = searchParams.get("domain");
+@@ -52,15 +63,57 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
+ 
+ 			{/* Primary Actions */}
+ 			<div className="flex flex-col items-center gap-4 w-full px-2">
+-				<Button
+-					variant="ghost"
+-					size="icon"
+-					onClick={handleNewNote}
+-					className="rounded-full bg-action text-action-text hover-safe:bg-action-hover hover-safe:scale-110 transition-all cursor-pointer shadow-sm"
+-					title="New Note"
+-				>
+-					<Plus className="w-5 h-5" aria-hidden="true" />
+-				</Button>
++				<Popover>
++					<PopoverTrigger
++						render={
++							<Button
++								variant="ghost"
++								size="icon"
++								className="rounded-full bg-action text-action-text hover-safe:bg-action-hover hover-safe:scale-110 transition-all cursor-pointer shadow-sm"
++								title="Create New"
++							>
++								<Plus className="w-5 h-5" aria-hidden="true" />
++							</Button>
++						}
++					/>
++					<PopoverContent
++						side="right"
++						align="start"
++						sideOffset={16}
++						className="w-48 p-2 flex flex-col gap-1 z-50"
++					>
++						<Button
++							type="button"
++							variant="ghost"
++							size="sm"
++							onClick={() => {
++								const params = new URLSearchParams(searchParams.toString());
++								params.set("globalNew", "note");
++								router.push(`${pathname}?${params.toString()}`);
++								onClose?.();
++							}}
++							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
++						>
++							<FileText className="w-4 h-4" aria-hidden="true" />
++							New Note
++						</Button>
++						<Button
++							type="button"
++							variant="ghost"
++							size="sm"
++							onClick={() => {
++								const params = new URLSearchParams(searchParams.toString());
++								params.set("globalNew", "draft");
++								router.push(`${pathname}?${params.toString()}`);
++								onClose?.();
++							}}
++							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
++						>
++							<PenSquare className="w-4 h-4" aria-hidden="true" />
++							New Draft
++						</Button>
++					</PopoverContent>
++				</Popover>
+ 
+ 				<Button
+ 					variant="ghost"
+diff --git a/apps/app/src/components/ui/popover.tsx b/apps/app/src/components/ui/popover.tsx
+index a1b7ed6..49f2424 100644
+--- a/apps/app/src/components/ui/popover.tsx
++++ b/apps/app/src/components/ui/popover.tsx
+@@ -7,7 +7,9 @@ function Popover({ ...props }: PopoverPrimitive.Root.Props) {
+ 	return <PopoverPrimitive.Root data-slot="popover" {...props} />;
+ }
+ 
+-function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
++function PopoverTrigger({
++	...props
++}: PopoverPrimitive.Trigger.Props & { render?: React.ReactNode }) {
+ 	return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
+ }
+ 
+@@ -17,17 +19,20 @@ function PopoverPortal({ ...props }: PopoverPrimitive.Portal.Props) {
+ 
+ function PopoverContent({
+ 	className,
++	side = "bottom",
+ 	align = "center",
+ 	sideOffset = 4,
+ 	...props
+ }: PopoverPrimitive.Popup.Props & {
+ 	className?: string;
++	side?: "top" | "bottom" | "left" | "right";
+ 	align?: "start" | "center" | "end";
+ 	sideOffset?: number;
+ }) {
+ 	return (
+ 		<PopoverPortal>
+ 			<PopoverPrimitive.Positioner
++				side={side}
+ 				align={align}
+ 				sideOffset={sideOffset}
+ 				className="z-50"

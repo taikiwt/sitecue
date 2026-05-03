@@ -19,8 +19,14 @@ const refreshMock = vi.fn();
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		refresh: refreshMock,
+		push: vi.fn(),
 	}),
 	useSearchParams: () => new URLSearchParams(),
+}));
+
+// Mock useUpdateNote
+vi.mock("@/hooks/useNotesQuery", () => ({
+	useUpdateNote: () => ({ mutate: vi.fn() }),
 }));
 
 const mockItems: Note[] = [
@@ -60,6 +66,12 @@ const mockItems: Note[] = [
 	},
 ];
 
+const mockGroupedNotes = {
+	inbox: mockItems,
+	drafts: [],
+	domains: {},
+};
+
 describe("MiddlePaneList Bulk Actions", () => {
 	afterEach(() => {
 		cleanup();
@@ -71,6 +83,7 @@ describe("MiddlePaneList Bulk Actions", () => {
 		render(
 			<MiddlePaneList
 				items={mockItems}
+				groupedNotes={mockGroupedNotes}
 				currentView="inbox"
 				currentDomain="inbox"
 				currentExact={null}
@@ -115,6 +128,7 @@ describe("MiddlePaneList Bulk Actions", () => {
 						is_resolved: true,
 					},
 				]}
+				groupedNotes={mockGroupedNotes}
 				currentView="inbox"
 				currentDomain="inbox"
 				currentExact={null}
@@ -134,6 +148,7 @@ describe("MiddlePaneList Bulk Actions", () => {
 		render(
 			<MiddlePaneList
 				items={mockItems}
+				groupedNotes={mockGroupedNotes}
 				currentView="inbox"
 				currentDomain="inbox"
 				currentExact={null}
@@ -147,7 +162,7 @@ describe("MiddlePaneList Bulk Actions", () => {
 		expect(screen.getByText("Note 2")).toBeInTheDocument(); // idea note
 
 		// Click Idea filter
-		const ideaFilterBtn = screen.getByTitle("Idea");
+		const ideaFilterBtn = screen.getByLabelText("Idea");
 		await user.click(ideaFilterBtn);
 
 		// Only Note 2 (idea) should be visible

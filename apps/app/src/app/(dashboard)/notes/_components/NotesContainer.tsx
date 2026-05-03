@@ -70,6 +70,8 @@ export function NotesContainer() {
 		let items: (Note | Draft)[] = [];
 		if (effectiveView === "drafts") {
 			items = groupedNotes.drafts;
+		} else if (exact === "all") {
+			items = groupedNotes.domains[domain || ""]?.domainNotes || [];
 		} else if (exact) {
 			items = groupedNotes.domains[domain || ""]?.pages[exact] || [];
 		} else if (effectiveView === "inbox" || domain === "inbox") {
@@ -173,6 +175,7 @@ export function NotesContainer() {
 		) : (
 			<MiddlePaneList
 				items={filteredItems}
+				groupedNotes={groupedNotes}
 				currentView={effectiveView}
 				currentDomain={domain ?? null}
 				currentExact={exact ?? null}
