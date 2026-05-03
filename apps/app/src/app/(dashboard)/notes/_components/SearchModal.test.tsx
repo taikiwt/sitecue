@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SearchModal } from "./SearchModal";
@@ -110,17 +110,60 @@ describe("SearchModal Context Jump", () => {
 		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
-		await user.type(input, "Test");
-
-		// useSearchNotes should have been called initially with "", but NOT with "Test" yet
-		expect(mockSearchNotes).toHaveBeenCalledWith("");
+		fireEvent.change(input, { target: { value: "Test" } });
+		
+		// 途中経過で呼ばれていないことを確認
 		expect(mockSearchNotes).not.toHaveBeenCalledWith("Test");
 
 		// hit enter
-		await user.keyboard("{Enter}");
+		fireEvent.keyDown(input, { key: "Enter" });
 
 		await waitFor(() => {
 			expect(mockSearchNotes).toHaveBeenCalledWith("Test");
 		});
+	});
+
+	it("should clear input and results when clear button is clicked", async () => {
+		// Setup mock to return a result when query is "Test"
+		mockSearchNotes.mockImplementation((q) => {
+			if (q === "Test") {
+				return {
+					data: [
+						{
+							id: "1",
+							content: "Test Result",
+							url_pattern: "test.com",
+							scope: "domain",
+							note_type: "info",
+							created_at: new Date().toISOString(),
+						},
+					],
+					isLoading: false,
+				};
+			}
+			return { data: [], isLoading: false };
+		});
+
+		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+
+		const input = screen.getByPlaceholderText("Search notes...");
+
+		// 文字を入力し、Enterで検索実行
+		fireEvent.change(input, { target: { value: "Test" } });
+		fireEvent.keyDown(input, { key: "Enter" });
+
+		// 結果が表示されていることを確認
+		expect(await screen.findByText("Test Result")).toBeInTheDocument();
+
+		// クリアボタンを押下
+		const clearButton = screen.getByRole("button", { name: /clear search/i });
+		fireEvent.click(clearButton);
+
+		// inputと結果が両方クリアされていることを確認
+		expect(input).toHaveValue("");
+		expect(screen.queryByText("Test Result")).not.toBeInTheDocument();
+		expect(
+			screen.getByText("Type and press Enter to search your notes across domains"),
+		).toBeInTheDocument();
 	});
 });

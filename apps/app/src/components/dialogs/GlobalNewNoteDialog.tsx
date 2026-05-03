@@ -49,14 +49,18 @@ export function GlobalNewNoteDialog() {
 	// Load initial state from URL parameters
 	useEffect(() => {
 		if (isOpen) {
-			const exact = searchParams.get("exact");
-			const domain = searchParams.get("domain");
+			let currentExact = searchParams.get("exact");
+			let currentDomain = searchParams.get("domain");
 
-			if (exact) {
-				setUrlPattern(exact);
+			// "all" という不正なカテゴリ値を安全にサニタイズ
+			if (currentExact === "all") currentExact = null;
+			if (currentDomain === "all") currentDomain = "inbox";
+
+			if (currentExact) {
+				setUrlPattern(currentExact);
 				setScope("exact");
-			} else if (domain && domain !== "inbox") {
-				setUrlPattern(domain);
+			} else if (currentDomain && currentDomain !== "inbox") {
+				setUrlPattern(currentDomain);
 				setScope("domain");
 			} else {
 				setUrlPattern("");

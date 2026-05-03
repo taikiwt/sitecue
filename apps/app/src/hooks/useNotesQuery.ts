@@ -211,17 +211,18 @@ export function useSearchNotes(q?: string, tags?: string) {
 			if (!q && !tags) return [];
 			const supabase = createClient();
 
-			let query = supabase
-				.from("sitecue_notes")
-				.select(
-					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
-				);
+			// RPCを使用した安全な検索
+			let query = q
+				? supabase.rpc("search_notes", { search_query: q })
+				: supabase
+						.from("sitecue_notes")
+						.select(
+							"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
+						);
 
-			if (q) {
-				query = query.ilike("content", `%${q}%`);
-			}
 			if (tags) {
 				const tagsArray = tags.split(",");
+				// rpc() の返り値に対してもチェイン可能
 				query = query.contains("tags", tagsArray);
 			}
 

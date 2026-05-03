@@ -64,29 +64,19 @@ export function UserMenu() {
 				render={
 					<button
 						type="button"
-						className="flex w-full items-center gap-3 rounded-xl p-2 transition-colors hover:bg-base-surface cursor-pointer text-left border border-transparent hover:border-base-border"
+						className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors shadow-sm overflow-hidden hover-safe:border-action cursor-pointer"
 						aria-label="User menu"
 					>
-						<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-base-border bg-base-surface text-action transition-colors shadow-sm overflow-hidden">
-							{user.user_metadata?.avatar_url ? (
-								// biome-ignore lint/performance/noImgElement: External OAuth avatar
-								<img
-									src={user.user_metadata.avatar_url}
-									alt=""
-									className="h-full w-full object-cover"
-								/>
-							) : (
-								<User className="h-4 w-4" aria-hidden="true" />
-							)}
-						</div>
-						<div className="flex-1 min-w-0">
-							<p className="text-sm font-semibold text-action truncate">
-								{user.email}
-							</p>
-							<p className="text-[10px] text-neutral-400 font-medium">
-								My Account
-							</p>
-						</div>
+						{user.user_metadata?.avatar_url ? (
+							// biome-ignore lint/performance/noImgElement: External OAuth avatar
+							<img
+								src={user.user_metadata.avatar_url}
+								alt=""
+								className="h-full w-full object-cover"
+							/>
+						) : (
+							<User className="h-4 w-4" aria-hidden="true" />
+						)}
 					</button>
 				}
 			/>
@@ -97,6 +87,15 @@ export function UserMenu() {
 				sideOffset={16}
 				className="w-64 p-2 z-[100]"
 			>
+				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
+					<p className="text-sm font-semibold text-action truncate">
+						{user.email}
+					</p>
+					<p className="text-[10px] text-neutral-400 font-medium">
+						My Account
+					</p>
+				</div>
+
 				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
 					<p
 						className={cn(
