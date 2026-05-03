@@ -64,40 +64,6 @@ const mockNotes = [
 ];
 
 describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
-	it("should open Domains parent, then open child domain, and trigger prefetch", async () => {
-		const user = userEvent.setup();
-		const mockMutate = vi.fn();
-
-		vi.mocked(useFetchNotes).mockReturnValue({
-			data: mockNotes,
-			isLoading: false,
-		} as unknown as ReturnType<typeof useFetchNotes>);
-		vi.mocked(useFetchDrafts).mockReturnValue({
-			data: [],
-			isLoading: false,
-		} as unknown as ReturnType<typeof useFetchDrafts>);
-		vi.mocked(useFetchNoteContents).mockReturnValue({
-			mutate: mockMutate,
-		} as unknown as ReturnType<typeof useFetchNoteContents>);
-		vi.mocked(useNotesStore).mockReturnValue({
-			searchResults: null,
-		} as unknown as ReturnType<typeof useNotesStore>);
-
-		render(<GlobalSidebar />);
-
-		// 1. 親の Domains アコーディオンを開く
-		const domainsParentButton = screen.getByRole("button", {
-			name: /Domains/i,
-		});
-		await user.click(domainsParentButton);
-
-		// 2. 子の github.com アコーディオンを探して開く
-		const childDomainButton = screen.getByText("github.com");
-		await user.click(childDomainButton);
-
-		// 開いた瞬間にプリフェッチが発火することを検証
-		expect(mockMutate).toHaveBeenCalledWith(["n1"]);
-	});
 
 	it("should determine active state from pathname and searchParams", () => {
 		vi.mocked(usePathname).mockReturnValue("/notes");
@@ -119,10 +85,10 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 			searchResults: null,
 		} as unknown as ReturnType<typeof useNotesStore>);
 
-		render(<GlobalSidebar />);
+		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
 
 		// Inbox should be active
-		const inboxLink = screen.getByText("Inbox").closest("a");
+		const inboxLink = screen.getByTitle("Inbox").closest("a");
 		expect(inboxLink?.className).toContain("bg-base-bg text-action shadow-sm");
 	});
 
@@ -145,7 +111,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 			searchResults: null,
 		} as any);
 
-		render(<GlobalSidebar />);
+		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
 
 		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notes"] });
 		expect(mockInvalidateQueries).toHaveBeenCalledWith({

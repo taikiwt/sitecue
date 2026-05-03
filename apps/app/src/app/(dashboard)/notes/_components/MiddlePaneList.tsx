@@ -18,10 +18,12 @@ import {
 	Archive,
 	ArrowLeft,
 	Check,
+	ChevronRight,
 	ClipboardCopy,
 	Copy,
 	FileJson,
 	FileText,
+	Globe,
 	Inbox,
 	Info,
 	Lightbulb,
@@ -49,9 +51,11 @@ import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
+import type { GroupedNotes } from "../types";
 
 type Props = {
 	items: (Note | Draft)[];
+	groupedNotes: GroupedNotes;
 	currentView: string | null;
 	currentDomain: string | null;
 	currentExact: string | null;
@@ -62,6 +66,7 @@ type Props = {
 export function MiddlePaneList(props: Props) {
 	const {
 		items,
+		groupedNotes,
 		currentView,
 		currentDomain,
 		currentExact,
@@ -261,6 +266,119 @@ export function MiddlePaneList(props: Props) {
 		setSelectedIds(newSelected);
 	};
 
+	// 1. Root Domains View
+	if (currentView === "domains" && !currentDomain) {
+		return (
+			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
+				<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
+					<h2 className="text-xl md:text-lg font-bold text-action">Domains</h2>
+					<p className="text-xs text-gray-500 mt-1">
+						{Object.keys(groupedNotes.domains).length} domains
+					</p>
+				</div>
+				<div className="flex-1 overflow-y-auto divide-y divide-base-border">
+					{Object.entries(groupedNotes.domains).map(([domain, data]) => (
+						<Link
+							key={domain}
+							href={`/notes?domain=${domain}`}
+							className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+						>
+							<div className="flex items-center gap-3">
+								<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
+									<Globe className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
+								</div>
+								<div className="flex flex-col">
+									<span className="text-sm font-medium text-action truncate w-48">
+										{domain}
+									</span>
+									<span className="text-xs text-gray-400">
+										{data.domainNotes.length +
+											Object.values(data.pages).flat().length}{" "}
+										notes
+									</span>
+								</div>
+							</div>
+							<ChevronRight className="w-4 h-4 text-gray-300" />
+						</Link>
+					))}
+				</div>
+			</div>
+		);
+	}
+
+	// 2. Domain Pages View
+	if (currentDomain && currentDomain !== "inbox" && !currentExact) {
+		const domainData = groupedNotes.domains[currentDomain];
+		return (
+			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
+				<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
+					<div className="flex items-center gap-2 mb-1">
+						<button
+							type="button"
+							onClick={() => router.push("/notes?view=domains")}
+							className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer"
+						>
+							<ArrowLeft className="w-4 h-4" />
+						</button>
+						<h2 className="text-xl md:text-lg font-bold text-action truncate">
+							{currentDomain}
+						</h2>
+					</div>
+					<p className="text-xs text-gray-500 ml-7">
+						{Object.keys(domainData?.pages || {}).length} pages
+					</p>
+				</div>
+				<div className="flex-1 overflow-y-auto divide-y divide-base-border">
+					<Link
+						href={`/notes?domain=${currentDomain}&exact=all`}
+						className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+					>
+						<div className="flex items-center gap-3">
+							<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
+								<Globe className="w-5 h-5 text-note-info" />
+							</div>
+							<span className="text-sm font-medium text-action">
+								All notes in {currentDomain}
+							</span>
+						</div>
+						<ChevronRight className="w-4 h-4 text-gray-300" />
+					</Link>
+					{Object.entries(domainData?.pages || {}).map(([url, notes]) => {
+						const safeUrl = getSafeUrl(url);
+						const path = safeUrl
+							? safeUrl.pathname + safeUrl.search
+							: url;
+						return (
+							<Link
+								key={url}
+								href={`/notes?domain=${currentDomain}&exact=${encodeURIComponent(url)}`}
+								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+							>
+								<div className="flex items-center gap-3 overflow-hidden">
+									<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors shrink-0">
+										<FileText className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
+									</div>
+									<div className="flex flex-col min-w-0">
+										<span
+											className="text-sm font-medium text-action truncate"
+											title={url}
+										>
+											{path}
+										</span>
+										<span className="text-xs text-gray-400">
+											{notes.length} notes
+										</span>
+									</div>
+								</div>
+								<ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+							</Link>
+						);
+					})}
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
 			<div
@@ -270,12 +388,23 @@ export function MiddlePaneList(props: Props) {
 				)}
 			>
 				<div className="flex items-center justify-between">
-					<h2
-						className="text-xl md:text-lg font-bold text-action truncate"
-						title={getTitle()}
-					>
-						{getTitle()}
-					</h2>
+					<div className="flex items-center gap-2 overflow-hidden">
+						{currentDomain && currentDomain !== "inbox" && (
+							<button
+								type="button"
+								onClick={() => router.push(`/notes?domain=${currentDomain}`)}
+								className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer shrink-0"
+							>
+								<ArrowLeft className="w-4 h-4" />
+							</button>
+						)}
+						<h2
+							className="text-xl md:text-lg font-bold text-action truncate"
+							title={getTitle()}
+						>
+							{getTitle()}
+						</h2>
+					</div>
 					{currentView !== "drafts" && (
 						<div className="flex items-center gap-1">
 							<Link

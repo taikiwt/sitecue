@@ -7,7 +7,9 @@ function Popover({ ...props }: PopoverPrimitive.Root.Props) {
 	return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
-function PopoverTrigger({ ...props }: PopoverPrimitive.Trigger.Props) {
+function PopoverTrigger({
+	...props
+}: PopoverPrimitive.Trigger.Props & { render?: React.ReactNode }) {
 	return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 }
 
@@ -17,17 +19,20 @@ function PopoverPortal({ ...props }: PopoverPrimitive.Portal.Props) {
 
 function PopoverContent({
 	className,
+	side = "bottom",
 	align = "center",
 	sideOffset = 4,
 	...props
 }: PopoverPrimitive.Popup.Props & {
 	className?: string;
+	side?: "top" | "bottom" | "left" | "right";
 	align?: "start" | "center" | "end";
 	sideOffset?: number;
 }) {
 	return (
 		<PopoverPortal>
 			<PopoverPrimitive.Positioner
+				side={side}
 				align={align}
 				sideOffset={sideOffset}
 				className="z-50"

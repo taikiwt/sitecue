@@ -1,8 +1,12 @@
 "use client";
 
-import { Menu, PanelLeftOpen } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { FileText, Menu, PanelLeftOpen, PenSquare, Plus } from "lucide-react";
+import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
@@ -17,29 +21,26 @@ import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
+import { MobileBottomNav } from "./MobileBottomNav";
+import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const _pathname = usePathname();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
 	return (
 		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
-			{/* PC Sidebar */}
-			<aside
-				className={`hidden md:flex flex-col overflow-hidden transition-all duration-300 ease-in-out bg-base-surface ${
-					isSidebarOpen
-						? "w-72 border-r border-base-border"
-						: "w-0 border-r-0 opacity-0"
-				}`}
-			>
-				<div className="w-72 h-full">
-					<Suspense fallback={null}>
-						<GlobalSidebar onClose={() => setIsSidebarOpen(false)} />
-					</Suspense>
-				</div>
+			{/* PC Sidebar (Persistent Rail UI) */}
+			<aside className="hidden md:flex flex-col w-16 bg-base-surface border-r border-base-border shrink-0">
+				<Suspense fallback={null}>
+					<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
+				</Suspense>
 			</aside>
 
 			{/* Mobile Menu */}
@@ -52,44 +53,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						</SheetDescription>
 					</SheetHeader>
 					<Suspense fallback={null}>
-						<GlobalSidebar />
+						<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
 					</Suspense>
 				</SheetContent>
 			</Sheet>
 
 			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-				{/* PC Toggle Button */}
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => setIsSidebarOpen(true)}
-					title="Open Sidebar"
-					className={cn(
-						"hidden md:flex absolute top-[14px] left-4 z-50 text-neutral-500 hover:text-neutral-900 transition-all duration-300 cursor-pointer",
-						isSidebarOpen
-							? "opacity-0 -translate-x-4 pointer-events-none scale-95"
-							: "opacity-100 translate-x-0 pointer-events-auto delay-[200ms] scale-100",
-					)}
-				>
-					<PanelLeftOpen className="w-5 h-5" aria-hidden="true" />
-				</Button>
-
 				{/* Mobile Toggle Header */}
-				<header className="md:hidden h-12 flex items-center px-4 shrink-0 bg-transparent absolute top-0 left-0 z-10">
-					<Button
-						variant="ghost"
-						size="icon"
-						onClick={() => setIsMobileMenuOpen(true)}
-						className="text-neutral-500 cursor-pointer"
-					>
-						<Menu className="w-5 h-5" aria-hidden="true" />
-					</Button>
+				<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border absolute top-0 left-0 right-0 z-10">
+					<Link href="/notes?domain=inbox" className="flex items-center">
+						<Image src="/logo.svg" alt="sitecue" width={28} height={28} />
+					</Link>
+					<div className="w-10 h-10">
+						<Suspense fallback={null}>
+							<UserMenu />
+						</Suspense>
+					</div>
 				</header>
 
 				{/* Content Area */}
-				<div
-					className={`flex-1 overflow-y-auto relative flex flex-col ${isSidebarOpen ? "" : "md:pt-0"} pt-12 md:pt-0`}
-				>
+				<div className="flex-1 overflow-y-auto relative flex flex-col pt-12 md:pt-0">
 					{children}
 				</div>
 			</main>
@@ -98,6 +81,64 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			<Suspense fallback={null}>
 				<GlobalNewNoteDialog />
 			</Suspense>
+
+			<SearchModal
+				isOpen={isSearchModalOpen}
+				onClose={() => setIsSearchModalOpen(false)}
+			/>
+
+			{/* FAB (Mobile Only) */}
+			<div className="md:hidden fixed bottom-20 right-4 z-40">
+				<Popover>
+					<PopoverTrigger
+						render={
+							<Button
+								size="icon"
+								className="h-14 w-14 rounded-full shadow-xl bg-action text-action-text hover-safe:bg-action-hover cursor-pointer transition-transform active:scale-95"
+							>
+								<Plus className="w-6 h-6" aria-hidden="true" />
+							</Button>
+						}
+					/>
+					<PopoverContent
+						side="top"
+						align="end"
+						sideOffset={12}
+						className="w-48 p-2 flex flex-col gap-1 z-50"
+					>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								const params = new URLSearchParams(searchParams.toString());
+								params.set("globalNew", "note");
+								router.push(`/notes?${params.toString()}`);
+							}}
+							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
+						>
+							<FileText className="w-4 h-4" aria-hidden="true" />
+							New Note
+						</Button>
+						<Button
+							type="button"
+							variant="ghost"
+							size="sm"
+							onClick={() => {
+								const params = new URLSearchParams(searchParams.toString());
+								params.set("globalNew", "draft");
+								router.push(`/notes?${params.toString()}`);
+							}}
+							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
+						>
+							<PenSquare className="w-4 h-4" aria-hidden="true" />
+							New Draft
+						</Button>
+					</PopoverContent>
+				</Popover>
+			</div>
+
+			<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 
 			<PaywallModal
 				isOpen={isPaywallOpen}
