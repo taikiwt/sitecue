@@ -16,12 +16,13 @@ vi.mock("@/utils/supabase/client", () => ({
 
 // Mock Next.js navigation
 const refreshMock = vi.fn();
+const searchParamsMock = vi.fn(() => new URLSearchParams());
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		refresh: refreshMock,
 		push: vi.fn(),
 	}),
-	useSearchParams: () => new URLSearchParams(),
+	useSearchParams: () => searchParamsMock(),
 }));
 
 // Mock useUpdateNote
@@ -176,5 +177,100 @@ describe("MiddlePaneList Bulk Actions", () => {
 		// Both should be visible again
 		expect(screen.getByText("Note 1")).toBeInTheDocument();
 		expect(screen.getByText("Note 2")).toBeInTheDocument();
+	});
+});
+
+describe("MiddlePaneList Hierarchy & SSOT", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+	});
+
+	it("renders 'Domain Notes' correctly in domain pages view", () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{
+					domains: { "example.com": { domainNotes: [], pages: {} } },
+					inbox: [],
+					drafts: [],
+				}}
+				currentView={null}
+				currentDomain="example.com"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+		expect(screen.getByText("Domain Notes")).toBeDefined();
+	});
+
+	it("keeps exact=all in New Note button href", () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView={null}
+				currentDomain="example.com"
+				currentExact="all"
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+		const newNoteLink = screen.getByTitle("New Note here");
+		expect(newNoteLink.getAttribute("href")).toContain("exact=all");
+	});
+});
+
+describe("MiddlePaneList Layout Verification", () => {
+	afterEach(() => {
+		cleanup();
+	});
+
+	it("should have a mobile spacer and not have pt-14 on root div", () => {
+		const { container } = render(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// Check root div does not have pt-14
+		const rootDiv = container.firstChild as HTMLElement;
+		expect(rootDiv.className).not.toContain("pt-14");
+
+		// Check spacer exists inside scroll container
+		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
+		expect(scrollContainer).toBeInTheDocument();
+
+		const spacer = scrollContainer?.querySelector(".h-14.md\\:h-0.shrink-0");
+		expect(spacer).toBeInTheDocument();
+	});
+
+	it("should have a mobile spacer in domains view", () => {
+		const { container } = render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{
+					domains: { "example.com": { domainNotes: [], pages: {} } },
+					inbox: [],
+					drafts: [],
+				}}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
+		const spacer = scrollContainer?.querySelector(".h-14.md\\:h-0.shrink-0");
+		expect(spacer).toBeInTheDocument();
 	});
 });

@@ -60,6 +60,7 @@ import {
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
+
 import { useUserStore } from "@/store/useUserStore";
 import { extractTags } from "@/utils/tags";
 import type { Draft, Note } from "../types";
@@ -233,7 +234,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				let targetScope: Note["scope"] = "inbox";
 				let targetUrlPattern = "";
 
-				if (exactParam) {
+				// 🚨 exactParam が "all" の場合は弾き、domain へフォールバックさせる
+				if (exactParam && exactParam !== "all") {
 					targetScope = "exact";
 					targetUrlPattern = exactParam;
 				} else if (domainParam && domainParam !== "inbox") {
@@ -387,7 +389,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-y-auto">
-			<div className="px-4 py-12 md:p-8 max-w-3xl mx-auto w-full">
+			<div className="px-4 pt-12 pb-28 md:p-8 max-w-3xl mx-auto w-full">
 				<div className="flex items-center justify-between mb-8 pb-4 border-b border-base-border">
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">

@@ -1,14 +1,18 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { FileText, Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface GlobalSidebarProps {
 	onSearchOpen: () => void;
@@ -34,12 +38,18 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const exactParam = searchParams.get("exact");
 
 	const currentDomain = domainParam || (isNotes && !viewParam ? "inbox" : null);
-	const currentView = viewParam || (domainParam ? "domains" : isNotes ? "inbox" : null);
+	const currentView =
+		viewParam || (domainParam ? "domains" : isNotes ? "inbox" : null);
 	const currentExact = exactParam || null;
 
-	const isInboxActive = isNotes && (currentView === "inbox" || (currentDomain === "inbox" && !currentExact));
+	const isInboxActive =
+		isNotes &&
+		(currentView === "inbox" || (currentDomain === "inbox" && !currentExact));
 	const isDraftsActive = isNotes && currentView === "drafts";
-	const isDomainsActive = isNotes && (currentView === "domains" || (!!currentDomain && currentDomain !== "inbox"));
+	const isDomainsActive =
+		isNotes &&
+		(currentView === "domains" ||
+			(!!currentDomain && currentDomain !== "inbox"));
 
 	const handleNewNote = () => {
 		const params = new URLSearchParams(searchParams.toString());

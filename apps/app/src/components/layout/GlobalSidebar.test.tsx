@@ -64,7 +64,6 @@ const mockNotes = [
 ];
 
 describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
-
 	it("should determine active state from pathname and searchParams", () => {
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(

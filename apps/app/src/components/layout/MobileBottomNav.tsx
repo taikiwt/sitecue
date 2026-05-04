@@ -10,7 +10,9 @@ interface MobileBottomNavProps {
 
 export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
 	const searchParams = useSearchParams();
-	const isDetailOpen = !!(searchParams.get("noteId") || searchParams.get("draftId"));
+	const isDetailOpen = !!(
+		searchParams.get("noteId") || searchParams.get("draftId")
+	);
 
 	// Hide bottom nav when detail pane is open on mobile
 	if (isDetailOpen) return null;

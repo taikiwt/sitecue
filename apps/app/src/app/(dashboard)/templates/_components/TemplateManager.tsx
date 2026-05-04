@@ -139,57 +139,59 @@ export function TemplateManager({
 		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
 			{/* Left Pane: List */}
 			<div className="w-80 flex flex-col border-r border-base-border bg-base-surface">
-				<div
-					className={cn(
-						"p-4 border-b border-base-border flex items-center gap-2 transition-all duration-300",
-						!isSidebarOpen && "md:pl-16",
-					)}
-				>
-					<Link
-						href="/"
-						className="inline-flex items-center justify-center h-7 w-7 rounded-[min(var(--radius-md),12px)] hover:bg-muted hover:text-foreground transition-colors"
-						aria-label="Go back to Launchpad"
+				<div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+					<div
+						className={cn(
+							"p-4 border-b border-base-border flex items-center gap-2 sticky top-0 bg-base-surface z-20 transition-all duration-300",
+							!isSidebarOpen && "md:pl-16",
+						)}
 					>
-						<ArrowLeft className="w-4 h-4 text-action" aria-hidden="true" />
-					</Link>
-					<h1 className="font-bold text-lg">Templates</h1>
-				</div>
-				<div className="p-4">
-					<Link
-						href="/templates?id=new"
-						className="flex items-center justify-center gap-2 w-full border border-dashed border-base-border bg-transparent text-neutral-500 py-2 rounded-lg text-sm font-bold hover:text-action hover:border-action transition-colors"
-					>
-						<Plus className="w-4 h-4" aria-hidden="true" /> New Template
-					</Link>
-				</div>
-				<div className="flex-1 overflow-y-auto px-2 space-y-1">
-					{templates.map((t) => (
-						<div
-							key={t.id}
-							className={`flex items-center justify-between px-3 py-2 rounded-lg group ${selectedId === t.id ? "bg-base-bg shadow-sm" : "hover:bg-base-bg/50"}`}
+						<Link
+							href="/"
+							className="inline-flex items-center justify-center h-7 w-7 rounded-[min(var(--radius-md),12px)] hover:bg-muted hover:text-foreground transition-colors"
+							aria-label="Go back to Launchpad"
 						>
-							<Link
-								href={`/templates?id=${t.id}`}
-								className="flex-1 truncate text-sm font-medium"
+							<ArrowLeft className="w-4 h-4 text-action" aria-hidden="true" />
+						</Link>
+						<h1 className="font-bold text-lg">Templates</h1>
+					</div>
+					<div className="p-4">
+						<Link
+							href="/templates?id=new"
+							className="flex items-center justify-center gap-2 w-full border border-dashed border-base-border bg-transparent text-neutral-500 py-2 rounded-lg text-sm font-bold hover:text-action hover:border-action transition-colors"
+						>
+							<Plus className="w-4 h-4" aria-hidden="true" /> New Template
+						</Link>
+					</div>
+					<div className="px-2 space-y-1">
+						{templates.map((t) => (
+							<div
+								key={t.id}
+								className={`flex items-center justify-between px-3 py-2 rounded-lg group ${selectedId === t.id ? "bg-base-bg shadow-sm" : "hover:bg-base-bg/50"}`}
 							>
-								{t.name}
-							</Link>
-							<Button
-								variant="ghost"
-								size="icon-sm"
-								onClick={() => handleDelete(t.id)}
-								className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert transition-opacity"
-								type="button"
-							>
-								<Trash2 className="w-3 h-3" aria-hidden="true" />
-							</Button>
-						</div>
-					))}
+								<Link
+									href={`/templates?id=${t.id}`}
+									className="flex-1 truncate text-sm font-medium"
+								>
+									{t.name}
+								</Link>
+								<Button
+									variant="ghost"
+									size="icon-sm"
+									onClick={() => handleDelete(t.id)}
+									className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert transition-opacity"
+									type="button"
+								>
+									<Trash2 className="w-3 h-3" aria-hidden="true" />
+								</Button>
+							</div>
+						))}
+					</div>
 				</div>
 			</div>
 
 			{/* Right Pane: Form */}
-			<div className="flex-1 flex flex-col overflow-y-auto p-8">
+			<div className="flex-1 flex flex-col overflow-y-auto p-8 pb-28 md:pb-8">
 				{activeTemplate || isNew ? (
 					<div className="max-w-2xl w-full mx-auto space-y-6">
 						<div className="flex items-center justify-between mb-8">

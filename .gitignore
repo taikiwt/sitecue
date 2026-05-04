@@ -65,3 +65,6 @@ dist/
 .output/
 # WXTで生成されるストア提出用ZIPファイル
 *.zip
+
+# Diffファイル
+*.diff

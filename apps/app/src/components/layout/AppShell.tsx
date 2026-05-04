@@ -1,15 +1,20 @@
 "use client";
 
-import { FileText, Menu, PanelLeftOpen, PenSquare, Plus } from "lucide-react";
+import { FileText, PenSquare, Plus } from "lucide-react";
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState, useRef } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CustomLink as Link } from "@/components/ui/custom-link";
+import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
 import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
+import { CustomLink as Link } from "@/components/ui/custom-link";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import {
 	Sheet,
 	SheetContent,
@@ -22,30 +27,68 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
-import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const _pathname = usePathname();
-	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
-	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
+	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
+	const _setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
+	const isMobileHeaderVisible = useLayoutStore(
+		(state) => state.isMobileHeaderVisible,
+	);
+	const setIsMobileHeaderVisible = useLayoutStore(
+		(state) => state.setIsMobileHeaderVisible,
+	);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 	const searchParams = useSearchParams();
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
-	// 軽量なスクロール検知Hooksの実装
-	const [isHeaderVisible, setIsHeaderVisible] = useState(true);
-	const lastScrollY = useRef(0); // useStateから変更
+	// Global scroll monitoring (centralized)
+	useEffect(() => {
+		// 各スクロールコンテナの直前の位置を個別に記憶する
+		const scrollPositions = new WeakMap<EventTarget, number>();
+		let ticking = false;
 
-	const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-		const currentScrollY = e.currentTarget.scrollTop;
-		if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-			setIsHeaderVisible(false);
-		} else if (currentScrollY < lastScrollY.current) {
-			setIsHeaderVisible(true);
-		}
-		lastScrollY.current = currentScrollY; // 参照の更新
-	};
+		const handleGlobalScroll = (e: Event) => {
+			const target = e.target;
+			if (!(target instanceof HTMLElement) && target !== document) return;
+
+			// テキストエリアや小さなコードブロックなど、メインレイアウト以外のスクロールを無視
+			if (target instanceof HTMLElement && target.clientHeight < 300) return;
+
+			const currentScrollY =
+				target === document
+					? window.scrollY
+					: (target as HTMLElement).scrollTop;
+
+			const lastScrollY = scrollPositions.get(target) || 0;
+
+			if (!ticking) {
+				window.requestAnimationFrame(() => {
+					const delta = currentScrollY - lastScrollY;
+
+					// レイアウトシフトによる微小なスクロール（ガタつき）を無視するため、
+					// スクロール量のしきい値（delta > 10 / delta < -10）を設ける
+					if (currentScrollY > 50 && delta > 10) {
+						setIsMobileHeaderVisible(false);
+					} else if (currentScrollY <= 50 || delta < -10) {
+						setIsMobileHeaderVisible(true);
+					}
+
+					scrollPositions.set(target, currentScrollY);
+					ticking = false;
+				});
+				ticking = true;
+			}
+		};
+
+		// Capture phase listener to catch scroll events from any container
+		window.addEventListener("scroll", handleGlobalScroll, true);
+
+		return () => {
+			window.removeEventListener("scroll", handleGlobalScroll, true);
+		};
+	}, [setIsMobileHeaderVisible]);
 
 	// FABの Shallow Routing
 	const handleOpenGlobalNew = (type: "note" | "draft") => {
@@ -86,8 +129,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				{/* Mobile Toggle Header */}
 				<header
 					className={cn(
-						"md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border absolute top-0 left-0 right-0 z-10 transition-transform duration-300",
-						isHeaderVisible ? "translate-y-0" : "-translate-y-full",
+						"md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border z-20 transition-all duration-300",
+						!isMobileHeaderVisible && "-mt-14",
 					)}
 				>
 					<Link href="/" className="flex items-center">
@@ -101,10 +144,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</header>
 
 				{/* Content Area */}
-				<div
-					className="flex-1 overflow-y-auto relative flex flex-col pt-14 md:pt-0"
-					onScroll={handleScroll}
-				>
+				<div className="flex-1 overflow-y-auto relative flex flex-col">
 					{children}
 				</div>
 			</main>

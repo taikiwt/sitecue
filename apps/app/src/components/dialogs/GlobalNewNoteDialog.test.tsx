@@ -83,7 +83,7 @@ describe("GlobalNewNoteDialog", () => {
 		// 1. exact=all が null に変換され、urlPattern が空、scope が inbox になることを確認
 		// (domain=all も inbox に変換されるため、最終的に inbox スコープが優先される)
 		expect(screen.getByPlaceholderText("example.com/page")).toHaveValue("");
-		
+
 		// scope selector の表示を確認
 		const scopeTrigger = screen.getByRole("combobox");
 		expect(scopeTrigger).toHaveTextContent("Inbox");
@@ -95,7 +95,9 @@ describe("GlobalNewNoteDialog", () => {
 
 		render(<GlobalNewNoteDialog />);
 
-		expect(screen.getByPlaceholderText("example.com/page")).toHaveValue("example.com");
+		expect(screen.getByPlaceholderText("example.com/page")).toHaveValue(
+			"example.com",
+		);
 		expect(screen.getByRole("combobox")).toHaveTextContent("Domain");
 	});
 });

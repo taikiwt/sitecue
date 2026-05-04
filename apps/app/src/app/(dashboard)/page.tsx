@@ -40,7 +40,7 @@ export default async function LaunchpadPage() {
 	]);
 
 	return (
-		<div className="flex-1 bg-base-bg text-action font-sans">
+		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto pb-28 md:pb-0">
 			<main className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-12">
 				{/* 1段目: Pinned Sites */}
 				<div className="mb-8 md:mb-16">

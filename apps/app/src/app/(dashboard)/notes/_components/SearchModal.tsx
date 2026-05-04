@@ -2,14 +2,10 @@
 
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
-import {
-	Dialog,
-	DialogContent,
-	DialogOverlay,
-} from "@/components/ui/dialog";
+import { useEffect, useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
-import { useSearchNotes, useFetchNoteContents } from "@/hooks/useNotesQuery";
+import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note } from "../types";
 
@@ -80,7 +76,10 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<DialogOverlay className="z-50 bg-black/20 backdrop-blur-sm" />
-			<DialogContent className="z-50 w-[95vw] sm:max-w-xl top-[15%] translate-y-0 p-0 overflow-visible border-none shadow-2xl bg-transparent" showCloseButton={false}>
+			<DialogContent
+				className="z-50 w-[95vw] sm:max-w-xl top-[15%] translate-y-0 p-0 overflow-visible border-none shadow-2xl bg-transparent"
+				showCloseButton={false}
+			>
 				{/* モーダルの外側（右上）に配置する閉じるボタン */}
 				<div className="absolute -top-12 right-0 md:-right-12 md:top-0">
 					<button
@@ -155,9 +154,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													key={page}
 													type="button"
 													onClick={() => {
-														const domain = normalizeUrlForGrouping(page).split(
-															"/",
-														)[0];
+														const domain =
+															normalizeUrlForGrouping(page).split("/")[0];
 														router.push(
 															`/notes?domain=${domain}&exact=${page}${searchQuery ? `&q=${searchQuery}` : ""}`,
 														);
