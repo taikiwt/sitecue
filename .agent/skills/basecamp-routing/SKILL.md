@@ -27,6 +27,11 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 - **`useSearchParams` のラップ必須化**:
   Client Component (`"use client"`) 内で `useSearchParams()` フックを使用する場合、そのコンポーネントまたは呼び出し元を必ず React の `<Suspense fallback={...}>` でラップしてください。
   これを行わないと、OpenNext のビルドプロセス中の静的生成 (Prerendering) がクライアント側のパラメータに依存してしまい、ビルドが完全に失敗します。
+- **自己完結型Suspense境界の推奨**:
+  パフォーマンス向上のためSSR/SSGの恩恵を最大化しつつ、CSRへの強制フォールバックエラーを防ぐため、可能な限りコンポーネント単位で `<Suspense>` を配置してください。
+- **引き算の美学 (Fallback)**:
+  `.agent/rules/ui-rules.md` に従い、Suspense の `fallback` には原則として `null` を指定し、レンダリング時のチラつきを最小限に抑えてください。
+
 
 ## 5. Server Component Constraints (RSCの掟)
 - **イベントハンドラの禁止**: `page.tsx` や `layout.tsx` などの Server Component 内で、直接 `onClick` や `onChange` などのイベントハンドラを記述したり、`useState` などの React Hooks を呼び出したりすることは**厳禁**。

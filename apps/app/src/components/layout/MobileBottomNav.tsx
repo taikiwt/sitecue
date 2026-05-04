@@ -2,13 +2,14 @@
 
 import { Globe, Inbox, PenSquare, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 
 interface MobileBottomNavProps {
 	onSearchOpen: () => void;
 }
 
-export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
+function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	const searchParams = useSearchParams();
 	const isDetailOpen = !!(
 		searchParams.get("noteId") || searchParams.get("draftId")
@@ -51,5 +52,13 @@ export function MobileBottomNav({ onSearchOpen }: MobileBottomNavProps) {
 				</button>
 			</div>
 		</nav>
+	);
+}
+
+export function MobileBottomNav(props: MobileBottomNavProps) {
+	return (
+		<Suspense fallback={null}>
+			<MobileBottomNavInner {...props} />
+		</Suspense>
 	);
 }

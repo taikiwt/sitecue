@@ -1,5 +1,5 @@
 {
-	"name": "sitecue-api",
+	"name": "@sitecue/api",
 	"type": "module",
 	"scripts": {
 		"dev": "wrangler dev",
