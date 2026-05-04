@@ -3,7 +3,7 @@
 import { FileText, Menu, PanelLeftOpen, PenSquare, Plus } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -30,9 +30,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
+
+	// 軽量なスクロール検知Hooksの実装
+	const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+	const lastScrollY = useRef(0); // useStateから変更
+
+	const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+		const currentScrollY = e.currentTarget.scrollTop;
+		if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+			setIsHeaderVisible(false);
+		} else if (currentScrollY < lastScrollY.current) {
+			setIsHeaderVisible(true);
+		}
+		lastScrollY.current = currentScrollY; // 参照の更新
+	};
+
+	// FABの Shallow Routing
+	const handleOpenGlobalNew = (type: "note" | "draft") => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("globalNew", type);
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState(null, "", newUrl);
+		// App Router環境で再レンダリングを促すため、popstateを発火させるかrouterを併用する場合があるが
+		// 設計図に従い pushState を使用
+		window.dispatchEvent(new PopStateEvent("popstate"));
+	};
 
 	return (
 		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
@@ -60,8 +84,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
 			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
 				{/* Mobile Toggle Header */}
-				<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border absolute top-0 left-0 right-0 z-10">
-					<Link href="/notes?domain=inbox" className="flex items-center">
+				<header
+					className={cn(
+						"md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border absolute top-0 left-0 right-0 z-10 transition-transform duration-300",
+						isHeaderVisible ? "translate-y-0" : "-translate-y-full",
+					)}
+				>
+					<Link href="/" className="flex items-center">
 						<Image src="/logo.svg" alt="sitecue" width={28} height={28} />
 					</Link>
 					<div className="w-10 h-10">
@@ -72,7 +101,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</header>
 
 				{/* Content Area */}
-				<div className="flex-1 overflow-y-auto relative flex flex-col pt-12 md:pt-0">
+				<div
+					className="flex-1 overflow-y-auto relative flex flex-col pt-14 md:pt-0"
+					onScroll={handleScroll}
+				>
 					{children}
 				</div>
 			</main>
@@ -110,11 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 							type="button"
 							variant="ghost"
 							size="sm"
-							onClick={() => {
-								const params = new URLSearchParams(searchParams.toString());
-								params.set("globalNew", "note");
-								router.push(`/notes?${params.toString()}`);
-							}}
+							onClick={() => handleOpenGlobalNew("note")}
 							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
 						>
 							<FileText className="w-4 h-4" aria-hidden="true" />
@@ -124,11 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 							type="button"
 							variant="ghost"
 							size="sm"
-							onClick={() => {
-								const params = new URLSearchParams(searchParams.toString());
-								params.set("globalNew", "draft");
-								router.push(`/notes?${params.toString()}`);
-							}}
+							onClick={() => handleOpenGlobalNew("draft")}
 							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
 						>
 							<PenSquare className="w-4 h-4" aria-hidden="true" />

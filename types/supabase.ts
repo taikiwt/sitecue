@@ -368,6 +368,32 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_notes: {
+        Args: { search_query: string }
+        Returns: {
+          content: string
+          created_at: string
+          draft_id: string | null
+          id: string
+          is_expanded: boolean
+          is_favorite: boolean
+          is_pinned: boolean
+          is_resolved: boolean
+          note_type: string
+          scope: string
+          sort_order: number
+          tags: string[] | null
+          updated_at: string
+          url_pattern: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "sitecue_notes"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       [_ in never]: never
