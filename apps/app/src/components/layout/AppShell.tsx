@@ -28,6 +28,65 @@ import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
 
+function MobileFABInner() {
+	const searchParams = useSearchParams();
+
+	// FABの Shallow Routing
+	const handleOpenGlobalNew = (type: "note" | "draft") => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("globalNew", type);
+		const newUrl = `${window.location.pathname}?${params.toString()}`;
+		window.history.pushState(null, "", newUrl);
+		// App Router環境で再レンダリングを促すため、popstateを発火させるかrouterを併用する場合があるが
+		// 設計図に従い pushState を使用
+		window.dispatchEvent(new PopStateEvent("popstate"));
+	};
+
+	return (
+		<div className="md:hidden fixed bottom-20 right-4 z-40">
+			<Popover>
+				<PopoverTrigger
+					render={
+						<Button
+							size="icon"
+							className="h-14 w-14 rounded-full shadow-xl bg-action text-action-text hover-safe:bg-action-hover cursor-pointer transition-transform active:scale-95"
+						>
+							<Plus className="w-6 h-6" aria-hidden="true" />
+						</Button>
+					}
+				/>
+				<PopoverContent
+					side="top"
+					align="end"
+					sideOffset={12}
+					className="w-48 p-2 flex flex-col gap-1 z-50"
+				>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => handleOpenGlobalNew("note")}
+						className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
+					>
+						<FileText className="w-4 h-4" aria-hidden="true" />
+						New Note
+					</Button>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						onClick={() => handleOpenGlobalNew("draft")}
+						className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
+					>
+						<PenSquare className="w-4 h-4" aria-hidden="true" />
+						New Draft
+					</Button>
+				</PopoverContent>
+			</Popover>
+		</div>
+	);
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const _pathname = usePathname();
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
@@ -40,7 +99,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	);
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-	const searchParams = useSearchParams();
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
 	// Global scroll monitoring (centralized)
@@ -89,17 +147,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			window.removeEventListener("scroll", handleGlobalScroll, true);
 		};
 	}, [setIsMobileHeaderVisible]);
-
-	// FABの Shallow Routing
-	const handleOpenGlobalNew = (type: "note" | "draft") => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("globalNew", type);
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState(null, "", newUrl);
-		// App Router環境で再レンダリングを促すため、popstateを発火させるかrouterを併用する場合があるが
-		// 設計図に従い pushState を使用
-		window.dispatchEvent(new PopStateEvent("popstate"));
-	};
 
 	return (
 		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
@@ -160,47 +207,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			/>
 
 			{/* FAB (Mobile Only) */}
-			<div className="md:hidden fixed bottom-20 right-4 z-40">
-				<Popover>
-					<PopoverTrigger
-						render={
-							<Button
-								size="icon"
-								className="h-14 w-14 rounded-full shadow-xl bg-action text-action-text hover-safe:bg-action-hover cursor-pointer transition-transform active:scale-95"
-							>
-								<Plus className="w-6 h-6" aria-hidden="true" />
-							</Button>
-						}
-					/>
-					<PopoverContent
-						side="top"
-						align="end"
-						sideOffset={12}
-						className="w-48 p-2 flex flex-col gap-1 z-50"
-					>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => handleOpenGlobalNew("note")}
-							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-						>
-							<FileText className="w-4 h-4" aria-hidden="true" />
-							New Note
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => handleOpenGlobalNew("draft")}
-							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-						>
-							<PenSquare className="w-4 h-4" aria-hidden="true" />
-							New Draft
-						</Button>
-					</PopoverContent>
-				</Popover>
-			</div>
+			<Suspense fallback={null}>
+				<MobileFABInner />
+			</Suspense>
 
 			<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 
