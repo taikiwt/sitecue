@@ -18,7 +18,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 	const router = useRouter();
 	const [inputValue, setInputValue] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
-	const { data: results = [], isLoading } = useSearchNotes(searchQuery);
+	const { data = { notes: [], drafts: [] }, isLoading } =
+		useSearchNotes(searchQuery);
 	const { mutate: fetchContents } = useFetchNoteContents();
 
 	const groupedResults = useMemo(() => {
@@ -26,30 +27,51 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 		const pages = new Set<string>();
 		const notes: Note[] = [];
 
-		results.forEach((note) => {
+		data.notes.forEach((note) => {
 			if (note.url_pattern) {
 				const domain = normalizeUrlForGrouping(note.url_pattern).split("/")[0];
-				domains.add(domain);
-				if (note.scope === "exact") pages.add(note.url_pattern);
+				const domainMatches = domain
+					.toLowerCase()
+					.includes(searchQuery.toLowerCase());
+
+				// DOMAINS: ドメイン部分が部分一致した場合のみ表示
+				if (domainMatches) {
+					domains.add(domain);
+				}
+
+				// PAGES: URL全体が部分一致し、かつドメイン部分がマッチしない場合のみ表示
+				if (note.scope === "exact") {
+					const exactMatches = note.url_pattern
+						.toLowerCase()
+						.includes(searchQuery.toLowerCase());
+					if (exactMatches && !domainMatches) {
+						pages.add(note.url_pattern);
+					}
+				}
 			}
 			if (note.content?.toLowerCase().includes(searchQuery.toLowerCase())) {
 				notes.push(note);
 			}
 		});
-		return { domains: Array.from(domains), pages: Array.from(pages), notes };
-	}, [results, searchQuery]);
+		return {
+			domains: Array.from(domains),
+			pages: Array.from(pages),
+			notes,
+			drafts: data.drafts,
+		};
+	}, [data, searchQuery]);
 
 	// Fetch contents for search results to show snippets
 	useEffect(() => {
-		if (results.length > 0) {
-			const missingIds = results
+		if (data.notes.length > 0) {
+			const missingIds = data.notes
 				.filter((n) => n.content === undefined)
 				.map((n) => n.id);
 			if (missingIds.length > 0) {
 				fetchContents(missingIds);
 			}
 		}
-	}, [results, fetchContents]);
+	}, [data.notes, fetchContents]);
 
 	const handleJump = (note: Note) => {
 		const params = new URLSearchParams();
@@ -108,7 +130,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 							<div className="p-4 text-center text-gray-400 animate-pulse">
 								Searching...
 							</div>
-						) : searchQuery && results.length === 0 ? (
+						) : searchQuery &&
+							data.notes.length === 0 &&
+							data.drafts.length === 0 ? (
 							<div className="p-8 text-center text-gray-400">
 								No results found for "{searchQuery}"
 							</div>
@@ -124,11 +148,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 												<button
 													key={domain}
 													type="button"
-													onClick={() =>
+													onClick={() => {
+														onClose();
 														router.push(
 															`/notes?domain=${domain}${searchQuery ? `&q=${searchQuery}` : ""}`,
-														)
-													}
+														);
+													}}
 													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer text-sm"
 												>
 													{domain}
@@ -149,6 +174,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													key={page}
 													type="button"
 													onClick={() => {
+														onClose();
 														const domain =
 															normalizeUrlForGrouping(page).split("/")[0];
 														router.push(
@@ -158,6 +184,39 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer text-sm truncate"
 												>
 													{page}
+												</button>
+											))}
+										</div>
+									</div>
+								)}
+
+								{groupedResults.drafts.length > 0 && (
+									<div>
+										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+											Drafts
+										</h3>
+										<div className="space-y-1">
+											{groupedResults.drafts.map((draft) => (
+												<button
+													key={draft.id}
+													type="button"
+													onClick={() => {
+														onClose();
+														router.push(`/notes?draftId=${draft.id}`);
+													}}
+													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer group"
+												>
+													<div className="flex items-center justify-between mb-1">
+														<span className="text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mr-2">
+															{draft.title || "Untitled Draft"}
+														</span>
+														<span className="text-[10px] text-gray-400 shrink-0">
+															{new Date(draft.updated_at).toLocaleDateString()}
+														</span>
+													</div>
+													<p className="text-sm text-action font-medium line-clamp-2">
+														{draft.content || "No content"}
+													</p>
 												</button>
 											))}
 										</div>

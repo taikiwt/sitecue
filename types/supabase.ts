@@ -368,6 +368,26 @@ export type Database = {
 					isSetofReturn: true;
 				};
 			};
+			search_drafts: {
+				Args: { search_query: string };
+				Returns: {
+					content: string | null;
+					created_at: string;
+					id: string;
+					metadata: Json | null;
+					tags: string[] | null;
+					template_id: string | null;
+					title: string | null;
+					updated_at: string;
+					user_id: string;
+				}[];
+				SetofOptions: {
+					from: "*";
+					to: "sitecue_drafts";
+					isOneToOne: false;
+					isSetofReturn: true;
+				};
+			};
 			search_notes: {
 				Args: { search_query: string };
 				Returns: {

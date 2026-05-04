@@ -190,6 +190,7 @@ export function MiddlePaneList(props: Props) {
 			return "Search Results";
 		}
 		if (currentView === "drafts") return "Drafts";
+		if (currentExact === "all") return "Domain Notes";
 		if (currentExact) {
 			const safeUrl = getSafeUrl(currentExact);
 			if (safeUrl) {

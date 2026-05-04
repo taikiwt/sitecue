@@ -27,16 +27,19 @@ describe("SearchModal Context Jump", () => {
 
 		// Setup mock return value for search
 		mockSearchNotes.mockReturnValue({
-			data: [
-				{
-					id: "note-123",
-					content: "Test Note Content",
-					scope: "exact",
-					url_pattern: "https://example.com/path",
-					note_type: "info",
-					created_at: new Date().toISOString(),
-				},
-			],
+			data: {
+				notes: [
+					{
+						id: "note-123",
+						content: "Test Note Content",
+						scope: "exact",
+						url_pattern: "https://example.com/path",
+						note_type: "info",
+						created_at: new Date().toISOString(),
+					},
+				],
+				drafts: [],
+			},
 			isLoading: false,
 		});
 
@@ -71,16 +74,19 @@ describe("SearchModal Context Jump", () => {
 		const user = userEvent.setup();
 
 		mockSearchNotes.mockReturnValue({
-			data: [
-				{
-					id: "note-inbox",
-					content: "Inbox Note",
-					scope: "inbox",
-					url_pattern: "",
-					note_type: "info",
-					created_at: new Date().toISOString(),
-				},
-			],
+			data: {
+				notes: [
+					{
+						id: "note-inbox",
+						content: "Inbox Note",
+						scope: "inbox",
+						url_pattern: "",
+						note_type: "info",
+						created_at: new Date().toISOString(),
+					},
+				],
+				drafts: [],
+			},
 			isLoading: false,
 		});
 
@@ -105,7 +111,10 @@ describe("SearchModal Context Jump", () => {
 
 	it("should not trigger search on input change, only on submit", async () => {
 		const _user = userEvent.setup();
-		mockSearchNotes.mockReturnValue({ data: [], isLoading: false });
+		mockSearchNotes.mockReturnValue({
+			data: { notes: [], drafts: [] },
+			isLoading: false,
+		});
 
 		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
 
@@ -128,20 +137,23 @@ describe("SearchModal Context Jump", () => {
 		mockSearchNotes.mockImplementation((q) => {
 			if (q === "Test") {
 				return {
-					data: [
-						{
-							id: "1",
-							content: "Test Result",
-							url_pattern: "test.com",
-							scope: "domain",
-							note_type: "info",
-							created_at: new Date().toISOString(),
-						},
-					],
+					data: {
+						notes: [
+							{
+								id: "1",
+								content: "Test Result",
+								url_pattern: "test.com",
+								scope: "domain",
+								note_type: "info",
+								created_at: new Date().toISOString(),
+							},
+						],
+						drafts: [],
+					},
 					isLoading: false,
 				};
 			}
-			return { data: [], isLoading: false };
+			return { data: { notes: [], drafts: [] }, isLoading: false };
 		});
 
 		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
@@ -167,5 +179,84 @@ describe("SearchModal Context Jump", () => {
 				"Type and press Enter to search your notes across domains",
 			),
 		).toBeInTheDocument();
+	});
+
+	it("should render drafts and navigate on click", async () => {
+		const user = userEvent.setup();
+		const mockDrafts = [
+			{
+				id: "draft-1",
+				title: "My Secret Draft",
+				content: "Writing something...",
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				user_id: "user-1",
+				metadata: null,
+				template_id: null,
+				tags: [],
+			},
+		];
+
+		mockSearchNotes.mockReturnValue({
+			data: { notes: [], drafts: mockDrafts },
+			isLoading: false,
+		});
+
+		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+
+		const input = screen.getByPlaceholderText(/search notes/i);
+		await user.type(input, "Secret");
+		await user.keyboard("{Enter}");
+
+		await waitFor(() => {
+			expect(screen.getByText("Drafts")).toBeInTheDocument();
+			expect(screen.getByText("My Secret Draft")).toBeInTheDocument();
+		});
+
+		const draftResult = screen.getByText("My Secret Draft");
+		await user.click(draftResult);
+
+		expect(mockPush).toHaveBeenCalledWith("/notes?draftId=draft-1");
+	});
+
+	it("should cancel noise in pages when domain matches", async () => {
+		const user = userEvent.setup();
+		const mockNotes = [
+			{
+				id: "1",
+				url_pattern: "example.com",
+				scope: "domain",
+				content: "domain note",
+				created_at: new Date().toISOString(),
+			},
+			{
+				id: "2",
+				url_pattern: "https://example.com/page-1",
+				scope: "exact",
+				content: "page note",
+				created_at: new Date().toISOString(),
+			},
+		];
+
+		mockSearchNotes.mockReturnValue({
+			data: { notes: mockNotes, drafts: [] },
+			isLoading: false,
+		});
+
+		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+
+		const input = screen.getByPlaceholderText(/search notes/i);
+		// "example" で検索した場合、ドメインがマッチするので "https://example.com/page-1" はPagesから除外されるはず
+		await user.type(input, "example");
+		await user.keyboard("{Enter}");
+
+		await waitFor(() => {
+			expect(screen.getByText("Domains")).toBeInTheDocument();
+			expect(screen.getByText("example.com")).toBeInTheDocument();
+			// Pagesセクションはレンダリングされないか、該当ページが含まれていないことを確認
+			expect(
+				screen.queryByText("https://example.com/page-1"),
+			).not.toBeInTheDocument();
+		});
 	});
 });

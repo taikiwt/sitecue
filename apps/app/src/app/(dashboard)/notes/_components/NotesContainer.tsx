@@ -48,7 +48,8 @@ export function NotesContainer() {
 	// 1. TanStack Queryによる検索の宣言的実行
 	const isSearchActive = !!params.q || !!params.tags;
 	const {
-		data: searchResults = [],
+		// 修正: 初期値をオブジェクト { notes: [], drafts: [] } に変更
+		data: searchResults = { notes: [], drafts: [] },
 		isLoading: isSearchLoading,
 		isFetching: isSearchFetching,
 	} = useSearchNotes(params.q, params.tags);
@@ -64,7 +65,27 @@ export function NotesContainer() {
 
 	// フィルタリングされた一覧の計算 (既存の page.tsx から移植)
 	const filteredItems = useMemo(() => {
-		if (isSearchActive) return searchResults;
+		if (isSearchActive) {
+			// 修正: notesとdraftsを平坦化
+			const flatSearchResults: (Note | Draft)[] = [
+				...(searchResults.notes || []),
+				...(searchResults.drafts || []),
+			];
+
+			// 修正: 二次フィルタリングの適用
+			return flatSearchResults.filter((item) => {
+				const isNote = "url_pattern" in item;
+
+				if (exact) {
+					return isNote && item.url_pattern === exact;
+				}
+				if (domain && domain !== "inbox") {
+					return isNote && item.url_pattern.startsWith(domain);
+				}
+				return true;
+			});
+		}
+
 		if (!groupedNotes) return [];
 
 		let items: (Note | Draft)[] = [];
@@ -135,13 +156,16 @@ export function NotesContainer() {
 
 		// 1. 検索結果（ローカル状態・完全なデータ）を先に評価する
 		if (isSearchActive) {
-			const foundInSearch = searchResults.find((n) => n.id === params.noteId);
+			// 修正: searchResults.notes に対して .find を実行する
+			const foundInSearch = searchResults.notes?.find(
+				(n) => n.id === params.noteId,
+			);
 			if (foundInSearch) return foundInSearch;
 		}
 
 		// 2. なければ全体データ（Slim Fetchingキャッシュ等）から探す
 		return notes.find((n) => n.id === params.noteId);
-	}, [notes, searchResults, params.noteId, isSearchActive]);
+	}, [notes, searchResults.notes, params.noteId, isSearchActive]);
 
 	const selectedDraft = useMemo(
 		() =>

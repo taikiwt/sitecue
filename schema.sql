@@ -190,6 +190,38 @@ $$;
 ALTER FUNCTION "public"."handle_new_user_todo01"() OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."sitecue_drafts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "title" "text",
+    "content" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "template_id" "uuid",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    CONSTRAINT "sitecue_drafts_content_len_check" CHECK (("char_length"("content") <= 100000))
+);
+
+
+ALTER TABLE "public"."sitecue_drafts" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."search_drafts"("search_query" "text") RETURNS SETOF "public"."sitecue_drafts"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM public.sitecue_drafts
+  WHERE (content ILIKE '%' || search_query || '%'
+     OR title ILIKE '%' || search_query || '%');
+END;
+$$;
+
+
+ALTER FUNCTION "public"."search_drafts"("search_query" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."search_notes"("search_query" "text") RETURNS SETOF "public"."sitecue_notes"
     LANGUAGE "plpgsql"
     AS $$
@@ -217,23 +249,6 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_domain_settings" (
 
 
 ALTER TABLE "public"."sitecue_domain_settings" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."sitecue_drafts" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
-    "title" "text",
-    "content" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
-    "template_id" "uuid",
-    "tags" "text"[] DEFAULT '{}'::"text"[],
-    CONSTRAINT "sitecue_drafts_content_len_check" CHECK (("char_length"("content") <= 100000))
-);
-
-
-ALTER TABLE "public"."sitecue_drafts" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."sitecue_links" (
@@ -783,6 +798,18 @@ GRANT ALL ON FUNCTION "public"."handle_new_user_todo01"() TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."sitecue_drafts" TO "anon";
+GRANT ALL ON TABLE "public"."sitecue_drafts" TO "authenticated";
+GRANT ALL ON TABLE "public"."sitecue_drafts" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."search_drafts"("search_query" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."search_drafts"("search_query" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_drafts"("search_query" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."search_notes"("search_query" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."search_notes"("search_query" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_notes"("search_query" "text") TO "service_role";
@@ -813,12 +840,6 @@ GRANT ALL ON FUNCTION "public"."search_notes"("search_query" "text") TO "service
 GRANT ALL ON TABLE "public"."sitecue_domain_settings" TO "anon";
 GRANT ALL ON TABLE "public"."sitecue_domain_settings" TO "authenticated";
 GRANT ALL ON TABLE "public"."sitecue_domain_settings" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."sitecue_drafts" TO "anon";
-GRANT ALL ON TABLE "public"."sitecue_drafts" TO "authenticated";
-GRANT ALL ON TABLE "public"."sitecue_drafts" TO "service_role";
 
 
 

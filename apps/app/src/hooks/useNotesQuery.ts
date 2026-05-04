@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Note } from "@/app/(dashboard)/notes/types";
+import type { Draft, Note } from "@/app/(dashboard)/notes/types";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
@@ -208,11 +208,10 @@ export function useSearchNotes(q?: string, tags?: string) {
 	return useQuery({
 		queryKey: [...NOTES_QUERY_KEY, "search", q, tags],
 		queryFn: async () => {
-			if (!q && !tags) return [];
+			if (!q && !tags) return { notes: [], drafts: [] };
 			const supabase = createClient();
 
-			// RPCを使用した安全な検索
-			let query = q
+			let notesQuery = q
 				? supabase.rpc("search_notes", { search_query: q })
 				: supabase
 						.from("sitecue_notes")
@@ -222,18 +221,35 @@ export function useSearchNotes(q?: string, tags?: string) {
 
 			if (tags) {
 				const tagsArray = tags.split(",");
-				// rpc() の返り値に対してもチェイン可能
-				query = query.contains("tags", tagsArray);
+				notesQuery = notesQuery.contains("tags", tagsArray);
 			}
 
-			const { data, error } = await query
-				.order("is_pinned", { ascending: false })
-				.order("created_at", { ascending: false });
+			let draftsQuery = q
+				? supabase.rpc("search_drafts", { search_query: q })
+				: supabase.from("sitecue_drafts").select("*");
 
-			if (error) throw error;
-			return (data as Note[]) || [];
+			if (tags) {
+				const tagsArray = tags.split(",");
+				draftsQuery = draftsQuery.contains("tags", tagsArray);
+			}
+
+			// 並列実行でレイテンシを抑える
+			const [notesResult, draftsResult] = await Promise.all([
+				notesQuery
+					.order("is_pinned", { ascending: false })
+					.order("created_at", { ascending: false }),
+				draftsQuery.order("updated_at", { ascending: false }),
+			]);
+
+			if (notesResult.error) throw notesResult.error;
+			if (draftsResult.error) throw draftsResult.error;
+
+			return {
+				notes: (notesResult.data as Note[]) || [],
+				drafts: (draftsResult.data as Draft[]) || [],
+			};
 		},
-		staleTime: 5 * 60 * 1000, // 5分間のキャッシュでブラウザバック時の再描画を高速化
+		staleTime: 5 * 60 * 1000,
 		enabled: !!q || !!tags,
 	});
 }
