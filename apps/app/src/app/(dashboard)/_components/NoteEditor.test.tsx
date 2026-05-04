@@ -1,7 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { APP_LIMITS } from "@/constants/limits";
 import NoteEditor from "./NoteEditor";
 
 // Mock the limits
@@ -13,14 +12,25 @@ vi.mock("@/constants/limits", () => ({
 	},
 }));
 
+import type { UserState } from "@/store/useUserStore";
+
 // Mock the store
 vi.mock("@/store/useUserStore", () => ({
-	useUserStore: (selector: any) => selector({ openPaywall: vi.fn() }),
+	useUserStore: (selector: (state: UserState) => unknown) =>
+		selector({ openPaywall: vi.fn() } as Partial<UserState> as UserState),
 }));
 
 // Mock the editor to be a simple textarea for tests
 vi.mock("@/components/editor/NotesEditor", () => ({
-	NotesEditor: ({ value, onChange, placeholder }: any) => (
+	NotesEditor: ({
+		value,
+		onChange,
+		placeholder,
+	}: {
+		value: string;
+		onChange: (v: string) => void;
+		placeholder?: string;
+	}) => (
 		<textarea
 			value={value}
 			onChange={(e) => onChange(e.target.value)}

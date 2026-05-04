@@ -104,7 +104,7 @@ describe("SearchModal Context Jump", () => {
 	});
 
 	it("should not trigger search on input change, only on submit", async () => {
-		const user = userEvent.setup();
+		const _user = userEvent.setup();
 		mockSearchNotes.mockReturnValue({ data: [], isLoading: false });
 
 		render(<SearchModal isOpen={true} onClose={vi.fn()} />);

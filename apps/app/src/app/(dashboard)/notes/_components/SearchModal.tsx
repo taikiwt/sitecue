@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
@@ -66,11 +66,6 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
 		onClose();
 		router.push(`/notes?${params.toString()}`);
-	};
-
-	const handleSearch = (e: React.FormEvent) => {
-		e.preventDefault();
-		setSearchQuery(inputValue);
 	};
 
 	return (

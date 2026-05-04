@@ -51,13 +51,6 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 		(currentView === "domains" ||
 			(!!currentDomain && currentDomain !== "inbox"));
 
-	const handleNewNote = () => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("globalNew", "note");
-		router.push(`${pathname}?${params.toString()}`);
-		onClose?.();
-	};
-
 	return (
 		<div className="flex flex-col h-full w-full bg-base-surface items-center py-4 gap-6">
 			{/* Logo */}
