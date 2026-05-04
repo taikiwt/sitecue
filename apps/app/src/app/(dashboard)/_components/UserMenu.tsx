@@ -5,8 +5,12 @@ import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { AI_LIMIT, DRAFTS_LIMIT, NOTES_LIMIT } from "@/constants/limits";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
@@ -49,7 +53,6 @@ export function UserMenu() {
 		getUserAndProfile();
 	}, [supabase, setUserData]);
 
-
 	const handleSignOut = async () => {
 		await supabase.auth.signOut();
 		router.push("/login");
@@ -91,16 +94,15 @@ export function UserMenu() {
 					<p className="text-sm font-semibold text-action truncate">
 						{user.email}
 					</p>
-					<p className="text-[10px] text-neutral-400 font-medium">
-						My Account
-					</p>
+					<p className="text-[10px] text-neutral-400 font-medium">My Account</p>
 				</div>
 
 				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
 					<p
 						className={cn(
 							"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
-							aiUsageCount !== null && aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+							aiUsageCount !== null &&
+								aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
 								? "text-amber-600"
 								: "text-neutral-400",
 						)}
@@ -111,7 +113,8 @@ export function UserMenu() {
 					<p
 						className={cn(
 							"text-sm",
-							aiUsageCount !== null && aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
+							aiUsageCount !== null &&
+								aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
 								? "text-amber-700"
 								: "text-action",
 						)}

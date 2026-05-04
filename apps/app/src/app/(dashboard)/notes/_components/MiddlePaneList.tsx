@@ -49,9 +49,8 @@ import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
-import type { Draft, Note } from "../types";
+import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
-import type { GroupedNotes } from "../types";
 
 type Props = {
 	items: (Note | Draft)[];
@@ -78,6 +77,17 @@ export function MiddlePaneList(props: Props) {
 	const router = useRouter();
 	const supabase = createClient();
 	const [localItems, setLocalItems] = useState<(Note | Draft)[]>(items);
+	const [prevItems, setPrevItems] = useState<(Note | Draft)[]>(items);
+
+	if (items !== prevItems) {
+		const validItems = items.filter((item) => item?.id);
+		const uniqueItems = validItems.filter(
+			(item, index, self) => index === self.findIndex((t) => t.id === item.id),
+		);
+		setPrevItems(items);
+		setLocalItems(uniqueItems);
+	}
+
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [isDeletingBulk, setIsDeletingBulk] = useState(false);
 	const [isSelectMode, setIsSelectMode] = useState(false);
@@ -88,9 +98,9 @@ export function MiddlePaneList(props: Props) {
 
 	const [isCopyPopoverOpen, setIsCopyPopoverOpen] = useState(false);
 	const [copiedType, setCopiedType] = useState<"text" | "json" | null>(null);
+
 	const copyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-	// ★ 修正箇所：親コンポーネントでフックを1回だけ呼び出す
 	const { mutate: updateNote } = useUpdateNote();
 
 	const handleTodoToggle = (
@@ -104,21 +114,13 @@ export function MiddlePaneList(props: Props) {
 	};
 
 	useEffect(() => {
-		const validItems = items.filter((item) => item?.id);
-		const uniqueItems = validItems.filter(
-			(item, index, self) => index === self.findIndex((t) => t.id === item.id),
-		);
-		setLocalItems(uniqueItems);
-	}, [items]);
-
-	useEffect(() => {
 		return () => {
 			if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
 		};
 	}, []);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset state when navigation context changes
 	useEffect(() => {
-		const _unused = { currentView, currentDomain, currentExact };
 		setIsSelectMode(false);
 		setSelectedIds(new Set());
 		setFilterType("all");
@@ -270,13 +272,15 @@ export function MiddlePaneList(props: Props) {
 	if (currentView === "domains" && !currentDomain) {
 		return (
 			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-				<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
-					<h2 className="text-xl md:text-lg font-bold text-action">Domains</h2>
-					<p className="text-xs text-gray-500 mt-1">
-						{Object.keys(groupedNotes.domains).length} domains
-					</p>
-				</div>
-				<div className="flex-1 overflow-y-auto divide-y divide-base-border">
+				<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
+					<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-20">
+						<h2 className="text-xl md:text-lg font-bold text-action">
+							Domains
+						</h2>
+						<p className="text-xs text-gray-500 mt-1">
+							{Object.keys(groupedNotes.domains).length} domains
+						</p>
+					</div>
 					{Object.entries(groupedNotes.domains).map(([domain, data]) => (
 						<Link
 							key={domain}
@@ -311,24 +315,24 @@ export function MiddlePaneList(props: Props) {
 		const domainData = groupedNotes.domains[currentDomain];
 		return (
 			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-				<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-10">
-					<div className="flex items-center gap-2 mb-1">
-						<button
-							type="button"
-							onClick={() => router.push("/notes?view=domains")}
-							className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer"
-						>
-							<ArrowLeft className="w-4 h-4" />
-						</button>
-						<h2 className="text-xl md:text-lg font-bold text-action truncate">
-							{currentDomain}
-						</h2>
+				<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
+					<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-20">
+						<div className="flex items-center gap-2 mb-1">
+							<button
+								type="button"
+								onClick={() => router.push("/notes?view=domains")}
+								className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer"
+							>
+								<ArrowLeft className="w-4 h-4" />
+							</button>
+							<h2 className="text-xl md:text-lg font-bold text-action truncate">
+								{currentDomain}
+							</h2>
+						</div>
+						<p className="text-xs text-gray-500 ml-7">
+							{Object.keys(domainData?.pages || {}).length} pages
+						</p>
 					</div>
-					<p className="text-xs text-gray-500 ml-7">
-						{Object.keys(domainData?.pages || {}).length} pages
-					</p>
-				</div>
-				<div className="flex-1 overflow-y-auto divide-y divide-base-border">
 					<Link
 						href={`/notes?domain=${currentDomain}&exact=all`}
 						className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
@@ -338,16 +342,14 @@ export function MiddlePaneList(props: Props) {
 								<Globe className="w-5 h-5 text-note-info" />
 							</div>
 							<span className="text-sm font-medium text-action">
-								All notes in {currentDomain}
+								Domain Notes
 							</span>
 						</div>
 						<ChevronRight className="w-4 h-4 text-gray-300" />
 					</Link>
 					{Object.entries(domainData?.pages || {}).map(([url, notes]) => {
 						const safeUrl = getSafeUrl(url);
-						const path = safeUrl
-							? safeUrl.pathname + safeUrl.search
-							: url;
+						const path = safeUrl ? safeUrl.pathname + safeUrl.search : url;
 						return (
 							<Link
 								key={url}
@@ -381,212 +383,229 @@ export function MiddlePaneList(props: Props) {
 
 	return (
 		<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-			<div
-				className={cn(
-					"p-4 border-b border-base-border sticky top-0 bg-base-bg z-10 transition-all duration-300",
-					!isSidebarOpen && "md:pl-16",
-				)}
-			>
-				<div className="flex items-center justify-between">
-					<div className="flex items-center gap-2 overflow-hidden">
-						{currentDomain && currentDomain !== "inbox" && (
-							<button
-								type="button"
-								onClick={() => router.push(`/notes?domain=${currentDomain}`)}
-								className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer shrink-0"
+			<div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+				<div
+					className={cn(
+						"p-4 border-b border-base-border sticky top-0 bg-base-bg z-20 transition-all duration-300",
+						!isSidebarOpen && "md:pl-16",
+					)}
+				>
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2 overflow-hidden">
+							{currentDomain && currentDomain !== "inbox" && (
+								<button
+									type="button"
+									onClick={() => router.push(`/notes?domain=${currentDomain}`)}
+									className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer shrink-0"
+								>
+									<ArrowLeft className="w-4 h-4" />
+								</button>
+							)}
+							<h2
+								className="text-xl md:text-lg font-bold text-action truncate"
+								title={getTitle()}
 							>
-								<ArrowLeft className="w-4 h-4" />
-							</button>
-						)}
-						<h2
-							className="text-xl md:text-lg font-bold text-action truncate"
-							title={getTitle()}
-						>
-							{getTitle()}
-						</h2>
-					</div>
-					{currentView !== "drafts" && (
-						<div className="flex items-center gap-1">
-							<Link
-								href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
-								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
-								title="New Note here"
-							>
-								<Plus className="size-5 md:size-4" />
-							</Link>
-							<AnimatedIconButton
-								type="button"
-								onClick={() => {
-									setIsSelectMode(!isSelectMode);
-									if (!isSelectMode === false) setSelectedIds(new Set());
-								}}
-								isActive={isSelectMode}
-								icon={
-									<ListChecks className="size-5 md:size-4" aria-hidden="true" />
-								}
-								activeIcon={
-									<ListChecks className="size-5 md:size-4" aria-hidden="true" />
-								}
-								className={cn(
-									"cursor-pointer",
-									isSelectMode
-										? "text-neutral-900 bg-neutral-100"
-										: "text-gray-400 hover:text-action",
-								)}
-								title="Select Mode"
-							/>
-							<Popover
-								open={isCopyPopoverOpen}
-								onOpenChange={setIsCopyPopoverOpen}
-							>
-								<PopoverTrigger
-									render={
-										<HoverSwapButton
-											type="button"
-											defaultIcon={
-												<Copy className="size-5 md:size-4" aria-hidden="true" />
-											}
-											hoverIcon={
-												<ClipboardCopy
-													className="size-5 md:size-4"
-													aria-hidden="true"
-												/>
-											}
-											disableSuccessState={true}
-											className={cn(
-												"transition-colors cursor-pointer",
-												copiedType !== null
-													? "text-note-info"
-													: "text-gray-400 hover:text-action",
-											)}
-											title="Bulk Copy"
+								{getTitle()}
+							</h2>
+						</div>
+						{currentView !== "drafts" && (
+							<div className="flex items-center gap-1">
+								<Link
+									href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
+									className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
+									title="New Note here"
+								>
+									<Plus className="size-5 md:size-4" />
+								</Link>
+								<AnimatedIconButton
+									type="button"
+									onClick={() => {
+										setIsSelectMode(!isSelectMode);
+										if (!isSelectMode === false) setSelectedIds(new Set());
+									}}
+									isActive={isSelectMode}
+									icon={
+										<ListChecks
+											className="size-5 md:size-4"
+											aria-hidden="true"
 										/>
 									}
+									activeIcon={
+										<ListChecks
+											className="size-5 md:size-4"
+											aria-hidden="true"
+										/>
+									}
+									className={cn(
+										"cursor-pointer",
+										isSelectMode
+											? "text-neutral-900 bg-neutral-100"
+											: "text-gray-400 hover:text-action",
+									)}
+									title="Select Mode"
 								/>
-								<PopoverContent className="w-48 p-2" align="end">
-									<div className="flex flex-col gap-1">
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={handleCopyAsText}
-											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-										>
-											{copiedType === "text" ? (
-												<Check
-													className="w-3.5 h-3.5 text-note-info"
-													aria-hidden="true"
-												/>
-											) : (
-												<FileText className="w-3.5 h-3.5" aria-hidden="true" />
-											)}
-											{copiedType === "text" ? "Copied!" : "as Text"}
-										</Button>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={handleCopyAsJson}
-											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-										>
-											{copiedType === "json" ? (
-												<Check
-													className="w-3.5 h-3.5 text-note-info"
-													aria-hidden="true"
-												/>
-											) : (
-												<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
-											)}
-											{copiedType === "json" ? "Copied!" : "as JSON"}
-										</Button>
-									</div>
-								</PopoverContent>
-							</Popover>
+								<Popover
+									open={isCopyPopoverOpen}
+									onOpenChange={setIsCopyPopoverOpen}
+								>
+									<PopoverTrigger
+										render={
+											<HoverSwapButton
+												type="button"
+												defaultIcon={
+													<Copy
+														className="size-5 md:size-4"
+														aria-hidden="true"
+													/>
+												}
+												hoverIcon={
+													<ClipboardCopy
+														className="size-5 md:size-4"
+														aria-hidden="true"
+													/>
+												}
+												disableSuccessState={true}
+												className={cn(
+													"transition-colors cursor-pointer",
+													copiedType !== null
+														? "text-note-info"
+														: "text-gray-400 hover:text-action",
+												)}
+												title="Bulk Copy"
+											/>
+										}
+									/>
+									<PopoverContent className="w-48 p-2" align="end">
+										<div className="flex flex-col gap-1">
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={handleCopyAsText}
+												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+											>
+												{copiedType === "text" ? (
+													<Check
+														className="w-3.5 h-3.5 text-note-info"
+														aria-hidden="true"
+													/>
+												) : (
+													<FileText
+														className="w-3.5 h-3.5"
+														aria-hidden="true"
+													/>
+												)}
+												{copiedType === "text" ? "Copied!" : "as Text"}
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={handleCopyAsJson}
+												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+											>
+												{copiedType === "json" ? (
+													<Check
+														className="w-3.5 h-3.5 text-note-info"
+														aria-hidden="true"
+													/>
+												) : (
+													<FileJson
+														className="w-3.5 h-3.5"
+														aria-hidden="true"
+													/>
+												)}
+												{copiedType === "json" ? "Copied!" : "as JSON"}
+											</Button>
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
+						)}
+					</div>
+					{currentView !== "drafts" && (
+						<div className="mt-3 flex items-center justify-between w-full">
+							<div className="flex items-center gap-0.5 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
+								<FilterBadge
+									isActive={filterType === "all"}
+									onClick={() => setFilterType("all")}
+								>
+									All
+								</FilterBadge>
+								<FilterBadge
+									isActive={filterType === "info"}
+									onClick={() => setFilterType("info")}
+									icon={<Info className="w-3.5 h-3.5" aria-hidden="true" />}
+									aria-label="Info"
+								/>
+								<FilterBadge
+									isActive={filterType === "alert"}
+									onClick={() => setFilterType("alert")}
+									icon={
+										<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
+									}
+									aria-label="Alert"
+								/>
+								<FilterBadge
+									isActive={filterType === "idea"}
+									onClick={() => setFilterType("idea")}
+									icon={
+										<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
+									}
+									aria-label="Idea"
+								/>
+							</div>
+							<Button
+								type="button"
+								variant={showResolved ? "secondary" : "ghost"}
+								size="sm"
+								onClick={() => setShowResolved(!showResolved)}
+								className="transition-colors cursor-pointer text-xs font-bold text-gray-500 hover:text-action"
+								title="Show Resolved Notes"
+							>
+								<Archive className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+								Resolved
+							</Button>
 						</div>
 					)}
+					{selectedIds.size > 0 ? (
+						<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+							<span className="text-xs font-semibold text-action">
+								{selectedIds.size} selected
+							</span>
+							<div className="flex items-center gap-2">
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									onClick={() => setSelectedIds(new Set())}
+									className="text-gray-500 hover:text-action font-medium cursor-pointer"
+									disabled={isDeletingBulk}
+								>
+									Cancel
+								</Button>
+								<Button
+									type="button"
+									variant="destructive"
+									size="sm"
+									onClick={handleDeleteSelected}
+									className="flex items-center gap-1.5 font-bold cursor-pointer"
+									disabled={isDeletingBulk}
+								>
+									<Trash2 className="w-3 h-3" aria-hidden="true" />
+									{isDeletingBulk ? "Deleting..." : "Delete"}
+								</Button>
+							</div>
+						</div>
+					) : (
+						<p className="text-xs text-gray-500 mt-1">
+							{isSelected
+								? `${displayItems.length} ${currentView === "drafts" ? "drafts" : "notes"}`
+								: "Waiting for selection"}
+						</p>
+					)}
 				</div>
-				{currentView !== "drafts" && (
-					<div className="mt-3 flex items-center justify-between w-full">
-						<div className="flex items-center gap-0.5 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
-							<FilterBadge
-								isActive={filterType === "all"}
-								onClick={() => setFilterType("all")}
-							>
-								All
-							</FilterBadge>
-							<FilterBadge
-								isActive={filterType === "info"}
-								onClick={() => setFilterType("info")}
-								icon={<Info className="w-3.5 h-3.5" aria-hidden="true" />}
-								aria-label="Info"
-							/>
-							<FilterBadge
-								isActive={filterType === "alert"}
-								onClick={() => setFilterType("alert")}
-								icon={
-									<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-								}
-								aria-label="Alert"
-							/>
-							<FilterBadge
-								isActive={filterType === "idea"}
-								onClick={() => setFilterType("idea")}
-								icon={<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />}
-								aria-label="Idea"
-							/>
-						</div>
-						<Button
-							type="button"
-							variant={showResolved ? "secondary" : "ghost"}
-							size="sm"
-							onClick={() => setShowResolved(!showResolved)}
-							className="transition-colors cursor-pointer text-xs font-bold text-gray-500 hover:text-action"
-							title="Show Resolved Notes"
-						>
-							<Archive className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-							Resolved
-						</Button>
-					</div>
-				)}
-				{selectedIds.size > 0 ? (
-					<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-						<span className="text-xs font-semibold text-action">
-							{selectedIds.size} selected
-						</span>
-						<div className="flex items-center gap-2">
-							<Button
-								type="button"
-								variant="ghost"
-								size="sm"
-								onClick={() => setSelectedIds(new Set())}
-								className="text-gray-500 hover:text-action font-medium cursor-pointer"
-								disabled={isDeletingBulk}
-							>
-								Cancel
-							</Button>
-							<Button
-								type="button"
-								variant="destructive"
-								size="sm"
-								onClick={handleDeleteSelected}
-								className="flex items-center gap-1.5 font-bold cursor-pointer"
-								disabled={isDeletingBulk}
-							>
-								<Trash2 className="w-3 h-3" aria-hidden="true" />
-								{isDeletingBulk ? "Deleting..." : "Delete"}
-							</Button>
-						</div>
-					</div>
-				) : (
-					<p className="text-xs text-gray-500 mt-1">
-						{isSelected
-							? `${displayItems.length} ${currentView === "drafts" ? "drafts" : "notes"}`
-							: "Waiting for selection"}
-					</p>
-				)}
-			</div>
 
-			<div className="flex-1 overflow-y-auto">
 				{!isSelected ? (
 					<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
 						<ArrowLeft

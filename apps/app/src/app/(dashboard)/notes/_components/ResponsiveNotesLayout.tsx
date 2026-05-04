@@ -28,13 +28,18 @@ export function ResponsiveNotesLayout({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	const isDetailOpen = !!(selectedNoteId || selectedDraftId);
+	const isDetailOpen = !!(
+		selectedNoteId ||
+		selectedDraftId ||
+		searchParams.get("new") === "note"
+	);
 
 	const handleCloseDetail = (open: boolean) => {
 		if (!open) {
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("noteId");
 			params.delete("draftId");
+			params.delete("new");
 			router.push(`/notes?${params.toString()}`);
 		}
 	};

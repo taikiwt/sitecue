@@ -86,7 +86,7 @@ export default function StudioReviewPane({
 		<div className="relative flex h-full flex-col bg-neutral-50/30">
 			<div className="flex-1 overflow-y-auto pb-28">
 				{/* Note Form */}
-				<div className="sticky top-0 z-10 p-4 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
+				<div className="sticky top-0 z-20 p-4 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
 					<div className="flex justify-between items-center mb-3">
 						<span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
 							Add Notes

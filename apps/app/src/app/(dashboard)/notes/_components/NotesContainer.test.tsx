@@ -59,7 +59,9 @@ Object.defineProperty(window, "matchMedia", {
 
 describe("NotesContainer Search Behavior", () => {
 	it("URLパラメータにqが存在し、検索中の場合、スケルトンが表示されること", () => {
-		vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams("?q=test") as any);
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("?q=test") as any,
+		);
 
 		(useFetchNotes as any).mockReturnValue({ data: [], isLoading: false });
 		(useSearchNotes as any).mockReturnValue({
@@ -78,7 +80,9 @@ describe("NotesContainer Search Behavior", () => {
 	});
 
 	it("検索結果が返ってきた場合、検索結果が表示されること", async () => {
-		vi.mocked(useSearchParams).mockReturnValue(new URLSearchParams("?q=test") as any);
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("?q=test") as any,
+		);
 
 		const mockSearchResults = [
 			{ id: "note-1", url_pattern: "example.com", content: "Search Result" },
@@ -94,7 +98,9 @@ describe("NotesContainer Search Behavior", () => {
 		render(<NotesContainer />);
 
 		// MiddlePaneList が表示されていることを確認 (スケルトンが消えている)
-		expect(screen.queryByLabelText("Loading search results")).not.toBeInTheDocument();
+		expect(
+			screen.queryByLabelText("Loading search results"),
+		).not.toBeInTheDocument();
 		expect(screen.getByTestId("middle-pane")).toBeInTheDocument();
 	});
 
@@ -112,7 +118,10 @@ describe("NotesContainer Search Behavior", () => {
 			},
 		];
 
-		(useFetchNotes as any).mockReturnValue({ data: mockNotes, isLoading: false });
+		(useFetchNotes as any).mockReturnValue({
+			data: mockNotes,
+			isLoading: false,
+		});
 		(useSearchNotes as any).mockReturnValue({
 			data: mockSearchResults,
 			isLoading: false,

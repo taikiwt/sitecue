@@ -1,5 +1,5 @@
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
 import type { Draft } from "../../../../../../../types/app.ts";
 import DraftEditor from "../../_components/DraftEditor";

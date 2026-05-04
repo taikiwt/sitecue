@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import NoteEditor from "./NoteEditor";
 import { APP_LIMITS } from "@/constants/limits";
+import NoteEditor from "./NoteEditor";
 
 // Mock the limits
 vi.mock("@/constants/limits", () => ({
@@ -40,17 +40,17 @@ describe("NoteEditor Progressive Warning", () => {
 	it("上限の90%に達するとカウンターが表示され、超過するとボタンがdisabledになること", async () => {
 		render(<NoteEditor onSubmit={vi.fn()} />);
 		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
-		
+
 		// 90%以上の文字を入力 (90文字)
 		const nearLimitText = "a".repeat(90);
 		await userEvent.type(input, nearLimitText);
-		
+
 		expect(screen.getByText(/90 \/ 100/)).toBeInTheDocument();
-		
+
 		// 超過入力 (101文字)
 		const overLimitText = "a".repeat(11);
 		await userEvent.type(input, overLimitText);
-		
+
 		const submitButton = screen.getByRole("button", { name: /Save note/i });
 		expect(submitButton).toBeDisabled();
 		expect(screen.getByText(/101 \/ 100/)).toBeInTheDocument();
