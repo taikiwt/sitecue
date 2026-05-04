@@ -42,6 +42,7 @@ describe("useSearchNotes", () => {
 		const mockSupabase = {
 			rpc: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
+			// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
 			then: vi.fn().mockImplementation((callback) =>
 				callback({
 					data: mockNotes,
@@ -74,6 +75,7 @@ describe("useSearchNotes", () => {
 			select: vi.fn().mockReturnThis(),
 			contains: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
+			// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
 			then: vi.fn().mockImplementation((callback) =>
 				callback({
 					data: [],

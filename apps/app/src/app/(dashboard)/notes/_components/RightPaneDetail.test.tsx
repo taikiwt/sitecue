@@ -7,6 +7,7 @@ import {
 	useDeleteNote,
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
+import { useUserStore } from "@/store/useUserStore";
 import type { Draft } from "../types";
 import { RightPaneDetail } from "./RightPaneDetail";
 
@@ -60,9 +61,21 @@ vi.mock("@/components/ui/hover-reveal-button", () => ({
 
 describe("RightPaneDetail", () => {
 	it("renders Edit in Studio link for drafts with correct href", async () => {
-		vi.mocked(useCreateNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
-		vi.mocked(useUpdateNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
-		vi.mocked(useDeleteNote).mockReturnValue({ mutateAsync: vi.fn() } as any);
+		vi.mocked(useCreateNote).mockReturnValue({
+			mutateAsync: vi.fn(),
+		} as Partial<ReturnType<typeof useCreateNote>> as ReturnType<
+			typeof useCreateNote
+		>);
+		vi.mocked(useUpdateNote).mockReturnValue({
+			mutateAsync: vi.fn(),
+		} as Partial<ReturnType<typeof useUpdateNote>> as ReturnType<
+			typeof useUpdateNote
+		>);
+		vi.mocked(useDeleteNote).mockReturnValue({
+			mutateAsync: vi.fn(),
+		} as Partial<ReturnType<typeof useDeleteNote>> as ReturnType<
+			typeof useDeleteNote
+		>);
 
 		const mockDraft: Draft = {
 			id: "draft-123",
@@ -95,7 +108,9 @@ describe("RightPaneDetail", () => {
 			mutateAsync: vi
 				.fn()
 				.mockRejectedValue(new Error("note storage limit reached")),
-		} as any);
+		} as Partial<ReturnType<typeof useCreateNote>> as ReturnType<
+			typeof useCreateNote
+		>);
 
 		const queryClient = new QueryClient();
 
@@ -109,12 +124,10 @@ describe("RightPaneDetail", () => {
 		const saveButton = screen.getByRole("button", { name: "Save" });
 		fireEvent.click(saveButton);
 
-		// モーダルが表示されることを検証
-		expect(
-			await screen.findByText("Storage Limit Reached"),
-		).toBeInTheDocument();
-		expect(
-			screen.getByText(/You've reached the maximum number of notes/),
-		).toBeInTheDocument();
+		// Store の状態が更新されることを検証
+		await waitFor(() => {
+			expect(useUserStore.getState().isPaywallOpen).toBe(true);
+			expect(useUserStore.getState().paywallType).toBe("notes");
+		});
 	});
 });

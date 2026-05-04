@@ -37,7 +37,7 @@ vi.mock("./MiddlePaneList", () => ({
 }));
 
 vi.mock("./RightPaneDetail", () => ({
-	RightPaneDetail: ({ note }: { note: any }) => (
+	RightPaneDetail: ({ note }: { note: { content?: string } | null }) => (
 		<div data-testid="right-pane">{note?.content || "No Content"}</div>
 	),
 }));
@@ -60,15 +60,24 @@ Object.defineProperty(window, "matchMedia", {
 describe("NotesContainer Search Behavior", () => {
 	it("URLパラメータにqが存在し、検索中の場合、スケルトンが表示されること", () => {
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("?q=test") as any,
+			new URLSearchParams("?q=test") as Partial<
+				ReturnType<typeof useSearchParams>
+			> as ReturnType<typeof useSearchParams>,
 		);
 
-		(useFetchNotes as any).mockReturnValue({ data: [], isLoading: false });
-		(useSearchNotes as any).mockReturnValue({
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as Partial<ReturnType<typeof useFetchNotes>> as ReturnType<
+			typeof useFetchNotes
+		>);
+		vi.mocked(useSearchNotes).mockReturnValue({
 			data: [],
 			isLoading: true,
 			isFetching: true,
-		});
+		} as Partial<ReturnType<typeof useSearchNotes>> as ReturnType<
+			typeof useSearchNotes
+		>);
 
 		render(<NotesContainer />);
 
@@ -81,19 +90,28 @@ describe("NotesContainer Search Behavior", () => {
 
 	it("検索結果が返ってきた場合、検索結果が表示されること", async () => {
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("?q=test") as any,
+			new URLSearchParams("?q=test") as Partial<
+				ReturnType<typeof useSearchParams>
+			> as ReturnType<typeof useSearchParams>,
 		);
 
 		const mockSearchResults = [
 			{ id: "note-1", url_pattern: "example.com", content: "Search Result" },
 		];
 
-		(useFetchNotes as any).mockReturnValue({ data: [], isLoading: false });
-		(useSearchNotes as any).mockReturnValue({
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as Partial<ReturnType<typeof useFetchNotes>> as ReturnType<
+			typeof useFetchNotes
+		>);
+		vi.mocked(useSearchNotes).mockReturnValue({
 			data: mockSearchResults,
 			isLoading: false,
 			isFetching: false,
-		});
+		} as Partial<ReturnType<typeof useSearchNotes>> as ReturnType<
+			typeof useSearchNotes
+		>);
 
 		render(<NotesContainer />);
 
@@ -106,7 +124,9 @@ describe("NotesContainer Search Behavior", () => {
 
 	it("noteIdが指定されている場合、キャッシュより検索結果のデータを優先して表示すること", async () => {
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("?q=test&noteId=note-1") as any,
+			new URLSearchParams("?q=test&noteId=note-1") as Partial<
+				ReturnType<typeof useSearchParams>
+			> as ReturnType<typeof useSearchParams>,
 		);
 
 		const mockNotes = [{ id: "note-1", url_pattern: "example.com" }];
@@ -118,15 +138,19 @@ describe("NotesContainer Search Behavior", () => {
 			},
 		];
 
-		(useFetchNotes as any).mockReturnValue({
+		vi.mocked(useFetchNotes).mockReturnValue({
 			data: mockNotes,
 			isLoading: false,
-		});
-		(useSearchNotes as any).mockReturnValue({
+		} as Partial<ReturnType<typeof useFetchNotes>> as ReturnType<
+			typeof useFetchNotes
+		>);
+		vi.mocked(useSearchNotes).mockReturnValue({
 			data: mockSearchResults,
 			isLoading: false,
 			isFetching: false,
-		});
+		} as Partial<ReturnType<typeof useSearchNotes>> as ReturnType<
+			typeof useSearchNotes
+		>);
 
 		render(<NotesContainer />);
 

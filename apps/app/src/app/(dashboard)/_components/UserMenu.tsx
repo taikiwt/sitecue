@@ -4,7 +4,6 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Popover,
@@ -23,7 +22,7 @@ export function UserMenu() {
 	const supabase = createClient();
 	const [user, setUser] = useState<SupabaseUser | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const { aiUsageCount, plan, setUserData } = useUserStore();
+	const { aiUsageCount, setUserData } = useUserStore();
 	const { data: notes = [] } = useFetchNotes();
 	const { data: drafts = [] } = useFetchDrafts();
 

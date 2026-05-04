@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { useSearchParams } from "next/navigation";
+
 import toast from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useUserStore } from "@/store/useUserStore";
