@@ -9,9 +9,7 @@ vi.mock("next/navigation", () => ({
 
 describe("MobileBottomNav", () => {
 	it("renders correctly within Suspense boundary without crashing", () => {
-		const { container } = render(
-			<MobileBottomNav onSearchOpen={vi.fn()} />
-		);
+		const { container } = render(<MobileBottomNav onSearchOpen={vi.fn()} />);
 		// DOMの取得検証
 		expect(container.querySelector("nav")).toBeInTheDocument();
 	});
