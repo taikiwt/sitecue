@@ -202,7 +202,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													type="button"
 													onClick={() => {
 														onClose();
-														router.push(`/notes?draftId=${draft.id}`);
+														router.push(
+															`/notes?view=drafts&draftId=${draft.id}`,
+														);
 													}}
 													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer group"
 												>

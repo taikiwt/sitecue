@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Drawer,
@@ -12,6 +12,7 @@ import {
 	DrawerTitle,
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { cn } from "@/lib/utils";
 
 interface ResponsiveNotesLayoutProps {
 	middleNode: ReactNode;
@@ -30,19 +31,36 @@ export function ResponsiveNotesLayout({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	const isDetailOpen = !!(
+	// URLから導出される本来の開閉状態
+	const isDetailOpenUrl = !!(
 		selectedNoteId ||
 		selectedDraftId ||
 		searchParams.get("new") === "note"
 	);
 
+	// UI上のDrawer開閉状態（アニメーション制御用ローカルステート）
+	const [isDrawerOpen, setIsDrawerOpen] = useState(isDetailOpenUrl);
+
+	// URLの状態が変更されたら、Drawerの開閉状態を同期する
+	useEffect(() => {
+		setIsDrawerOpen(isDetailOpenUrl);
+	}, [isDetailOpenUrl]);
+
 	const handleCloseDetail = (open: boolean) => {
 		if (!open) {
-			const params = new URLSearchParams(searchParams.toString());
-			params.delete("noteId");
-			params.delete("draftId");
-			params.delete("new");
-			router.push(`/notes?${params.toString()}`);
+			// 1. まずUI側のDrawerを閉じるアニメーションを開始
+			setIsDrawerOpen(false);
+
+			// 2. アニメーション完了（約300ms）を待ってからURLコンテキストを更新・遷移
+			setTimeout(() => {
+				const params = new URLSearchParams(searchParams.toString());
+
+				params.delete("noteId");
+				params.delete("draftId");
+				params.delete("new");
+
+				router.push(`/notes?${params.toString()}`);
+			}, 300);
 		}
 	};
 
@@ -58,10 +76,19 @@ export function ResponsiveNotesLayout({
 	return (
 		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
 			{/* List Area */}
-			<main className="flex-1 overflow-hidden">{middleNode}</main>
+			<main
+				className={cn(
+					"flex-1 overflow-hidden",
+					isDrawerOpen && "pointer-events-none",
+				)}
+				inert={isDrawerOpen ? true : undefined}
+				aria-hidden={isDrawerOpen ? "true" : "false"}
+			>
+				{middleNode}
+			</main>
 
 			{/* Detail Drawer (Mobile Only) */}
-			<Drawer onOpenChange={handleCloseDetail} open={isDetailOpen}>
+			<Drawer onOpenChange={handleCloseDetail} open={isDrawerOpen}>
 				<DrawerContent className="!mt-0 !h-[100dvh] !max-h-none rounded-t-2xl rounded-b-none p-0 flex flex-col overflow-hidden bg-base-bg border-none">
 					<DrawerHeader className="sr-only">
 						<DrawerTitle>Detail View</DrawerTitle>
