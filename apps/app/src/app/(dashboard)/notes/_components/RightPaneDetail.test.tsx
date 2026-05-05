@@ -8,7 +8,7 @@ import {
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
 import { useUserStore } from "@/store/useUserStore";
-import type { Draft } from "../types";
+import { createMockDraft, createMockNote } from "../../../../mocks/factories";
 import { RightPaneDetail } from "./RightPaneDetail";
 
 // useNotesQuery のモック
@@ -63,25 +63,20 @@ describe("RightPaneDetail", () => {
 	it("renders Edit in Studio link for drafts with correct href", async () => {
 		vi.mocked(useCreateNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as any);
+		} as unknown as ReturnType<typeof useCreateNote>);
 		vi.mocked(useUpdateNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as any);
+		} as unknown as ReturnType<typeof useUpdateNote>);
 		vi.mocked(useDeleteNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as any);
+		} as unknown as ReturnType<typeof useDeleteNote>);
 
-		const mockDraft: Draft = {
+		const mockDraft = createMockDraft({
 			id: "draft-123",
 			content: "Test content",
 			title: "Test Draft",
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
 			user_id: "user-1",
-			metadata: null,
-			template_id: null,
-			tags: null,
-		};
+		});
 
 		const queryClient = new QueryClient();
 
@@ -101,7 +96,7 @@ describe("RightPaneDetail", () => {
 			mutateAsync: vi
 				.fn()
 				.mockRejectedValue(new Error("note storage limit reached")),
-		} as any);
+		} as unknown as ReturnType<typeof useCreateNote>);
 
 		const queryClient = new QueryClient();
 
@@ -128,32 +123,22 @@ describe("RightPaneDetail", () => {
 	});
 
 	it("renders note content correctly with separated layout", async () => {
-		const mockNote = {
+		const mockNote = createMockNote({
 			id: "1",
 			user_id: "user1",
 			url_pattern: "example.com",
 			content: "Test Content",
-			created_at: new Date().toISOString(),
-			updated_at: new Date().toISOString(),
-			scope: "domain",
-			note_type: "info",
-			is_resolved: false,
-			is_pinned: false,
-			is_favorite: false,
-			is_expanded: false,
-			sort_order: 0,
-			tags: [],
-		};
+		});
 
 		vi.mocked(useUpdateNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as any);
+		} as unknown as ReturnType<typeof useUpdateNote>);
 
 		const queryClient = new QueryClient();
 
 		render(
 			<QueryClientProvider client={queryClient}>
-				<RightPaneDetail note={mockNote as any} />
+				<RightPaneDetail note={mockNote} />
 			</QueryClientProvider>,
 		);
 
