@@ -46,7 +46,7 @@ export default function MarkdownRenderer({
 	return (
 		<div
 			className={cn(
-				"prose prose-sm md:prose-base dark:prose-invert max-w-none break-words",
+				"prose prose-sm md:prose-base dark:prose-invert max-w-none wrap-break-word",
 				className,
 			)}
 		>
@@ -91,7 +91,7 @@ export default function MarkdownRenderer({
 
 						return (
 							<div className="relative group my-4 not-prose">
-								<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+								<div className="absolute top-2 right-2 z-10">
 									<button
 										type="button"
 										onClick={() => handleCopyCode(codeString, uniqueId)}
