@@ -388,9 +388,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	};
 
 	return (
-		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-y-auto">
-			<div className="px-4 pt-12 pb-28 md:p-8 max-w-3xl mx-auto w-full">
-				<div className="flex items-center justify-between mb-8 pb-4 border-b border-base-border">
+		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
+			{/* 1. Header (Fixed) */}
+			<div className="shrink-0 z-10 bg-base-bg pt-12 md:pt-8 px-4 md:px-8">
+				<div className="max-w-3xl mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
+					{/* Left: Badge and Date */}
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2">
 							{note ? (
@@ -411,6 +413,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							</span>
 						</div>
 					</div>
+
+					{/* Right: Action Buttons */}
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
 							<>
@@ -624,137 +628,142 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						</div>
 					</div>
 				</div>
+			</div>
 
-				{!note && draft?.title && (
-					<div className="mb-8 flex flex-col gap-2">
+			{/* 2. Content Area (Scrollable) */}
+			<div className="flex-1 overflow-y-auto">
+				<div className="px-4 py-8 pb-28 md:px-8 max-w-3xl mx-auto w-full">
+					{!note && draft?.title && (
+						<div className="mb-8 flex flex-col gap-2">
+							<div className="flex items-center justify-between px-1">
+								<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+									Draft Title
+								</div>
+								<InlineCopyButton text={draft.title} />
+							</div>
+							<h1 className="text-3xl font-extrabold text-action tracking-tight px-1">
+								{draft.title}
+							</h1>
+						</div>
+					)}
+
+					{note && note.scope !== "inbox" && (
+						<div className="mb-10">
+							<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
+								Source URL
+							</div>
+							<div className="flex items-center gap-2 group">
+								<a
+									href={
+										note.url_pattern.startsWith("http")
+											? note.url_pattern
+											: note.url_pattern.includes("localhost") ||
+													note.url_pattern.includes("127.0.0.1")
+												? `http://${note.url_pattern}`
+												: `https://${note.url_pattern}`
+									}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
+								>
+									{note.url_pattern}
+								</a>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="size-10 text-gray-400 hover:text-action border border-base-border rounded-lg bg-base-surface hover:bg-base-surface/80 active:scale-95 cursor-pointer shadow-sm"
+									onClick={() => handleCopyUrl(note.url_pattern)}
+									title="Copy Source URL"
+								>
+									{isCopyingUrl ? (
+										<Check
+											className="size-5 md:size-4 text-green-500"
+											aria-hidden="true"
+										/>
+									) : (
+										<Copy className="size-5 md:size-4" aria-hidden="true" />
+									)}
+								</Button>
+							</div>
+						</div>
+					)}
+
+					<div
+						className={cn(
+							"space-y-4",
+							currentResolved && "opacity-50 transition-opacity",
+						)}
+					>
 						<div className="flex items-center justify-between px-1">
 							<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-								Draft Title
+								{note ? "Note Content" : "Draft Content"}
 							</div>
-							<InlineCopyButton text={draft.title} />
+							{!note && draft && (
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									className="text-neutral-400 hover:text-action cursor-pointer"
+									onClick={() => {
+										if (draft.content) {
+											navigator.clipboard.writeText(draft.content);
+											toast.success("Copied!");
+										}
+									}}
+									title="Copy Content"
+								>
+									<Copy className="w-3.5 h-3.5" aria-hidden="true" />
+								</Button>
+							)}
 						</div>
-						<h1 className="text-3xl font-extrabold text-action tracking-tight px-1">
-							{draft.title}
-						</h1>
-					</div>
-				)}
-
-				{note && note.scope !== "inbox" && (
-					<div className="mb-10">
-						<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
-							Source URL
-						</div>
-						<div className="flex items-center gap-2 group">
-							<a
-								href={
-									note.url_pattern.startsWith("http")
-										? note.url_pattern
-										: note.url_pattern.includes("localhost") ||
-												note.url_pattern.includes("127.0.0.1")
-											? `http://${note.url_pattern}`
-											: `https://${note.url_pattern}`
-								}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
-							>
-								{note.url_pattern}
-							</a>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="size-10 text-gray-400 hover:text-action border border-base-border rounded-lg bg-base-surface hover:bg-base-surface/80 active:scale-95 cursor-pointer shadow-sm"
-								onClick={() => handleCopyUrl(note.url_pattern)}
-								title="Copy Source URL"
-							>
-								{isCopyingUrl ? (
-									<Check
-										className="size-5 md:size-4 text-green-500"
-										aria-hidden="true"
-									/>
-								) : (
-									<Copy className="size-5 md:size-4" aria-hidden="true" />
-								)}
-							</Button>
-						</div>
-					</div>
-				)}
-
-				<div
-					className={cn(
-						"space-y-4",
-						currentResolved && "opacity-50 transition-opacity",
-					)}
-				>
-					<div className="flex items-center justify-between px-1">
-						<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-							{note ? "Note Content" : "Draft Content"}
-						</div>
-						{!note && draft && (
-							<Button
-								type="button"
-								variant="ghost"
-								size="icon-sm"
-								className="text-neutral-400 hover:text-action cursor-pointer"
-								onClick={() => {
-									if (draft.content) {
-										navigator.clipboard.writeText(draft.content);
-										toast.success("Copied!");
-									}
-								}}
-								title="Copy Content"
-							>
-								<Copy className="w-3.5 h-3.5" aria-hidden="true" />
-							</Button>
+						{isNewNote && (
+							<div className="grid items-center gap-2 mb-4">
+								<Label className="text-xs font-bold uppercase">Note Type</Label>
+								<div className="flex gap-2">
+									{(["info", "alert", "idea"] as const).map((type) => (
+										<Button
+											key={type}
+											type="button"
+											variant={noteType === type ? "default" : "secondary"}
+											size="sm"
+											onClick={() => setNoteType(type as Note["note_type"])}
+											className="capitalize cursor-pointer"
+										>
+											{type}
+										</Button>
+									))}
+								</div>
+							</div>
+						)}
+						{isEditing ? (
+							<div className="relative">
+								{(() => {
+									const baseContent =
+										optimisticContent !== null
+											? optimisticContent
+											: note?.content || "";
+									return (
+										<NotesEditor
+											value={editContent}
+											onChange={(val) => setEditContent(val)}
+											placeholder="What's on your mind?"
+											isDirty={editContent !== baseContent}
+											onSave={handleSave}
+										/>
+									);
+								})()}
+							</div>
+						) : (
+							<div className="min-h-50 rounded-2xl">
+								<MarkdownRenderer content={content} />
+							</div>
 						)}
 					</div>
-					{isNewNote && (
-						<div className="grid items-center gap-2 mb-4">
-							<Label className="text-xs font-bold uppercase">Note Type</Label>
-							<div className="flex gap-2">
-								{(["info", "alert", "idea"] as const).map((type) => (
-									<Button
-										key={type}
-										type="button"
-										variant={noteType === type ? "default" : "secondary"}
-										size="sm"
-										onClick={() => setNoteType(type as Note["note_type"])}
-										className="capitalize cursor-pointer"
-									>
-										{type}
-									</Button>
-								))}
-							</div>
-						</div>
-					)}
-					{isEditing ? (
-						<div className="relative">
-							{(() => {
-								const baseContent =
-									optimisticContent !== null
-										? optimisticContent
-										: note?.content || "";
-								return (
-									<NotesEditor
-										value={editContent}
-										onChange={(val) => setEditContent(val)}
-										placeholder="What's on your mind?"
-										isDirty={editContent !== baseContent}
-										onSave={handleSave}
-									/>
-								);
-							})()}
-						</div>
-					) : (
-						<div className="min-h-50 rounded-2xl">
-							<MarkdownRenderer content={content} />
-						</div>
-					)}
-				</div>
 
-				<div className="mt-8 pt-4 border-t border-base-border text-xs text-gray-400">
-					Last updated: {formatDate(updatedAt)}
+					<div className="mt-8 pt-4 border-t border-base-border text-xs text-gray-400">
+						Last updated: {formatDate(updatedAt)}
+					</div>
 				</div>
 			</div>
 

@@ -24,12 +24,12 @@ vi.mock("next/navigation", () => ({
 	useSearchParams: () => new URLSearchParams("?new=true"),
 }));
 
-// CustomLink のモックが必要な場合は適宜追加
+// CustomLink のモック
 vi.mock("@/components/ui/custom-link", () => ({
 	CustomLink: ({
-		href,
 		children,
 		className,
+		href,
 	}: {
 		href: string;
 		children: ReactNode;
@@ -63,19 +63,13 @@ describe("RightPaneDetail", () => {
 	it("renders Edit in Studio link for drafts with correct href", async () => {
 		vi.mocked(useCreateNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as Partial<ReturnType<typeof useCreateNote>> as ReturnType<
-			typeof useCreateNote
-		>);
+		} as any);
 		vi.mocked(useUpdateNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as Partial<ReturnType<typeof useUpdateNote>> as ReturnType<
-			typeof useUpdateNote
-		>);
+		} as any);
 		vi.mocked(useDeleteNote).mockReturnValue({
 			mutateAsync: vi.fn(),
-		} as Partial<ReturnType<typeof useDeleteNote>> as ReturnType<
-			typeof useDeleteNote
-		>);
+		} as any);
 
 		const mockDraft: Draft = {
 			id: "draft-123",
@@ -103,14 +97,11 @@ describe("RightPaneDetail", () => {
 	});
 
 	it("shows paywall modal when storage limit is reached", async () => {
-		// Supabase クライアントが投げるエラーをシミュレート
 		vi.mocked(useCreateNote).mockReturnValue({
 			mutateAsync: vi
 				.fn()
 				.mockRejectedValue(new Error("note storage limit reached")),
-		} as Partial<ReturnType<typeof useCreateNote>> as ReturnType<
-			typeof useCreateNote
-		>);
+		} as any);
 
 		const queryClient = new QueryClient();
 
@@ -120,14 +111,53 @@ describe("RightPaneDetail", () => {
 			</QueryClientProvider>,
 		);
 
-		// コンテンツを入力してSaveを発火
 		const saveButton = screen.getByRole("button", { name: "Save" });
 		fireEvent.click(saveButton);
 
-		// Store の状態が更新されることを検証
 		await waitFor(() => {
 			expect(useUserStore.getState().isPaywallOpen).toBe(true);
 			expect(useUserStore.getState().paywallType).toBe("notes");
 		});
+	});
+
+	it("renders empty state when no note or draft is provided", () => {
+		render(<RightPaneDetail />);
+		expect(
+			screen.getByText("Please select a note or draft from the list"),
+		).toBeInTheDocument();
+	});
+
+	it("renders note content correctly with separated layout", async () => {
+		const mockNote = {
+			id: "1",
+			user_id: "user1",
+			url_pattern: "example.com",
+			content: "Test Content",
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+			scope: "domain",
+			note_type: "info",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 0,
+			tags: [],
+		};
+
+		vi.mocked(useUpdateNote).mockReturnValue({
+			mutateAsync: vi.fn(),
+		} as any);
+
+		const queryClient = new QueryClient();
+
+		render(
+			<QueryClientProvider client={queryClient}>
+				<RightPaneDetail note={mockNote as any} />
+			</QueryClientProvider>,
+		);
+
+		expect(screen.getByText("Test Content")).toBeInTheDocument();
+		expect(screen.getByText("example.com")).toBeInTheDocument();
 	});
 });
