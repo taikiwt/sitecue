@@ -390,7 +390,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
 			{/* 1. Header (Fixed) */}
-			<div className="shrink-0 z-10 bg-base-bg pt-12 md:pt-8 px-4 md:px-8">
+			<div className="shrink-0 z-10 bg-base-bg pt-6 md:pt-8 px-4 md:px-8">
 				<div className="max-w-3xl mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
 					{/* Left: Badge and Date */}
 					<div className="flex flex-col gap-1">
@@ -658,7 +658,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 										note.url_pattern.startsWith("http")
 											? note.url_pattern
 											: note.url_pattern.includes("localhost") ||
-													note.url_pattern.includes("127.0.0.1")
+												note.url_pattern.includes("127.0.0.1")
 												? `http://${note.url_pattern}`
 												: `https://${note.url_pattern}`
 									}
@@ -699,17 +699,15 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
 								{note ? "Note Content" : "Draft Content"}
 							</div>
-							{!note && draft && (
+							{content && (
 								<Button
 									type="button"
 									variant="ghost"
 									size="icon-sm"
 									className="text-neutral-400 hover:text-action cursor-pointer"
 									onClick={() => {
-										if (draft.content) {
-											navigator.clipboard.writeText(draft.content);
-											toast.success("Copied!");
-										}
+										navigator.clipboard.writeText(content);
+										toast.success("Copied!");
 									}}
 									title="Copy Content"
 								>
