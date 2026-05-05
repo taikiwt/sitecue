@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
+import { useLayoutStore } from "@/store/useLayoutStore";
 
 interface ResponsiveNotesLayoutProps {
 	middleNode: ReactNode;
@@ -41,10 +42,18 @@ export function ResponsiveNotesLayout({
 	// UI上のDrawer開閉状態（アニメーション制御用ローカルステート）
 	const [isDrawerOpen, setIsDrawerOpen] = useState(isDetailOpenUrl);
 
+	const setIsMobileHeaderVisible = useLayoutStore(
+		(state) => state.setIsMobileHeaderVisible,
+	);
+
 	// URLの状態が変更されたら、Drawerの開閉状態を同期する
 	useEffect(() => {
 		setIsDrawerOpen(isDetailOpenUrl);
-	}, [isDetailOpenUrl]);
+		// ドロワーが閉じた（一覧へ戻る）際は必ずヘッダーを再表示する
+		if (!isDetailOpenUrl) {
+			setIsMobileHeaderVisible(true);
+		}
+	}, [isDetailOpenUrl, setIsMobileHeaderVisible]);
 
 	const handleCloseDetail = (open: boolean) => {
 		if (!open) {

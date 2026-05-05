@@ -11,7 +11,9 @@ export const DRAFTS_LIMIT = {
 
 export const AI_LIMIT = {
 	MAX_FREE: 3,
-	WARNING_THRESHOLD: 3,
+	MAX_PRO: 100,
+	WARNING_THRESHOLD_FREE: 3,
+	WARNING_THRESHOLD_PRO: 90,
 } as const;
 
 export const APP_LIMITS = {

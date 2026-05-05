@@ -7,7 +7,7 @@ describe("PaywallModal", () => {
 		render(<PaywallModal isOpen={true} onClose={vi.fn()} plan="free" />);
 		expect(screen.getByText("Monthly Generation Limit")).toBeInTheDocument();
 		expect(
-			screen.getByText(/You've used all your Free plan AI generations/),
+			screen.getByText(/You've used all your AI generations/),
 		).toBeInTheDocument();
 	});
 
