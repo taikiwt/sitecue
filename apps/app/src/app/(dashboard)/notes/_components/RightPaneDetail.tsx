@@ -4,7 +4,6 @@ import {
 	Check,
 	Clipboard,
 	ClipboardCopy,
-	Copy,
 	MoreHorizontal,
 	MousePointerClick,
 	Pencil,
@@ -98,7 +97,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [optimisticFavorite, setOptimisticFavorite] = useState<boolean | null>(
 		null,
 	);
-	const [isCopyingUrl, setIsCopyingUrl] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [isEditMetaDialogOpen, setIsEditMetaDialogOpen] = useState(false);
 	const [editUrl, setEditUrl] = useState(note?.url_pattern || "");
@@ -377,16 +375,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		setTimeout(() => setIsCopying(false), 2000);
 	};
 
-	const handleCopyUrl = (url: string) => {
-		const fullUrl =
-			url.startsWith("http://") || url.startsWith("https://")
-				? url
-				: `https://${url}`;
-		navigator.clipboard.writeText(fullUrl);
-		setIsCopyingUrl(true);
-		setTimeout(() => setIsCopyingUrl(false), 2000);
-	};
-
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
 			{/* 1. Header (Fixed) */}
@@ -653,38 +641,30 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								Source URL
 							</div>
 							<div className="flex items-center gap-2 group">
-								<a
-									href={
-										note.url_pattern.startsWith("http")
-											? note.url_pattern
-											: note.url_pattern.includes("localhost") ||
-													note.url_pattern.includes("127.0.0.1")
-												? `http://${note.url_pattern}`
-												: `https://${note.url_pattern}`
-									}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
-								>
-									{note.url_pattern}
-								</a>
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="size-10 text-gray-400 hover:text-action border border-base-border rounded-lg bg-base-surface hover:bg-base-surface/80 active:scale-95 cursor-pointer shadow-sm"
-									onClick={() => handleCopyUrl(note.url_pattern)}
-									title="Copy Source URL"
-								>
-									{isCopyingUrl ? (
-										<Check
-											className="size-5 md:size-4 text-green-500"
-											aria-hidden="true"
-										/>
-									) : (
-										<Copy className="size-5 md:size-4" aria-hidden="true" />
-									)}
-								</Button>
+								{(() => {
+									const formattedUrl = note.url_pattern.startsWith("http")
+										? note.url_pattern
+										: note.url_pattern.includes("localhost") ||
+											note.url_pattern.includes("127.0.0.1")
+											? `http://${note.url_pattern}`
+											: `https://${note.url_pattern}`;
+									return (
+										<>
+											<a
+												href={formattedUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
+											>
+												{note.url_pattern}
+											</a>
+											<InlineCopyButton
+												text={formattedUrl}
+												className="text-neutral-400 hover:text-action"
+											/>
+										</>
+									);
+								})()}
 							</div>
 						</div>
 					)}
@@ -700,19 +680,10 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 								{note ? "Note Content" : "Draft Content"}
 							</div>
 							{content && (
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon-sm"
-									className="text-neutral-400 hover:text-action cursor-pointer"
-									onClick={() => {
-										navigator.clipboard.writeText(content);
-										toast.success("Copied!");
-									}}
-									title="Copy Content"
-								>
-									<Copy className="w-3.5 h-3.5" aria-hidden="true" />
-								</Button>
+								<InlineCopyButton
+									text={content}
+									className="text-neutral-400 hover:text-action"
+								/>
 							)}
 						</div>
 						{isNewNote && (
@@ -759,8 +730,14 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						)}
 					</div>
 
-					<div className="mt-8 pt-4 border-t border-base-border text-xs text-gray-400">
-						Last updated: {formatDate(updatedAt)}
+					<div className="mt-8 pt-4 border-t border-base-border text-xs text-neutral-400">
+						<dl className="grid grid-cols-[100px_1fr] gap-y-2">
+							<dt className="font-medium">Created</dt>
+							<dd>{formatDate(createdAt)}</dd>
+
+							<dt className="font-medium">Last updated</dt>
+							<dd>{formatDate(updatedAt)}</dd>
+						</dl>
 					</div>
 				</div>
 			</div>
@@ -802,66 +779,52 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						<DialogTitle>Edit Note Scope & URL</DialogTitle>
 					</DialogHeader>
 					<div className="grid gap-4 py-4">
-						<div className="grid items-center gap-2">
-							<Label htmlFor="url" className="text-xs font-bold uppercase">
-								Source URL
-							</Label>
-							<Input
-								id="url"
-								value={editUrl}
-								onChange={(e) => setEditUrl(e.target.value)}
-								placeholder="example.com/page"
-								className="col-span-3"
-								disabled={isSaving}
-							/>
-							<p className="text-[10px] text-neutral-400">
-								Leave empty to move this note to Inbox.
-							</p>
-						</div>
-						<div className="grid items-center gap-2">
-							<Label htmlFor="scope" className="text-xs font-bold uppercase">
+						<div className="grid grid-cols-4 items-center gap-4">
+							<Label htmlFor="scope" className="text-right">
 								Scope
 							</Label>
 							<Select
 								value={editScope}
-								onValueChange={(val: string | null) => {
-									if (val) setEditScope(val as Note["scope"]);
-								}}
-								disabled={isSaving}
+								onValueChange={(val) => setEditScope(val as Note["scope"])}
 							>
-								<SelectTrigger className="w-full">
+								<SelectTrigger className="col-span-3">
 									<SelectValue placeholder="Select scope" />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="exact" disabled={editUrl === ""}>
-										Page
-									</SelectItem>
-									<SelectItem value="domain" disabled={editUrl === ""}>
-										Domain
-									</SelectItem>
-									<SelectItem value="inbox">Inbox</SelectItem>
+									<SelectItem value="inbox">Inbox (Global)</SelectItem>
+									<SelectItem value="domain">Domain</SelectItem>
+									<SelectItem value="exact">Exact Page</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
+						{editScope !== "inbox" && (
+							<div className="grid grid-cols-4 items-center gap-4">
+								<Label htmlFor="url" className="text-right">
+									URL/Pattern
+								</Label>
+								<Input
+									id="url"
+									value={editUrl}
+									onChange={(e) => setEditUrl(e.target.value)}
+									className="col-span-3"
+									placeholder={
+										editScope === "domain" ? "example.com" : "https://..."
+									}
+								/>
+							</div>
+						)}
 					</div>
 					<DialogFooter>
 						<Button
 							type="button"
-							variant="ghost"
+							variant="outline"
 							onClick={() => setIsEditMetaDialogOpen(false)}
-							className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
 							disabled={isSaving}
 						>
 							Cancel
 						</Button>
-						<Button
-							type="button"
-							variant="default"
-							onClick={handleSaveMeta}
-							className="cursor-pointer"
-							disabled={isSaving}
-						>
-							{isSaving ? "Saving..." : "Save changes"}
+						<Button type="button" onClick={handleSaveMeta} disabled={isSaving}>
+							{isSaving ? "Saving..." : "Save Changes"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

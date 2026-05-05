@@ -1,11 +1,12 @@
 "use client";
 
-import { Check, Copy, ExternalLink } from "lucide-react";
-import React, { useState } from "react";
+import { ExternalLink } from "lucide-react";
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
+import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { cn } from "@/lib/utils";
 import "highlight.js/styles/github.css";
 
@@ -35,14 +36,6 @@ export default function MarkdownRenderer({
 	content,
 	className = "",
 }: MarkdownRendererProps) {
-	const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
-
-	const handleCopyCode = (code: string, id: string) => {
-		navigator.clipboard.writeText(code);
-		setCopiedCodeId(id);
-		setTimeout(() => setCopiedCodeId(null), 2000);
-	};
-
 	return (
 		<div
 			className={cn(
@@ -86,24 +79,14 @@ export default function MarkdownRenderer({
 						// Block Code
 						const rawText = extractText(children);
 						const codeString = rawText.replace(/\n$/, "");
-						const uniqueId = Math.random().toString(36).substring(2, 9);
-						const isCopied = copiedCodeId === uniqueId;
 
 						return (
 							<div className="relative group my-4 not-prose">
 								<div className="absolute top-2 right-2 z-10">
-									<button
-										type="button"
-										onClick={() => handleCopyCode(codeString, uniqueId)}
-										className="p-1.5 bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 rounded-md text-gray-500 hover:text-action dark:hover:text-neutral-100 transition-all cursor-pointer"
-										title="Copy code"
-									>
-										{isCopied ? (
-											<Check className="w-3.5 h-3.5 text-note-info" />
-										) : (
-											<Copy className="w-3.5 h-3.5" />
-										)}
-									</button>
+									<InlineCopyButton
+										text={codeString}
+										className="bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100"
+									/>
 								</div>
 								<pre className="overflow-x-auto rounded-xl bg-base-bg dark:bg-neutral-900 border border-base-border dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed">
 									<code className={className}>{children}</code>
