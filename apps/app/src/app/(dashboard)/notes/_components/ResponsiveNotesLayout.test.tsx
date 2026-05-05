@@ -1,40 +1,49 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 
-// next/navigation のモック
+// Mock hooks
 vi.mock("next/navigation", () => ({
-	useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn() })),
-	useSearchParams: vi.fn(() => new URLSearchParams("?new=note")),
+	useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+	useSearchParams: () => new URLSearchParams(),
 }));
 
-// MatchMedia のモック (Mobile環境をシミュレート)
-Object.defineProperty(window, "matchMedia", {
-	writable: true,
-	value: vi.fn().mockImplementation((query) => ({
-		matches: false, // モバイル (min-width: 768px -> false)
-		media: query,
-		onchange: null,
-		addListener: vi.fn(),
-		removeListener: vi.fn(),
-		addEventListener: vi.fn(),
-		removeEventListener: vi.fn(),
-		dispatchEvent: vi.fn(),
-	})),
-});
+vi.mock("@/hooks/use-media-query", () => ({
+	useMediaQuery: vi.fn(),
+}));
 
 describe("ResponsiveNotesLayout", () => {
-	it("URLに new=note が含まれる場合、モバイル環境で詳細ペイン(Dialog)が開くこと", () => {
+	it("renders both panes when isDesktop is true", () => {
+		vi.mocked(useMediaQuery).mockReturnValue(true);
+
 		render(
 			<ResponsiveNotesLayout
-				middleNode={<div>Middle Pane</div>}
-				rightNode={<div>Right Pane Detail</div>}
+				middleNode={<div data-testid="middle-node">Middle</div>}
+				rightNode={<div data-testid="right-node">Right</div>}
 				selectedNoteId={null}
 				selectedDraftId={null}
 			/>,
 		);
 
-		// Dialogが開いて、Right Pane Detail がレンダリングされていることを検証
-		expect(screen.getByText("Right Pane Detail")).toBeInTheDocument();
+		expect(screen.getByTestId("middle-node")).toBeInTheDocument();
+		expect(screen.getByTestId("right-node")).toBeInTheDocument();
+	});
+
+	it("renders only middle pane when isDesktop is false and no detail is selected", () => {
+		vi.mocked(useMediaQuery).mockReturnValue(false);
+
+		render(
+			<ResponsiveNotesLayout
+				middleNode={<div data-testid="middle-node">Middle</div>}
+				rightNode={<div data-testid="right-node">Right</div>}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByTestId("middle-node")).toBeInTheDocument();
+		// Right node should not be in the document if Drawer is closed
+		expect(screen.queryByTestId("right-node")).not.toBeInTheDocument();
 	});
 });
