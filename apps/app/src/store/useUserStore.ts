@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 export type LimitType = "notes" | "drafts" | "ai";
 
-interface UserState {
+export interface UserState {
 	aiUsageCount: number;
 	plan: string;
 	isPaywallOpen: boolean;

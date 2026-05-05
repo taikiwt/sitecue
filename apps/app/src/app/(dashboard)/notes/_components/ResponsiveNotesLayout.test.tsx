@@ -22,6 +22,14 @@ vi.mock("@/hooks/use-media-query", () => ({
 	useMediaQuery: vi.fn(),
 }));
 
+vi.mock("@/store/useLayoutStore", () => ({
+	useLayoutStore: vi.fn((selector) =>
+		selector({
+			setIsMobileHeaderVisible: vi.fn(),
+		}),
+	),
+}));
+
 describe("ResponsiveNotesLayout", () => {
 	it("renders both panes when isDesktop is true", () => {
 		vi.mocked(useMediaQuery).mockReturnValue(true);
@@ -87,7 +95,7 @@ describe("ResponsiveNotesLayout", () => {
 		});
 		// searchParams をモックし、view=drafts が存在している状態をシミュレート
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("view=drafts&draftId=draft-1"),
+			new URLSearchParams("view=drafts&draftId=draft-1") as any,
 		);
 
 		render(

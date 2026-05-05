@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
 import type { Note } from "../../../../../../../types/app.ts";
 
@@ -136,9 +137,12 @@ export default function NoteCard({
 					</div>
 				</div>
 			) : (
-				<p className="whitespace-pre-wrap break-words text-sm leading-snug text-neutral-600 group-hover:text-neutral-900">
-					{note.content}
-				</p>
+				<div className="min-w-0 w-full overflow-hidden">
+					<MarkdownRenderer
+						content={note.content}
+						className="text-sm leading-snug text-neutral-600 group-hover:text-neutral-900 [&_p]:[overflow-wrap:anywhere] [&_a]:break-all [&_a]:[overflow-wrap:anywhere] [&_code]:[overflow-wrap:anywhere]"
+					/>
+				</div>
 			)}
 
 			{note.url_pattern && !note.url_pattern.startsWith("sitecue://") && (

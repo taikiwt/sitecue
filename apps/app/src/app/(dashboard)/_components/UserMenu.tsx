@@ -22,7 +22,7 @@ export function UserMenu() {
 	const supabase = createClient();
 	const [user, setUser] = useState<SupabaseUser | null>(null);
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
-	const { aiUsageCount, setUserData } = useUserStore();
+	const { aiUsageCount, plan, setUserData } = useUserStore();
 	const { data: notes = [] } = useFetchNotes();
 	const { data: drafts = [] } = useFetchDrafts();
 
@@ -97,42 +97,48 @@ export function UserMenu() {
 				</div>
 
 				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
-					<p
-						className={cn(
-							"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
-							aiUsageCount !== null &&
-								aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
-								? "text-amber-600"
-								: "text-neutral-400",
-						)}
-					>
-						<Sparkles className="w-3 h-3" />
-						AI Usage
-					</p>
-					<p
-						className={cn(
-							"text-sm",
-							aiUsageCount !== null &&
-								aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
-								? "text-amber-700"
-								: "text-action",
-						)}
-					>
-						{aiUsageCount !== null
-							? `${aiUsageCount} / ${AI_LIMIT.MAX_FREE}`
-							: "..."}
-						<span
-							className={cn(
-								"text-[10px] font-normal ml-1",
-								aiUsageCount !== null &&
-									aiUsageCount >= AI_LIMIT.WARNING_THRESHOLD
-									? "text-amber-500"
-									: "text-neutral-400",
-							)}
-						>
-							uses
-						</span>
-					</p>
+					{(() => {
+						const maxAiLimit =
+							plan === "pro" ? AI_LIMIT.MAX_PRO : AI_LIMIT.MAX_FREE;
+						const aiWarningThreshold =
+							plan === "pro"
+								? AI_LIMIT.WARNING_THRESHOLD_PRO
+								: AI_LIMIT.WARNING_THRESHOLD_FREE;
+						const isAiWarning =
+							aiUsageCount !== null && aiUsageCount >= aiWarningThreshold;
+
+						return (
+							<>
+								<p
+									className={cn(
+										"text-[10px] font-bold uppercase tracking-widest mb-1 flex items-center gap-1",
+										isAiWarning ? "text-amber-600" : "text-neutral-400",
+									)}
+								>
+									<Sparkles className="w-3 h-3" />
+									AI Usage
+								</p>
+								<p
+									className={cn(
+										"text-sm",
+										isAiWarning ? "text-amber-700" : "text-action",
+									)}
+								>
+									{aiUsageCount !== null
+										? `${aiUsageCount} / ${maxAiLimit}`
+										: "..."}
+									<span
+										className={cn(
+											"text-[10px] font-normal ml-1",
+											isAiWarning ? "text-amber-500" : "text-neutral-400",
+										)}
+									>
+										uses
+									</span>
+								</p>
+							</>
+						);
+					})()}
 				</div>
 
 				{notes.length >= NOTES_LIMIT.WARNING_THRESHOLD && (
