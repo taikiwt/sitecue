@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { FileText, Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -24,6 +24,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
+	const createNewTriggerId = useId();
 
 	useEffect(() => {
 		if (pathname) {
@@ -68,6 +69,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 			<div className="flex flex-col items-center gap-4 w-full px-2">
 				<Popover>
 					<PopoverTrigger
+						id={createNewTriggerId}
 						render={
 							<Button
 								variant="ghost"

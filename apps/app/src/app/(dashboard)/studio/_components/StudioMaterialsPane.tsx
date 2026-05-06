@@ -31,7 +31,7 @@ export default function StudioMaterialsPane({
 			</div>
 
 			{/* Search Results */}
-			<div className="flex-1 p-4 overflow-y-auto">
+			<div className="flex-1 p-4 overflow-y-auto pb-safe">
 				<div className="grid gap-3">
 					{isSearching ? (
 						Array.from({ length: 3 }).map((_, i) => (

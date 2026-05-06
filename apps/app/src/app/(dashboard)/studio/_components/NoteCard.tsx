@@ -73,12 +73,12 @@ export default function NoteCard({
 				</div>
 
 				{!isEditing && (
-					<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+					<div className="flex items-center gap-1 opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100 transition-opacity">
 						{onInsert && (
 							<button
 								type="button"
 								onClick={() => onInsert(note.content)}
-								className="p-1 text-neutral-400 hover:text-action hover:bg-neutral-100 rounded-md transition-colors"
+								className="p-1 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-md transition-colors"
 								title="Insert to Editor"
 							>
 								<ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
@@ -88,7 +88,7 @@ export default function NoteCard({
 							<button
 								type="button"
 								onClick={() => setIsEditing(true)}
-								className="p-1 text-neutral-400 hover:text-action hover:bg-neutral-100 rounded-md transition-colors"
+								className="p-1 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-md transition-colors"
 								title="Edit Note"
 							>
 								<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
@@ -98,7 +98,7 @@ export default function NoteCard({
 							<button
 								type="button"
 								onClick={() => onDelete(note.id)}
-								className="p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+								className="p-1 text-neutral-400 hover-safe:text-red-500 hover-safe:bg-red-50 rounded-md transition-colors"
 								title="Delete Note"
 							>
 								<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
