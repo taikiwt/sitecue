@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 
 import { useUserStore } from "@/store/useUserStore";
 import { extractTags } from "@/utils/tags";
+import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
 type Props = {
@@ -108,8 +109,25 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		if (isNewNote) {
 			setIsEditing(true);
 			setEditContent("");
+
+			let currentExact = searchParams.get("exact");
+			let currentDomain = searchParams.get("domain");
+
+			if (currentExact === "all") currentExact = null;
+			if (currentDomain === "all") currentDomain = "inbox";
+
+			if (currentExact) {
+				setEditUrl(currentExact);
+				setEditScope("exact");
+			} else if (currentDomain && currentDomain !== "inbox") {
+				setEditUrl(currentDomain);
+				setEditScope("domain");
+			} else {
+				setEditUrl("");
+				setEditScope("inbox");
+			}
 		}
-	}, [isNewNote]);
+	}, [isNewNote, searchParams]);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
@@ -240,16 +258,18 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				params.set("noteId", data.id);
 				router.replace(`/notes?${params.toString()}`);
 			} else if (note) {
-				let finalUrl = editUrl;
+				let finalUrl = editUrl.trim();
 				if (editScope === "inbox") {
 					finalUrl = "";
-				} else if (editScope === "domain" && finalUrl) {
-					try {
-						const urlObj = new URL(
-							finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`,
-						);
-						finalUrl = urlObj.hostname;
-					} catch (_e) {}
+				} else if (finalUrl) {
+					// 共通ユーティリティで https:// や www. 等を除去
+					const normalizedFullUrl = normalizeUrlForGrouping(finalUrl);
+
+					if (editScope === "domain") {
+						finalUrl = normalizedFullUrl.split("/")[0];
+					} else if (editScope === "exact") {
+						finalUrl = normalizedFullUrl;
+					}
 				}
 
 				const extractedTags = extractTags(newContent);
@@ -558,7 +578,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						<div className="space-y-6">
 							{/* Metadata Editing Area */}
 							<div className="bg-base-surface p-4 rounded-xl border border-base-border space-y-4">
-								<div className="grid items-center gap-2 mb-2">
+								<div className="grid items-center gap-2 mb-4">
 									<Label className="text-xs font-bold uppercase text-neutral-500">
 										Note Type
 									</Label>
@@ -596,7 +616,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											onClick={() => setEditScope("inbox")}
 											className="cursor-pointer"
 										>
-											Inbox (Global)
+											Inbox
 										</Button>
 										<Button
 											type="button"
@@ -614,7 +634,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 											onClick={() => setEditScope("exact")}
 											className="cursor-pointer"
 										>
-											Exact Page
+											Page
 										</Button>
 									</div>
 									{editScope !== "inbox" && (
