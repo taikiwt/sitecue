@@ -1,7 +1,6 @@
 "use client";
 
 import {
-	Check,
 	Clipboard,
 	ClipboardCopy,
 	MoreHorizontal,
@@ -28,13 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
@@ -46,13 +39,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import {
 	useCreateNote,
 	useDeleteNote,
@@ -79,7 +65,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
-	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
+
 	const [_isCopying, setIsCopying] = useState(false);
 	const [optimisticContent, setOptimisticContent] = useState<string | null>(
 		null,
@@ -98,10 +84,13 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		null,
 	);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isEditMetaDialogOpen, setIsEditMetaDialogOpen] = useState(false);
+	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 	const [editUrl, setEditUrl] = useState(note?.url_pattern || "");
 	const [editScope, setEditScope] = useState<Note["scope"]>(
 		note?.scope || "inbox",
+	);
+	const [editNoteType, setEditNoteType] = useState<Note["note_type"]>(
+		note?.note_type || "info",
 	);
 	const openPaywall = useUserStore((state) => state.openPaywall);
 
@@ -110,6 +99,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		if (note) {
 			setEditUrl(note.url_pattern || "");
 			setEditScope(note.scope || "inbox");
+			setEditNoteType(note.note_type || "info");
 		}
 	}, [note]);
 
@@ -120,13 +110,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 			setEditContent("");
 		}
 	}, [isNewNote]);
-
-	// Force inbox scope if URL is empty
-	useEffect(() => {
-		if (editUrl === "" && editScope !== "inbox") {
-			setEditScope("inbox");
-		}
-	}, [editUrl, editScope]);
 
 	// Reset state when note or draft changes
 	useEffect(() => {
@@ -247,7 +230,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					content: newContent,
 					scope: targetScope,
 					url_pattern: targetUrlPattern,
-					note_type: noteType,
+					note_type: editNoteType,
 					tags: extractedTags,
 				});
 
@@ -257,14 +240,31 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				params.set("noteId", data.id);
 				router.replace(`/notes?${params.toString()}`);
 			} else if (note) {
+				let finalUrl = editUrl;
+				if (editScope === "inbox") {
+					finalUrl = "";
+				} else if (editScope === "domain" && finalUrl) {
+					try {
+						const urlObj = new URL(
+							finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`,
+						);
+						finalUrl = urlObj.hostname;
+					} catch (_e) {}
+				}
+
 				const extractedTags = extractTags(newContent);
 				await updateNoteMutation.mutateAsync({
 					id: note.id,
 					updates: {
 						content: newContent,
 						tags: extractedTags,
+						url_pattern: finalUrl,
+						scope: editScope,
+						note_type: editNoteType,
 					},
 				});
+				setOptimisticNoteType(editNoteType);
+				setOptimisticScope(editScope);
 			}
 		} catch (err: unknown) {
 			console.error("Failed to save note:", err);
@@ -334,40 +334,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		}
 	};
 
-	const handleSaveMeta = async () => {
-		if (!note) return;
-		setIsSaving(true);
-		try {
-			let finalUrl = editUrl;
-			if (editScope === "inbox") {
-				finalUrl = "";
-			} else if (editScope === "domain" && finalUrl) {
-				try {
-					const urlObj = new URL(
-						finalUrl.startsWith("http") ? finalUrl : `https://${finalUrl}`,
-					);
-					finalUrl = urlObj.hostname;
-				} catch (_e) {
-					// invalid URLの場合はそのままにする
-				}
-			}
-
-			await updateNoteMutation.mutateAsync({
-				id: note.id,
-				updates: {
-					url_pattern: finalUrl,
-					scope: editScope,
-				},
-			});
-			setIsEditMetaDialogOpen(false);
-		} catch (err) {
-			console.error("Failed to save metadata:", err);
-			toast.error("Failed to save metadata.");
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
 	const handleCopyAll = () => {
 		if (!content) return;
 		navigator.clipboard.writeText(content);
@@ -382,7 +348,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				<div className="max-w-3xl mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
 					{/* Left: Badge and Date */}
 					<div className="flex flex-col gap-1">
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 group/meta">
 							{note ? (
 								<NoteStatusBadge
 									type={currentNoteType}
@@ -396,6 +362,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									{isNewNote ? "NEW" : "DRAFT"}
 								</span>
 							)}
+
 							<span className="hidden md:inline text-sm text-gray-400">
 								{formatDate(createdAt)}
 							</span>
@@ -434,7 +401,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									title="Copy all content"
 								/>
 
-								<Popover>
+								<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
 									<PopoverTrigger
 										render={
 											<Button
@@ -453,46 +420,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									/>
 									<PopoverContent className="w-48 p-2" align="end">
 										<div className="space-y-3">
-											<div>
-												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Note Type
-												</div>
-												<div className="flex flex-col gap-1">
-													{["info", "alert", "idea"].map((type) => (
-														<Button
-															key={type}
-															type="button"
-															variant="ghost"
-															size="sm"
-															onClick={() =>
-																handleUpdateProperty({ note_type: type })
-															}
-															className={cn(
-																"flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg cursor-pointer",
-																currentNoteType === type
-																	? "bg-neutral-100 text-neutral-900"
-																	: "text-neutral-500 hover:text-neutral-900",
-															)}
-														>
-															<div
-																className={cn(
-																	"w-1.5 h-1.5 rounded-full",
-																	type === "alert"
-																		? "bg-note-alert"
-																		: type === "idea"
-																			? "bg-note-idea"
-																			: "bg-note-info",
-																)}
-															/>
-															<span className="capitalize">{type}</span>
-															{currentNoteType === type && (
-																<Check className="w-3 h-3 ml-auto" />
-															)}
-														</Button>
-													))}
-												</div>
-											</div>
-
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
 													Actions
@@ -503,19 +430,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 														variant="ghost"
 														size="sm"
 														onClick={() => {
-															setEditUrl(note?.url_pattern || "");
-															setEditScope(note?.scope || "inbox");
-															setIsEditMetaDialogOpen(true);
+															setIsMoreMenuOpen(false);
+															setTimeout(() => {
+																setIsDeleteDialogOpen(true);
+															}, 150);
 														}}
-														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-													>
-														Edit Scope/URL
-													</Button>
-													<Button
-														type="button"
-														variant="ghost"
-														size="sm"
-														onClick={() => setIsDeleteDialogOpen(true)}
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
 														Delete Note
@@ -635,77 +554,83 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						</div>
 					)}
 
-					{note && note.scope !== "inbox" && (
-						<div className="mb-10">
-							<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
-								Source URL
-							</div>
-							<div className="flex items-center gap-2 group">
-								{(() => {
-									const formattedUrl = note.url_pattern.startsWith("http")
-										? note.url_pattern
-										: note.url_pattern.includes("localhost") ||
-												note.url_pattern.includes("127.0.0.1")
-											? `http://${note.url_pattern}`
-											: `https://${note.url_pattern}`;
-									return (
-										<>
-											<a
-												href={formattedUrl}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
+					{isEditing ? (
+						<div className="space-y-6">
+							{/* Metadata Editing Area */}
+							<div className="bg-base-surface p-4 rounded-xl border border-base-border space-y-4">
+								<div className="grid items-center gap-2 mb-2">
+									<Label className="text-xs font-bold uppercase text-neutral-500">
+										Note Type
+									</Label>
+									<div className="flex gap-2">
+										{(["info", "alert", "idea"] as const).map((type) => (
+											<Button
+												key={type}
+												type="button"
+												variant={
+													editNoteType === type ? "default" : "secondary"
+												}
+												size="sm"
+												onClick={() =>
+													setEditNoteType(type as Note["note_type"])
+												}
+												className="capitalize cursor-pointer"
 											>
-												{note.url_pattern}
-											</a>
-											<InlineCopyButton
-												text={formattedUrl}
-												className="text-neutral-400 hover:text-action"
-											/>
-										</>
-									);
-								})()}
-							</div>
-						</div>
-					)}
+												{type}
+											</Button>
+										))}
+									</div>
+								</div>
 
-					<div
-						className={cn(
-							"space-y-4",
-							currentResolved && "opacity-50 transition-opacity",
-						)}
-					>
-						<div className="flex items-center justify-between px-1">
-							<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-								{note ? "Note Content" : "Draft Content"}
-							</div>
-							{content && (
-								<InlineCopyButton
-									text={content}
-									className="text-neutral-400 hover:text-action"
-								/>
-							)}
-						</div>
-						{isNewNote && (
-							<div className="grid items-center gap-2 mb-4">
-								<Label className="text-xs font-bold uppercase">Note Type</Label>
-								<div className="flex gap-2">
-									{(["info", "alert", "idea"] as const).map((type) => (
+								<div className="grid items-center gap-2 mb-1">
+									<Label className="text-xs font-bold uppercase text-neutral-500">
+										Scope & URL
+									</Label>
+								</div>
+								<div className="flex flex-col gap-3">
+									<div className="flex flex-wrap gap-2">
 										<Button
-											key={type}
 											type="button"
-											variant={noteType === type ? "default" : "secondary"}
+											variant={editScope === "inbox" ? "default" : "secondary"}
 											size="sm"
-											onClick={() => setNoteType(type as Note["note_type"])}
-											className="capitalize cursor-pointer"
+											onClick={() => setEditScope("inbox")}
+											className="cursor-pointer"
 										>
-											{type}
+											Inbox (Global)
 										</Button>
-									))}
+										<Button
+											type="button"
+											variant={editScope === "domain" ? "default" : "secondary"}
+											size="sm"
+											onClick={() => setEditScope("domain")}
+											className="cursor-pointer"
+										>
+											Domain
+										</Button>
+										<Button
+											type="button"
+											variant={editScope === "exact" ? "default" : "secondary"}
+											size="sm"
+											onClick={() => setEditScope("exact")}
+											className="cursor-pointer"
+										>
+											Exact Page
+										</Button>
+									</div>
+									{editScope !== "inbox" && (
+										<Input
+											value={editUrl}
+											onChange={(e) => setEditUrl(e.target.value)}
+											className="w-full"
+											placeholder={
+												editScope === "domain" ? "example.com" : "https://..."
+											}
+										/>
+									)}
 								</div>
 							</div>
-						)}
-						{isEditing ? (
+
+							{/* Content Editing Area */}
 							<div className="relative">
 								{(() => {
 									const baseContent =
@@ -723,13 +648,66 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									);
 								})()}
 							</div>
-						) : (
-							<div className="min-h-50 rounded-2xl">
-								<MarkdownRenderer content={content} />
-							</div>
-						)}
-					</div>
+						</div>
+					) : (
+						<>
+							{note && note.scope !== "inbox" && (
+								<div className="mb-10">
+									<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
+										Source URL
+									</div>
+									<div className="flex items-center gap-2 group">
+										{(() => {
+											const formattedUrl = note.url_pattern.startsWith("http")
+												? note.url_pattern
+												: note.url_pattern.includes("localhost") ||
+														note.url_pattern.includes("127.0.0.1")
+													? `http://${note.url_pattern}`
+													: `https://${note.url_pattern}`;
+											return (
+												<>
+													<a
+														href={formattedUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
+													>
+														{note.url_pattern}
+													</a>
+													<InlineCopyButton
+														text={formattedUrl}
+														className="text-neutral-400 hover:text-action"
+													/>
+												</>
+											);
+										})()}
+									</div>
+								</div>
+							)}
 
+							<div
+								className={cn(
+									"space-y-4",
+									currentResolved && "opacity-50 transition-opacity",
+								)}
+							>
+								<div className="flex items-center justify-between px-1">
+									<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+										{note ? "Note Content" : "Draft Content"}
+									</div>
+									{content && (
+										<InlineCopyButton
+											text={content}
+											className="text-neutral-400 hover:text-action"
+										/>
+									)}
+								</div>
+								<div className="min-h-50 rounded-2xl">
+									<MarkdownRenderer content={content} />
+								</div>
+							</div>
+						</>
+					)}
 					<div className="mt-8 pt-4 border-t border-base-border text-xs text-neutral-400">
 						<dl className="grid grid-cols-[100px_1fr] gap-y-2">
 							<dt className="font-medium">Created</dt>
@@ -769,66 +747,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-
-			<Dialog
-				open={isEditMetaDialogOpen}
-				onOpenChange={setIsEditMetaDialogOpen}
-			>
-				<DialogContent className="sm:max-w-106.25">
-					<DialogHeader>
-						<DialogTitle>Edit Note Scope & URL</DialogTitle>
-					</DialogHeader>
-					<div className="grid gap-4 py-4">
-						<div className="grid grid-cols-4 items-center gap-4">
-							<Label htmlFor="scope" className="text-right">
-								Scope
-							</Label>
-							<Select
-								value={editScope}
-								onValueChange={(val) => setEditScope(val as Note["scope"])}
-							>
-								<SelectTrigger className="col-span-3">
-									<SelectValue placeholder="Select scope" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="inbox">Inbox (Global)</SelectItem>
-									<SelectItem value="domain">Domain</SelectItem>
-									<SelectItem value="exact">Exact Page</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-						{editScope !== "inbox" && (
-							<div className="grid grid-cols-4 items-center gap-4">
-								<Label htmlFor="url" className="text-right">
-									URL/Pattern
-								</Label>
-								<Input
-									id="url"
-									value={editUrl}
-									onChange={(e) => setEditUrl(e.target.value)}
-									className="col-span-3"
-									placeholder={
-										editScope === "domain" ? "example.com" : "https://..."
-									}
-								/>
-							</div>
-						)}
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setIsEditMetaDialogOpen(false)}
-							disabled={isSaving}
-						>
-							Cancel
-						</Button>
-						<Button type="button" onClick={handleSaveMeta} disabled={isSaving}>
-							{isSaving ? "Saving..." : "Save Changes"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
 		</div>
 	);
 }

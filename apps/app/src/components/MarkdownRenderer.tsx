@@ -1,7 +1,7 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
-import React from "react";
+import { ExternalLink, WrapText } from "lucide-react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkBreaks from "remark-breaks";
@@ -26,6 +26,48 @@ const extractText = (node: React.ReactNode): string => {
 	}
 	return "";
 };
+
+interface CodeBlockNodeProps {
+	children: React.ReactNode;
+	className?: string;
+	codeString: string;
+}
+
+function CodeBlockNode({
+	children,
+	className,
+	codeString,
+}: CodeBlockNodeProps) {
+	const [isWrapped, setIsWrapped] = useState(false);
+
+	return (
+		<div className="relative group my-4 not-prose">
+			<div className="absolute top-2 right-2 z-10 flex items-center gap-1 opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100 transition-opacity duration-200">
+				<button
+					type="button"
+					onClick={() => setIsWrapped(!isWrapped)}
+					className="p-1.5 rounded-md bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100 transition-colors cursor-pointer flex items-center justify-center"
+					title={isWrapped ? "Disable wrap" : "Wrap text"}
+				>
+					<WrapText className="w-3.5 h-3.5" aria-hidden="true" />
+				</button>
+				<InlineCopyButton
+					text={codeString}
+					className="bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100"
+				/>
+			</div>
+			{/* codeblock */}
+			<pre
+				className={cn(
+					"overflow-x-auto rounded-xl bg-base-bg dark:bg-neutral-900 border border-base-border dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed transition-all duration-200",
+					isWrapped && "whitespace-pre-wrap break-all",
+				)}
+			>
+				<code className={className}>{children}</code>
+			</pre>
+		</div>
+	);
+}
 
 interface MarkdownRendererProps {
 	content: string;
@@ -81,18 +123,9 @@ export default function MarkdownRenderer({
 						const codeString = rawText.replace(/\n$/, "");
 
 						return (
-							<div className="relative group my-4 not-prose">
-								<div className="absolute top-2 right-2 z-10">
-									<InlineCopyButton
-										text={codeString}
-										className="bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100"
-									/>
-								</div>
-								{/* codeblock */}
-								<pre className="overflow-x-auto rounded-xl bg-base-bg dark:bg-neutral-900 border border-base-border dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed">
-									<code className={className}>{children}</code>
-								</pre>
-							</div>
+							<CodeBlockNode className={className} codeString={codeString}>
+								{children}
+							</CodeBlockNode>
 						);
 					},
 					// Checkbox styling (remark-gfm)

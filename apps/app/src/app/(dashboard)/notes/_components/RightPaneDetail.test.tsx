@@ -62,16 +62,24 @@ vi.mock("@/components/ui/hover-reveal-button", () => ({
 		href,
 		text,
 		icon,
+		onClick,
 	}: {
-		href: string;
+		href?: string;
 		text: string;
 		icon: ReactNode;
-	}) => (
-		<a href={href} data-testid="hover-reveal-link">
-			{icon}
-			<span>{text}</span>
-		</a>
-	),
+		onClick?: () => void;
+	}) =>
+		href ? (
+			<a href={href} data-testid="hover-reveal-link" onClick={onClick}>
+				{icon}
+				<span>{text}</span>
+			</a>
+		) : (
+			<button type="button" onClick={onClick} data-testid="hover-reveal-button">
+				{icon}
+				<span>{text}</span>
+			</button>
+		),
 }));
 
 describe("RightPaneDetail", () => {
@@ -222,5 +230,116 @@ describe("RightPaneDetail", () => {
 
 		expect(writeTextMock).toHaveBeenCalledWith("Test Content");
 		expect(toast.success).not.toHaveBeenCalled();
+	});
+
+	it("opens edit mode, updates metadata and content simultaneously, and saves", async () => {
+		const mockNote = createMockNote({
+			id: "1",
+			user_id: "user1",
+			content: "Test Content",
+			scope: "exact",
+			url_pattern: "https://example.com/page",
+			note_type: "info",
+		});
+
+		const mutateAsyncMock = vi.fn();
+		vi.mocked(useUpdateNote).mockReturnValue({
+			mutateAsync: mutateAsyncMock,
+		} as unknown as ReturnType<typeof useUpdateNote>);
+
+		const queryClient = new QueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<RightPaneDetail note={mockNote} />
+			</QueryClientProvider>,
+		);
+
+		// 1. メインのEditボタン（テキスト="Edit"のリンク/ボタン）をクリック
+		const editButton = screen.getByText("Edit");
+		await act(async () => {
+			fireEvent.click(editButton);
+		});
+
+		// 2. Note Type を 'idea' に変更
+		const ideaButton = screen.getByRole("button", { name: "idea" });
+		await act(async () => {
+			fireEvent.click(ideaButton);
+		});
+
+		// 3. Scope を 'Domain' に変更（Selectではなくボタンのクリックへ変更）
+		const domainButton = screen.getByRole("button", { name: "Domain" });
+		await act(async () => {
+			fireEvent.click(domainButton);
+		});
+
+		// 4. URLを入力（Scopeがdomainになったためplaceholderが変わっているはず）
+		const urlInput = screen.getByPlaceholderText("example.com");
+		await act(async () => {
+			fireEvent.change(urlInput, { target: { value: "changed-domain.com" } });
+		});
+
+		// 5. Save ボタンをクリック
+		const saveButton = screen.getByRole("button", { name: "Save" });
+		await act(async () => {
+			fireEvent.click(saveButton);
+		});
+
+		// 6. API呼び出しが正しい引数で行われたか検証
+		expect(mutateAsyncMock).toHaveBeenCalledWith({
+			id: "1",
+			updates: {
+				content: "Test Content",
+				tags: [],
+				url_pattern: "changed-domain.com",
+				scope: "domain",
+				note_type: "idea",
+			},
+		});
+	});
+
+	it("opens delete dialog after clicking delete in more menu with delay", async () => {
+		vi.useFakeTimers();
+		const mockNote = createMockNote({
+			id: "1",
+			user_id: "user1",
+			content: "Test Content",
+		});
+
+		const queryClient = new QueryClient();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<RightPaneDetail note={mockNote} />
+			</QueryClientProvider>,
+		);
+
+		// Open more menu
+		const moreButton = screen.getByLabelText("More options");
+		await act(async () => {
+			fireEvent.click(moreButton);
+		});
+
+		// Check if menu is open (Delete Note should be visible)
+		const deleteButton = screen.getByRole("button", { name: "Delete Note" });
+		expect(deleteButton).toBeInTheDocument();
+
+		// Click delete button
+		await act(async () => {
+			fireEvent.click(deleteButton);
+		});
+
+		// Dialog should NOT be immediately open due to setTimeout
+		expect(
+			screen.queryByText("Are you absolutely sure?"),
+		).not.toBeInTheDocument();
+
+		// Advance timers
+		await act(async () => {
+			vi.advanceTimersByTime(150);
+		});
+
+		// Now dialog should be visible
+		expect(screen.getByText("Are you absolutely sure?")).toBeInTheDocument();
+
+		vi.useRealTimers();
 	});
 });
