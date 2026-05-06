@@ -88,6 +88,7 @@ export default function MarkdownRenderer({
 										className="bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100"
 									/>
 								</div>
+								{/* codeblock */}
 								<pre className="overflow-x-auto rounded-xl bg-base-bg dark:bg-neutral-900 border border-base-border dark:border-neutral-800 p-4 text-xs md:text-sm font-mono leading-relaxed">
 									<code className={className}>{children}</code>
 								</pre>

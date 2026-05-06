@@ -88,7 +88,7 @@ export default function StudioReviewPane({
 				{/* Note Form */}
 				<div className="sticky top-0 z-20 p-4 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
 					<div className="flex justify-between items-center mb-3">
-						<span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+						<span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
 							Add Notes
 						</span>
 						<Button
@@ -97,7 +97,7 @@ export default function StudioReviewPane({
 							size="sm"
 							onClick={onGenerateReview}
 							disabled={isGeneratingReview}
-							className="h-7 text-[10px] font-bold uppercase gap-1.5 text-action hover:bg-neutral-100 border-neutral-200"
+							className="h-7 text-xs font-bold uppercase gap-1.5 text-action hover:bg-neutral-100 border-neutral-200"
 						>
 							{isGeneratingReview ? (
 								<Loader2 className="w-3 h-3 animate-spin" />
@@ -113,7 +113,7 @@ export default function StudioReviewPane({
 				{/* Note List */}
 				<div className="p-4">
 					<div className="flex justify-between items-center mb-3">
-						<span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+						<span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
 							Review Notes ({reviewNotes.length})
 						</span>
 						{reviewNotes.length > 0 && (
@@ -123,7 +123,7 @@ export default function StudioReviewPane({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="text-note-alert hover:bg-note-alert/10 hover:text-note-alert h-6 px-2 text-[10px] font-bold uppercase"
+											className="text-note-alert hover:bg-note-alert/10 hover:text-note-alert h-6 px-2 text-xs font-bold uppercase"
 										>
 											Delete All
 										</Button>
