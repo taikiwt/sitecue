@@ -137,7 +137,8 @@
   /* ベース背景 */
   --foreground: oklch(0.3132 0 0);
   /* ベーステキストカラー */
-  --action: oklch(0.3132 0 0);
+  /* --action: oklch(0.3132 0 0); */
+  --action: oklch(0.234 0.0469 242.53);
   /* 見出しや黒ボタン */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
