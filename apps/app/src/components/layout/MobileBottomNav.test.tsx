@@ -1,16 +1,51 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MobileBottomNav } from "./MobileBottomNav";
 
-// next/navigationのモック
 vi.mock("next/navigation", () => ({
-	useSearchParams: () => new URLSearchParams(),
+	usePathname: vi.fn(),
+	useSearchParams: vi.fn(),
 }));
 
 describe("MobileBottomNav", () => {
-	it("renders correctly within Suspense boundary without crashing", () => {
-		const { container } = render(<MobileBottomNav onSearchOpen={vi.fn()} />);
-		// DOMの取得検証
-		expect(container.querySelector("nav")).toBeInTheDocument();
+	const mockOnSearchOpen = vi.fn();
+
+	const mockSearchParams = (params: Record<string, string>) => {
+		vi.mocked(useSearchParams).mockReturnValue({
+			get: (key: string) => params[key] || null,
+		} as unknown as ReturnType<typeof useSearchParams>);
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it("通常時はナビゲーションが表示されること", () => {
+		vi.mocked(usePathname).mockReturnValue("/notes");
+		mockSearchParams({});
+
+		render(<MobileBottomNav onSearchOpen={mockOnSearchOpen} />);
+		expect(screen.getByRole("navigation")).toBeInTheDocument();
+	});
+
+	it("詳細ペインが開いている時（noteIdが存在）は表示されないこと", () => {
+		vi.mocked(usePathname).mockReturnValue("/notes");
+		mockSearchParams({ noteId: "test-id" });
+
+		const { container } = render(
+			<MobileBottomNav onSearchOpen={mockOnSearchOpen} />,
+		);
+		expect(container.firstChild).toBeNull();
+	});
+
+	it("現在のパスが /studio 始まりの時は表示されないこと", () => {
+		vi.mocked(usePathname).mockReturnValue("/studio/some-draft-id");
+		mockSearchParams({});
+
+		const { container } = render(
+			<MobileBottomNav onSearchOpen={mockOnSearchOpen} />,
+		);
+		expect(container.firstChild).toBeNull();
 	});
 });

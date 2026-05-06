@@ -1,7 +1,7 @@
 "use client";
 
 import { Globe, Inbox, PenSquare, Search } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 
@@ -11,12 +11,16 @@ interface MobileBottomNavProps {
 
 function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	const searchParams = useSearchParams();
+	const pathname = usePathname();
+
 	const isDetailOpen = !!(
 		searchParams.get("noteId") || searchParams.get("draftId")
 	);
 
-	// Hide bottom nav when detail pane is open on mobile
-	if (isDetailOpen) return null;
+	const isStudioPage = pathname?.startsWith("/studio");
+
+	// Hide bottom nav when detail pane is open on mobile or on studio page
+	if (isDetailOpen || isStudioPage) return null;
 
 	return (
 		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-base-surface border-t border-base-border pb-safe">

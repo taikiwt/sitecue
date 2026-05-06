@@ -84,7 +84,7 @@ export default function StudioReviewPane({
 
 	return (
 		<div className="relative flex h-full flex-col bg-neutral-50/30">
-			<div className="flex-1 overflow-y-auto pb-28">
+			<div className="flex-1 overflow-y-auto">
 				{/* Note Form */}
 				<div className="sticky top-0 z-20 p-4 border-b border-neutral-200 bg-white/80 backdrop-blur-md">
 					<div className="flex justify-between items-center mb-3">
@@ -201,8 +201,8 @@ export default function StudioReviewPane({
 			</div>
 
 			{/* Weave Action Bar */}
-			<div className="absolute bottom-4 left-4 right-4">
-				<div className="p-1 rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-neutral-200/50 backdrop-blur-md">
+			<div className="shrink-0 p-4 border-t border-neutral-200/50 bg-white/80 backdrop-blur-md pb-safe">
+				<div className="p-1 rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-neutral-200/50">
 					<button
 						type="button"
 						onClick={onWeave}
@@ -215,9 +215,9 @@ export default function StudioReviewPane({
 					>
 						<div className="flex items-center gap-3 pl-1">
 							{isWeaving ? (
-								<Loader2 className="h-5 w-5 animate-spin" />
+								<Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
 							) : (
-								<Sparkles className="h-5 w-5 text-white" />
+								<Sparkles className="h-5 w-5 text-white" aria-hidden="true" />
 							)}
 							<span className="text-sm tracking-tight">
 								{isWeaving ? "WEAVING..." : "WEAVE WITH AI"}

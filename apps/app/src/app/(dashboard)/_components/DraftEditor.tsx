@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -11,6 +11,7 @@ import {
 } from "react-resizable-panels";
 import TextareaAutosize from "react-textarea-autosize";
 import { StudioEditor } from "@/components/editor/StudioEditor";
+import { Button } from "@/components/ui/button";
 import {
 	Drawer,
 	DrawerContent,
@@ -57,6 +58,7 @@ export default function DraftEditor({
 	const supabase = createClient();
 	const activePane = searchParams.get("pane") || "review";
 	const isDesktop = useMediaQuery("(min-width: 768px)");
+	const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
 	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
 		"idle",
@@ -643,7 +645,10 @@ export default function DraftEditor({
 			{/* Floating Mobile Trigger */}
 			{!isDesktop && (
 				<div className="fixed bottom-6 right-6 z-50">
-					<Drawer>
+					<Drawer
+						open={isMobileDrawerOpen}
+						onOpenChange={setIsMobileDrawerOpen}
+					>
 						<DrawerTrigger asChild>
 							<button
 								type="button"
@@ -653,64 +658,79 @@ export default function DraftEditor({
 								<span className="text-sm font-bold">Notes & AI</span>
 							</button>
 						</DrawerTrigger>
-						<DrawerContent className="h-[80vh]">
-							<div className="mx-auto w-full max-w-sm">
-								<DrawerHeader>
-									<DrawerTitle className="sr-only">Weave Studio</DrawerTitle>
-									<DrawerDescription className="sr-only">
-										Access AI Weave and Materials
-									</DrawerDescription>
-									<div className="flex rounded-lg bg-neutral-200/50 p-1 mb-4">
-										<button
-											type="button"
-											onClick={() => updatePane("review")}
-											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-												activePane === "review"
-													? "bg-base-bg text-action shadow-sm"
-													: "text-gray-500 hover:text-action"
-											}`}
-										>
-											SELF REVIEW
-										</button>
-										<button
-											type="button"
-											onClick={() => updatePane("materials")}
-											className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
-												activePane === "materials"
-													? "bg-base-bg text-action shadow-sm"
-													: "text-gray-500 hover:text-action"
-											}`}
-										>
-											GLOBAL MATERIALS
-										</button>
-									</div>
-								</DrawerHeader>
-								<div className="h-[calc(80vh-80px)] overflow-hidden">
-									{activePane === "review" ? (
-										<StudioReviewPane
-											reviewNotes={reviewNotes}
-											isLoadingReview={isLoadingReview}
-											onAddNote={handleAddNote}
-											onUpdateNote={handleUpdateNote}
-											onDeleteNote={handleDeleteNote}
-											onDeleteAllNotes={handleDeleteAllNotes}
-											onReorderNotes={handleReorderNotes}
-											onInsertToEditor={handleInsertToEditor}
-											onWeave={handleWeave}
-											isWeaving={isWeaving}
-											onGenerateReview={handleGenerateReview}
-											isGeneratingReview={isGeneratingReview}
-										/>
-									) : (
-										<StudioMaterialsPane
-											searchKeyword={searchKeyword}
-											onSearchKeywordChange={setSearchKeyword}
-											onSearch={handleSearch}
-											searchResults={searchResults}
-											isSearching={isSearching}
-										/>
-									)}
+						<DrawerContent className="!mt-0 !h-[100dvh] !max-h-none rounded-t-2xl rounded-b-none p-0 flex flex-col overflow-hidden bg-base-bg border-none">
+							<DrawerHeader className="sr-only">
+								<DrawerTitle>Weave Studio</DrawerTitle>
+								<DrawerDescription>
+									Access AI Weave and Materials
+								</DrawerDescription>
+							</DrawerHeader>
+
+							{/* Mobile Header with Back Button */}
+							<div className="shrink-0 flex flex-col px-4 pt-2 pb-3 border-b border-base-border mt-2 bg-base-bg">
+								<div className="flex items-center mb-3">
+									<Button
+										onClick={() => setIsMobileDrawerOpen(false)}
+										type="button"
+										variant="ghost"
+										className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
+									>
+										<ArrowLeft aria-hidden="true" className="w-5 h-5" />
+										Editor
+									</Button>
 								</div>
+								{/* Tab Navigation */}
+								<div className="flex rounded-lg bg-neutral-200/50 p-1">
+									<button
+										type="button"
+										onClick={() => updatePane("review")}
+										className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+											activePane === "review"
+												? "bg-base-bg text-action shadow-sm"
+												: "text-gray-500 hover:text-action"
+										}`}
+									>
+										SELF REVIEW
+									</button>
+									<button
+										type="button"
+										onClick={() => updatePane("materials")}
+										className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+											activePane === "materials"
+												? "bg-base-bg text-action shadow-sm"
+												: "text-gray-500 hover:text-action"
+										}`}
+									>
+										GLOBAL MATERIALS
+									</button>
+								</div>
+							</div>
+
+							<div className="flex-1 overflow-hidden">
+								{activePane === "review" ? (
+									<StudioReviewPane
+										reviewNotes={reviewNotes}
+										isLoadingReview={isLoadingReview}
+										onAddNote={handleAddNote}
+										onUpdateNote={handleUpdateNote}
+										onDeleteNote={handleDeleteNote}
+										onDeleteAllNotes={handleDeleteAllNotes}
+										onReorderNotes={handleReorderNotes}
+										onInsertToEditor={handleInsertToEditor}
+										onWeave={handleWeave}
+										isWeaving={isWeaving}
+										onGenerateReview={handleGenerateReview}
+										isGeneratingReview={isGeneratingReview}
+									/>
+								) : (
+									<StudioMaterialsPane
+										searchKeyword={searchKeyword}
+										onSearchKeywordChange={setSearchKeyword}
+										onSearch={handleSearch}
+										searchResults={searchResults}
+										isSearching={isSearching}
+									/>
+								)}
 							</div>
 						</DrawerContent>
 					</Drawer>
