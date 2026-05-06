@@ -95,7 +95,9 @@ describe("ResponsiveNotesLayout", () => {
 		});
 		// searchParams をモックし、view=drafts が存在している状態をシミュレート
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("view=drafts&draftId=draft-1") as any,
+			new URLSearchParams(
+				"view=drafts&draftId=draft-1",
+			) as unknown as ReturnType<typeof useSearchParams>,
 		);
 
 		render(

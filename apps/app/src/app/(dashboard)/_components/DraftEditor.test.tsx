@@ -80,7 +80,10 @@ describe("DraftEditor - Error Handling", () => {
 
 		const renderWithProvider = (ui: React.ReactElement) => {
 			const queryClient = new QueryClient({
-				defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+				defaultOptions: {
+					queries: { retry: false },
+					mutations: { retry: false },
+				},
 			});
 			return render(
 				<QueryClientProvider client={queryClient}>
@@ -92,7 +95,9 @@ describe("DraftEditor - Error Handling", () => {
 
 		const user = userEvent.setup();
 
-		renderWithProvider(<DraftEditor initialDraft={mockDraft} template={null} />);
+		renderWithProvider(
+			<DraftEditor initialDraft={mockDraft} template={null} />,
+		);
 
 		// DraftEditor.tsx では、左サイドバーの「WEAVE」ボタン等があるか、
 		// StudioReviewPane.tsx 経由で呼び出されるのでそのボタンを探す。

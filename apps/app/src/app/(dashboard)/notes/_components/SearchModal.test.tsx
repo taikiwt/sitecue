@@ -45,7 +45,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>
@@ -99,7 +102,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>
@@ -132,7 +138,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>
@@ -179,7 +188,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>
@@ -232,7 +244,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>
@@ -280,7 +295,10 @@ describe("SearchModal Context Jump", () => {
 		});
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 		render(
 			<QueryClientProvider client={queryClient}>

@@ -30,7 +30,10 @@ describe("SaveAsTemplateDialog", () => {
 		const user = userEvent.setup();
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 
 		render(
