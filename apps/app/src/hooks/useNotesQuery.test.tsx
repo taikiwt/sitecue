@@ -40,15 +40,16 @@ describe("useSearchNotes", () => {
 
 		// Supabase RPC のモック
 		const mockSupabase = {
-			rpc: vi.fn().mockReturnThis(),
-			order: vi.fn().mockReturnThis(),
-			// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
-			then: vi.fn().mockImplementation((callback) =>
-				callback({
-					data: mockNotes,
-					error: null,
-				}),
-			),
+			rpc: vi.fn().mockImplementation((name) => ({
+				order: vi.fn().mockReturnThis(),
+				// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
+				then: vi.fn().mockImplementation((callback) =>
+					callback({
+						data: name === "search_notes" ? mockNotes : [],
+						error: null,
+					}),
+				),
+			})),
 		};
 
 		vi.mocked(createClient).mockReturnValue(
@@ -58,7 +59,7 @@ describe("useSearchNotes", () => {
 		const { result } = renderHook(() => useSearchNotes("Test"), { wrapper });
 
 		await waitFor(() => expect(result.current.isSuccess).toBe(true));
-		expect(result.current.data).toEqual(mockNotes);
+		expect(result.current.data).toEqual({ notes: mockNotes, drafts: [] });
 		expect(mockSupabase.rpc).toHaveBeenCalledWith("search_notes", {
 			search_query: "Test",
 		});

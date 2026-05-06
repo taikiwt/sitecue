@@ -14,10 +14,15 @@ vi.mock("@/utils/supabase/server", () => {
 			return Promise.resolve(onFulfilled({ count: 450, data: [] }));
 		}),
 	};
+	const mockSupabase = {
+		from: vi.fn().mockReturnValue(mockSupabaseBuilder),
+	};
 	return {
-		createClient: vi.fn().mockResolvedValue({
-			from: vi.fn().mockReturnValue(mockSupabaseBuilder),
+		requireUser: vi.fn().mockResolvedValue({
+			supabase: mockSupabase,
+			user: { id: "test-user" },
 		}),
+		createClient: vi.fn().mockResolvedValue(mockSupabase),
 	};
 });
 

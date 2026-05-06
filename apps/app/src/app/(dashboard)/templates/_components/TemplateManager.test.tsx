@@ -1,4 +1,4 @@
-/** @vitest-environment jsdom */
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TemplateManager } from "./TemplateManager";
@@ -51,7 +51,14 @@ const mockTemplates = [
 
 describe("TemplateManager", () => {
 	it("renders list and allows selecting a template", async () => {
-		render(<TemplateManager initialTemplates={mockTemplates} selectedId="1" />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<TemplateManager initialTemplates={mockTemplates} selectedId="1" />
+			</QueryClientProvider>,
+		);
 
 		// Check if list item exists
 		expect(screen.getByText("Mock Template")).toBeInTheDocument();
@@ -68,8 +75,13 @@ describe("TemplateManager", () => {
 	});
 
 	it("shows empty state when no template is selected", () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
 		render(
-			<TemplateManager initialTemplates={mockTemplates} selectedId={null} />,
+			<QueryClientProvider client={queryClient}>
+				<TemplateManager initialTemplates={mockTemplates} selectedId={null} />
+			</QueryClientProvider>,
 		);
 		expect(
 			screen.getByText("Select a template to edit or create a new one."),
@@ -77,8 +89,13 @@ describe("TemplateManager", () => {
 	});
 
 	it("shows creation form when id is 'new'", () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
 		render(
-			<TemplateManager initialTemplates={mockTemplates} selectedId="new" />,
+			<QueryClientProvider client={queryClient}>
+				<TemplateManager initialTemplates={mockTemplates} selectedId="new" />
+			</QueryClientProvider>,
 		);
 		expect(screen.getByText("Create Template")).toBeInTheDocument();
 		expect(screen.getByLabelText("Template Name")).toHaveValue("");

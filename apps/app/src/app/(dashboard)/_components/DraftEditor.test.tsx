@@ -1,8 +1,9 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
 import { Toaster } from "react-hot-toast";
-import { vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { server } from "../../../../vitest.setup";
 import DraftEditor from "./DraftEditor";
 
@@ -66,7 +67,7 @@ const mockDraft = {
 };
 
 describe("DraftEditor - Error Handling", () => {
-	test("Weave機能がAPIエラーになった際、エラーメッセージがトーストで表示されること", async () => {
+	it("Weave機能がAPIエラーになった際、エラーメッセージがトーストで表示されること", async () => {
 		// APIエラーをモック
 		server.use(
 			http.post("*/ai/weave", () => {
@@ -77,13 +78,21 @@ describe("DraftEditor - Error Handling", () => {
 			}),
 		);
 
+		const renderWithProvider = (ui: React.ReactElement) => {
+			const queryClient = new QueryClient({
+				defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			});
+			return render(
+				<QueryClientProvider client={queryClient}>
+					<Toaster />
+					{ui}
+				</QueryClientProvider>,
+			);
+		};
+
 		const user = userEvent.setup();
-		render(
-			<>
-				<Toaster />
-				<DraftEditor initialDraft={mockDraft} template={null} />
-			</>,
-		);
+
+		renderWithProvider(<DraftEditor initialDraft={mockDraft} template={null} />);
 
 		// DraftEditor.tsx では、左サイドバーの「WEAVE」ボタン等があるか、
 		// StudioReviewPane.tsx 経由で呼び出されるのでそのボタンを探す。
@@ -94,7 +103,7 @@ describe("DraftEditor - Error Handling", () => {
 		// ローディングの検証は省き、最終的なトーストメッセージの描画を待機
 		expect(
 			await screen.findByText(
-				"AIサーバーが混み合っています。少し待ってから再度お試しください。",
+				"The AI server is currently busy. Please wait a moment and try again.",
 			),
 		).toBeInTheDocument();
 	});

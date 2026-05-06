@@ -5,8 +5,44 @@ expect.extend(matchers);
 
 import { cleanup } from "@testing-library/react";
 import { setupServer } from "msw/node";
+import React from "react";
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
 import { handlers } from "./src/mocks/handlers";
+
+// ResizeObserver mock
+class ResizeObserver {
+	observe() {}
+	unobserve() {}
+	disconnect() {}
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: Global mock
+(window as any).ResizeObserver = ResizeObserver;
+
+// PointerEvent mock (for jsdom)
+if (!window.PointerEvent) {
+	class PointerEvent extends MouseEvent {
+		constructor(type: string, params: PointerEventInit = {}) {
+			super(type, params);
+		}
+	}
+	(window as any).PointerEvent = PointerEvent;
+}
+
+// matchMedia mock
+Object.defineProperty(window, "matchMedia", {
+	writable: true,
+	value: vi.fn().mockImplementation((query) => ({
+		matches: false,
+		media: query,
+		onchange: null,
+		addListener: vi.fn(),
+		removeListener: vi.fn(),
+		addEventListener: vi.fn(),
+		removeEventListener: vi.fn(),
+		dispatchEvent: vi.fn(),
+	})),
+});
 
 // Supabase や Next.js のルーターなど、ブラウザ特有の機能をモック化
 vi.mock("next/navigation", () => ({
@@ -35,6 +71,32 @@ vi.mock("@/utils/supabase/client", () => ({
 		}),
 	}),
 }));
+
+// Supabase Server の requireUser モック
+vi.mock("@/utils/supabase/server", () => ({
+	requireUser: vi.fn().mockResolvedValue({
+		supabase: {},
+		user: { id: "test-user" },
+	}),
+	createClient: vi.fn().mockResolvedValue({
+		from: vi.fn().mockReturnThis(),
+	}),
+}));
+
+// CodeMirrorの安全なモック化（getClientRectsクラッシュ防止）
+vi.mock("@uiw/react-codemirror", () => {
+	return {
+		__esModule: true,
+		default: vi.fn((props) => {
+			return React.createElement("textarea", {
+				"data-testid": "codemirror-mock",
+				value: props.value,
+				onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+					props.onChange?.(e.target.value),
+			});
+		}),
+	};
+});
 
 // MSWサーバーの設定
 export const server = setupServer(...handlers);

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,7 +44,14 @@ describe("SearchModal Context Jump", () => {
 			isLoading: false,
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		// Type in search box
 		const input = screen.getByPlaceholderText(/search notes/i);
@@ -90,7 +98,14 @@ describe("SearchModal Context Jump", () => {
 			isLoading: false,
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
 		await user.type(input, "Inbox");
@@ -116,7 +131,14 @@ describe("SearchModal Context Jump", () => {
 			isLoading: false,
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
 		fireEvent.change(input, { target: { value: "Test" } });
@@ -156,7 +178,14 @@ describe("SearchModal Context Jump", () => {
 			return { data: { notes: [], drafts: [] }, isLoading: false };
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		const input = screen.getByPlaceholderText("Search notes...");
 
@@ -202,7 +231,14 @@ describe("SearchModal Context Jump", () => {
 			isLoading: false,
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
 		await user.type(input, "Secret");
@@ -216,7 +252,7 @@ describe("SearchModal Context Jump", () => {
 		const draftResult = screen.getByText("My Secret Draft");
 		await user.click(draftResult);
 
-		expect(mockPush).toHaveBeenCalledWith("/notes?draftId=draft-1");
+		expect(mockPush).toHaveBeenCalledWith("/notes?view=drafts&draftId=draft-1");
 	});
 
 	it("should cancel noise in pages when domain matches", async () => {
@@ -243,7 +279,14 @@ describe("SearchModal Context Jump", () => {
 			isLoading: false,
 		});
 
-		render(<SearchModal isOpen={true} onClose={vi.fn()} />);
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
 		// "example" で検索した場合、ドメインがマッチするので "https://example.com/page-1" はPagesから除外されるはず
