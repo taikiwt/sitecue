@@ -27,7 +27,11 @@ vi.mock("@/hooks/useDraftsQuery", () => ({
 }));
 
 vi.mock("@/store/useLayoutStore", () => ({
-	useLayoutStore: vi.fn(() => false),
+	useLayoutStore: vi.fn((selector) =>
+		selector({
+			setIsMobileHeaderVisible: vi.fn(),
+		}),
+	),
 }));
 
 vi.mock("./MiddlePaneList", () => ({

@@ -51,12 +51,12 @@ describe("SearchInput Component", () => {
 		render(<SearchInput />);
 
 		const input = screen.getByPlaceholderText(/Search keywords/i);
-		await user.type(input, "#design ui");
+		await user.type(input, "#design ui{Enter}");
 
 		// Wait for debounce (300ms + buffer)
 		await waitFor(
 			() => {
-				expect(mockReplace).toHaveBeenCalledWith("/notes?q=ui&tags=design", {
+				expect(mockPush).toHaveBeenCalledWith("/notes?q=ui&tags=design", {
 					scroll: false,
 				});
 			},
@@ -70,7 +70,7 @@ describe("SearchInput Component", () => {
 		render(<SearchInput />);
 
 		const input = screen.getByPlaceholderText(/Search keywords/i);
-		await user.type(input, "test");
+		await user.type(input, "test{Enter}");
 
 		await waitFor(
 			() => {
@@ -88,11 +88,11 @@ describe("SearchInput Component", () => {
 		render(<SearchInput />);
 
 		const input = screen.getByPlaceholderText(/Search keywords/i);
-		await user.type(input, "test");
+		await user.type(input, "test{Enter}");
 
 		await waitFor(
 			() => {
-				expect(mockReplace).toHaveBeenCalledWith("/notes?q=test", {
+				expect(mockPush).toHaveBeenCalledWith("/notes?q=test", {
 					scroll: false,
 				});
 			},
@@ -106,7 +106,7 @@ describe("SearchInput Component", () => {
 
 		expect(input).toHaveValue("");
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenLastCalledWith("/notes?", {
+			expect(mockPush).toHaveBeenLastCalledWith("/notes?", {
 				scroll: false,
 			});
 		});

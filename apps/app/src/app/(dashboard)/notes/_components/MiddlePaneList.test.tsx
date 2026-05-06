@@ -248,8 +248,9 @@ describe("MiddlePaneList Layout Verification", () => {
 		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
 		expect(scrollContainer).toBeInTheDocument();
 
-		const spacer = scrollContainer?.querySelector(".h-14.md\\:h-0.shrink-0");
-		expect(spacer).toBeInTheDocument();
+		// モバイル用のパディング（スペーサーの代わり）を確認
+		expect(scrollContainer?.className).toContain("pb-28");
+		expect(scrollContainer?.className).toContain("md:pb-0");
 	});
 
 	it("should have a mobile spacer in domains view", () => {
@@ -270,7 +271,10 @@ describe("MiddlePaneList Layout Verification", () => {
 		);
 
 		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
-		const spacer = scrollContainer?.querySelector(".h-14.md\\:h-0.shrink-0");
-		expect(spacer).toBeInTheDocument();
+		expect(scrollContainer).toBeInTheDocument();
+
+		// モバイル用のパディング（スペーサーの代わり）を確認
+		expect(scrollContainer?.className).toContain("pb-28");
+		expect(scrollContainer?.className).toContain("md:pb-0");
 	});
 });

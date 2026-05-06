@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { requireUser } from "./server";
 
+// グローバルモックを解除して実体を使用する
+vi.unmock("@/utils/supabase/server");
+
 // next/navigation のモック
 vi.mock("next/navigation", () => ({
 	redirect: vi.fn(),
