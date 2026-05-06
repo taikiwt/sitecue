@@ -10,7 +10,10 @@ describe("StudioReviewPane - AI Review", () => {
 		const mockGenerate = vi.fn().mockResolvedValue(undefined);
 
 		const queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
 		});
 
 		render(

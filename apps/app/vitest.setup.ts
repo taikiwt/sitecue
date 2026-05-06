@@ -15,9 +15,10 @@ class ResizeObserver {
 	unobserve() {}
 	disconnect() {}
 }
-
-// biome-ignore lint/suspicious/noExplicitAny: Global mock
-(window as any).ResizeObserver = ResizeObserver;
+Object.defineProperty(window, "ResizeObserver", {
+	writable: true,
+	value: ResizeObserver,
+});
 
 // PointerEvent mock (for jsdom)
 if (!window.PointerEvent) {
@@ -26,7 +27,10 @@ if (!window.PointerEvent) {
 			super(type, params);
 		}
 	}
-	(window as any).PointerEvent = PointerEvent;
+	Object.defineProperty(window, "PointerEvent", {
+		writable: true,
+		value: PointerEvent,
+	});
 }
 
 // matchMedia mock

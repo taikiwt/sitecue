@@ -645,7 +645,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									const formattedUrl = note.url_pattern.startsWith("http")
 										? note.url_pattern
 										: note.url_pattern.includes("localhost") ||
-											note.url_pattern.includes("127.0.0.1")
+												note.url_pattern.includes("127.0.0.1")
 											? `http://${note.url_pattern}`
 											: `https://${note.url_pattern}`;
 									return (
