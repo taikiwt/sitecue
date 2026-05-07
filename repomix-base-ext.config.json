@@ -1,0 +1,34 @@
+{
+	"include": [
+		"project-tree.txt",
+		".agent/**/*",
+		"package.json",
+		"turbo.json",
+		"**/package.json",
+		"**/tsconfig.json",
+		"schema.sql",
+		"types/**/*",
+		"apps/extension/*.config.ts",
+		"apps/extension/manifest.json",
+		"apps/extension/src/types/**/*.ts",
+		"apps/extension/src/lib/supabase.ts"
+	],
+	"ignore": {
+		"useGitignore": true,
+		"useDefaultPatterns": true,
+		"customPatterns": [
+			"**/node_modules/**",
+			"**/*.test.{ts,tsx}",
+			"**/*.spec.{ts,tsx}",
+			"**/e2e/**/*",
+			"docs/archive/**/*"
+		]
+	},
+	"output": {
+		"filePath": "repomix-ext-context.xml",
+		"style": "xml",
+		"removeComments": true,
+		"removeEmptyLines": true,
+		"topHeader": "EXTENSION SKELETON: Contains directory tree, global rules (.agent/), DB schema, and Extension configurations. Implementation details are dynamically added."
+	}
+}

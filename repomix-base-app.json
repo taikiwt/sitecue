@@ -1,0 +1,15 @@
+{
+	"include": [
+		"project-tree.txt",
+		".agent/**/*",
+		"package.json",
+		"supabase/schema.sql",
+		"types/**/*",
+		"**/src/types/**/*.ts",
+		"**/src/lib/supabase.ts"
+	],
+	"output": {
+		"filePath": "repomix-base.xml",
+		"style": "xml"
+	}
+}
