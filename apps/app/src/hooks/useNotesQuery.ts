@@ -9,6 +9,7 @@ export const NOTES_QUERY_KEY = ["notes"];
 export function useFetchNotes() {
 	return useQuery({
 		queryKey: NOTES_QUERY_KEY,
+		staleTime: 5 * 60 * 1000, // 5分間はバックグラウンドフェッチによる上書きを防ぐ
 		queryFn: async () => {
 			const supabase = createClient();
 			const {
@@ -147,17 +148,15 @@ export function useFetchNoteContents() {
 
 			const contentMap = new Map(contents.map((n) => [n.id, n.content]));
 
-			queryClient.setQueriesData<Note[]>(
-				{ queryKey: NOTES_QUERY_KEY },
-				(old) => {
-					if (!old) return old;
-					return old.map((note) =>
-						contentMap.has(note.id)
-							? { ...note, content: contentMap.get(note.id) as string }
-							: note,
-					);
-				},
-			);
+			queryClient.setQueriesData<any>({ queryKey: NOTES_QUERY_KEY }, (old) => {
+				if (!old) return old;
+				const updateNote = (n: any) =>
+					contentMap.has(n.id) ? { ...n, content: contentMap.get(n.id) } : n;
+
+				if (Array.isArray(old)) return old.map(updateNote); // 通常リスト
+				if (old.notes) return { ...old, notes: old.notes.map(updateNote) }; // 検索結果オブジェクト
+				return old;
+			});
 		},
 	});
 }
@@ -204,7 +203,7 @@ export function useDeleteNotes() {
 	});
 }
 
-export function useSearchNotes(q?: string, tags?: string) {
+export function useSearchNotes(q?: string, tags?: string, options: { enabled?: boolean } = {}) {
 	return useQuery({
 		queryKey: [...NOTES_QUERY_KEY, "search", q, tags],
 		queryFn: async () => {
@@ -216,7 +215,7 @@ export function useSearchNotes(q?: string, tags?: string) {
 				: supabase
 						.from("sitecue_notes")
 						.select(
-							"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
+							"id, user_id, url_pattern, scope, note_type, content, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
 						);
 
 			if (tags) {
@@ -250,6 +249,6 @@ export function useSearchNotes(q?: string, tags?: string) {
 			};
 		},
 		staleTime: 5 * 60 * 1000,
-		enabled: !!q || !!tags,
+		...options,
 	});
 }

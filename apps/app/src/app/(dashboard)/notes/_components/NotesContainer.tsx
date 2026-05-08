@@ -3,12 +3,9 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
-import {
-	useFetchNoteContents,
-	useFetchNotes,
-	useSearchNotes,
-} from "@/hooks/useNotesQuery";
+import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes } from "@/store/useNotesStore";
+import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
@@ -31,11 +28,7 @@ export function NotesContainer() {
 	const params: SearchParams = useMemo(() => {
 		return {
 			view: searchParams.get("view") as SearchParams["view"],
-			domain:
-				searchParams.get("domain") ||
-				(!searchParams.get("view") && !searchParams.get("q")
-					? "inbox"
-					: undefined),
+			domain: searchParams.get("domain") || undefined,
 			exact: searchParams.get("exact") || undefined,
 			noteId: searchParams.get("noteId") || undefined,
 			draftId: searchParams.get("draftId") || undefined,
@@ -45,52 +38,25 @@ export function NotesContainer() {
 		};
 	}, [searchParams]);
 
-	// 1. TanStack Queryによる検索の宣言的実行
-	const isSearchActive = !!params.q || !!params.tags;
-	const {
-		// 修正: 初期値をオブジェクト { notes: [], drafts: [] } に変更
-		data: searchResults = { notes: [], drafts: [] },
-		isLoading: isSearchLoading,
-		isFetching: isSearchFetching,
-	} = useSearchNotes(params.q, params.tags);
-	const isSearching = isSearchLoading || isSearchFetching;
-
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
 
 	const effectiveView = useMemo(
-		() => params.view || (params.domain ? "domains" : null),
+		() => params.view || (params.domain ? "domains" : "inbox"),
 		[params.view, params.domain],
 	);
 
-	// フィルタリングされた一覧の計算 (既存の page.tsx から移植)
+	const isSearchActive = !!params.q || !!params.tags;
+	const query = params.q?.toLowerCase() || "";
+
+	// フィルタリングされた一覧の計算 (Frontend Search & Late-Binding)
 	const filteredItems = useMemo(() => {
-		if (isSearchActive) {
-			// 修正: notesとdraftsを平坦化
-			const flatSearchResults: (Note | Draft)[] = [
-				...(searchResults.notes || []),
-				...(searchResults.drafts || []),
-			];
+		if (!isDataReady || !groupedNotes) return [];
 
-			// 修正: 二次フィルタリングの適用
-			return flatSearchResults.filter((item) => {
-				const isNote = "url_pattern" in item;
-
-				if (exact) {
-					return isNote && item.url_pattern === exact;
-				}
-				if (domain && domain !== "inbox") {
-					return isNote && item.url_pattern.startsWith(domain);
-				}
-				return true;
-			});
-		}
-
-		if (!groupedNotes) return [];
-
+		// 1. View / Domain による一次フィルタリング
 		let items: (Note | Draft)[] = [];
 		if (effectiveView === "drafts") {
-			items = groupedNotes.drafts;
+			items = drafts;
 		} else if (exact === "all") {
 			items = groupedNotes.domains[domain || ""]?.domainNotes || [];
 		} else if (exact) {
@@ -108,14 +74,10 @@ export function NotesContainer() {
 				items.sort((a, b) => {
 					const noteA = a as Note;
 					const noteB = b as Note;
-
-					if (noteA.is_pinned !== noteB.is_pinned) {
+					if (noteA.is_pinned !== noteB.is_pinned)
 						return noteA.is_pinned ? -1 : 1;
-					}
 					if (noteA.sort_order !== noteB.sort_order) {
-						const orderA = noteA.sort_order ?? Number.MAX_SAFE_INTEGER;
-						const orderB = noteB.sort_order ?? Number.MAX_SAFE_INTEGER;
-						return orderA - orderB;
+						return (noteA.sort_order ?? 0) - (noteB.sort_order ?? 0);
 					}
 					return (
 						new Date(noteB.created_at).getTime() -
@@ -123,15 +85,66 @@ export function NotesContainer() {
 					);
 				});
 			}
+		} else if (isSearchActive) {
+			// 全件からの検索（ビュー指定がない場合）
+			items = [...notes, ...drafts];
+		} else {
+			// デフォルト（inbox）
+			items = groupedNotes.inbox;
 		}
-		return items;
+
+		// 2. クイックフィルター (q パラメータによる絞り込み)
+		if (!query) return items;
+
+		return items.filter((item) => {
+			const isNote = "url_pattern" in item;
+
+			if (isNote) {
+				const note = item as Note;
+
+				if (effectiveView === "domains" && !domain) {
+					// ドメイン一覧画面での検索
+					const safeUrl = getSafeUrl(note.url_pattern);
+					const searchableHost = safeUrl ? safeUrl.hostname : note.url_pattern;
+					return searchableHost.toLowerCase().includes(query);
+				}
+
+				if (effectiveView === "domains" && domain && !exact) {
+					// ページ一覧画面での検索
+					const safeUrl = getSafeUrl(note.url_pattern);
+					const searchablePath = safeUrl
+						? safeUrl.pathname + safeUrl.search
+						: note.url_pattern;
+					return searchablePath.toLowerCase().includes(query);
+				}
+			}
+
+			// Notes / Drafts の場合
+			if (!isNote) {
+				// Drafts: タイトル（content）で検索
+				return (item as Draft).content?.toLowerCase().includes(query);
+			}
+
+			// Slim Fetching対応: 本文が未取得（undefined）の場合は除外せず残す
+			// これにより、描画された瞬間に fetchContentForIds が走り、
+			// データ取得後に再レンダリング & 再フィルタリングが走る
+			const note = item as Note;
+			if (note.content === undefined) return true;
+			// nullチェック（空のノート）
+			if (!note.content) return false;
+
+			return note.content.toLowerCase().includes(query);
+		});
 	}, [
 		groupedNotes,
 		effectiveView,
 		domain,
 		exact,
-		searchResults,
 		isSearchActive,
+		query,
+		notes,
+		drafts,
+		isDataReady,
 	]);
 
 	// フォールバック: 表示されているリストの中に本文(content)がないものがあれば自動取得
@@ -153,19 +166,9 @@ export function NotesContainer() {
 	// 選択されたノートまたはドラフトの取得
 	const selectedNote = useMemo(() => {
 		if (!params.noteId) return undefined;
-
-		// 1. 検索結果（ローカル状態・完全なデータ）を先に評価する
-		if (isSearchActive) {
-			// 修正: searchResults.notes に対して .find を実行する
-			const foundInSearch = searchResults.notes?.find(
-				(n) => n.id === params.noteId,
-			);
-			if (foundInSearch) return foundInSearch;
-		}
-
-		// 2. なければ全体データ（Slim Fetchingキャッシュ等）から探す
+		// 全体データ（Slim Fetchingキャッシュ等）から探す
 		return notes.find((n) => n.id === params.noteId);
-	}, [notes, searchResults.notes, params.noteId, isSearchActive]);
+	}, [notes, params.noteId]);
 
 	const selectedDraft = useMemo(
 		() =>
@@ -177,42 +180,21 @@ export function NotesContainer() {
 		return null; // Initial loading state (handled by Suspense if we want a better fallback)
 	}
 
-	// 5. ローディング中のスケルトンUIコンポーネント (MiddleNode用)
-	const MiddleNodeContent =
-		isSearchActive && isSearching ? (
-			<div
-				className="flex flex-col h-full bg-base-bg border-r border-base-border w-96 p-4 gap-4"
-				role="status"
-				aria-busy="true"
-				aria-label="Loading search results"
-			>
-				<div className="h-6 bg-base-surface border border-base-border rounded w-1/3 animate-pulse" />
-				<div className="flex flex-col gap-2 mt-4">
-					{[1, 2, 3, 4, 5].map((i) => (
-						<div
-							key={i}
-							className="h-24 bg-base-surface border border-base-border rounded-lg w-full animate-pulse"
-						/>
-					))}
-				</div>
-			</div>
-		) : (
-			<MiddlePaneList
-				items={filteredItems}
-				groupedNotes={groupedNotes}
-				currentView={effectiveView}
-				currentDomain={domain ?? null}
-				currentExact={exact ?? null}
-				selectedNoteId={params.noteId ?? null}
-				selectedDraftId={params.draftId ?? null}
-			/>
-		);
-
 	return (
 		<ResponsiveNotesLayout
 			selectedNoteId={params.noteId ?? null}
 			selectedDraftId={params.draftId ?? null}
-			middleNode={MiddleNodeContent}
+			middleNode={
+				<MiddlePaneList
+					items={filteredItems}
+					groupedNotes={groupedNotes}
+					currentView={effectiveView}
+					currentDomain={domain ?? null}
+					currentExact={exact ?? null}
+					selectedNoteId={params.noteId ?? null}
+					selectedDraftId={params.draftId ?? null}
+				/>
+			}
 			rightNode={
 				<RightPaneDetail
 					note={selectedNote}
