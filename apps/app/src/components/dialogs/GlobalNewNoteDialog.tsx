@@ -18,8 +18,8 @@ import { Label } from "@/components/ui/label";
 import { APP_LIMITS } from "@/constants/limits";
 import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
-import { useUserStore } from "@/store/useUserStore";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useUserStore } from "@/store/useUserStore";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
@@ -72,10 +72,10 @@ export function GlobalNewNoteDialog() {
 		}
 	}, [isOpen]);
 
-
 	const isUrlRequired = scope === "exact" || scope === "domain";
 	const isUrlInvalid = isUrlRequired && !urlPattern.trim();
-	const isSaveDisabled = isSaving || !content.trim() || isOverLimit || isUrlInvalid;
+	const isSaveDisabled =
+		isSaving || !content.trim() || isOverLimit || isUrlInvalid;
 
 	const handleOpenChange = (open: boolean) => {
 		if (!open) {
@@ -198,7 +198,9 @@ export function GlobalNewNoteDialog() {
 					</div>
 
 					<div className="grid items-center gap-2 mb-4">
-						<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4">Note Type</Label>
+						<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4">
+							Note Type
+						</Label>
 						<div className="flex gap-2">
 							{(["info", "alert", "idea"] as const).map((type) => (
 								<Button

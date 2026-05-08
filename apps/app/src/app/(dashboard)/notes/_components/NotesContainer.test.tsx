@@ -60,13 +60,25 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 	it("URLの q パラメータに基づいて、フロントエンドでノートが正しくフィルタリングされること", () => {
 		// "q=match" の検索状態
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("?q=match") as unknown as ReturnType<typeof useSearchParams>,
+			new URLSearchParams("?q=match") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
 		);
 
 		vi.mocked(useFetchNotes).mockReturnValue({
 			data: [
-				{ id: "note-1", content: "This is a match", url_pattern: "example.com", scope: "inbox" },
-				{ id: "note-2", content: "No luck here", url_pattern: "example.com", scope: "inbox" },
+				{
+					id: "note-1",
+					content: "This is a match",
+					url_pattern: "example.com",
+					scope: "inbox",
+				},
+				{
+					id: "note-2",
+					content: "No luck here",
+					url_pattern: "example.com",
+					scope: "inbox",
+				},
 			],
 			isLoading: false,
 		} as unknown as ReturnType<typeof useFetchNotes>);
@@ -82,12 +94,24 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 	it("Slim Fetching対応: content が undefined のノートは、検索クエリがあってもフィルタリングされずに残ること", () => {
 		// "q=anything"
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("?q=anything") as unknown as ReturnType<typeof useSearchParams>,
+			new URLSearchParams("?q=anything") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
 		);
 
 		const fetchNotesData = [
-			{ id: "note-loading", content: undefined, url_pattern: "example.com", scope: "inbox" },
-			{ id: "note-mismatch", content: "No match", url_pattern: "example.com", scope: "inbox" },
+			{
+				id: "note-loading",
+				content: undefined,
+				url_pattern: "example.com",
+				scope: "inbox",
+			},
+			{
+				id: "note-mismatch",
+				content: "No match",
+				url_pattern: "example.com",
+				scope: "inbox",
+			},
 		];
 
 		vi.mocked(useFetchNotes).mockReturnValue({

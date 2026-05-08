@@ -148,15 +148,25 @@ export function useFetchNoteContents() {
 
 			const contentMap = new Map(contents.map((n) => [n.id, n.content]));
 
-			queryClient.setQueriesData<any>({ queryKey: NOTES_QUERY_KEY }, (old) => {
-				if (!old) return old;
-				const updateNote = (n: any) =>
-					contentMap.has(n.id) ? { ...n, content: contentMap.get(n.id) } : n;
+			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: Draft[] }>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
 
-				if (Array.isArray(old)) return old.map(updateNote); // 通常リスト
-				if (old.notes) return { ...old, notes: old.notes.map(updateNote) }; // 検索結果オブジェクト
-				return old;
-			});
+					const updateNote = (n: Note): Note =>
+						contentMap.has(n.id)
+							? { ...n, content: contentMap.get(n.id) as string | undefined }
+							: n;
+
+					if (Array.isArray(old)) {
+						return old.map(updateNote); // 通常リスト
+					}
+					if ("notes" in old) {
+						return { ...old, notes: old.notes.map(updateNote) }; // 検索結果オブジェクト
+					}
+					return old;
+				},
+			);
 		},
 	});
 }
@@ -203,7 +213,11 @@ export function useDeleteNotes() {
 	});
 }
 
-export function useSearchNotes(q?: string, tags?: string, options: { enabled?: boolean } = {}) {
+export function useSearchNotes(
+	q?: string,
+	tags?: string,
+	options: { enabled?: boolean } = {},
+) {
 	return useQuery({
 		queryKey: [...NOTES_QUERY_KEY, "search", q, tags],
 		queryFn: async () => {

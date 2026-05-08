@@ -31,8 +31,8 @@ import {
 } from "@/hooks/useDraftsQuery";
 import { useDeleteNotes, useUpsertNotes } from "@/hooks/useNotesQuery";
 import { useStudioAI } from "@/hooks/useStudioAI";
-import { useLayoutStore } from "@/store/useLayoutStore";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, PenSquare, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -10,11 +10,6 @@ import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 import {
 	Sheet,
 	SheetContent,

@@ -53,7 +53,6 @@ import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
-import { NotesContainer } from "./NotesContainer"; // 自信を子に持つ構造への布石（または命名整理）
 
 type Props = {
 	items: (Note | Draft)[];
@@ -75,7 +74,7 @@ export function MiddlePaneList(props: Props) {
 		selectedNoteId,
 		selectedDraftId,
 	} = props;
-	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
+	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -577,39 +576,37 @@ export function MiddlePaneList(props: Props) {
 			<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
 				{/* 1. Root Domains View */}
 				{currentView === "domains" && !currentDomain ? (
-					<>
-						{Object.entries(groupedNotes.domains)
-							.filter(([domain]) => domain !== "inbox")
-							.filter(
-								([domain]) =>
-									!currentQuery ||
-									domain.toLowerCase().includes(currentQuery.toLowerCase()),
-							)
-							.map(([domain, data]) => (
-								<Link
-									key={domain}
-									href={`/notes?domain=${domain}`}
-									className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
-								>
-									<div className="flex items-center gap-3">
-										<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
-											<Globe className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-										</div>
-										<div className="flex flex-col">
-											<span className="text-sm font-medium text-action truncate w-48">
-												{domain}
-											</span>
-											<span className="text-xs text-gray-400">
-												{data.domainNotes.length +
-													Object.values(data.pages).flat().length}{" "}
-												notes
-											</span>
-										</div>
+					Object.entries(groupedNotes.domains)
+						.filter(([domain]) => domain !== "inbox")
+						.filter(
+							([domain]) =>
+								!currentQuery ||
+								domain.toLowerCase().includes(currentQuery.toLowerCase()),
+						)
+						.map(([domain, data]) => (
+							<Link
+								key={domain}
+								href={`/notes?domain=${domain}`}
+								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+							>
+								<div className="flex items-center gap-3">
+									<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
+										<Globe className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
 									</div>
-									<ChevronRight className="w-4 h-4 text-gray-300" />
-								</Link>
-							))}
-					</>
+									<div className="flex flex-col">
+										<span className="text-sm font-medium text-action truncate w-48">
+											{domain}
+										</span>
+										<span className="text-xs text-gray-400">
+											{data.domainNotes.length +
+												Object.values(data.pages).flat().length}{" "}
+											notes
+										</span>
+									</div>
+								</div>
+								<ChevronRight className="w-4 h-4 text-gray-300" />
+							</Link>
+						))
 				) : currentDomain && currentDomain !== "inbox" && !currentExact ? (
 					/* 2. Domain Pages View */
 					<>
