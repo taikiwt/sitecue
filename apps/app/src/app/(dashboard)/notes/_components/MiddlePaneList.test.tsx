@@ -1,6 +1,8 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { groupNotes } from "@/store/useNotesStore";
 import type { Note } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 
@@ -16,12 +18,16 @@ vi.mock("@/utils/supabase/client", () => ({
 
 // Mock Next.js navigation
 const refreshMock = vi.fn();
+const mockPush = vi.fn();
+const mockReplace = vi.fn();
 const searchParamsMock = vi.fn(() => new URLSearchParams());
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		refresh: refreshMock,
-		push: vi.fn(),
+		push: mockPush,
+		replace: mockReplace,
 	}),
+	usePathname: () => "/notes",
 	useSearchParams: () => searchParamsMock(),
 }));
 
@@ -77,6 +83,8 @@ describe("MiddlePaneList Bulk Actions", () => {
 	afterEach(() => {
 		cleanup();
 		vi.clearAllMocks();
+		searchParamsMock.mockReturnValue(new URLSearchParams());
+		vi.useRealTimers();
 	});
 
 	it("should show checkboxes and action bar when selection is enabled", async () => {
@@ -184,6 +192,8 @@ describe("MiddlePaneList Hierarchy & SSOT", () => {
 	afterEach(() => {
 		cleanup();
 		vi.clearAllMocks();
+		searchParamsMock.mockReturnValue(new URLSearchParams());
+		vi.useRealTimers();
 	});
 
 	it("renders 'Domain Notes' correctly in domain pages view", () => {
@@ -276,5 +286,300 @@ describe("MiddlePaneList Layout Verification", () => {
 		// モバイル用のパディング（スペーサーの代わり）を確認
 		expect(scrollContainer?.className).toContain("pb-28");
 		expect(scrollContainer?.className).toContain("md:pb-0");
+	});
+});
+
+describe("MiddlePaneList Tab and Search Interactions", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+		searchParamsMock.mockReturnValue(new URLSearchParams());
+		vi.useRealTimers();
+	});
+
+	it("updates URL params when tab is clicked or search is submitted", async () => {
+		const user = userEvent.setup();
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// タブのクリック
+		const domainsTab = screen.getByRole("button", { name: /Domains/i });
+		await user.click(domainsTab);
+		expect(mockPush).toHaveBeenCalledWith(
+			expect.stringContaining("view=domains"),
+		);
+
+		// 検索の実行
+		const searchInput = screen.getByPlaceholderText("Search notes...");
+		await user.type(searchInput, "test query{Enter}");
+		expect(mockPush).toHaveBeenCalledWith(
+			expect.stringContaining("q=test+query"),
+		);
+	});
+
+	it("cleans up context parameters when switching tabs", async () => {
+		const user = userEvent.setup();
+		// Mock searchParams to have pollution
+		searchParamsMock.mockReturnValue(
+			new URLSearchParams("view=domains&domain=example.com&exact=all&noteId=123&q=test"),
+		);
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain="example.com"
+				currentExact="all"
+				selectedNoteId="123"
+				selectedDraftId={null}
+			/>,
+		);
+
+		const inboxTab = screen.getByRole("button", { name: /Inbox/i });
+		await user.click(inboxTab);
+
+		// mockPush should be called with ONLY view=inbox
+		const pushCall = mockPush.mock.calls[0][0];
+		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
+
+		expect(resultParams.get("view")).toBe("inbox");
+		expect(resultParams.has("domain")).toBe(false);
+		expect(resultParams.has("exact")).toBe(false);
+		expect(resultParams.has("noteId")).toBe(false);
+		expect(resultParams.has("q")).toBe(false);
+	});
+
+	it("clears search input when clear button is clicked", async () => {
+		const user = userEvent.setup();
+		searchParamsMock.mockReturnValue(new URLSearchParams("view=inbox&q=test"));
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const searchInput = screen.getByPlaceholderText("Search notes...") as HTMLInputElement;
+		expect(searchInput.value).toBe("test");
+
+		const clearButton = screen.getByLabelText("Clear search");
+		await user.click(clearButton);
+
+		expect(searchInput.value).toBe("");
+		expect(mockPush).toHaveBeenCalledWith(expect.not.stringContaining("q="));
+	});
+
+	it("excludes 'inbox' from domains list", () => {
+		const notes: Note[] = [
+			{
+				...mockItems[0],
+				id: "inbox-note",
+				scope: "inbox",
+				url_pattern: "inbox",
+			},
+			{
+				...mockItems[0],
+				id: "domain-note",
+				scope: "domain",
+				url_pattern: "https://example.com",
+			},
+		];
+		const groupedNotes = groupNotes(notes, []);
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={groupedNotes}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByText("example.com")).toBeDefined();
+		expect(screen.queryByText("inbox")).not.toBeInTheDocument();
+	});
+
+	it("filters domains list based on search query", async () => {
+		const groupedNotes = {
+			domains: {
+				"apple.com": { domainNotes: [], pages: {} },
+				"google.com": { domainNotes: [], pages: {} },
+			},
+			inbox: [],
+			drafts: [],
+		};
+
+		// 検索クエリを 'google' に設定
+		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&q=google"));
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={groupedNotes}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByText("google.com")).toBeDefined();
+		expect(screen.queryByText("apple.com")).not.toBeInTheDocument();
+	});
+
+	it("updates URL with debounce when typing in search input", async () => {
+		vi.useFakeTimers();
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const searchInput = screen.getByPlaceholderText("Search notes...");
+		fireEvent.change(searchInput, { target: { value: "debounced" } });
+
+		// advance timers to trigger the debounce
+		vi.advanceTimersByTime(300);
+
+		expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining("q=debounced"));
+
+		vi.useRealTimers();
+	});
+});
+
+describe("MiddlePaneList Back Button", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+		searchParamsMock.mockReturnValue(new URLSearchParams());
+		vi.useRealTimers();
+	});
+
+	it("shows the back button when in a domain drilldown", () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain="example.com"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByTitle("Go back")).toBeInTheDocument();
+	});
+
+	it("hides the back button when not in a drilldown", () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.queryByTitle("Go back")).not.toBeInTheDocument();
+	});
+
+	it("hides the back button when currentDomain is 'inbox'", () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.queryByTitle("Go back")).not.toBeInTheDocument();
+	});
+
+	it("removes 'exact' parameter when clicking back from exact view", async () => {
+		const user = userEvent.setup();
+		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&domain=example.com&exact=all"));
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain="example.com"
+				currentExact="all"
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const backBtn = screen.getByTitle("Go back");
+		await user.click(backBtn);
+
+		const pushCall = mockPush.mock.calls[0][0];
+		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
+
+		expect(resultParams.get("domain")).toBe("example.com");
+		expect(resultParams.has("exact")).toBe(false);
+	});
+
+	it("removes 'domain' parameter and sets view=domains when clicking back from domain view", async () => {
+		const user = userEvent.setup();
+		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&domain=example.com"));
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain="example.com"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const backBtn = screen.getByTitle("Go back");
+		await user.click(backBtn);
+
+		const pushCall = mockPush.mock.calls[0][0];
+		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
+
+		expect(resultParams.has("domain")).toBe(false);
+		expect(resultParams.has("exact")).toBe(false);
+		expect(resultParams.get("view")).toBe("domains");
 	});
 });

@@ -29,10 +29,12 @@ import {
 	Lightbulb,
 	ListChecks,
 	Plus,
+	Search,
 	Trash2,
+	X,
 } from "lucide-react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
@@ -51,6 +53,7 @@ import { createClient } from "@/utils/supabase/client";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
+import { NotesContainer } from "./NotesContainer"; // 自信を子に持つ構造への布石（または命名整理）
 
 type Props = {
 	items: (Note | Draft)[];
@@ -75,7 +78,76 @@ export function MiddlePaneList(props: Props) {
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const searchParams = useSearchParams();
 	const router = useRouter();
+	const pathname = usePathname();
 	const supabase = createClient();
+
+	const currentQuery = searchParams.get("q") || "";
+	const [inputValue, setInputValue] = useState(currentQuery);
+	// 🚨 追加: 自分が最後にURLへプッシュした値を記録する
+	const lastPushedQueryRef = useRef(currentQuery);
+
+	// 1. URLの変化をローカルの状態に同期（外部からの変更、例えばタブ切り替え時のクリア用）
+	useEffect(() => {
+		// 🚨 重要: URLの値が「自分が直前に送った値」と異なる場合のみ同期する
+		// これにより、入力中に自分の送った古いURL値で上書きされるのを防ぎます
+		if (currentQuery !== lastPushedQueryRef.current) {
+			setInputValue(currentQuery);
+			lastPushedQueryRef.current = currentQuery;
+		}
+	}, [currentQuery]);
+
+	// 2. ローカルの入力をURLに同期（デバウンス処理）
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			if (inputValue !== currentQuery) {
+				// 🚨 URLを更新する前に「これは自分が送った値である」と記録する
+				lastPushedQueryRef.current = inputValue;
+
+				const params = new URLSearchParams(searchParams.toString());
+				if (inputValue) params.set("q", inputValue);
+				else params.delete("q");
+
+				// Use replace to avoid polluting history with every keystroke
+				router.replace(`${pathname}?${params.toString()}`);
+			}
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [inputValue, currentQuery, pathname, searchParams, router]);
+
+	const updateView = (newView: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("view", newView);
+		// ビューの切り替え時は、コンテキストが混ざるのを防ぐため他の主要パラメータをリセットする
+		params.delete("domain");
+		params.delete("exact");
+		params.delete("noteId");
+		params.delete("draftId");
+		params.delete("q"); // 検索も基本リセット推奨の仕様に合わせる
+
+		router.push(`${pathname}?${params.toString()}`);
+	};
+
+	const updateParams = (key: string, value: string) => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (value) params.set(key, value);
+		else params.delete(key);
+		router.push(`${pathname}?${params.toString()}`);
+	};
+
+	const handleBack = () => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (currentExact) {
+			// ページ一覧（または全ノート表示）からドメインルートに戻る
+			params.delete("exact");
+		} else if (currentDomain) {
+			// ドメインルートからドメイン一覧に戻る
+			params.delete("domain");
+			params.set("view", "domains");
+		}
+		router.push(`${pathname}?${params.toString()}`);
+	};
+
 	const [localItems, setLocalItems] = useState<(Note | Draft)[]>(items);
 	const [prevItems, setPrevItems] = useState<(Note | Draft)[]>(items);
 
@@ -185,23 +257,8 @@ export function MiddlePaneList(props: Props) {
 	const isSelected =
 		!!currentView || !!currentDomain || !!currentExact || isSearchActive;
 
-	const getTitle = () => {
-		if (isSearchActive && !currentDomain && !currentExact) {
-			return "Search Results";
-		}
-		if (currentView === "drafts") return "Drafts";
-		if (currentExact === "all") return "Domain Notes";
-		if (currentExact) {
-			const safeUrl = getSafeUrl(currentExact);
-			if (safeUrl) {
-				return safeUrl.pathname + safeUrl.search;
-			}
-			return currentExact;
-		}
-		if (currentDomain === "inbox") return "Inbox";
-		if (currentDomain) return currentDomain;
-		return "Notes";
-	};
+	const isShowingNotesList =
+		currentView === "inbox" || (currentView === "domains" && !!currentExact);
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -269,263 +326,176 @@ export function MiddlePaneList(props: Props) {
 		setSelectedIds(newSelected);
 	};
 
-	// 1. Root Domains View
-	if (currentView === "domains" && !currentDomain) {
-		return (
-			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-				<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
-					<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-20">
-						<h2 className="text-xl md:text-lg font-bold text-action">
-							Domains
-						</h2>
-						<p className="text-xs text-gray-500 mt-1">
-							{Object.keys(groupedNotes.domains).length} domains
-						</p>
-					</div>
-					{Object.entries(groupedNotes.domains).map(([domain, data]) => (
-						<Link
-							key={domain}
-							href={`/notes?domain=${domain}`}
-							className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
-						>
-							<div className="flex items-center gap-3">
-								<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
-									<Globe className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-								</div>
-								<div className="flex flex-col">
-									<span className="text-sm font-medium text-action truncate w-48">
-										{domain}
-									</span>
-									<span className="text-xs text-gray-400">
-										{data.domainNotes.length +
-											Object.values(data.pages).flat().length}{" "}
-										notes
-									</span>
-								</div>
-							</div>
-							<ChevronRight className="w-4 h-4 text-gray-300" />
-						</Link>
-					))}
-				</div>
-			</div>
-		);
-	}
-
-	// 2. Domain Pages View
-	if (currentDomain && currentDomain !== "inbox" && !currentExact) {
-		const domainData = groupedNotes.domains[currentDomain];
-		return (
-			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-				<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
-					<div className="p-4 border-b border-base-border sticky top-0 bg-base-bg z-20">
-						<div className="flex items-center gap-2 mb-1">
-							<button
-								type="button"
-								onClick={() => router.push("/notes?view=domains")}
-								className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer"
-							>
-								<ArrowLeft className="w-4 h-4" />
-							</button>
-							<h2 className="text-xl md:text-lg font-bold text-action truncate">
-								{currentDomain}
-							</h2>
-						</div>
-						<p className="text-xs text-gray-500 ml-7">
-							{Object.keys(domainData?.pages || {}).length} pages
-						</p>
-					</div>
-					<Link
-						href={`/notes?domain=${currentDomain}&exact=all`}
-						className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
-					>
-						<div className="flex items-center gap-3">
-							<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
-								<Globe className="w-5 h-5 text-note-info" />
-							</div>
-							<span className="text-sm font-medium text-action">
-								Domain Notes
-							</span>
-						</div>
-						<ChevronRight className="w-4 h-4 text-gray-300" />
-					</Link>
-					{Object.entries(domainData?.pages || {}).map(([url, notes]) => {
-						const safeUrl = getSafeUrl(url);
-						const path = safeUrl ? safeUrl.pathname + safeUrl.search : url;
-						return (
-							<Link
-								key={url}
-								href={`/notes?domain=${currentDomain}&exact=${encodeURIComponent(url)}`}
-								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
-							>
-								<div className="flex items-center gap-3 overflow-hidden">
-									<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors shrink-0">
-										<FileText className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-									</div>
-									<div className="flex flex-col min-w-0">
-										<span
-											className="text-sm font-medium text-action truncate"
-											title={url}
-										>
-											{path}
-										</span>
-										<span className="text-xs text-gray-400">
-											{notes.length} notes
-										</span>
-									</div>
-								</div>
-								<ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
-							</Link>
-						);
-					})}
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-			<div className="flex-1 overflow-y-auto pb-28 md:pb-0">
-				<div
-					className={cn(
-						"p-4 border-b border-base-border sticky top-0 bg-base-bg z-20 transition-all duration-300",
-						!isSidebarOpen && "md:pl-16",
-					)}
-				>
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2 overflow-hidden">
-							{currentDomain && currentDomain !== "inbox" && (
-								<button
-									type="button"
-									onClick={() => router.push(`/notes?domain=${currentDomain}`)}
-									className="p-1 -ml-1 text-gray-400 hover:text-action transition-colors cursor-pointer shrink-0"
-								>
-									<ArrowLeft className="w-4 h-4" />
-								</button>
-							)}
-							<h2
-								className="text-xl md:text-lg font-bold text-action truncate"
-								title={getTitle()}
+			{/* Header Controls (Blueprint) */}
+			<div className="flex-shrink-0 p-4 space-y-3 border-b border-base-border">
+				{/* Tabs & Top Actions */}
+				<div className="flex items-center justify-between">
+					<div className="flex items-center space-x-2">
+						{/* 🚨 修正: ドリルダウン中のみ戻るボタンを表示 */}
+						{currentDomain && currentDomain !== "inbox" && (
+							<button
+								type="button"
+								onClick={handleBack}
+								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors animate-in fade-in zoom-in duration-200 cursor-pointer"
+								title="Go back"
 							>
-								{getTitle()}
-							</h2>
-						</div>
-						{currentView !== "drafts" && (
-							<div className="flex items-center gap-1">
-								<Link
-									href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
-									className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
-									title="New Note here"
-								>
-									<Plus className="size-5 md:size-4" />
-								</Link>
-								<AnimatedIconButton
-									type="button"
-									onClick={() => {
-										setIsSelectMode(!isSelectMode);
-										if (!isSelectMode === false) setSelectedIds(new Set());
-									}}
-									isActive={isSelectMode}
-									icon={
-										<ListChecks
-											className="size-5 md:size-4"
-											aria-hidden="true"
+								<ArrowLeft className="size-4" aria-hidden="true" />
+							</button>
+						)}
+
+						{["inbox", "domains", "drafts"].map((view) => (
+							<button
+								key={view}
+								type="button"
+								onClick={() => updateView(view)}
+								className={cn(
+									"px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer",
+									currentView === view ||
+										(currentView === null && view === "inbox")
+										? "bg-action text-action-text"
+										: "text-base-content hover:bg-base-surface",
+								)}
+							>
+								{view.charAt(0).toUpperCase() + view.slice(1)}
+							</button>
+						))}
+					</div>
+					{/* Action Buttons (Moved from internal header) */}
+					{isSelected && currentView !== "domains" && (
+						<div className="flex items-center gap-1">
+							<Link
+								href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
+								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
+								title="New Note here"
+							>
+								<Plus className="size-4" />
+							</Link>
+							<AnimatedIconButton
+								type="button"
+								onClick={() => {
+									setIsSelectMode(!isSelectMode);
+									if (!isSelectMode === false) setSelectedIds(new Set());
+								}}
+								isActive={isSelectMode}
+								icon={<ListChecks className="size-4" aria-hidden="true" />}
+								activeIcon={
+									<ListChecks className="size-4" aria-hidden="true" />
+								}
+								className={cn(
+									"cursor-pointer",
+									isSelectMode
+										? "text-neutral-900 bg-neutral-100"
+										: "text-gray-400 hover:text-action",
+								)}
+								title="Select Mode"
+							/>
+							<Popover
+								open={isCopyPopoverOpen}
+								onOpenChange={setIsCopyPopoverOpen}
+							>
+								<PopoverTrigger
+									render={
+										<HoverSwapButton
+											type="button"
+											defaultIcon={
+												<Copy className="size-4" aria-hidden="true" />
+											}
+											hoverIcon={
+												<ClipboardCopy className="size-4" aria-hidden="true" />
+											}
+											disableSuccessState={true}
+											className={cn(
+												"transition-colors cursor-pointer",
+												copiedType !== null
+													? "text-note-info"
+													: "text-gray-400 hover:text-action",
+											)}
+											title="Bulk Copy"
 										/>
 									}
-									activeIcon={
-										<ListChecks
-											className="size-5 md:size-4"
-											aria-hidden="true"
-										/>
-									}
-									className={cn(
-										"cursor-pointer",
-										isSelectMode
-											? "text-neutral-900 bg-neutral-100"
-											: "text-gray-400 hover:text-action",
-									)}
-									title="Select Mode"
 								/>
-								<Popover
-									open={isCopyPopoverOpen}
-									onOpenChange={setIsCopyPopoverOpen}
-								>
-									<PopoverTrigger
-										render={
-											<HoverSwapButton
-												type="button"
-												defaultIcon={
-													<Copy
-														className="size-5 md:size-4"
-														aria-hidden="true"
-													/>
-												}
-												hoverIcon={
-													<ClipboardCopy
-														className="size-5 md:size-4"
-														aria-hidden="true"
-													/>
-												}
-												disableSuccessState={true}
-												className={cn(
-													"transition-colors cursor-pointer",
-													copiedType !== null
-														? "text-note-info"
-														: "text-gray-400 hover:text-action",
-												)}
-												title="Bulk Copy"
-											/>
-										}
-									/>
-									<PopoverContent className="w-48 p-2" align="end">
-										<div className="flex flex-col gap-1">
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												onClick={handleCopyAsText}
-												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-											>
-												{copiedType === "text" ? (
-													<Check
-														className="w-3.5 h-3.5 text-note-info"
-														aria-hidden="true"
-													/>
-												) : (
-													<FileText
-														className="w-3.5 h-3.5"
-														aria-hidden="true"
-													/>
-												)}
-												{copiedType === "text" ? "Copied!" : "as Text"}
-											</Button>
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												onClick={handleCopyAsJson}
-												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-											>
-												{copiedType === "json" ? (
-													<Check
-														className="w-3.5 h-3.5 text-note-info"
-														aria-hidden="true"
-													/>
-												) : (
-													<FileJson
-														className="w-3.5 h-3.5"
-														aria-hidden="true"
-													/>
-												)}
-												{copiedType === "json" ? "Copied!" : "as JSON"}
-											</Button>
-										</div>
-									</PopoverContent>
-								</Popover>
-							</div>
+								<PopoverContent className="w-48 p-2" align="end">
+									<div className="flex flex-col gap-1">
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleCopyAsText}
+											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+										>
+											{copiedType === "text" ? (
+												<Check
+													className="w-3.5 h-3.5 text-note-info"
+													aria-hidden="true"
+												/>
+											) : (
+												<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+											)}
+											{copiedType === "text" ? "Copied!" : "as Text"}
+										</Button>
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={handleCopyAsJson}
+											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+										>
+											{copiedType === "json" ? (
+												<Check
+													className="w-3.5 h-3.5 text-note-info"
+													aria-hidden="true"
+												/>
+											) : (
+												<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
+											)}
+											{copiedType === "json" ? "Copied!" : "as JSON"}
+										</Button>
+									</div>
+								</PopoverContent>
+							</Popover>
+						</div>
+					)}
+				</div>
+
+				{/* Search & Filters */}
+				<div className="space-y-3">
+					<div className="relative flex items-center">
+						<Search
+							className="absolute left-3 w-4 h-4 text-base-content opacity-50"
+							aria-hidden="true"
+						/>
+						<input
+							type="text"
+							value={inputValue}
+							onChange={(e) => setInputValue(e.target.value)}
+							onKeyDown={(e) => {
+								if (e.key === "Enter") {
+									updateParams("q", inputValue);
+								}
+							}}
+							placeholder="Search notes..."
+							className="w-full pl-9 pr-8 py-2 text-sm bg-base-surface border border-transparent focus:border-action rounded-md outline-none transition-colors"
+						/>
+						{inputValue && (
+							<button
+								type="button"
+								onClick={() => {
+									setInputValue("");
+									updateParams("q", "");
+								}}
+								className="absolute right-2 p-1 text-base-content opacity-50 hover:opacity-100 hover:text-action transition-all cursor-pointer"
+								aria-label="Clear search"
+							>
+								<X className="w-3.5 h-3.5" aria-hidden="true" />
+							</button>
 						)}
 					</div>
-					{currentView !== "drafts" && (
-						<div className="mt-3 flex items-center justify-between w-full">
+
+					{/* Note Filters (Moved from internal header) */}
+					{isSelected && currentView !== "drafts" && isShowingNotesList && (
+						<div className="flex items-center justify-between w-full">
 							<div className="flex items-center gap-0.5 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
 								<FilterBadge
 									isActive={filterType === "all"}
@@ -569,115 +539,214 @@ export function MiddlePaneList(props: Props) {
 							</Button>
 						</div>
 					)}
-					{selectedIds.size > 0 ? (
-						<div className="flex items-center justify-between mt-2 animate-in fade-in slide-in-from-top-1 duration-200">
-							<span className="text-xs font-semibold text-action">
-								{selectedIds.size} selected
-							</span>
-							<div className="flex items-center gap-2">
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									onClick={() => setSelectedIds(new Set())}
-									className="text-gray-500 hover:text-action font-medium cursor-pointer"
-									disabled={isDeletingBulk}
-								>
-									Cancel
-								</Button>
-								<Button
-									type="button"
-									variant="destructive"
-									size="sm"
-									onClick={handleDeleteSelected}
-									className="flex items-center gap-1.5 font-bold cursor-pointer"
-									disabled={isDeletingBulk}
-								>
-									<Trash2 className="w-3 h-3" aria-hidden="true" />
-									{isDeletingBulk ? "Deleting..." : "Delete"}
-								</Button>
-							</div>
-						</div>
-					) : (
-						<p className="text-xs text-gray-500 mt-1">
-							{isSelected
-								? `${displayItems.length} ${currentView === "drafts" ? "drafts" : "notes"}`
-								: "Waiting for selection"}
-						</p>
-					)}
 				</div>
 
-				{!isSelected ? (
-					<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
-						<ArrowLeft
-							className="w-10 h-10 mb-4 text-gray-300"
-							aria-hidden="true"
-						/>
-						<p className="text-sm font-medium">
-							Please select a category from the list
-						</p>
-						<p className="text-xs mt-2">
-							Select Inbox, Drafts, or a Domain
-							<br />
-							to see the list of items
-						</p>
-					</div>
-				) : displayItems.length > 0 ? (
-					<div className="divide-y divide-base-border">
-						{currentView === "drafts" ? (
-							displayItems.map((item) => (
-								<NoteItem
-									key={item.id}
-									item={item}
-									currentExact={currentExact}
-									selectedNoteId={selectedNoteId}
-									selectedDraftId={selectedDraftId}
-									searchParams={searchParams}
-									selectable={false}
-									onTodoToggle={handleTodoToggle}
-								/>
-							))
-						) : (
-							<DndContext
-								id="notes-dnd-context"
-								sensors={sensors}
-								collisionDetection={closestCenter}
-								onDragEnd={handleDragEnd}
+				{/* Bulk Selection Bar */}
+				{selectedIds.size > 0 && (
+					<div className="flex items-center justify-between pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+						<span className="text-xs font-semibold text-action">
+							{selectedIds.size} selected
+						</span>
+						<div className="flex items-center gap-2">
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => setSelectedIds(new Set())}
+								className="text-gray-500 hover:text-action font-medium cursor-pointer"
+								disabled={isDeletingBulk}
 							>
-								<SortableContext
-									items={displayItems.map((item) => item.id)}
-									strategy={verticalListSortingStrategy}
+								Cancel
+							</Button>
+							<Button
+								type="button"
+								variant="destructive"
+								size="sm"
+								onClick={handleDeleteSelected}
+								className="flex items-center gap-1.5 font-bold cursor-pointer"
+								disabled={isDeletingBulk}
+							>
+								<Trash2 className="w-3 h-3" aria-hidden="true" />
+								{isDeletingBulk ? "Deleting..." : "Delete"}
+							</Button>
+						</div>
+					</div>
+				)}
+			</div>
+
+			<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
+				{/* 1. Root Domains View */}
+				{currentView === "domains" && !currentDomain ? (
+					<>
+						{Object.entries(groupedNotes.domains)
+							.filter(([domain]) => domain !== "inbox")
+							.filter(
+								([domain]) =>
+									!currentQuery ||
+									domain.toLowerCase().includes(currentQuery.toLowerCase()),
+							)
+							.map(([domain, data]) => (
+								<Link
+									key={domain}
+									href={`/notes?domain=${domain}`}
+									className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
 								>
-									{displayItems.map((item) => (
-										<SortableNoteItem
+									<div className="flex items-center gap-3">
+										<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
+											<Globe className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
+										</div>
+										<div className="flex flex-col">
+											<span className="text-sm font-medium text-action truncate w-48">
+												{domain}
+											</span>
+											<span className="text-xs text-gray-400">
+												{data.domainNotes.length +
+													Object.values(data.pages).flat().length}{" "}
+												notes
+											</span>
+										</div>
+									</div>
+									<ChevronRight className="w-4 h-4 text-gray-300" />
+								</Link>
+							))}
+					</>
+				) : currentDomain && currentDomain !== "inbox" && !currentExact ? (
+					/* 2. Domain Pages View */
+					<>
+						{!currentQuery && (
+							<Link
+								href={`/notes?domain=${currentDomain}&exact=all`}
+								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+							>
+								<div className="flex items-center gap-3">
+									<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors">
+										<Globe className="w-5 h-5 text-note-info" />
+									</div>
+									<span className="text-sm font-medium text-action">
+										Domain Notes
+									</span>
+								</div>
+								<ChevronRight className="w-4 h-4 text-gray-300" />
+							</Link>
+						)}
+						{Object.entries(groupedNotes.domains[currentDomain]?.pages || {})
+							.filter(([url]) => {
+								if (!currentQuery) return true;
+								const safeUrl = getSafeUrl(url);
+								const searchablePath = safeUrl
+									? safeUrl.pathname + safeUrl.search
+									: url;
+
+								return searchablePath
+									.toLowerCase()
+									.includes(currentQuery.toLowerCase());
+							})
+							.map(([url, notes]) => {
+								const safeUrl = getSafeUrl(url);
+								const path = safeUrl ? safeUrl.pathname + safeUrl.search : url;
+								return (
+									<Link
+										key={url}
+										href={`/notes?domain=${currentDomain}&exact=${encodeURIComponent(url)}`}
+										className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
+									>
+										<div className="flex items-center gap-3 overflow-hidden">
+											<div className="p-2 bg-base-surface rounded-lg group-hover-safe:bg-base-bg border border-base-border transition-colors shrink-0">
+												<FileText className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
+											</div>
+											<div className="flex flex-col min-w-0">
+												<span
+													className="text-sm font-medium text-action truncate"
+													title={url}
+												>
+													{path}
+												</span>
+												<span className="text-xs text-gray-400">
+													{notes.length} notes
+												</span>
+											</div>
+										</div>
+										<ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+									</Link>
+								);
+							})}
+					</>
+				) : (
+					/* 3. Note List View */
+					<div className="flex flex-col h-full">
+						{!isSelected ? (
+							<div className="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400">
+								<Inbox
+									className="w-10 h-10 mb-4 text-gray-300"
+									aria-hidden="true"
+								/>
+								<p className="text-sm font-medium">
+									Please select a category from the list
+								</p>
+								<p className="text-xs mt-2">
+									Select Inbox, Drafts, or a Domain
+									<br />
+									to see the list of items
+								</p>
+							</div>
+						) : displayItems.length > 0 ? (
+							<div className="divide-y divide-base-border">
+								{currentView === "drafts" ? (
+									displayItems.map((item) => (
+										<NoteItem
 											key={item.id}
 											item={item}
-											currentView={currentView}
-											isSearchActive={isSearchActive}
 											currentExact={currentExact}
 											selectedNoteId={selectedNoteId}
 											selectedDraftId={selectedDraftId}
 											searchParams={searchParams}
-											selectable={currentView !== "drafts" && isSelectMode}
-											isSelected={selectedIds.has(item.id)}
-											onSelectChange={toggleSelect}
+											selectable={false}
 											onTodoToggle={handleTodoToggle}
 										/>
-									))}
-								</SortableContext>
-							</DndContext>
+									))
+								) : (
+									<DndContext
+										id="notes-dnd-context"
+										sensors={sensors}
+										collisionDetection={closestCenter}
+										onDragEnd={handleDragEnd}
+									>
+										<SortableContext
+											items={displayItems.map((item) => item.id)}
+											strategy={verticalListSortingStrategy}
+										>
+											{displayItems.map((item) => (
+												<SortableNoteItem
+													key={item.id}
+													item={item}
+													currentView={currentView}
+													isSearchActive={isSearchActive}
+													currentExact={currentExact}
+													selectedNoteId={selectedNoteId}
+													selectedDraftId={selectedDraftId}
+													searchParams={searchParams}
+													selectable={currentView !== "drafts" && isSelectMode}
+													isSelected={selectedIds.has(item.id)}
+													onSelectChange={toggleSelect}
+													onTodoToggle={handleTodoToggle}
+												/>
+											))}
+										</SortableContext>
+									</DndContext>
+								)}
+							</div>
+						) : (
+							<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
+								<Inbox
+									className="w-12 h-12 mb-4 text-base-border"
+									aria-hidden="true"
+								/>
+								<p className="text-sm">
+									No {currentView === "drafts" ? "drafts" : "notes"} found for
+									this category.
+								</p>
+							</div>
 						)}
-					</div>
-				) : (
-					<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
-						<Inbox
-							className="w-12 h-12 mb-4 text-base-border"
-							aria-hidden="true"
-						/>
-						<p className="text-sm">
-							No {currentView === "drafts" ? "drafts" : "notes"} found for this
-							category.
-						</p>
 					</div>
 				)}
 			</div>
