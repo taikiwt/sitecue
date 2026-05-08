@@ -21,6 +21,7 @@ interface DraftEditorHeaderProps {
 	onSaveAsTemplate: () => void;
 	onDeleteDraft: () => void;
 	isOverLimit?: boolean;
+	onBack: () => void;
 }
 
 export function DraftEditorHeader({
@@ -35,6 +36,7 @@ export function DraftEditorHeader({
 	onSaveAsTemplate,
 	onDeleteDraft,
 	isOverLimit = false,
+	onBack,
 }: DraftEditorHeaderProps) {
 	return (
 		<header
@@ -44,16 +46,18 @@ export function DraftEditorHeader({
 			)}
 		>
 			<div className="flex items-center gap-4">
-				<Link
-					href="/"
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					onClick={onBack}
 					className={cn(
-						buttonVariants({ variant: "ghost", size: "sm" }),
 						"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
 					)}
 				>
 					<ArrowLeft className="w-4 h-4" aria-hidden="true" />
-					Home
-				</Link>
+					{hasDraftId ? "Back" : "Cancel"}
+				</Button>
 			</div>
 
 			<div className="flex items-center gap-4">
