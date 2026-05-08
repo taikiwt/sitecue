@@ -1,7 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { groupNotes } from "@/store/useNotesStore";
 import type { Note } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
@@ -330,7 +329,9 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		const user = userEvent.setup();
 		// Mock searchParams to have pollution
 		searchParamsMock.mockReturnValue(
-			new URLSearchParams("view=domains&domain=example.com&exact=all&noteId=123&q=test"),
+			new URLSearchParams(
+				"view=domains&domain=example.com&exact=all&noteId=123&q=test",
+			),
 		);
 
 		render(
@@ -375,7 +376,9 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 			/>,
 		);
 
-		const searchInput = screen.getByPlaceholderText("Search notes...") as HTMLInputElement;
+		const searchInput = screen.getByPlaceholderText(
+			"Search notes...",
+		) as HTMLInputElement;
 		expect(searchInput.value).toBe("test");
 
 		const clearButton = screen.getByLabelText("Clear search");
@@ -429,7 +432,9 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		};
 
 		// 検索クエリを 'google' に設定
-		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&q=google"));
+		searchParamsMock.mockReturnValue(
+			new URLSearchParams("view=domains&q=google"),
+		);
 
 		render(
 			<MiddlePaneList
@@ -468,7 +473,9 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		// advance timers to trigger the debounce
 		vi.advanceTimersByTime(300);
 
-		expect(mockReplace).toHaveBeenCalledWith(expect.stringContaining("q=debounced"));
+		expect(mockReplace).toHaveBeenCalledWith(
+			expect.stringContaining("q=debounced"),
+		);
 
 		vi.useRealTimers();
 	});
@@ -532,7 +539,9 @@ describe("MiddlePaneList Back Button", () => {
 
 	it("removes 'exact' parameter when clicking back from exact view", async () => {
 		const user = userEvent.setup();
-		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&domain=example.com&exact=all"));
+		searchParamsMock.mockReturnValue(
+			new URLSearchParams("view=domains&domain=example.com&exact=all"),
+		);
 
 		render(
 			<MiddlePaneList
@@ -558,7 +567,9 @@ describe("MiddlePaneList Back Button", () => {
 
 	it("removes 'domain' parameter and sets view=domains when clicking back from domain view", async () => {
 		const user = userEvent.setup();
-		searchParamsMock.mockReturnValue(new URLSearchParams("view=domains&domain=example.com"));
+		searchParamsMock.mockReturnValue(
+			new URLSearchParams("view=domains&domain=example.com"),
+		);
 
 		render(
 			<MiddlePaneList

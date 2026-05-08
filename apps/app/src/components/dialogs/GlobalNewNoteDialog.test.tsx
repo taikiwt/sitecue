@@ -2,8 +2,8 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import toast from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useUserStore } from "@/store/useUserStore";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useUserStore } from "@/store/useUserStore";
 import { GlobalNewNoteDialog } from "./GlobalNewNoteDialog";
 
 // next/navigation のモック

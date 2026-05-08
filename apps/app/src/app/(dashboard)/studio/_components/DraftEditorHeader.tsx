@@ -1,6 +1,5 @@
 import { ArrowLeft, Check, MoreHorizontal } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { CustomLink as Link } from "@/components/ui/custom-link";
+import { Button } from "@/components/ui/button";
 import {
 	Popover,
 	PopoverContent,
