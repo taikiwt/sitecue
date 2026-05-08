@@ -15,17 +15,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
 import { APP_LIMITS } from "@/constants/limits";
 import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
+import { useEditorStore } from "@/store/useEditorStore";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note, NoteScope } from "../../../../../types/app";
 
@@ -41,6 +35,7 @@ export function GlobalNewNoteDialog() {
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 	const createNoteMutation = useCreateNote();
 	const openPaywall = useUserStore((state) => state.openPaywall);
+	const setPendingContent = useEditorStore((state) => state.setPendingContent);
 
 	const charCount = content.length;
 	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
@@ -77,12 +72,10 @@ export function GlobalNewNoteDialog() {
 		}
 	}, [isOpen]);
 
-	// Force inbox scope if URL is empty
-	useEffect(() => {
-		if (urlPattern === "" && scope !== "inbox") {
-			setScope("inbox");
-		}
-	}, [urlPattern, scope]);
+
+	const isUrlRequired = scope === "exact" || scope === "domain";
+	const isUrlInvalid = isUrlRequired && !urlPattern.trim();
+	const isSaveDisabled = isSaving || !content.trim() || isOverLimit || isUrlInvalid;
 
 	const handleOpenChange = (open: boolean) => {
 		if (!open) {
@@ -97,7 +90,7 @@ export function GlobalNewNoteDialog() {
 	};
 
 	const handleSave = async () => {
-		if (!content.trim() || isOverLimit) return;
+		if (isSaveDisabled) return;
 
 		setIsSaving(true);
 		try {
@@ -115,33 +108,15 @@ export function GlobalNewNoteDialog() {
 				}
 			}
 
-			const data = await createNoteMutation.mutateAsync({
+			await createNoteMutation.mutateAsync({
 				content: content.trim(),
 				scope: scope,
 				url_pattern: finalUrl,
 				note_type: noteType,
 			});
 
-			const params = new URLSearchParams(searchParams.toString());
-			params.delete("globalNew");
-			params.set("noteId", data.id);
-
-			if (scope === "inbox" || !finalUrl) {
-				params.set("domain", "inbox");
-				params.delete("exact");
-			} else {
-				// NotesContainer が正しくグループを引き当てられるよう、常に正規化されたドメインをセットする
-				const normalizedDomain = finalUrl.split("/")[0];
-				params.set("domain", normalizedDomain);
-
-				if (scope === "exact") {
-					params.set("exact", finalUrl);
-				} else {
-					params.delete("exact");
-				}
-			}
-
-			router.push(`/notes?${params.toString()}`);
+			toast.success("Note saved successfully.");
+			handleCancel();
 		} catch (err: unknown) {
 			console.error("Failed to save note:", err);
 			const errorMessage =
@@ -163,6 +138,12 @@ export function GlobalNewNoteDialog() {
 		}
 	};
 
+	const handlePromoteToStudio = () => {
+		setPendingContent(content);
+		handleCancel();
+		router.push("/studio/new");
+	};
+
 	return (
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogContent className="sm:max-w-2xl bg-base-surface p-0 overflow-hidden flex flex-col max-h-[85vh]">
@@ -174,59 +155,50 @@ export function GlobalNewNoteDialog() {
 				</DialogHeader>
 
 				<div className="p-6 space-y-6 flex-1 overflow-y-auto">
-					<div className="grid sm:grid-cols-2 gap-4">
+					<div className="space-y-4">
 						<div className="space-y-2">
-							<Label
-								htmlFor="global-url"
-								className="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-							>
-								Source URL (Optional)
-							</Label>
-							<Input
-								id="global-url"
-								placeholder="example.com/page"
-								value={urlPattern}
-								onChange={(e) => setUrlPattern(e.target.value)}
-								disabled={isSaving}
-								className="h-9"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label
-								htmlFor="global-scope"
-								className="text-[10px] font-bold uppercase tracking-wider text-gray-400"
-							>
+							<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4">
 								Scope
 							</Label>
-							<Select
-								value={scope}
-								onValueChange={(val) => setScope(val as NoteScope)}
-								disabled={isSaving}
-							>
-								<SelectTrigger id="global-scope" className="h-9 w-full">
-									<SelectValue placeholder="Select scope">
-										{scope === "exact"
-											? "Page"
-											: scope === "domain"
-												? "Domain"
-												: "Inbox"}
-									</SelectValue>
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="exact" disabled={!urlPattern}>
-										Page
-									</SelectItem>
-									<SelectItem value="domain" disabled={!urlPattern}>
-										Domain
-									</SelectItem>
-									<SelectItem value="inbox">Inbox</SelectItem>
-								</SelectContent>
-							</Select>
+							<div className="flex gap-2">
+								{(["inbox", "domain", "exact"] as const).map((s) => (
+									<Button
+										key={s}
+										type="button"
+										variant={scope === s ? "default" : "secondary"}
+										size="sm"
+										onClick={() => setScope(s)}
+										disabled={isSaving}
+										className="capitalize cursor-pointer"
+									>
+										{s === "exact" ? "Page" : s}
+									</Button>
+								))}
+							</div>
 						</div>
+
+						{scope !== "inbox" && (
+							<div className="space-y-2">
+								<Label
+									htmlFor="global-url"
+									className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4"
+								>
+									Source URL
+								</Label>
+								<Input
+									id="global-url"
+									placeholder="example.com/page"
+									value={urlPattern}
+									onChange={(e) => setUrlPattern(e.target.value)}
+									disabled={isSaving}
+									className="h-9 w-full"
+								/>
+							</div>
+						)}
 					</div>
 
 					<div className="grid items-center gap-2 mb-4">
-						<Label className="text-xs font-bold uppercase">Note Type</Label>
+						<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4">Note Type</Label>
 						<div className="flex gap-2">
 							{(["info", "alert", "idea"] as const).map((type) => (
 								<Button
@@ -244,7 +216,7 @@ export function GlobalNewNoteDialog() {
 					</div>
 
 					<div className="space-y-2">
-						<Label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+						<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-4">
 							Note
 						</Label>
 						<NotesEditor
@@ -269,24 +241,35 @@ export function GlobalNewNoteDialog() {
 					</div>
 				</div>
 
-				<DialogFooter className="m-0 p-4 bg-base-surface/50 border-t border-base-border">
+				<DialogFooter className="m-0 p-4 bg-base-surface/50 border-t border-base-border flex justify-between w-full">
 					<Button
 						type="button"
-						variant="ghost"
-						onClick={handleCancel}
+						variant="outline"
+						onClick={handlePromoteToStudio}
 						disabled={isSaving}
+						className="mr-auto"
 					>
-						Cancel
+						Edit in Studio
 					</Button>
-					<Button
-						type="button"
-						variant="default"
-						onClick={handleSave}
-						disabled={isSaving || !content.trim() || isOverLimit}
-						className="min-w-[100px]"
-					>
-						{isSaving ? "Saving..." : "Save Note"}
-					</Button>
+					<div className="flex gap-2">
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={handleCancel}
+							disabled={isSaving}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="default"
+							onClick={handleSave}
+							disabled={isSaveDisabled}
+							className="min-w-[100px]"
+						>
+							{isSaving ? "Saving..." : "Save Note"}
+						</Button>
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

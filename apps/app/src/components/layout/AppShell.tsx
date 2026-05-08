@@ -44,45 +44,13 @@ function MobileFABInner() {
 
 	return (
 		<div className="md:hidden fixed bottom-20 right-4 z-40">
-			<Popover>
-				<PopoverTrigger
-					render={
-						<Button
-							size="icon"
-							className="h-14 w-14 rounded-full shadow-xl bg-action text-action-text hover-safe:bg-action-hover cursor-pointer transition-transform active:scale-95"
-						>
-							<Plus className="w-6 h-6" aria-hidden="true" />
-						</Button>
-					}
-				/>
-				<PopoverContent
-					side="top"
-					align="end"
-					sideOffset={12}
-					className="w-48 p-2 flex flex-col gap-1 z-50"
-				>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onClick={() => handleOpenGlobalNew("note")}
-						className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-					>
-						<FileText className="w-4 h-4" aria-hidden="true" />
-						New Note
-					</Button>
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						onClick={() => handleOpenGlobalNew("draft")}
-						className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-					>
-						<PenSquare className="w-4 h-4" aria-hidden="true" />
-						New Draft
-					</Button>
-				</PopoverContent>
-			</Popover>
+			<Button
+				type="button"
+				onClick={() => handleOpenGlobalNew("note")}
+				className="h-14 w-14 rounded-full shadow-xl shadow-action/30 transition-transform active:scale-95 cursor-pointer bg-action text-action-text hover-safe:bg-action-hover"
+			>
+				<Plus className="h-6 w-6" aria-hidden="true" />
+			</Button>
 		</div>
 	);
 }

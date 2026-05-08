@@ -1,18 +1,13 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
+import { Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId } from "react";
+import { useEffect } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/popover";
 
 interface GlobalSidebarProps {
 	onSearchOpen: () => void;
@@ -24,7 +19,6 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
-	const createNewTriggerId = useId();
 
 	useEffect(() => {
 		if (pathname) {
@@ -67,58 +61,20 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 
 			{/* Primary Actions */}
 			<div className="flex flex-col items-center gap-4 w-full px-2">
-				<Popover>
-					<PopoverTrigger
-						id={createNewTriggerId}
-						render={
-							<Button
-								variant="ghost"
-								size="icon"
-								className="rounded-full bg-action text-action-text hover-safe:bg-action-hover hover-safe:scale-110 transition-all cursor-pointer shadow-sm"
-								title="Create New"
-							>
-								<Plus className="w-5 h-5" aria-hidden="true" />
-							</Button>
-						}
-					/>
-					<PopoverContent
-						side="right"
-						align="start"
-						sideOffset={16}
-						className="w-48 p-2 flex flex-col gap-1 z-50"
-					>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => {
-								const params = new URLSearchParams(searchParams.toString());
-								params.set("globalNew", "note");
-								router.push(`${pathname}?${params.toString()}`);
-								onClose?.();
-							}}
-							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-						>
-							<FileText className="w-4 h-4" aria-hidden="true" />
-							New Note
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							size="sm"
-							onClick={() => {
-								const params = new URLSearchParams(searchParams.toString());
-								params.set("globalNew", "draft");
-								router.push(`${pathname}?${params.toString()}`);
-								onClose?.();
-							}}
-							className="flex items-center justify-start gap-2 w-full cursor-pointer text-gray-600 hover:text-action"
-						>
-							<PenSquare className="w-4 h-4" aria-hidden="true" />
-							New Draft
-						</Button>
-					</PopoverContent>
-				</Popover>
+				<Button
+					variant="ghost"
+					size="icon"
+					onClick={() => {
+						const params = new URLSearchParams(searchParams.toString());
+						params.set("globalNew", "note");
+						router.push(`${pathname}?${params.toString()}`);
+						onClose?.();
+					}}
+					className="rounded-full bg-action text-action-text hover-safe:bg-action-hover hover-safe:scale-110 transition-all cursor-pointer shadow-sm"
+					title="Quick Capture"
+				>
+					<Plus className="w-5 h-5" aria-hidden="true" />
+				</Button>
 
 				<Button
 					variant="ghost"

@@ -32,6 +32,7 @@ import {
 import { useDeleteNotes, useUpsertNotes } from "@/hooks/useNotesQuery";
 import { useStudioAI } from "@/hooks/useStudioAI";
 import { useLayoutStore } from "@/store/useLayoutStore";
+import { useEditorStore } from "@/store/useEditorStore";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 import { extractTags } from "@/utils/tags";
@@ -89,6 +90,8 @@ export default function DraftEditor({
 	const [isSearching, setIsSearching] = useState(false);
 
 	const openPaywall = useUserStore((state) => state.openPaywall);
+	const pendingContent = useEditorStore((state) => state.pendingContent);
+	const setPendingContent = useEditorStore((state) => state.setPendingContent);
 
 	// Custom Hooks
 	const {
@@ -132,6 +135,15 @@ export default function DraftEditor({
 		}
 	};
 
+	const handleBack = () => {
+		// 履歴が十分に存在する場合はブラウザバック、それ以外はNotesビューのDraftsタブへフォールバック
+		if (window.history.length > 2) {
+			router.back();
+		} else {
+			router.push("/notes?view=drafts");
+		}
+	};
+
 	// Fetch notes for Self Review (based on draft_id)
 	useEffect(() => {
 		if (!initialDraft?.id) {
@@ -160,6 +172,16 @@ export default function DraftEditor({
 
 		fetchReviewNotes();
 	}, [supabase, initialDraft?.id]);
+
+	// Initialize state from pending content if available
+	useEffect(() => {
+		if (pendingContent) {
+			setContent(pendingContent);
+			setSavedState((prev) => ({ ...prev, content: pendingContent }));
+			pushToHistory(pendingContent);
+			setPendingContent(null);
+		}
+	}, [pendingContent, pushToHistory, setPendingContent]);
 
 	// Initialize state from profile if needed (handled by AppShell/Store)
 
@@ -383,6 +405,7 @@ export default function DraftEditor({
 					template_id: activeTemplate?.id || null,
 					metadata,
 					tags: extractedTags,
+					updated_at: new Date().toISOString(),
 				});
 				currentDraftId = data.id;
 			}
@@ -423,7 +446,7 @@ export default function DraftEditor({
 				setHasUnsavedNotesChanges(false);
 
 				if (!initialDraft?.id) {
-					router.push(`/studio/${currentDraftId}`);
+					router.replace(`/studio/${currentDraftId}`);
 				}
 			}
 
@@ -491,6 +514,7 @@ export default function DraftEditor({
 						onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
 						onDeleteDraft={handleDeleteDraft}
 						isOverLimit={isOverLimit}
+						onBack={handleBack}
 					/>
 
 					<main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10">
