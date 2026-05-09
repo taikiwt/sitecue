@@ -27,6 +27,8 @@ describe("MobileBottomNav", () => {
 
 		render(<MobileBottomNav onSearchOpen={mockOnSearchOpen} />);
 		expect(screen.getByRole("navigation")).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: "Notes" })).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "New Note" })).toBeInTheDocument();
 	});
 
 	it("詳細ペインが開いている時（noteIdが存在）は表示されないこと", () => {

@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({
 				ReturnType<typeof useSearchParams>
 			> as ReturnType<typeof useSearchParams>,
 	),
-	useRouter: vi.fn(() => ({ push: vi.fn() })),
+	useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() })),
 }));
 
 // Mock react-query
@@ -54,10 +54,10 @@ vi.mock("@/app/(dashboard)/_components/UserMenu", () => ({
 }));
 
 describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
-	it("should determine active state from pathname and searchParams", () => {
+	it("should determine active state from pathname", () => {
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("domain=inbox") as unknown as ReturnType<
+			new URLSearchParams("") as unknown as ReturnType<
 				typeof useSearchParams
 			>,
 		);
@@ -82,9 +82,45 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 
 		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
 
-		// Inbox should be active
-		const inboxLink = screen.getByTitle("Inbox").closest("a");
-		expect(inboxLink?.className).toContain("bg-base-bg text-action shadow-sm");
+		// Notes should be active
+		const notesLink = screen.getByTitle("Notes").closest("a");
+		expect(notesLink?.className).toContain("bg-base-bg text-action shadow-sm scale-105");
+	});
+
+	it("should call router.push with globalNew=note when Logo button is clicked", () => {
+		const mockPush = vi.fn();
+		vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any);
+		vi.mocked(usePathname).mockReturnValue("/notes");
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
+		);
+
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as Partial<ReturnType<typeof useFetchNotes>> as ReturnType<
+			typeof useFetchNotes
+		>);
+		vi.mocked(useFetchDrafts).mockReturnValue({
+			data: [],
+			isLoading: false,
+		} as Partial<ReturnType<typeof useFetchDrafts>> as ReturnType<
+			typeof useFetchDrafts
+		>);
+		vi.mocked(useNotesStore).mockReturnValue({
+			searchResults: null,
+		} as Partial<ReturnType<typeof useNotesStore>> as ReturnType<
+			typeof useNotesStore
+		>);
+
+		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
+
+		const newNoteBtn = screen.getByTitle("New Note");
+		fireEvent.click(newNoteBtn);
+
+		expect(mockPush).toHaveBeenCalledWith("/notes?globalNew=note");
 	});
 
 	it("should invalidate notes and drafts queries when pathname is present", () => {

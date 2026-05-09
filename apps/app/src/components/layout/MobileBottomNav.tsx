@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, Inbox, PenSquare, Search } from "lucide-react";
+import { FileText, Search } from "lucide-react";
+import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -25,27 +26,32 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	return (
 		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-base-surface border-t border-base-border pb-safe">
 			<div className="flex justify-around items-center h-16">
+				{/* Notes */}
 				<Link
-					href="/notes?domain=inbox"
+					href="/notes"
 					className="flex flex-col items-center p-2 text-gray-500 hover-safe:text-action transition-colors"
 				>
-					<Inbox className="w-6 h-6" aria-hidden="true" />
-					<span className="sr-only">Inbox</span>
+					<FileText className="w-6 h-6" aria-hidden="true" />
+					<span className="sr-only">Notes</span>
 				</Link>
-				<Link
-					href="/notes?view=domains"
-					className="flex flex-col items-center p-2 text-gray-500 hover-safe:text-action transition-colors"
+
+				{/* Logo (New Note) */}
+				<button
+					type="button"
+					onClick={() => {
+						const params = new URLSearchParams(searchParams.toString());
+						params.set("globalNew", "note");
+						const newUrl = `${pathname}?${params.toString()}`;
+						window.history.pushState(null, "", newUrl);
+						window.dispatchEvent(new PopStateEvent("popstate"));
+					}}
+					className="flex flex-col items-center p-2 transition-transform active:scale-95 cursor-pointer"
+					aria-label="New Note"
 				>
-					<Globe className="w-6 h-6" aria-hidden="true" />
-					<span className="sr-only">Domains</span>
-				</Link>
-				<Link
-					href="/notes?view=drafts"
-					className="flex flex-col items-center p-2 text-gray-500 hover-safe:text-action transition-colors"
-				>
-					<PenSquare className="w-6 h-6" aria-hidden="true" />
-					<span className="sr-only">Drafts</span>
-				</Link>
+					<Image src="/logo.svg" alt="New Note" width={32} height={32} />
+				</button>
+
+				{/* Search */}
 				<button
 					type="button"
 					onClick={onSearchOpen}

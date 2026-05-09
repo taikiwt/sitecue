@@ -1,12 +1,11 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Globe, Inbox, PenSquare, Plus, Search } from "lucide-react";
+import { FileText, Home, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
-import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 
 interface GlobalSidebarProps {
@@ -28,28 +27,21 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	}, [pathname, queryClient]);
 
 	const isNotes = pathname.startsWith("/notes");
-	const domainParam = searchParams.get("domain");
-	const viewParam = searchParams.get("view");
-	const exactParam = searchParams.get("exact");
-
-	const currentDomain = domainParam || (isNotes && !viewParam ? "inbox" : null);
-	const currentView =
-		viewParam || (domainParam ? "domains" : isNotes ? "inbox" : null);
-	const currentExact = exactParam || null;
-
-	const isInboxActive =
-		isNotes &&
-		(currentView === "inbox" || (currentDomain === "inbox" && !currentExact));
-	const isDraftsActive = isNotes && currentView === "drafts";
-	const isDomainsActive =
-		isNotes &&
-		(currentView === "domains" ||
-			(!!currentDomain && currentDomain !== "inbox"));
 
 	return (
 		<div className="flex flex-col h-full w-full bg-base-surface items-center py-4 gap-6">
-			{/* Logo */}
-			<Link href="/" className="group" onClick={onClose}>
+			{/* Logo (New Note Action) */}
+			<button
+				type="button"
+				onClick={() => {
+					const params = new URLSearchParams(searchParams.toString());
+					params.set("globalNew", "note");
+					router.push(`${pathname}?${params.toString()}`);
+					onClose?.();
+				}}
+				className="group cursor-pointer appearance-none bg-transparent border-none p-0"
+				title="New Note"
+			>
 				<Image
 					src="/logo.svg"
 					alt="sitecue logo"
@@ -57,75 +49,42 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 					height={28}
 					className="drop-shadow-sm transition-transform group-hover-safe:scale-110"
 				/>
-			</Link>
+			</button>
 
 			{/* Primary Actions */}
 			<div className="flex flex-col items-center gap-4 w-full px-2">
-				<Button
-					variant="ghost"
-					size="icon"
-					onClick={() => {
-						const params = new URLSearchParams(searchParams.toString());
-						params.set("globalNew", "note");
-						router.push(`${pathname}?${params.toString()}`);
-						onClose?.();
-					}}
-					className="rounded-full bg-action text-action-text hover-safe:bg-action-hover hover-safe:scale-110 transition-all cursor-pointer shadow-sm"
-					title="Quick Capture"
+				<Link
+					href="/"
+					onClick={onClose}
+					className="flex items-center justify-center p-3 rounded-xl text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors"
+					title="Home"
 				>
-					<Plus className="w-5 h-5" aria-hidden="true" />
-				</Button>
+					<Home className="w-6 h-6" aria-hidden="true" />
+				</Link>
 
-				<Button
-					variant="ghost"
-					size="icon"
+				<button
+					type="button"
 					onClick={onSearchOpen}
-					className="text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors cursor-pointer"
+					className="flex items-center justify-center p-3 rounded-xl text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors cursor-pointer"
 					title="Search"
 				>
-					<Search className="w-5 h-5" aria-hidden="true" />
-				</Button>
+					<Search className="w-6 h-6" aria-hidden="true" />
+				</button>
 			</div>
 
 			{/* Navigation */}
 			<nav className="flex flex-col items-center gap-2 w-full px-2">
 				<Link
-					href="/notes?domain=inbox"
+					href="/notes"
 					onClick={onClose}
-					className={`p-3 rounded-xl transition-all ${
-						isInboxActive
+					className={`p-3 rounded-xl transition-all flex items-center justify-center ${
+						isNotes
 							? "bg-base-bg text-action shadow-sm scale-105"
 							: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
 					}`}
-					title="Inbox"
+					title="Notes"
 				>
-					<Inbox className="w-6 h-6" aria-hidden="true" />
-				</Link>
-
-				<Link
-					href="/notes?view=domains"
-					onClick={onClose}
-					className={`p-3 rounded-xl transition-all ${
-						isDomainsActive
-							? "bg-base-bg text-action shadow-sm scale-105"
-							: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
-					}`}
-					title="Domains"
-				>
-					<Globe className="w-6 h-6" aria-hidden="true" />
-				</Link>
-
-				<Link
-					href="/notes?view=drafts"
-					onClick={onClose}
-					className={`p-3 rounded-xl transition-all ${
-						isDraftsActive
-							? "bg-base-bg text-action shadow-sm scale-105"
-							: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
-					}`}
-					title="Drafts"
-				>
-					<PenSquare className="w-6 h-6" aria-hidden="true" />
+					<FileText className="w-6 h-6" aria-hidden="true" />
 				</Link>
 			</nav>
 
