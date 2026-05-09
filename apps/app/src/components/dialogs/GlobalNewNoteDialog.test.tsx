@@ -84,9 +84,7 @@ describe("GlobalNewNoteDialog", () => {
 
 		// Inbox状態なのでURLのInput自体が存在しないことを確認
 		expect(
-			screen.queryByPlaceholderText(
-				"[example.com/page](https://example.com/page)",
-			),
+			screen.queryByPlaceholderText("example.com/page"),
 		).not.toBeInTheDocument();
 
 		// Inboxボタンが default variant (通常 bg-primary などのクラスを持つが、ここでは role で確認)
@@ -100,11 +98,9 @@ describe("GlobalNewNoteDialog", () => {
 
 		render(<GlobalNewNoteDialog />);
 
-		expect(
-			screen.getByPlaceholderText(
-				"[example.com/page](https://example.com/page)",
-			),
-		).toHaveValue("example.com");
+		expect(screen.getByPlaceholderText("example.com/page")).toHaveValue(
+			"example.com",
+		);
 		const domainButton = screen.getByRole("button", { name: "domain" });
 		expect(domainButton).toBeInTheDocument();
 	});
@@ -124,9 +120,7 @@ describe("GlobalNewNoteDialog", () => {
 		expect(saveButton).not.toBeDisabled();
 
 		// URLを空にする
-		const urlInput = screen.getByPlaceholderText(
-			"[example.com/page](https://example.com/page)",
-		);
+		const urlInput = screen.getByPlaceholderText("example.com/page");
 		fireEvent.change(urlInput, { target: { value: "   " } }); // trimして空になる値
 
 		// 無効化されることを確認

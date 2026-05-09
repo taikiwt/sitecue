@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
@@ -13,6 +13,7 @@ import { RightPaneDetail } from "./RightPaneDetail";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
+	const router = useRouter();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
 	const { mutate: fetchContentForIds } = useFetchNoteContents();
@@ -41,10 +42,21 @@ export function NotesContainer() {
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
 
-	const effectiveView = useMemo(
-		() => params.view || (params.domain ? "domains" : "inbox"),
-		[params.view, params.domain],
-	);
+	const effectiveView = useMemo(() => {
+		if (params.view) return params.view;
+		if (params.domain && params.domain !== "inbox") return "domains";
+		return "inbox";
+	}, [params.view, params.domain]);
+
+	// Inbox URLのクリーンアップ (domain=inbox の排除)
+	useEffect(() => {
+		if (params.domain === "inbox") {
+			const newParams = new URLSearchParams(searchParams.toString());
+			newParams.delete("domain");
+			newParams.set("view", "inbox");
+			router.replace(`${window.location.pathname}?${newParams.toString()}`);
+		}
+	}, [params.domain, searchParams, router]);
 
 	const isSearchActive = !!params.q || !!params.tags;
 	const query = params.q?.toLowerCase() || "";
