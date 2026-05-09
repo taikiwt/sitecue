@@ -256,10 +256,6 @@ describe("MiddlePaneList Layout Verification", () => {
 		// Check spacer exists inside scroll container
 		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
 		expect(scrollContainer).toBeInTheDocument();
-
-		// モバイル用のパディング（スペーサーの代わり）を確認
-		expect(scrollContainer?.className).toContain("pb-28");
-		expect(scrollContainer?.className).toContain("md:pb-0");
 	});
 
 	it("should have a mobile spacer in domains view", () => {
@@ -281,10 +277,6 @@ describe("MiddlePaneList Layout Verification", () => {
 
 		const scrollContainer = container.querySelector(".flex-1.overflow-y-auto");
 		expect(scrollContainer).toBeInTheDocument();
-
-		// モバイル用のパディング（スペーサーの代わり）を確認
-		expect(scrollContainer?.className).toContain("pb-28");
-		expect(scrollContainer?.className).toContain("md:pb-0");
 	});
 });
 

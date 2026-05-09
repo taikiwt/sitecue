@@ -25,14 +25,6 @@ vi.mock("@/hooks/useDraftsQuery", () => ({
 	useFetchDrafts: vi.fn(() => ({ data: [], isLoading: false })),
 }));
 
-vi.mock("@/store/useLayoutStore", () => ({
-	useLayoutStore: vi.fn((selector) =>
-		selector({
-			setIsMobileHeaderVisible: vi.fn(),
-		}),
-	),
-}));
-
 vi.mock("./MiddlePaneList", () => ({
 	MiddlePaneList: () => <div data-testid="middle-pane" />,
 }));

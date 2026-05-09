@@ -248,7 +248,7 @@ export function TemplateManager({
 		<div className="flex h-screen overflow-hidden bg-base-bg text-action">
 			{/* List Pane */}
 			<div className="w-full md:w-80 flex flex-col border-r border-base-border bg-base-surface">
-				<div className="flex-1 overflow-y-auto pb-28 md:pb-0">
+				<div className="flex-1 overflow-y-auto">
 					<div
 						className={cn(
 							"p-4 border-b border-base-border flex items-center justify-between sticky top-0 bg-base-surface z-20 transition-all duration-300",
@@ -304,7 +304,7 @@ export function TemplateManager({
 
 			{/* Desktop Editor Pane */}
 			{isDesktop && (
-				<div className="flex-1 flex flex-col overflow-y-auto p-8 pb-28 md:pb-8">
+				<div className="flex-1 flex flex-col overflow-y-auto p-8">
 					{activeTemplate || isNew ? (
 						EditorContent
 					) : (
@@ -340,9 +340,7 @@ export function TemplateManager({
 						</div>
 
 						{/* Scrollable Content Area */}
-						<div className="flex-1 overflow-y-auto p-4 pb-28">
-							{EditorContent}
-						</div>
+						<div className="flex-1 overflow-y-auto p-4">{EditorContent}</div>
 					</DrawerContent>
 				</Drawer>
 			)}
