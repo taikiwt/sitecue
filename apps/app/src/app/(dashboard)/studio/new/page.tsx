@@ -1,18 +1,15 @@
 import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
+import { StudioEditorSkeleton } from "../_components/StudioSkeletons";
 
-export default async function FocusModePage({
-	searchParams,
+async function NewDraftLoader({
+	templateId,
+	currentPath,
 }: {
-	searchParams: Promise<{ template_id?: string }>;
+	templateId?: string;
+	currentPath: string;
 }) {
-	const resolvedParams = await searchParams;
-	const templateId = resolvedParams.template_id;
-	const currentPath = templateId
-		? `/studio/new?template_id=${templateId}`
-		: "/studio/new";
-
 	const { supabase } = await requireUser(currentPath);
 
 	let template = null;
@@ -25,9 +22,26 @@ export default async function FocusModePage({
 		template = data;
 	}
 
+	return <DraftEditor template={template} />;
+}
+
+export default async function FocusModePage({
+	searchParams,
+}: {
+	searchParams: Promise<{ template_id?: string }>;
+}) {
+	const resolvedParams = await searchParams;
+	const templateId = resolvedParams.template_id;
+	const currentPath = templateId
+		? `/studio/new?template_id=${templateId}`
+		: "/studio/new";
+
+	// 最速で認証ガードのみ通過させる
+	await requireUser(currentPath);
+
 	return (
-		<Suspense fallback={null}>
-			<DraftEditor template={template} />
+		<Suspense fallback={<StudioEditorSkeleton hasDraftId={false} />}>
+			<NewDraftLoader templateId={templateId} currentPath={currentPath} />
 		</Suspense>
 	);
 }

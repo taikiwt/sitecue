@@ -8,9 +8,9 @@ import { groupNotes } from "@/store/useNotesStore";
 import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
+import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { RightPaneDetail } from "./RightPaneDetail";
-import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();

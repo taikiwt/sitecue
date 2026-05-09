@@ -1,5 +1,4 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 // Mock hooks
 import { useRouter, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
@@ -88,9 +87,9 @@ describe("ResponsiveNotesLayout", () => {
 			refresh: vi.fn(),
 		});
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams(
-				"noteId=123",
-			) as unknown as ReturnType<typeof useSearchParams>,
+			new URLSearchParams("noteId=123") as unknown as ReturnType<
+				typeof useSearchParams
+			>,
 		);
 
 		render(
@@ -106,15 +105,16 @@ describe("ResponsiveNotesLayout", () => {
 		const stack = screen.getByTestId("mobile-detail-stack");
 		expect(stack.className).toContain("translate-x-0");
 
-
-
 		// 戻るボタンのクリック
 		const backButton = screen.getByRole("button", { name: /Notes/i });
 		fireEvent.click(backButton);
 
 		// アニメーション用に300ms待機してからpushされることを検証
-		await waitFor(() => {
-			expect(push).toHaveBeenCalledWith("/notes?");
-		}, { timeout: 500 });
+		await waitFor(
+			() => {
+				expect(push).toHaveBeenCalledWith("/notes?");
+			},
+			{ timeout: 500 },
+		);
 	});
 });
