@@ -96,7 +96,7 @@ export function GlobalNewNoteDialog() {
 		try {
 			let finalUrl = urlPattern.trim();
 			if (scope === "inbox") {
-				finalUrl = "";
+				finalUrl = "inbox";
 			} else if (finalUrl) {
 				const normalizedFullUrl = normalizeUrlForGrouping(finalUrl);
 				if (scope === "domain") {

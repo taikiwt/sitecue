@@ -17,7 +17,11 @@ vi.mock("next/navigation", () => ({
 				ReturnType<typeof useSearchParams>
 			> as ReturnType<typeof useSearchParams>,
 	),
-	useRouter: vi.fn(() => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() })),
+	useRouter: vi.fn(() => ({
+		push: vi.fn(),
+		replace: vi.fn(),
+		prefetch: vi.fn(),
+	})),
 }));
 
 // Mock react-query
@@ -57,9 +61,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 	it("should determine active state from pathname", () => {
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("") as unknown as ReturnType<
-				typeof useSearchParams
-			>,
+			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,
 		);
 
 		vi.mocked(useFetchNotes).mockReturnValue({
@@ -84,7 +86,9 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 
 		// Notes should be active
 		const notesLink = screen.getByTitle("Notes").closest("a");
-		expect(notesLink?.className).toContain("bg-base-bg text-action shadow-sm scale-105");
+		expect(notesLink?.className).toContain(
+			"bg-base-bg text-action shadow-sm scale-105",
+		);
 	});
 
 	it("should call router.push with globalNew=note when Logo button is clicked", () => {
@@ -92,9 +96,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any);
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("") as unknown as ReturnType<
-				typeof useSearchParams
-			>,
+			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,
 		);
 
 		vi.mocked(useFetchNotes).mockReturnValue({
