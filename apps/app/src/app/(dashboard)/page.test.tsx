@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { NOTES_LIMIT } from "@/constants/limits";
-import LaunchpadPage from "./page";
+import { StatsOverviewSection } from "./_components/StatsOverviewSection";
 
 // Next.js Server Component 用の Supabase モック
 vi.mock("@/utils/supabase/server", () => {
@@ -26,11 +26,11 @@ vi.mock("@/utils/supabase/server", () => {
 	};
 });
 
-describe("LaunchpadPage - Note Limit Warning", () => {
+describe("StatsOverviewSection - Note Limit Warning", () => {
 	it("renders warning banner when notesCount is at or above WARNING_THRESHOLD", async () => {
 		// Async Server Component を解決してレンダリング
-		const Page = await LaunchpadPage();
-		render(Page);
+		const Section = await StatsOverviewSection();
+		render(Section);
 
 		// 警告メッセージが表示されていることを確認
 		const warningText = `Note storage almost full (450/${NOTES_LIMIT.MAX_FREE}). Upgrade to unlock unlimited notes.`;

@@ -31,6 +31,7 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
   パフォーマンス向上のためSSR/SSGの恩恵を最大化しつつ、CSRへの強制フォールバックエラーを防ぐため、可能な限りコンポーネント単位で `<Suspense>` を配置してください。
 - **引き算の美学 (Fallback)**:
   `.agent/rules/ui-rules.md` に従い、Suspense の `fallback` には原則として `null` を指定し、レンダリング時のチラつきを最小限に抑えてください。
+  ただし、体感速度向上を目的とした主要ページ（Launchpad等）の初期ロードに限り、シマーエフェクト付きの Skeleton UI の使用を特例として許可・推奨する。その際、レイアウトシフト（CLS）をゼロに抑えるため、スケルトンは必ず「実データ表示時と同じ物理的な高さ（Fixed Height）」を明示的に確保すること。
 
 
 ## 5. Server Component Constraints (RSCの掟)

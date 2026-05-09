@@ -10,6 +10,7 @@ import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { RightPaneDetail } from "./RightPaneDetail";
+import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
@@ -188,9 +189,18 @@ export function NotesContainer() {
 		[drafts, params.draftId],
 	);
 
-	if (!isDataReady || !groupedNotes) {
-		return null; // Initial loading state (handled by Suspense if we want a better fallback)
+	if (!isDataReady) {
+		return (
+			<ResponsiveNotesLayout
+				selectedNoteId={params.noteId ?? null}
+				selectedDraftId={params.draftId ?? null}
+				middleNode={<MiddlePaneListSkeleton />}
+				rightNode={null}
+			/>
+		);
 	}
+
+	if (!groupedNotes) return null;
 
 	return (
 		<ResponsiveNotesLayout
