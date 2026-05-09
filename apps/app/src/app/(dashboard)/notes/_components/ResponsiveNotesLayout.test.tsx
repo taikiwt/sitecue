@@ -22,14 +22,6 @@ vi.mock("@/hooks/use-media-query", () => ({
 	useMediaQuery: vi.fn(),
 }));
 
-vi.mock("@/store/useLayoutStore", () => ({
-	useLayoutStore: vi.fn((selector) =>
-		selector({
-			setIsMobileHeaderVisible: vi.fn(),
-		}),
-	),
-}));
-
 describe("ResponsiveNotesLayout", () => {
 	it("renders both panes when isDesktop is true", () => {
 		vi.mocked(useMediaQuery).mockReturnValue(true);

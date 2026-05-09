@@ -6,19 +6,18 @@ describe("useLayoutStore", () => {
 		// 初期状態にリセット
 		useLayoutStore.setState({
 			isSidebarOpen: true,
-			isMobileHeaderVisible: true,
 		});
 	});
 
-	it("モバイルヘッダーの表示状態の初期値は true であること", () => {
-		expect(useLayoutStore.getState().isMobileHeaderVisible).toBe(true);
+	it("サイドバーの表示状態の初期値は true であること", () => {
+		expect(useLayoutStore.getState().isSidebarOpen).toBe(true);
 	});
 
-	it("setIsMobileHeaderVisible で状態を更新できること", () => {
-		useLayoutStore.getState().setIsMobileHeaderVisible(false);
-		expect(useLayoutStore.getState().isMobileHeaderVisible).toBe(false);
+	it("setIsSidebarOpen で状態を更新できること", () => {
+		useLayoutStore.getState().setIsSidebarOpen(false);
+		expect(useLayoutStore.getState().isSidebarOpen).toBe(false);
 
-		useLayoutStore.getState().setIsMobileHeaderVisible(true);
-		expect(useLayoutStore.getState().isMobileHeaderVisible).toBe(true);
+		useLayoutStore.getState().setIsSidebarOpen(true);
+		expect(useLayoutStore.getState().isSidebarOpen).toBe(true);
 	});
 });

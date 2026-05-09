@@ -98,3 +98,7 @@ AIが実装や修正を提案する際、以下の「コードの匂い（Code S
 - **コードの重複 (Duplicated Code)**: 複数のコンポーネントに似たような `useEffect` やイベントリスナー（例: スクロール監視）が存在する場合。-> *Centralized Approach への移行を提案する。*
 - **不自然なDOM要素 (Unnatural DOM)**: レイアウトの帳尻合わせのためだけに使われている空の `div`（スペーサー）や、過剰な `absolute` 配置がある場合。-> *CSSの流れ（Flow）を利用した自然なレイアウトへの移行を提案する。*
 - **状態の不一致 (State Inconsistency)**: URLパラメータの更新とZustandのステート更新が同時に（または片方だけ）行われている場合。-> *URLをSSOTとした設計への修正を提案する。*
+
+## 12. Layout & Positioning Robustness (レイアウトとポジショニングの堅牢性)
+
+- **AppShellのモバイル原則**: モバイル環境のAppShellは「3段ボックス構造（Header/Content/Nav）」を基本とし、JSによる動的な高さ変更やスクロール監視を伴う要素の隠蔽ロジック（hide-on-scroll等）はレイアウト崩れとパフォーマンス低下を招くため原則禁止とする。

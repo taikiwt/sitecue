@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
 import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
@@ -14,7 +14,6 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
@@ -24,65 +23,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const _pathname = usePathname();
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const _setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
-	const isMobileHeaderVisible = useLayoutStore(
-		(state) => state.isMobileHeaderVisible,
-	);
-	const setIsMobileHeaderVisible = useLayoutStore(
-		(state) => state.setIsMobileHeaderVisible,
-	);
+
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
-	// Global scroll monitoring (centralized)
-	useEffect(() => {
-		// 各スクロールコンテナの直前の位置を個別に記憶する
-		const scrollPositions = new WeakMap<EventTarget, number>();
-		let ticking = false;
-
-		const handleGlobalScroll = (e: Event) => {
-			const target = e.target;
-			if (!(target instanceof HTMLElement) && target !== document) return;
-
-			// テキストエリアや小さなコードブロックなど、メインレイアウト以外のスクロールを無視
-			if (target instanceof HTMLElement && target.clientHeight < 300) return;
-
-			const currentScrollY =
-				target === document
-					? window.scrollY
-					: (target as HTMLElement).scrollTop;
-
-			const lastScrollY = scrollPositions.get(target) || 0;
-
-			if (!ticking) {
-				window.requestAnimationFrame(() => {
-					const delta = currentScrollY - lastScrollY;
-
-					// レイアウトシフトによる微小なスクロール（ガタつき）を無視するため、
-					// スクロール量のしきい値（delta > 10 / delta < -10）を設ける
-					if (currentScrollY > 50 && delta > 10) {
-						setIsMobileHeaderVisible(false);
-					} else if (currentScrollY <= 50 || delta < -10) {
-						setIsMobileHeaderVisible(true);
-					}
-
-					scrollPositions.set(target, currentScrollY);
-					ticking = false;
-				});
-				ticking = true;
-			}
-		};
-
-		// Capture phase listener to catch scroll events from any container
-		window.addEventListener("scroll", handleGlobalScroll, true);
-
-		return () => {
-			window.removeEventListener("scroll", handleGlobalScroll, true);
-		};
-	}, [setIsMobileHeaderVisible]);
-
 	return (
-		<div className="flex h-screen w-full overflow-hidden bg-base-bg text-action">
+		<div className="flex h-dvh w-full overflow-hidden bg-base-bg text-action">
+			{/* h-screen を h-dvh に変更し、動的な高さを確保 */}
 			{/* PC Sidebar (Persistent Rail UI) */}
 			<aside className="hidden md:flex flex-col w-16 bg-base-surface border-r border-base-border shrink-0">
 				<Suspense fallback={null}>
@@ -106,13 +54,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 			</Sheet>
 
 			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-				{/* Mobile Toggle Header */}
-				<header
-					className={cn(
-						"md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border z-20 transition-all duration-300",
-						!isMobileHeaderVisible && "-mt-14",
-					)}
-				>
+				{/* Mobile Toggle Header -> 静的ヘッダーに変更 */}
+				<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border z-20">
 					<Link
 						href="/"
 						className="flex items-center text-lg font-bold tracking-tight text-action"
@@ -127,9 +70,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				</header>
 
 				{/* Content Area */}
-				<div className="flex-1 overflow-y-auto relative flex flex-col">
+				<div className="flex-1 overflow-y-auto relative flex flex-col min-w-0">
 					{children}
 				</div>
+
+				<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 			</main>
 
 			{/* Global Dialog */}
@@ -141,8 +86,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				isOpen={isSearchModalOpen}
 				onClose={() => setIsSearchModalOpen(false)}
 			/>
-
-			<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 
 			<PaywallModal
 				isOpen={isPaywallOpen}

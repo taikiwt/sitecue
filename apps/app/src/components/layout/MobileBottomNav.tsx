@@ -24,7 +24,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	if (isDetailOpen || isStudioPage) return null;
 
 	return (
-		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-base-surface border-t border-base-border pb-safe">
+		<nav className="md:hidden shrink-0 w-full z-40 bg-base-surface border-t border-base-border pb-safe">
 			<div className="flex justify-around items-center h-16">
 				{/* Notes */}
 				<Link

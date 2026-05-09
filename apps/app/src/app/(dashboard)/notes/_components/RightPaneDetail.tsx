@@ -559,7 +559,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 			{/* 2. Content Area (Scrollable) */}
 			<div className="flex-1 overflow-y-auto">
-				<div className="px-4 py-8 pb-28 md:px-8 max-w-3xl mx-auto w-full">
+				<div className="px-4 py-8 md:px-8 max-w-3xl mx-auto w-full">
 					{!note && draft?.title && (
 						<div className="mb-8 flex flex-col gap-2">
 							<div className="flex items-center justify-between px-1">

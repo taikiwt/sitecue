@@ -573,7 +573,7 @@ export function MiddlePaneList(props: Props) {
 				)}
 			</div>
 
-			<div className="flex-1 overflow-y-auto divide-y divide-base-border pb-28 md:pb-0">
+			<div className="flex-1 overflow-y-auto divide-y divide-base-border">
 				{/* 1. Root Domains View */}
 				{currentView === "domains" && !currentDomain ? (
 					Object.entries(groupedNotes.domains)
