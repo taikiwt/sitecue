@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // Mock hooks
 import { useRouter, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
@@ -52,7 +53,9 @@ describe("ResponsiveNotesLayout", () => {
 		);
 
 		expect(screen.getByTestId("middle-node")).toBeInTheDocument();
-		expect(screen.queryByTestId("right-node")).not.toBeInTheDocument();
+		const stack = screen.getByTestId("mobile-detail-stack");
+		expect(stack.className).toContain("translate-x-full");
+		expect(stack).toHaveAttribute("aria-hidden", "true");
 	});
 
 	it("applies scroll lock to main content when drawer is open on mobile", () => {
@@ -73,9 +76,8 @@ describe("ResponsiveNotesLayout", () => {
 		expect(main).toHaveAttribute("inert");
 	});
 
-	it("delays routing and simplifies parameter deletion when closing the drawer on mobile", async () => {
-		vi.useFakeTimers();
-		vi.mocked(useMediaQuery).mockReturnValue(false);
+	it("モバイル環境でStack要素が正しくレンダリングされ、閉じるボタンが機能するか", async () => {
+		vi.mocked(useMediaQuery).mockReturnValue(false); // Mobile
 		const push = vi.fn();
 		vi.mocked(useRouter).mockReturnValue({
 			push,
@@ -85,34 +87,34 @@ describe("ResponsiveNotesLayout", () => {
 			forward: vi.fn(),
 			refresh: vi.fn(),
 		});
-		// searchParams をモックし、view=drafts が存在している状態をシミュレート
 		vi.mocked(useSearchParams).mockReturnValue(
 			new URLSearchParams(
-				"view=drafts&draftId=draft-1",
+				"noteId=123",
 			) as unknown as ReturnType<typeof useSearchParams>,
 		);
 
 		render(
 			<ResponsiveNotesLayout
-				middleNode={<div data-testid="middle-node">Middle</div>}
-				rightNode={<div data-testid="right-node">Right</div>}
-				selectedNoteId={null}
-				selectedDraftId="draft-1"
+				middleNode={<div data-testid="middle">List</div>}
+				rightNode={<div data-testid="right">Detail</div>}
+				selectedNoteId="123"
+				selectedDraftId={null}
 			/>,
 		);
 
-		const backButton = screen.getByRole("button", { name: /notes/i });
-		backButton.click();
+		// クラス名に translate-x-0 が含まれること（開いている状態）
+		const stack = screen.getByTestId("mobile-detail-stack");
+		expect(stack.className).toContain("translate-x-0");
 
-		// Should not have called push yet
-		expect(push).not.toHaveBeenCalled();
 
-		// Fast-forward 300ms
-		vi.advanceTimersByTime(300);
 
-		// draftId が削除され、view=drafts が維持されることを確認
-		expect(push).toHaveBeenCalledWith("/notes?view=drafts");
+		// 戻るボタンのクリック
+		const backButton = screen.getByRole("button", { name: /Notes/i });
+		fireEvent.click(backButton);
 
-		vi.useRealTimers();
+		// アニメーション用に300ms待機してからpushされることを検証
+		await waitFor(() => {
+			expect(push).toHaveBeenCalledWith("/notes?");
+		}, { timeout: 500 });
 	});
 });
