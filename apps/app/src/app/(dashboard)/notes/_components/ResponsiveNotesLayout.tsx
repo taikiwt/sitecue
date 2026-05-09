@@ -4,13 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, type ReactNode, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-} from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
 
@@ -87,33 +80,31 @@ export function ResponsiveNotesLayout({
 				{middleNode}
 			</main>
 
-			{/* Detail Drawer (Mobile Only) */}
-			<Drawer onOpenChange={handleCloseDetail} open={isDrawerOpen}>
-				<DrawerContent className="!mt-0 !h-[100dvh] !max-h-none rounded-t-2xl rounded-b-none p-0 flex flex-col overflow-hidden bg-base-bg border-none">
-					<DrawerHeader className="sr-only">
-						<DrawerTitle>Detail View</DrawerTitle>
-						<DrawerDescription>
-							View and edit note or draft details
-						</DrawerDescription>
-					</DrawerHeader>
+			{/* Detail Stack (Mobile Only) */}
+			<div
+				className={cn(
+					"fixed inset-0 z-30 bg-base-bg transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
+					isDrawerOpen ? "translate-x-0" : "translate-x-full",
+				)}
+				aria-hidden={!isDrawerOpen}
+				data-testid="mobile-detail-stack"
+			>
+				{/* Mobile Header with Back Button */}
+				<div className="shrink-0 flex items-center px-4 py-2 border-b border-base-border pt-safe">
+					<Button
+						onClick={() => handleCloseDetail(false)}
+						type="button"
+						variant="ghost"
+						className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
+					>
+						<ArrowLeft aria-hidden="true" className="w-5 h-5" />
+						Notes
+					</Button>
+				</div>
 
-					{/* Mobile Header with Back Button (Placed under the drag handle) */}
-					<div className="shrink-0 flex items-center px-4 py-2 border-b border-base-border mt-2">
-						<Button
-							onClick={() => handleCloseDetail(false)}
-							type="button"
-							variant="ghost"
-							className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
-						>
-							<ArrowLeft aria-hidden="true" className="w-5 h-5" />
-							Notes
-						</Button>
-					</div>
-
-					{/* Scrollable Content Area */}
-					<div className="flex-1 overflow-y-auto">{rightNode}</div>
-				</DrawerContent>
-			</Drawer>
+				{/* Scrollable Content Area */}
+				<div className="flex-1 overflow-y-auto">{rightNode}</div>
+			</div>
 		</div>
 	);
 }

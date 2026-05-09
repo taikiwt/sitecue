@@ -39,7 +39,7 @@ export const SearchInputBase = React.forwardRef<
 				onChange={(e) => onChange(e.target.value)}
 				onKeyDown={handleKeyDown}
 				placeholder={placeholder || "Search..."}
-				className="w-full pl-9 pr-8 py-2 text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg transition-all outline-none"
+				className="w-full pl-9 pr-8 py-2 text-base md:text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg transition-all outline-none"
 			/>
 			{value && (
 				<button

@@ -2,7 +2,7 @@
 
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
@@ -21,6 +21,17 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 	const { data = { notes: [], drafts: [] }, isLoading } =
 		useSearchNotes(searchQuery);
 	const { mutate: fetchContents } = useFetchNoteContents();
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	// Auto focus on mount
+	useEffect(() => {
+		if (isOpen) {
+			const timer = setTimeout(() => {
+				inputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [isOpen]);
 
 	const groupedResults = useMemo(() => {
 		const domains = new Set<string>();
@@ -94,7 +105,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<DialogOverlay className="z-50 bg-black/20 backdrop-blur-sm" />
 			<DialogContent
-				className="z-50 w-[95vw] sm:max-w-xl top-[15%] translate-y-0 p-0 overflow-visible border-none shadow-2xl bg-transparent"
+				className="z-50 w-[95vw] sm:max-w-xl top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-0 overflow-visible border-none shadow-2xl bg-transparent"
 				showCloseButton={false}
 			>
 				{/* モーダルの外側（右上）に配置する閉じるボタン */}
@@ -113,6 +124,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 				<div className="flex flex-col bg-base-bg rounded-xl overflow-hidden max-h-[75vh] md:max-h-[60vh]">
 					<div className="px-2 py-2 border-b border-base-border">
 						<SearchInputBase
+							ref={inputRef}
 							value={inputValue}
 							onChange={setInputValue}
 							onClear={() => {
