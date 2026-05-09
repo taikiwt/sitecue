@@ -93,7 +93,14 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 
 	it("should call router.push with globalNew=note when Logo button is clicked", () => {
 		const mockPush = vi.fn();
-		vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any);
+		vi.mocked(useRouter).mockReturnValue({
+			push: mockPush,
+			replace: vi.fn(),
+			prefetch: vi.fn(),
+			back: vi.fn(),
+			forward: vi.fn(),
+			refresh: vi.fn(),
+		} as unknown as ReturnType<typeof useRouter>);
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
 			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,

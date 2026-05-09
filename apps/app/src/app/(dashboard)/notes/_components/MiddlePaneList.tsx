@@ -362,7 +362,7 @@ export function MiddlePaneList(props: Props) {
 						))}
 					</div>
 					{/* Action Buttons (Moved from internal header) */}
-					{isSelected && currentView !== "domains" && (
+					{isSelected && (currentView !== "domains" || !!currentExact) && (
 						<div className="flex items-center gap-1">
 							<Link
 								href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
