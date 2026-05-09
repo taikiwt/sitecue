@@ -1,8 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import Image from "next/image";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
@@ -22,33 +20,6 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
-
-function MobileFABInner() {
-	const searchParams = useSearchParams();
-
-	// FABの Shallow Routing
-	const handleOpenGlobalNew = (type: "note" | "draft") => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("globalNew", type);
-		const newUrl = `${window.location.pathname}?${params.toString()}`;
-		window.history.pushState(null, "", newUrl);
-		// App Router環境で再レンダリングを促すため、popstateを発火させるかrouterを併用する場合があるが
-		// 設計図に従い pushState を使用
-		window.dispatchEvent(new PopStateEvent("popstate"));
-	};
-
-	return (
-		<div className="md:hidden fixed bottom-20 right-4 z-40">
-			<Button
-				type="button"
-				onClick={() => handleOpenGlobalNew("note")}
-				className="h-14 w-14 rounded-full shadow-xl shadow-action/30 transition-transform active:scale-95 cursor-pointer bg-action text-action-text hover-safe:bg-action-hover"
-			>
-				<Plus className="h-6 w-6" aria-hidden="true" />
-			</Button>
-		</div>
-	);
-}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
 	const _pathname = usePathname();
@@ -143,8 +114,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						!isMobileHeaderVisible && "-mt-14",
 					)}
 				>
-					<Link href="/" className="flex items-center">
-						<Image src="/logo.svg" alt="sitecue" width={28} height={28} />
+					<Link href="/" className="flex items-center text-lg font-bold tracking-tight text-action">
+						sitecue
 					</Link>
 					<div className="w-10 h-10">
 						<Suspense fallback={null}>
@@ -168,11 +139,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 				isOpen={isSearchModalOpen}
 				onClose={() => setIsSearchModalOpen(false)}
 			/>
-
-			{/* FAB (Mobile Only) */}
-			<Suspense fallback={null}>
-				<MobileFABInner />
-			</Suspense>
 
 			<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 
