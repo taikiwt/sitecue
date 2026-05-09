@@ -150,9 +150,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													type="button"
 													onClick={() => {
 														onClose();
-														router.push(
-															`/notes?domain=${domain}${searchQuery ? `&q=${searchQuery}` : ""}`,
-														);
+														router.push(`/notes?domain=${domain}`);
 													}}
 													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer text-sm"
 												>
@@ -177,9 +175,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 														onClose();
 														const domain =
 															normalizeUrlForGrouping(page).split("/")[0];
-														router.push(
-															`/notes?domain=${domain}&exact=${page}${searchQuery ? `&q=${searchQuery}` : ""}`,
-														);
+														router.push(`/notes?domain=${domain}&exact=${page}`);
 													}}
 													className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer text-sm truncate"
 												>
