@@ -6,7 +6,6 @@ import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
 import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
-import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Sheet,
@@ -114,7 +113,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						!isMobileHeaderVisible && "-mt-14",
 					)}
 				>
-					<Link href="/" className="flex items-center text-lg font-bold tracking-tight text-action">
+					<Link
+						href="/"
+						className="flex items-center text-lg font-bold tracking-tight text-action"
+					>
 						sitecue
 					</Link>
 					<div className="w-10 h-10">

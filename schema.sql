@@ -190,6 +190,21 @@ $$;
 ALTER FUNCTION "public"."handle_new_user_todo01"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."handle_sitecue_notes_inbox_consistency"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    IF NEW.scope = 'inbox' THEN
+        NEW.url_pattern := 'inbox';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_sitecue_notes_inbox_consistency"() OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."sitecue_drafts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
@@ -407,6 +422,10 @@ CREATE OR REPLACE TRIGGER "on_draft_created_check_limit" BEFORE INSERT ON "publi
 
 
 CREATE OR REPLACE TRIGGER "on_note_created_check_limit" BEFORE INSERT ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."check_note_limit"();
+
+
+
+CREATE OR REPLACE TRIGGER "sitecue_notes_inbox_consistency_trigger" BEFORE INSERT OR UPDATE ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."handle_sitecue_notes_inbox_consistency"();
 
 
 
@@ -795,6 +814,12 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."handle_new_user_todo01"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_new_user_todo01"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_user_todo01"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_sitecue_notes_inbox_consistency"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_sitecue_notes_inbox_consistency"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_sitecue_notes_inbox_consistency"() TO "service_role";
 
 
 
