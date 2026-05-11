@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
@@ -13,19 +13,58 @@ export function useNotes(
 	session: Session | null,
 	currentFullUrl: string,
 	setTotalNoteCount: React.Dispatch<React.SetStateAction<number>>,
+	viewScope: "exact" | "domain" | "inbox",
 ) {
 	const [notes, setNotes] = useState<Note[]>([]);
 	const [loading, setLoading] = useState(false);
+	const prevUrlRef = useRef<string>(currentFullUrl);
+
+	const hydrateContent = useCallback(async () => {
+		if (!currentFullUrl || !session) return;
+		try {
+			const scopeUrls = getScopeUrls(currentFullUrl);
+			const { data, error } = await supabase
+				.from("sitecue_notes")
+				.select("id, content")
+				.or(
+					`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
+				);
+
+			if (error) throw error;
+			if (data) {
+				setNotes((prevNotes) =>
+					prevNotes.map((note) => {
+						const hydrated = (data as { id: string; content: string }[]).find(
+							(d) => d.id === note.id,
+						);
+						return hydrated ? { ...note, content: hydrated.content } : note;
+					}),
+				);
+			}
+		} catch (error) {
+			console.error("Failed to hydrate notes", error);
+		}
+	}, [currentFullUrl, session]);
 
 	const fetchNotes = useCallback(async () => {
 		if (!currentFullUrl || !session) return;
+
+		// Inbox閲覧中、かつ「URLのみ」が変化した場合は再フェッチをスキップしてちらつきを防止
+		if (viewScope === "inbox" && prevUrlRef.current !== currentFullUrl) {
+			prevUrlRef.current = currentFullUrl;
+			return;
+		}
+		prevUrlRef.current = currentFullUrl;
+
 		setLoading(true);
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
 
 			const { data, error } = await supabase
 				.from("sitecue_notes")
-				.select("*")
+				.select(
+					"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
+				)
 				.or(
 					`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
 				)
@@ -34,12 +73,14 @@ export function useNotes(
 
 			if (error) throw error;
 			setNotes((data as Note[]) || []);
+			// Fetch full content in background
+			hydrateContent();
 		} catch (error) {
 			console.error("Failed to fetch notes", error);
 		} finally {
 			setLoading(false);
 		}
-	}, [currentFullUrl, session]);
+	}, [currentFullUrl, session, hydrateContent, viewScope]);
 
 	useEffect(() => {
 		fetchNotes();

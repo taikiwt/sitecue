@@ -52,6 +52,6 @@ describe("NoteInput Component", () => {
 		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
 		// 警告メッセージが表示されていることを確認
-		expect(screen.getByText(/FREE Plan Limit Reached/i)).toBeInTheDocument();
+		expect(screen.getByText(/Note Limit Reached/i)).toBeInTheDocument();
 	});
 });
