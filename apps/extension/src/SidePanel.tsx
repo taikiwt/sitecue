@@ -83,13 +83,46 @@ function NotesUI({
 		toggleNoteExpansion,
 	} = useNotes(session, currentFullUrl, setTotalNoteCount, viewScope);
 
-	const filteredNotesByScope = notes.filter((n) => {
-		if (viewScope === "inbox") {
-			if (n.scope !== "inbox") return false;
-		} else {
-			if (n.scope !== viewScope) return false;
+	// 🔍 フィルタリングロジックの集約 (SSOT)
+	const scopeUrls = currentFullUrl
+		? getScopeUrls(currentFullUrl)
+		: { domain: "", exact: "" };
+
+	const filteredNotesForTags = notes.filter((n) => {
+		// 1. スコープ（タブ）フィルターの適用
+		// 原則: 「現在お気に入りである」か「現在のURL/スコープに一致する」かのいずれかが必要
+		const isCurrentScope =
+			(viewScope === "inbox" && n.scope === "inbox") ||
+			(viewScope === "domain" &&
+				n.scope === "domain" &&
+				n.url_pattern === scopeUrls.domain) ||
+			(viewScope === "exact" &&
+				n.scope === "exact" &&
+				n.url_pattern === scopeUrls.exact);
+
+		// 🚨 お気に入りを解除した瞬間、isCurrentScopeがfalseならリストから除外される
+		if (!n.is_favorite && !isCurrentScope) {
+			return false;
 		}
 
+		// 他のタブの「お気に入り」は表示するが、現在のタブの「お気に入りではないノート」も表示する
+		// ただし、現在選択中のタブ(viewScope)とノートのscopeが不一致なものは落とす（InboxタブにDomainノートを出さない等）
+		if (viewScope === "inbox" && n.scope !== "inbox") return false;
+		if (viewScope !== "inbox" && n.scope === "inbox") return false;
+		if (viewScope !== "inbox" && !n.is_favorite && n.scope !== viewScope)
+			return false;
+
+		// 2. Note Type フィルター
+		if (filterType !== "all" && (n.note_type || "info") !== filterType) {
+			return false;
+		}
+
+		// 3. 解決済みフィルター
+		if (!showResolved && n.is_resolved) {
+			return false;
+		}
+
+		// 4. 検索クエリフィルター
 		if (searchQuery) {
 			const searchLower = searchQuery.toLowerCase();
 			const matchesContent = n.content?.toLowerCase().includes(searchLower);
@@ -108,13 +141,13 @@ function NotesUI({
 
 	const availableTags = Array.from(
 		new Set(
-			filteredNotesByScope.flatMap(
+			filteredNotesForTags.flatMap(
 				(n) => (n as { tags?: string[] }).tags || [],
 			),
 		),
 	).sort();
 
-	const finalFilteredNotes = filteredNotesByScope.filter((n) => {
+	const finalFilteredNotes = filteredNotesForTags.filter((n) => {
 		const noteTags = (n as { tags?: string[] }).tags || [];
 		if (selectedTag && !noteTags.includes(selectedTag)) {
 			return false;
@@ -123,7 +156,7 @@ function NotesUI({
 	});
 
 	return (
-		<div className="w-full h-screen bg-base-surface flex flex-col font-sans">
+		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_1fr_auto] font-sans">
 			<Toaster
 				position="bottom-center"
 				toastOptions={{
@@ -159,20 +192,17 @@ function NotesUI({
 				setViewScope={setViewScope}
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
-				filteredNotes={filteredNotesByScope}
+				filteredNotes={finalFilteredNotes} // コピー対象はタグ絞り込み後の最終リスト
 				selectedTag={selectedTag}
 				setSelectedTag={setSelectedTag}
 				availableTags={availableTags}
 			/>
 
-			<div className="flex-1 overflow-y-auto p-4 space-y-6">
+			<div className="overflow-y-auto p-4">
 				<NoteList
 					notes={finalFilteredNotes}
 					loading={loading}
-					filterType={filterType}
-					showResolved={showResolved}
 					currentFullUrl={currentFullUrl}
-					viewScope={viewScope}
 					onUpdate={updateNote}
 					onDelete={deleteNote}
 					onToggleResolved={toggleResolved}

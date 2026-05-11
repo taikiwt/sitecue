@@ -281,6 +281,14 @@ export function useNotes(
 
 	const toggleFavorite = async (note: Note) => {
 		const nextStatus = !note.is_favorite;
+
+		// ⚡️ 楽観的UI更新 (オプティミスティック更新): DB通信の前にUIステートを即時反映
+		setNotes((prevNotes) =>
+			prevNotes.map((n) =>
+				n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
+			),
+		);
+
 		try {
 			const { error } = await supabase
 				.from("sitecue_notes")
@@ -288,15 +296,17 @@ export function useNotes(
 				.eq("id", note.id);
 
 			if (error) throw error;
-
-			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
-				),
-			);
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
+
+			// 🛡️ エラー時のロールバック: 通信失敗時はサイレントに元のステートへ戻す
+			setNotes((prevNotes) =>
+				prevNotes.map((n) =>
+					n.id === note.id ? { ...n, is_favorite: note.is_favorite } : n,
+				),
+			);
+
 			toast.error("Failed to update status");
 			return false;
 		}

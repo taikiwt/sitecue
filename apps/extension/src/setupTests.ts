@@ -31,3 +31,25 @@ vi.stubGlobal("chrome", {
 		setPanelBehavior: vi.fn().mockResolvedValue(undefined),
 	},
 });
+
+// Supabaseのグローバルモック
+vi.mock("./supabaseClient", () => ({
+	supabase: {
+		auth: {
+			onAuthStateChange: vi.fn(() => ({
+				data: { subscription: { unsubscribe: vi.fn() } },
+			})),
+			getSession: vi
+				.fn()
+				.mockResolvedValue({ data: { session: null }, error: null }),
+		},
+		from: vi.fn().mockReturnValue({
+			select: vi.fn().mockReturnThis(),
+			eq: vi.fn().mockReturnThis(),
+			or: vi.fn().mockReturnThis(),
+			maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+			upsert: vi.fn().mockResolvedValue({ error: null }),
+			delete: vi.fn().mockResolvedValue({ error: null }),
+		}),
+	},
+}));

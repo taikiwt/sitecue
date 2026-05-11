@@ -126,15 +126,14 @@ export default function Header({
 	};
 
 	return (
-		<div className="p-4 bg-base-surface shadow-sm sticky top-0 z-50">
-			<div className="flex justify-between items-center gap-2">
+		<div className="p-4 bg-base-surface shadow-sm sticky top-0 z-50 w-full min-w-0">
+			<div className="flex justify-between items-center gap-2 w-full min-w-0">
 				<div className="flex-1 min-w-0">
-					<h1 className="text-lg font-semibold text-action flex items-center gap-2">
-						{/* Indicator Dot */}
+					<h1 className="text-lg font-semibold text-action flex items-center gap-2 w-full min-w-0">
 						{/* Indicator Dot */}
 						{settings?.color && (
 							<div
-								className={`w-2 h-2 shrink-0 rounded-full`}
+								className="w-2 h-2 shrink-0 rounded-full"
 								style={{
 									backgroundColor: COLORS.find(
 										(c) => c.value === settings?.color,
@@ -142,7 +141,10 @@ export default function Header({
 								}}
 							/>
 						)}
-						<span className="truncate" title={title || "sitecue"}>
+						<span
+							className="truncate flex-1 min-w-0 text-left"
+							title={title || "sitecue"}
+						>
 							{title || "sitecue"}
 						</span>
 						{settings?.label && (
@@ -151,11 +153,14 @@ export default function Header({
 							</span>
 						)}
 					</h1>
-					<p className="text-xs text-muted-foreground truncate" title={url}>
+					<p
+						className="text-xs text-muted-foreground truncate w-full"
+						title={url}
+					>
 						{url || "Waiting..."}
 					</p>
 				</div>
-				<div className="flex items-center gap-1.5">
+				<div className="flex items-center gap-1.5 shrink-0">
 					<button
 						type="button"
 						onClick={() => setIsSettingsOpen(!isSettingsOpen)}
