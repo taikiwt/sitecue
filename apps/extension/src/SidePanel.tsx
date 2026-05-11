@@ -59,19 +59,6 @@ function NotesUI({
 	const { userPlan, totalNoteCount, setTotalNoteCount, userStatsLoading } =
 		useUserStats(session);
 
-	const {
-		notes,
-		loading,
-		addNote,
-		updateNote,
-		deleteNote,
-		toggleResolved,
-		toggleFavorite,
-		togglePinned,
-		updateNoteOrder,
-		toggleNoteExpansion,
-	} = useNotes(session, currentFullUrl, setTotalNoteCount);
-
 	// 🔍 フィルタリング用ステート
 	const [filterType, setFilterType] = useState<
 		"all" | "info" | "alert" | "idea"
@@ -83,6 +70,19 @@ function NotesUI({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+	const {
+		notes,
+		loading,
+		addNote,
+		updateNote,
+		deleteNote,
+		toggleResolved,
+		toggleFavorite,
+		togglePinned,
+		updateNoteOrder,
+		toggleNoteExpansion,
+	} = useNotes(session, currentFullUrl, setTotalNoteCount, viewScope);
+
 	const filteredNotesByScope = notes.filter((n) => {
 		if (viewScope === "inbox") {
 			if (n.scope !== "inbox") return false;
@@ -90,8 +90,15 @@ function NotesUI({
 			if (n.scope !== viewScope) return false;
 		}
 
-		if (searchQuery && n.content) {
-			if (!n.content.toLowerCase().includes(searchQuery.toLowerCase())) {
+		if (searchQuery) {
+			const searchLower = searchQuery.toLowerCase();
+			const matchesContent = n.content?.toLowerCase().includes(searchLower);
+			const matchesTags = n.tags?.some((tag) =>
+				tag.toLowerCase().includes(searchLower),
+			);
+			const matchesUrl = n.url_pattern?.toLowerCase().includes(searchLower);
+
+			if (!matchesContent && !matchesTags && !matchesUrl) {
 				return false;
 			}
 		}

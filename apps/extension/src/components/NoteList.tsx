@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronRight, Ghost, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
 import { useState } from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import { getScopeUrls } from "../utils/url";
 import NoteItem from "./NoteItem";
+import NoteSkeleton from "./NoteSkeleton";
 
 interface NoteListProps {
 	notes: Note[];
@@ -89,8 +90,10 @@ export default function NoteList({
 
 	if (loading && notes.length === 0) {
 		return (
-			<div className="flex justify-center p-8">
-				<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+			<div className="space-y-3">
+				{["skel-1", "skel-2", "skel-3"].map((key) => (
+					<NoteSkeleton key={key} />
+				))}
 			</div>
 		);
 	}
