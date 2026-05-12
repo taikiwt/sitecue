@@ -1,17 +1,13 @@
 import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
 import { useState } from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
-import { getScopeUrls } from "../utils/url";
 import NoteItem from "./NoteItem";
 import NoteSkeleton from "./NoteSkeleton";
 
 interface NoteListProps {
 	notes: Note[];
 	loading: boolean;
-	filterType: "all" | "info" | "alert" | "idea";
-	showResolved: boolean;
 	currentFullUrl: string;
-	viewScope: "exact" | "domain" | "inbox";
 	onUpdate: (
 		id: string,
 		content: string,
@@ -32,10 +28,7 @@ interface NoteListProps {
 export default function NoteList({
 	notes,
 	loading,
-	filterType,
-	showResolved,
 	currentFullUrl,
-	viewScope,
 	onUpdate,
 	onDelete,
 	onToggleResolved,
@@ -47,18 +40,7 @@ export default function NoteList({
 	const [isSorting, setIsSorting] = useState(false);
 	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 
-	const filteredNotes = notes.filter((note) => {
-		if (filterType !== "all") {
-			const type = note.note_type || "info";
-			if (type !== filterType) return false;
-		}
-		if (!showResolved && note.is_resolved) {
-			return false;
-		}
-		return true;
-	});
-
-	const favoriteNotes = filteredNotes
+	const favoriteNotes = notes
 		.filter((n) => n.is_favorite)
 		.sort(
 			(a, b) =>
@@ -66,19 +48,8 @@ export default function NoteList({
 				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
 		);
 
-	const scopeUrls = currentFullUrl
-		? getScopeUrls(currentFullUrl)
-		: { domain: "", exact: "" };
-
-	const currentScopeNotes = filteredNotes
-		.filter((n) => {
-			if (n.is_favorite) return false;
-			if (viewScope === "inbox") return n.scope === "inbox";
-			return (
-				(n.scope === "domain" && n.url_pattern === scopeUrls.domain) ||
-				(n.scope === "exact" && n.url_pattern === scopeUrls.exact)
-			);
-		})
+	const currentScopeNotes = notes
+		.filter((n) => !n.is_favorite)
 		.sort((a, b) => {
 			if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
 			if ((a.sort_order || 0) !== (b.sort_order || 0))

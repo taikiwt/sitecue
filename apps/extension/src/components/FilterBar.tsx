@@ -106,7 +106,7 @@ export default function FilterBar({
 	}, [isSearchOpen]);
 
 	return (
-		<div className="bg-base-surface border-b border-base-border px-4 py-2 flex flex-col gap-3 sticky top-0 z-10">
+		<div className="bg-base-surface border-b border-base-border px-4 py-2 flex flex-col gap-3 z-10">
 			{/* Scope Tabs */}
 			<div className="flex space-x-4 border-b border-base-border">
 				<button
@@ -166,7 +166,7 @@ export default function FilterBar({
 								? "bg-base-surface text-action shadow-sm"
 								: "text-muted-foreground hover:text-white"
 						}`}
-						title="Info"
+						title="Filter by Info"
 					>
 						<Info className="w-3.5 h-3.5" />
 					</button>
@@ -178,7 +178,7 @@ export default function FilterBar({
 								? "bg-base-surface text-action shadow-sm"
 								: "text-muted-foreground hover:text-white"
 						}`}
-						title="Alert"
+						title="Filter by Alert"
 					>
 						<AlertTriangle className="w-3.5 h-3.5" />
 					</button>
@@ -190,7 +190,7 @@ export default function FilterBar({
 								? "bg-base-surface text-action shadow-sm"
 								: "text-muted-foreground hover:text-white"
 						}`}
-						title="Idea"
+						title="Filter by Idea"
 					>
 						<Lightbulb className="w-3.5 h-3.5" />
 					</button>
@@ -198,13 +198,17 @@ export default function FilterBar({
 
 				<div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
 					{/* Search Bar */}
-					<div className="relative flex items-center shrink min-w-0">
+					<div
+						className={`relative flex items-center shrink min-w-0 rounded transition-colors ${
+							isSearchOpen || searchQuery ? "bg-base-bg" : ""
+						}`}
+					>
 						<button
 							type="button"
 							onClick={() => setIsSearchOpen(true)}
 							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
 								isSearchOpen || searchQuery
-									? "bg-base-bg text-action"
+									? "text-action" // 背景色は親コンテナが持つため一元化
 									: "text-muted-foreground hover:text-action hover:bg-base-bg"
 							}`}
 						>
@@ -212,7 +216,7 @@ export default function FilterBar({
 						</button>
 						<div
 							className={`overflow-hidden transition-all duration-200 ease-in-out shrink min-w-0 ${
-								isSearchOpen || searchQuery ? "w-32 ml-1" : "w-0 ml-0"
+								isSearchOpen || searchQuery ? "w-32" : "w-0" // ml-1 を削除しボタンと完璧に隙間なく連結
 							}`}
 						>
 							<div className="relative flex items-center w-full min-w-0">
@@ -225,7 +229,8 @@ export default function FilterBar({
 									onBlur={() => {
 										if (!searchQuery) setIsSearchOpen(false);
 									}}
-									className="w-full min-w-0 text-xs pl-2 pr-6 py-1 bg-base-bg border-none rounded focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-muted-foreground"
+									// bg-base-bg と rounded を廃止し、bg-transparent を指定して下地と一体化
+									className="w-full min-w-0 text-xs pl-1 pr-6 py-1 bg-transparent border-none focus:outline-none placeholder:text-muted-foreground"
 								/>
 								{searchQuery && (
 									<button
@@ -247,7 +252,6 @@ export default function FilterBar({
 							</div>
 						</div>
 					</div>
-
 					{/* Copy All Dropdown */}
 					<div className="relative" ref={menuRef}>
 						<button
