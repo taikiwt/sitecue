@@ -21,7 +21,7 @@ interface NoteListProps {
 	) => Promise<boolean>;
 	onToggleFavorite: (note: Note) => Promise<boolean>;
 	onTogglePinned: (note: Note) => Promise<boolean>;
-	onUpdateNoteOrder: (id: string, newSortOrder: number) => Promise<boolean>;
+	onUpdateNoteOrder: (id: string, direction: "up" | "down") => Promise<boolean>;
 	onToggleExpansion: (id: string, current: boolean) => Promise<boolean>;
 }
 
@@ -98,21 +98,12 @@ export default function NoteList({
 
 		const groupIndex = validGroup.findIndex((n) => n.id === note.id);
 
-		// 3. 移動ハンドラー（一時変数を用いた安全なSwapとガード処理）
+		// 3. 移動ハンドラー
 		const handleMoveUp = async () => {
 			if (groupIndex <= 0) return;
 			setIsSorting(true);
 			try {
-				let newOrder: number;
-				if (groupIndex === 1) {
-					newOrder = (validGroup[0].sort_order || 0) - 1;
-				} else {
-					newOrder =
-						((validGroup[groupIndex - 2].sort_order || 0) +
-							(validGroup[groupIndex - 1].sort_order || 0)) /
-						2;
-				}
-				await onUpdateNoteOrder(note.id, newOrder);
+				await onUpdateNoteOrder(note.id, "up");
 			} finally {
 				setIsSorting(false);
 			}
@@ -122,16 +113,7 @@ export default function NoteList({
 			if (groupIndex === -1 || groupIndex >= validGroup.length - 1) return;
 			setIsSorting(true);
 			try {
-				let newOrder: number;
-				if (groupIndex === validGroup.length - 2) {
-					newOrder = (validGroup[validGroup.length - 1].sort_order || 0) + 1;
-				} else {
-					newOrder =
-						((validGroup[groupIndex + 1].sort_order || 0) +
-							(validGroup[groupIndex + 2].sort_order || 0)) /
-						2;
-				}
-				await onUpdateNoteOrder(note.id, newOrder);
+				await onUpdateNoteOrder(note.id, "down");
 			} finally {
 				setIsSorting(false);
 			}

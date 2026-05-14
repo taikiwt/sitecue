@@ -1,11 +1,11 @@
 "use client";
 
+import { getSafeUrl } from "@sitecue/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes } from "@/store/useNotesStore";
-import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { MiddlePaneListSkeleton } from "./NotesSkeletons";

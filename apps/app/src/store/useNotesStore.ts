@@ -1,6 +1,6 @@
+import { normalizeUrlForGrouping } from "@sitecue/shared";
 import { create } from "zustand";
 import type { Draft, GroupedNotes, Note } from "@/app/(dashboard)/notes/types";
-import { normalizeUrlForGrouping } from "@/utils/url";
 
 interface NotesState {
 	_initialized?: boolean;

@@ -1,3 +1,4 @@
+import { getMatchingNoteCount } from "@sitecue/shared";
 import { supabase } from "../src/supabaseClient";
 import { getScopeUrls } from "../src/utils/url";
 
@@ -28,31 +29,7 @@ export default defineBackground(() => {
 		const { domain, exact } = getScopeUrls(url);
 
 		try {
-			// We need to check for notes that match EITHER:
-			// 1. scope = 'domain' AND url_pattern = domain
-			// 2. scope = 'exact' AND url_pattern = exact
-			// AND user_id matches current user (handled by RLS automatically if session exists)
-
-			// Supabase query:
-			// select count(*) from sitecue_notes where (scope = 'domain' and url_pattern = domain) or (scope = 'exact' and url_pattern = exact)
-
-			// Since we can't easily do complex ORs with .eq() syntax on the same column in one go without raw filters,
-			// let's try the .or() syntax.
-
-			const { count, error } = await supabase
-				.rpc(
-					"get_matching_notes",
-					{ p_domain: domain, p_exact: exact },
-					{ count: "exact", head: true },
-				)
-				.eq("is_resolved", false);
-
-			if (error) {
-				console.error("Error fetching note count:", error);
-				// If auth error, maybe clear badge or show '?'
-				await chrome.action.setBadgeText({ tabId, text: "" });
-				return;
-			}
+			const count = await getMatchingNoteCount(supabase, domain, exact);
 
 			const countStr = count && count > 0 ? count.toString() : "";
 			await chrome.action.setBadgeText({ tabId, text: countStr });

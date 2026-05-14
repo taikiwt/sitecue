@@ -1,10 +1,15 @@
 import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
-import { extractTags, getScopeUrls, resolveNotePayload } from "@sitecue/shared";
+import {
+	calculateOrderForDirection,
+	createNoteEntity,
+	extractTags,
+	getScopeUrls,
+	resolveNotePayload,
+} from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { supabase } from "../supabaseClient";
-import { createNoteEntity } from "../utils/dal";
 
 export type NoteType = Note["note_type"];
 export type { Note, NoteScope };
@@ -320,7 +325,26 @@ export function useNotes(
 		}
 	};
 
-	const updateNoteOrder = async (id: string, newSortOrder: number) => {
+	const updateNoteOrder = async (id: string, direction: "up" | "down") => {
+		const targetNote = notes.find((n) => n.id === id);
+		if (!targetNote) return false;
+
+		// NoteList.tsx の表示グループ（Favorites / Page / Pinned）に準拠してソート対象を抽出
+		const filtered = notes.filter((n) => {
+			if (targetNote.is_favorite) return n.is_favorite;
+			return !n.is_favorite && n.is_pinned === targetNote.is_pinned;
+		});
+
+		const group = [...filtered].sort(
+			(a, b) =>
+				(a.sort_order || 0) - (b.sort_order || 0) ||
+				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+		);
+
+		// 純粋関数により最適なオーダー値を一意に取得
+		const newSortOrder = calculateOrderForDirection(group, id, direction);
+		if (newSortOrder === null) return false;
+
 		// Optimistic UI Update
 		setNotes((prevNotes) => {
 			const newNotes = prevNotes.map((n) =>
@@ -344,8 +368,7 @@ export function useNotes(
 		} catch (error) {
 			console.error("Failed to update note order", error);
 			toast.error("Failed to reorder notes");
-			// Revert changes by refetching
-			fetchNotes();
+			fetchNotes(); // エラー時は確実なロールバック
 			return false;
 		}
 	};

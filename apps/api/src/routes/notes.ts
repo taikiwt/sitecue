@@ -1,3 +1,4 @@
+import { createNoteEntity, updateNoteEntity } from "@sitecue/shared";
 import { createClient } from "@supabase/supabase-js";
 import { Hono } from "hono";
 import type { Bindings, Variables } from "../types";
@@ -39,17 +40,14 @@ notes.post("/", async (c) => {
 			},
 		});
 
-		const { data, error } = await supabase
-			.from("sitecue_notes")
-			.insert({
-				user_id: user.id,
-				url_pattern,
-				content,
-			})
-			.select();
+		const data = await createNoteEntity(supabase, user.id, {
+			content,
+			scope: "exact", // Default to exact for API creates unless otherwise specified
+			note_type: "info", // Default note type
+			currentUrl: url_pattern,
+		});
 
-		if (error) return c.json({ error: error.message }, 500);
-		return c.json(data[0], 201);
+		return c.json(data, 201);
 	} catch (_err) {
 		return c.json({ error: "Invalid JSON body" }, 400);
 	}
@@ -72,20 +70,13 @@ notes.put("/", async (c) => {
 			},
 		});
 
-		const { data, error } = await supabase
-			.from("sitecue_notes")
-			.update({ content })
-			.eq("id", id)
-			.select();
+		const data = await updateNoteEntity(supabase, id, { content });
 
-		if (error) return c.json({ error: error.message }, 500);
-
-		if (!data || data.length === 0) {
+		return c.json(data);
+	} catch (err) {
+		if (err instanceof Error && err.message.includes("Note not found")) {
 			return c.json({ error: "Note not found or permission denied" }, 404);
 		}
-
-		return c.json(data[0]);
-	} catch (_err) {
 		return c.json({ error: "Invalid JSON body" }, 400);
 	}
 });

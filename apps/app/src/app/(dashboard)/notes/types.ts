@@ -1,11 +1,6 @@
-import type { Note as SharedNote } from "@sitecue/shared";
-import type { Tables } from "../../../../../../types/supabase";
+import type { Draft, Note } from "@sitecue/shared";
 
-export type Note = Omit<SharedNote, "content"> & {
-	content?: string;
-};
-export type Draft = Tables<"sitecue_drafts">;
-
+export type { Draft, Note };
 export interface DomainGroup {
 	domainNotes: Note[]; // scope === 'domain' のノート
 	pages: {

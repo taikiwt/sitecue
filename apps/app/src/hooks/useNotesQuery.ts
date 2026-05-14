@@ -1,9 +1,17 @@
 "use client";
 
-import type { CreateNoteInput, NoteType, ViewScope } from "@sitecue/shared";
+import {
+	type CreateNoteInput,
+	createNoteEntity,
+	fetchNoteContents,
+	fetchNoteMetadatas,
+	type Note,
+	type NoteType,
+	updateNoteEntity,
+	type ViewScope,
+} from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Draft, Note } from "@/app/(dashboard)/notes/types";
-import { createNoteEntity, updateNoteEntity } from "@/lib/dal/notes";
+import type { Draft } from "@/app/(dashboard)/notes/types";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
@@ -12,25 +20,15 @@ export function useFetchNotes() {
 	return useQuery({
 		queryKey: NOTES_QUERY_KEY,
 		staleTime: 5 * 60 * 1000, // 5分間はバックグラウンドフェッチによる上書きを防ぐ
-		queryFn: async () => {
+		queryFn: async (): Promise<Note[]> => {
 			const supabase = createClient();
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error("User not authenticated");
 
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.select(
-					"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
-				)
-				.eq("user_id", user.id)
-				.order("is_pinned", { ascending: false })
-				.order("sort_order", { ascending: true })
-				.order("created_at", { ascending: false });
-
-			if (error) throw error;
-			return (data as Note[]) || [];
+			const metadatas = await fetchNoteMetadatas(supabase, user.id);
+			return metadatas as unknown as Note[];
 		},
 	});
 }
@@ -39,10 +37,14 @@ export function useCreateNote() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		// Mutationの引数を CreateNoteInput へ厳格化
 		mutationFn: async (input: CreateNoteInput) => {
 			const supabase = createClient();
-			return await createNoteEntity(supabase, input);
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("User not authenticated");
+
+			return await createNoteEntity(supabase, user.id, input);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
@@ -130,16 +132,8 @@ export function useFetchNoteContents() {
 
 	return useMutation({
 		mutationFn: async (ids: string[]) => {
-			if (ids.length === 0) return [];
 			const supabase = createClient();
-
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.select("id, content")
-				.in("id", ids);
-
-			if (error) throw error;
-			return data || [];
+			return await fetchNoteContents(supabase, ids);
 		},
 		onSuccess: (contents) => {
 			if (contents.length === 0) return;
@@ -153,7 +147,7 @@ export function useFetchNoteContents() {
 
 					const updateNote = (n: Note): Note =>
 						contentMap.has(n.id)
-							? { ...n, content: contentMap.get(n.id) as string | undefined }
+							? ({ ...n, content: contentMap.get(n.id) } as Note)
 							: n;
 
 					if (Array.isArray(old)) {
