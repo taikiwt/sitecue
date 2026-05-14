@@ -1,7 +1,9 @@
 "use client";
 
+import type { CreateNoteInput, NoteType, ViewScope } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Draft, Note } from "@/app/(dashboard)/notes/types";
+import { createNoteEntity, updateNoteEntity } from "@/lib/dal/notes";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
@@ -37,29 +39,10 @@ export function useCreateNote() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (newNote: Partial<Note>) => {
+		// Mutationの引数を CreateNoteInput へ厳格化
+		mutationFn: async (input: CreateNoteInput) => {
 			const supabase = createClient();
-			const {
-				data: { user },
-			} = await supabase.auth.getUser();
-			if (!user) throw new Error("User not authenticated");
-
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.insert({
-					...newNote,
-					user_id: user.id,
-					is_expanded: false,
-					is_favorite: false,
-					is_pinned: false,
-					is_resolved: false,
-					sort_order: 0,
-				})
-				.select()
-				.single();
-
-			if (error) throw error;
-			return data as Note;
+			return await createNoteEntity(supabase, input);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
@@ -76,27 +59,42 @@ export function useUpdateNote() {
 			updates,
 		}: {
 			id: string;
-			updates: Partial<Note>;
+			updates: {
+				content?: string;
+				note_type?: NoteType;
+				scope?: ViewScope;
+				currentUrl?: string;
+				is_resolved?: boolean;
+				is_pinned?: boolean;
+				is_favorite?: boolean;
+				is_expanded?: boolean;
+			};
 		}) => {
 			const supabase = createClient();
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.update(updates)
-				.eq("id", id)
-				.select()
-				.single();
-
-			if (error) throw error;
-			return data as Note;
+			return await updateNoteEntity(supabase, id, updates);
 		},
 		onSuccess: (updatedNote) => {
-			// Optimistically update the list if needed, or just invalidate
-			queryClient.setQueryData<Note[]>(NOTES_QUERY_KEY, (old) => {
-				if (!old) return old;
-				return old.map((note) =>
-					note.id === updatedNote.id ? updatedNote : note,
-				);
-			});
+			// プレフィックス一致でキャッシュを一括分配・更新する規約を順守
+			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					if (Array.isArray(old)) {
+						return old.map((note) =>
+							note.id === updatedNote.id ? updatedNote : note,
+						);
+					}
+					if ("notes" in old) {
+						return {
+							...old,
+							notes: old.notes.map((note) =>
+								note.id === updatedNote.id ? updatedNote : note,
+							),
+						};
+					}
+					return old;
+				},
+			);
 		},
 	});
 }

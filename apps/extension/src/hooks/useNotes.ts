@@ -1,10 +1,10 @@
+import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
+import { extractTags, getScopeUrls, resolveNotePayload } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import type { Note, NoteScope } from "../../../../types/app";
 import { supabase } from "../supabaseClient";
-import { extractTags } from "../utils/tags";
-import { getScopeUrls } from "../utils/url";
+import { createNoteEntity } from "../utils/dal";
 
 export type NoteType = Note["note_type"];
 export type { Note, NoteScope };
@@ -93,13 +93,13 @@ export function useNotes(
 	) => {
 		if (!session?.user?.id || !content.trim()) return false;
 
-		const scopeUrls = getScopeUrls(currentFullUrl);
-		const targetUrlPattern =
-			selectedScope === "domain"
-				? scopeUrls.domain
-				: selectedScope === "exact"
-					? scopeUrls.exact
-					: "inbox";
+		// 楽観的UI用の一時データ作成のために純粋な解決ロジックを利用
+		const resolved = resolveNotePayload({
+			content,
+			note_type: selectedType,
+			scope: selectedScope,
+			currentUrl: currentFullUrl,
+		});
 
 		const newSortOrder =
 			notes.length > 0
@@ -110,50 +110,37 @@ export function useNotes(
 		const tempNote = {
 			id: tempId,
 			user_id: session.user.id,
-			url_pattern: targetUrlPattern,
-			content,
-			scope: selectedScope,
-			note_type: selectedType,
+			url_pattern: resolved.url_pattern,
+			content: resolved.content,
+			scope: resolved.scope,
+			note_type: resolved.note_type,
 			sort_order: newSortOrder,
 			created_at: new Date().toISOString(),
 			is_expanded: false,
 			is_favorite: false,
 			is_pinned: false,
 			is_resolved: false,
-			tags: extractTags(content),
+			tags: resolved.tags,
 		} as Note;
 
 		// UI（ステート）には全スコープ追加する
 		setNotes((prev) => [...prev, tempNote]);
 
 		try {
-			const payload = {
-				user_id: session.user.id,
-				url_pattern: targetUrlPattern,
+			// 新設したDALを呼び出し
+			const data = await createNoteEntity(supabase, session.user.id, {
 				content,
-				scope: selectedScope,
 				note_type: selectedType,
-				sort_order: newSortOrder,
-				tags: extractTags(content),
-			};
-
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.insert(payload)
-				.select()
-				.single();
-
-			if (error) throw error;
+				scope: selectedScope,
+				currentUrl: currentFullUrl,
+			});
 
 			// 確定したDBのデータでローカルステートを上書き
-			setNotes((prev) =>
-				prev.map((n) => (n.id === tempId ? (data as Note) : n)),
-			);
+			setNotes((prev) => prev.map((n) => (n.id === tempId ? data : n)));
 
 			if (selectedScope === "inbox") {
 				toast.success("Saved to Inbox");
 			} else {
-				// inbox以外の時だけ、バッジカウントを増やす
 				setTotalNoteCount((prev) => prev + 1);
 				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			}
@@ -161,9 +148,7 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to create note", error);
-			// エラー時は追加したローカルステートを戻す
 			setNotes((prev) => prev.filter((n) => n.id !== tempId));
-
 			toast.error("Failed to create note");
 			return false;
 		}

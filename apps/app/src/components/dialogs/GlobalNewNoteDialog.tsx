@@ -1,5 +1,10 @@
 "use client";
 
+import type {
+	CreateNoteInput,
+	Note,
+	ViewScope as NoteScope,
+} from "@sitecue/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -20,8 +25,6 @@ import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useUserStore } from "@/store/useUserStore";
-import { normalizeUrlForGrouping } from "@/utils/url";
-import type { Note, NoteScope } from "../../../../../types/app";
 
 export function GlobalNewNoteDialog() {
 	const router = useRouter();
@@ -94,26 +97,14 @@ export function GlobalNewNoteDialog() {
 
 		setIsSaving(true);
 		try {
-			let finalUrl = urlPattern.trim();
-			if (scope === "inbox") {
-				finalUrl = "inbox";
-			} else if (finalUrl) {
-				const normalizedFullUrl = normalizeUrlForGrouping(finalUrl);
-				if (scope === "domain") {
-					// ドメインスコープの場合はドメイン名のみを抽出
-					finalUrl = normalizedFullUrl.split("/")[0];
-				} else if (scope === "exact") {
-					// exactの場合は正規化されたフルURLをそのまま使用
-					finalUrl = normalizedFullUrl;
-				}
-			}
-
-			await createNoteMutation.mutateAsync({
+			const input: CreateNoteInput = {
 				content: content.trim(),
 				scope: scope,
-				url_pattern: finalUrl,
 				note_type: noteType,
-			});
+				currentUrl: urlPattern.trim() || "inbox",
+			};
+
+			await createNoteMutation.mutateAsync(input);
 
 			toast.success("Note saved successfully.");
 			handleCancel();

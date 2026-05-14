@@ -1,5 +1,6 @@
 "use client";
 
+import type { NoteType } from "@sitecue/shared";
 import {
 	Clipboard,
 	ClipboardCopy,
@@ -27,7 +28,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
-
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
@@ -45,9 +45,7 @@ import {
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
-
 import { useUserStore } from "@/store/useUserStore";
-import { extractTags } from "@/utils/tags";
 import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
@@ -242,14 +240,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					targetUrlPattern = domainParam;
 				}
 
-				const extractedTags = extractTags(newContent);
-
 				const data = await createNoteMutation.mutateAsync({
 					content: newContent,
 					scope: targetScope,
-					url_pattern: targetUrlPattern,
-					note_type: editNoteType,
-					tags: extractedTags,
+					note_type: editNoteType as NoteType, // Cast if needed but should match now
+					currentUrl: targetUrlPattern || "inbox",
 				});
 
 				setOptimisticContent(newContent);
@@ -272,13 +267,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					}
 				}
 
-				const extractedTags = extractTags(newContent);
 				await updateNoteMutation.mutateAsync({
 					id: note.id,
 					updates: {
 						content: newContent,
-						tags: extractedTags,
-						url_pattern: finalUrl,
+						currentUrl: editUrl.trim() || "inbox",
 						scope: editScope,
 						note_type: editNoteType,
 					},
@@ -323,7 +316,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		try {
 			await updateNoteMutation.mutateAsync({
 				id: note.id,
-				updates,
+				updates: updates,
 			});
 		} catch (err) {
 			console.error("Failed to update note property:", err);
