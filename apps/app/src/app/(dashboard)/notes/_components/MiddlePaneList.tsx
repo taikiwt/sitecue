@@ -13,6 +13,7 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { getSafeUrl } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	Archive,
@@ -33,7 +34,6 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
@@ -50,7 +50,6 @@ import { useUpdateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { createClient } from "@/utils/supabase/client";
-import { getSafeUrl } from "@/utils/url";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
 

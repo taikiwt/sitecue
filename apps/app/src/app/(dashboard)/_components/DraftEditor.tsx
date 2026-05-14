@@ -1,5 +1,6 @@
 "use client";
 
+import { extractTags } from "@sitecue/shared";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -35,7 +36,6 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
-import { extractTags } from "@/utils/tags";
 import type { Draft, Note, Template } from "../../../../../../types/app.ts";
 import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";

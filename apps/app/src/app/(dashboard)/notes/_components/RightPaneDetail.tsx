@@ -1,6 +1,7 @@
 "use client";
 
 import type { NoteType } from "@sitecue/shared";
+import { normalizeUrlForGrouping } from "@sitecue/shared";
 import {
 	Clipboard,
 	ClipboardCopy,
@@ -46,7 +47,6 @@ import {
 } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
-import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
 type Props = {

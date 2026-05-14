@@ -17,3 +17,15 @@ export interface SitecueNoteBase {
 	draft_id: string | null;
 	tags: string[] | null;
 }
+
+export interface SitecueDraftBase {
+	id: string;
+	created_at: string;
+	updated_at: string;
+	user_id: string;
+	title: string | null;
+	content: string | null;
+	tags: string[] | null;
+	metadata: Record<string, unknown> | null;
+	template_id: string | null;
+}

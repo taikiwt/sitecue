@@ -1,4 +1,4 @@
-import type { Draft, Note } from "../../../../types/app";
+import type { Draft, Note } from "@sitecue/shared";
 
 export function createMockNote(overrides?: Partial<Note>): Note {
 	return {
@@ -31,7 +31,6 @@ export function createMockDraft(overrides?: Partial<Draft>): Draft {
 		updated_at: new Date().toISOString(),
 		metadata: null,
 		template_id: null,
-		sitecue_templates: null,
 		tags: [],
 		...overrides,
 	} as Draft;

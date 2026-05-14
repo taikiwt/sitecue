@@ -2,12 +2,12 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { getSafeUrl } from "@sitecue/shared";
 import { GripVertical, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import { cn } from "@/lib/utils";
-import { getSafeUrl } from "@/utils/url";
 import type { Draft, Note } from "../types";
 
 const formatDate = (dateStr: string) => {

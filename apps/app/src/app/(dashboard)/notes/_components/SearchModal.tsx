@@ -1,12 +1,12 @@
 "use client";
 
+import { normalizeUrlForGrouping } from "@sitecue/shared";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
-import { normalizeUrlForGrouping } from "@/utils/url";
 import type { Note } from "../types";
 
 interface SearchModalProps {
