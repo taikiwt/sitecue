@@ -1,7 +1,7 @@
-import type { Note as AppNote } from "../../../../../../types/app";
+import type { Note as SharedNote } from "@sitecue/shared";
 import type { Tables } from "../../../../../../types/supabase";
 
-export type Note = Omit<AppNote, "content"> & {
+export type Note = Omit<SharedNote, "content"> & {
 	content?: string;
 };
 export type Draft = Tables<"sitecue_drafts">;
