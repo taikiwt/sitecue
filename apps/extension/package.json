@@ -25,7 +25,8 @@
 		"react-textarea-autosize": "^8.5.9",
 		"remark-breaks": "^4.0.0",
 		"remark-gfm": "^4.0.1",
-		"tailwind-merge": "^3.4.0"
+		"tailwind-merge": "^3.4.0",
+		"@sitecue/shared": "workspace:*"
 	},
 	"devDependencies": {
 		"@tailwindcss/vite": "^4.1.18",

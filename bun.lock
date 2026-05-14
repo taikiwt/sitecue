@@ -12,6 +12,7 @@
       "name": "@sitecue/api",
       "dependencies": {
         "@google/generative-ai": "^0.24.1",
+        "@sitecue/shared": "workspace:*",
         "@supabase/supabase-js": "^2.93.1",
         "hono": "^4.11.6",
       },
@@ -30,6 +31,7 @@
         "@dnd-kit/core": "^6.3.1",
         "@dnd-kit/sortable": "^10.0.0",
         "@dnd-kit/utilities": "^3.2.2",
+        "@sitecue/shared": "workspace:*",
         "@supabase/ssr": "^0.8.0",
         "@supabase/supabase-js": "^2.93.1",
         "@tailwindcss/typography": "^0.5.19",
@@ -79,6 +81,7 @@
       "name": "@sitecue/extension",
       "version": "1.2.0",
       "dependencies": {
+        "@sitecue/shared": "workspace:*",
         "@supabase/supabase-js": "^2.93.1",
         "clsx": "^2.1.1",
         "lucide-react": "^0.563.0",
@@ -110,6 +113,14 @@
         "typescript": "~5.9.3",
         "vitest": "^4.1.0",
         "wxt": "^0.20.20",
+      },
+    },
+    "packages/shared": {
+      "name": "@sitecue/shared",
+      "version": "1.0.0",
+      "devDependencies": {
+        "typescript": "^5.0.0",
+        "vitest": "^4.1.0",
       },
     },
   },
@@ -766,6 +777,8 @@
     "@sitecue/app": ["@sitecue/app@workspace:apps/app"],
 
     "@sitecue/extension": ["@sitecue/extension@workspace:apps/extension"],
+
+    "@sitecue/shared": ["@sitecue/shared@workspace:packages/shared"],
 
     "@smithy/chunked-blob-reader": ["@smithy/chunked-blob-reader@5.2.2", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-St+kVicSyayWQca+I1rGitaOEH6uKgE8IUWoYnnEX26SWdWQcL6LvMSD19Lg+vYHKdT9B2Zuu7rd3i6Wnyb/iw=="],
 
