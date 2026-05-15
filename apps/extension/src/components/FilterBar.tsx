@@ -106,7 +106,7 @@ export default function FilterBar({
 	}, [isSearchOpen]);
 
 	return (
-		<div className="bg-base-surface border-b border-base-border px-4 py-2 flex flex-col gap-3 z-10">
+		<div className="bg-base-surface border-b border-base-border px-4 py-2 flex flex-col gap-3 z-10 w-full min-w-0">
 			{/* Scope Tabs */}
 			<div className="flex space-x-4 border-b border-base-border">
 				<button
@@ -313,21 +313,28 @@ export default function FilterBar({
 
 			{/* Tag Pills */}
 			{availableTags.length > 0 && (
-				<div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-					{availableTags.map((tag) => (
-						<button
-							key={tag}
-							type="button"
-							onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-							className={`cursor-pointer whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
-								selectedTag === tag
-									? "bg-action text-action-text border-action"
-									: "bg-base-surface text-muted-foreground border-base-border hover:border-action hover:text-action"
-							}`}
-						>
-							#{tag}
-						</button>
-					))}
+				<div className="relative w-full min-w-0 shrink-0 overflow-hidden">
+					<div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide pr-12">
+						{availableTags.map((tag) => (
+							<button
+								key={tag}
+								type="button"
+								onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+								className={`cursor-pointer whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
+									selectedTag === tag
+										? "bg-action text-action-text border-action"
+										: "bg-base-surface text-muted-foreground border-base-border hover:border-action hover:text-action"
+								}`}
+							>
+								#{tag}
+							</button>
+						))}
+					</div>
+					{/* 💡 Fade Mask */}
+					<div
+						className="absolute right-0 top-0 bottom-1 w-12 bg-linear-to-r from-transparent to-base-surface pointer-events-none"
+						aria-hidden="true"
+					/>
 				</div>
 			)}
 		</div>

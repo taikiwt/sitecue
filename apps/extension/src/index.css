@@ -4,12 +4,21 @@
   --color-base-bg: #ffffff;
   --color-base-surface: #f9fafb;
   --color-base-border: #e5e7eb;
-  --color-action: #262626;
-  --color-action-hover: #737373;
+  --color-action: #062032;
+  --color-action-hover: #4b6275;
   --color-action-text: #ffffff;
   --color-note-info: #38A8F8;
   --color-note-alert: #FB7176;
   --color-note-idea: #ff8104;
   --color-muted: #f3f4f6;
   --color-muted-foreground: #9ca3af;
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

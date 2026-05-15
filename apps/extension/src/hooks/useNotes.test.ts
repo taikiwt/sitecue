@@ -126,3 +126,77 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		});
 	});
 });
+
+describe("useNotes - Silent Refetching", () => {
+	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockUrl = "https://example.com/page";
+
+	it("メモリ上にデータがある場合、再フェッチ時に loading が true にならないこと", async () => {
+		const mockNotes = [{ id: "1", content: "existing" }];
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
+			mockNotes as unknown as Note[],
+		);
+
+		const { result, rerender } = renderHook(
+			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
+			{ initialProps: { scope: "exact" as const } },
+		);
+
+		// 初回フェッチ待ち
+		await waitFor(() => expect(result.current.loading).toBe(false));
+		expect(result.current.notes.length).toBe(1);
+
+		// 一旦モックのカウントをクリア
+		vi.clearAllMocks();
+
+		// スコープを変えて再フェッチをトリガー
+		rerender({ scope: "domain" as const });
+
+		// Silent Refetching: loading は false のままのはず
+		expect(result.current.loading).toBe(false);
+
+		await waitFor(() => {
+			expect(fetchExtensionNoteMetadatas).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	it("再フェッチ時に既存の content が新しいメタデータにマージされて保護されること", async () => {
+		// 初期状態のモック（メタデータのみ）
+		const initialNotes = [{ id: "1", content: undefined }];
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce(
+			initialNotes as unknown as Note[],
+		);
+
+		const { result, rerender } = renderHook(
+			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
+			{ initialProps: { scope: "exact" as const } },
+		);
+
+		// 初回フェッチ完了を待つ
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		// 一旦モックのカウントをクリア
+		vi.clearAllMocks();
+
+		// ユーザーがテキストを入力したと仮定して、直接 State を更新（楽観的UIの模倣）
+		// ※実際はhydrateContentで埋まるかaddNote等で埋まる想定
+		result.current.notes[0].content = "User typed this text";
+
+		// 再フェッチを発生させるためのモック準備（DBからは content なしのメタデータが返ってくる）
+		const newMetadatas = [{ id: "1", content: undefined, is_pinned: true }]; // ピン留めされたと仮定
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce(
+			newMetadatas as unknown as Note[],
+		);
+
+		// スコープを変えて再フェッチをトリガー
+		rerender({ scope: "domain" as const });
+
+		await waitFor(() => {
+			expect(fetchExtensionNoteMetadatas).toHaveBeenCalledTimes(1);
+		});
+
+		// 新しいメタデータ (is_pinned: true) が反映されつつ、既存の content は保護されていること
+		expect(result.current.notes[0].is_pinned).toBe(true);
+		expect(result.current.notes[0].content).toBe("User typed this text");
+	});
+});

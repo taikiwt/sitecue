@@ -73,4 +73,16 @@ describe("FilterBar Component", () => {
 
 		expect(writeTextMock).toHaveBeenCalledWith("Note 1\n\nNote 2");
 	});
+
+	it("タグのフェードマスクが正しくレンダリングされること", () => {
+		render(<FilterBar {...mockProps} />);
+
+		expect(screen.getByText("#tag1")).toBeInTheDocument();
+		// Mask要素がaria-hidden="true"で存在すること
+		const mask = document.querySelector(
+			'div[aria-hidden="true"].pointer-events-none',
+		);
+		expect(mask).toBeInTheDocument();
+		expect(mask?.className).toContain("to-base-surface");
+	});
 });
