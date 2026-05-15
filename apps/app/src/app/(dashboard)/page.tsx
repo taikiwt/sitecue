@@ -1,8 +1,8 @@
+import type { PinnedSite } from "@sitecue/shared";
 import { ArrowRight, Library } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
-import type { PinnedSite } from "../../../../../types/app";
 import { PinnedSitesManager } from "./_components/PinnedSitesManager";
 import { RecentDraftsSection } from "./_components/RecentDraftsSection";
 import {

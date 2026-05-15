@@ -3,6 +3,8 @@
 import {
 	type CreateNoteInput,
 	createNoteEntity,
+	deleteNoteEntity,
+	deleteNotesEntity,
 	fetchNoteContents,
 	fetchNoteMetadatas,
 	type Note,
@@ -107,13 +109,7 @@ export function useDeleteNote() {
 	return useMutation({
 		mutationFn: async (id: string) => {
 			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.delete()
-				.eq("id", id);
-
-			if (error) throw error;
-			return id;
+			return await deleteNoteEntity(supabase, id);
 		},
 		onSuccess: (deletedId) => {
 			queryClient.setQueryData<Note[]>(NOTES_QUERY_KEY, (old) => {
@@ -189,15 +185,8 @@ export function useDeleteNotes() {
 
 	return useMutation({
 		mutationFn: async (ids: string[]) => {
-			if (ids.length === 0) return [];
 			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.delete()
-				.in("id", ids);
-
-			if (error) throw error;
-			return ids;
+			return await deleteNotesEntity(supabase, ids);
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });

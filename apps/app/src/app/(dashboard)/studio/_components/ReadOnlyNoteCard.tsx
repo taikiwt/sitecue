@@ -1,5 +1,6 @@
 "use client";
 
+import type { Note } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	ChevronDown,
@@ -10,7 +11,6 @@ import {
 import { useState } from "react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
-import type { Note } from "../../../../../../../types/app.ts";
 
 export default function ReadOnlyNoteCard({ note }: { note: Note }) {
 	const [isExpanded, setIsExpanded] = useState(false);

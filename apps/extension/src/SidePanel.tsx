@@ -1,3 +1,4 @@
+import { getScopeUrls } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -12,8 +13,6 @@ import { useAuth } from "./hooks/useAuth";
 import { useCurrentTab } from "./hooks/useCurrentTab";
 import { useNotes } from "./hooks/useNotes";
 import { useUserStats } from "./hooks/useUserStats";
-
-import { getScopeUrls } from "./utils/url";
 
 const MAX_FREE_NOTES = 500;
 

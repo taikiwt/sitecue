@@ -1,5 +1,6 @@
 "use client";
 
+import type { Template } from "@sitecue/shared";
 import { useEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateTemplate } from "@/hooks/useTemplatesQuery";
-import type { Template } from "../../../../../../types/app";
 
 interface SaveAsTemplateDialogProps {
 	isOpen: boolean;

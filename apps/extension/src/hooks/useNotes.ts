@@ -2,9 +2,12 @@ import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
 import {
 	calculateOrderForDirection,
 	createNoteEntity,
-	extractTags,
+	deleteNoteEntity,
+	fetchExtensionNoteContents,
+	fetchExtensionNoteMetadatas,
 	getScopeUrls,
 	resolveNotePayload,
+	updateNoteEntity,
 } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,20 +31,12 @@ export function useNotes(
 		if (!currentFullUrl || !session) return;
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.select("id, content")
-				.or(
-					`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
-				);
+			const data = await fetchExtensionNoteContents(supabase, scopeUrls);
 
-			if (error) throw error;
 			if (data) {
 				setNotes((prevNotes) =>
 					prevNotes.map((note) => {
-						const hydrated = (data as { id: string; content: string }[]).find(
-							(d) => d.id === note.id,
-						);
+						const hydrated = data.find((d) => d.id === note.id);
 						return hydrated ? { ...note, content: hydrated.content } : note;
 					}),
 				);
@@ -64,20 +59,9 @@ export function useNotes(
 		setLoading(true);
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
+			const data = await fetchExtensionNoteMetadatas(supabase, scopeUrls);
 
-			const { data, error } = await supabase
-				.from("sitecue_notes")
-				.select(
-					"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
-				)
-				.or(
-					`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
-				)
-				.order("sort_order", { ascending: true })
-				.order("created_at", { ascending: true });
-
-			if (error) throw error;
-			setNotes((data as Note[]) || []);
+			setNotes(data || []);
 			// Fetch full content in background
 			hydrateContent();
 		} catch (error) {
@@ -167,42 +151,14 @@ export function useNotes(
 	) => {
 		if (!editContent.trim()) return false;
 		try {
-			const currentNote = notes.find((n) => n.id === id);
-			let targetUrlPattern: string | undefined;
-			const updatePayload: {
-				content: string;
-				note_type: NoteType;
-				scope?: NoteScope;
-				url_pattern?: string;
-				tags?: string[];
-			} = {
+			const data = await updateNoteEntity(supabase, id, {
 				content: editContent,
 				note_type: editType,
-				tags: extractTags(editContent),
-			};
+				scope: editScope,
+				currentUrl: currentFullUrl,
+			});
 
-			if (editScope && editScope !== currentNote?.scope) {
-				updatePayload.scope = editScope;
-				const scopeUrls = getScopeUrls(currentFullUrl);
-				targetUrlPattern =
-					editScope === "domain"
-						? scopeUrls.domain
-						: editScope === "exact"
-							? scopeUrls.exact
-							: "inbox";
-				updatePayload.url_pattern = targetUrlPattern;
-			}
-
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update(updatePayload)
-				.eq("id", id);
-
-			if (error) throw error;
-
-			setNotes((prevNotes) =>
-				prevNotes.map((n) => (n.id === id ? { ...n, ...updatePayload } : n)),
-			);
+			setNotes((prevNotes) => prevNotes.map((n) => (n.id === id ? data : n)));
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			return true;
 		} catch (error) {
@@ -215,20 +171,13 @@ export function useNotes(
 	const deleteNote = async (id: string) => {
 		if (!window.confirm("このメモを削除しますか？")) return false;
 
-		// ★修正点: 削除前に、対象のメモがinboxかどうかを特定しておく
 		const noteToDelete = notes.find((n) => n.id === id);
 
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.delete()
-				.eq("id", id);
-
-			if (error) throw error;
+			await deleteNoteEntity(supabase, id);
 
 			setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
 
-			// ★修正点: inboxのメモを削除した時は、バッジカウントを減らさない
 			if (noteToDelete?.scope !== "inbox") {
 				setTotalNoteCount((prev) => Math.max(0, prev - 1));
 				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
@@ -248,12 +197,7 @@ export function useNotes(
 	) => {
 		const nextStatus = !currentStatus;
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ is_resolved: nextStatus })
-				.eq("id", id);
-
-			if (error) throw error;
+			await updateNoteEntity(supabase, id, { is_resolved: nextStatus });
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -280,12 +224,7 @@ export function useNotes(
 		);
 
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ is_favorite: nextStatus })
-				.eq("id", note.id);
-
-			if (error) throw error;
+			await updateNoteEntity(supabase, note.id, { is_favorite: nextStatus });
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
@@ -305,12 +244,7 @@ export function useNotes(
 	const togglePinned = async (note: Note) => {
 		const nextStatus = !note.is_pinned;
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ is_pinned: nextStatus })
-				.eq("id", note.id);
-
-			if (error) throw error;
+			await updateNoteEntity(supabase, note.id, { is_pinned: nextStatus });
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -359,11 +293,7 @@ export function useNotes(
 		});
 
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ sort_order: newSortOrder })
-				.eq("id", id);
-			if (error) throw error;
+			await updateNoteEntity(supabase, id, { sort_order: newSortOrder });
 			return true;
 		} catch (error) {
 			console.error("Failed to update note order", error);
@@ -382,11 +312,7 @@ export function useNotes(
 			),
 		);
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.update({ is_expanded: nextValue })
-				.eq("id", id);
-			if (error) throw error;
+			await updateNoteEntity(supabase, id, { is_expanded: nextValue });
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle expansion", error);

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchNoteContents, fetchNoteMetadatas } from "./notes";
+import {
+	deleteNoteEntity,
+	fetchNoteContents,
+	fetchNoteMetadatas,
+} from "./notes";
 
 // biome-ignore lint/suspicious/noExplicitAny: モック構築用
 type AnyClient = any;
@@ -37,5 +41,19 @@ describe("Shared DAL: notes", () => {
 
 		expect(res).toEqual([]);
 		expect(mockFrom).not.toHaveBeenCalled();
+	});
+
+	it("deleteNoteEntityが正しいクエリチェーンを構築してIDを返すこと", async () => {
+		const mockEq = vi.fn().mockResolvedValue({ error: null });
+		const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+		const mockFrom = vi.fn().mockReturnValue({ delete: mockDelete });
+		const supabase: AnyClient = { from: mockFrom };
+
+		const res = await deleteNoteEntity(supabase, "note-123");
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
+		expect(mockDelete).toHaveBeenCalled();
+		expect(mockEq).toHaveBeenCalledWith("id", "note-123");
+		expect(res).toBe("note-123");
 	});
 });

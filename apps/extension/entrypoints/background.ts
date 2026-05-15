@@ -1,6 +1,5 @@
-import { getMatchingNoteCount } from "@sitecue/shared";
+import { getMatchingNoteCount, getScopeUrls } from "@sitecue/shared";
 import { supabase } from "../src/supabaseClient";
-import { getScopeUrls } from "../src/utils/url";
 
 export default defineBackground(() => {
 	// --- ここに元々の background.ts の中身をそのまま配置 ---

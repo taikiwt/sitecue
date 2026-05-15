@@ -1,4 +1,8 @@
-import { createNoteEntity, updateNoteEntity } from "@sitecue/shared";
+import {
+	createNoteEntity,
+	fetchNotesByUrlPattern,
+	updateNoteEntity,
+} from "@sitecue/shared";
 import { createClient } from "@supabase/supabase-js";
 import { Hono } from "hono";
 import type { Bindings, Variables } from "../types";
@@ -15,16 +19,13 @@ notes.get("/", async (c) => {
 		global: { headers: { Authorization: c.req.header("Authorization") ?? "" } },
 	});
 
-	let query = supabase.from("sitecue_notes").select("*");
-
-	if (url) {
-		query = query.eq("url_pattern", url);
+	try {
+		const data = await fetchNotesByUrlPattern(supabase, url);
+		return c.json(data);
+	} catch (error) {
+		const err = error as Error;
+		return c.json({ error: err.message }, 500);
 	}
-
-	const { data, error } = await query;
-
-	if (error) return c.json({ error: error.message }, 500);
-	return c.json(data);
 });
 
 // ---------------------------------------------------------

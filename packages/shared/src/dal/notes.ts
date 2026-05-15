@@ -90,6 +90,7 @@ export async function updateNoteEntity(
 		is_pinned?: boolean;
 		is_favorite?: boolean;
 		is_expanded?: boolean;
+		sort_order?: number;
 	},
 ): Promise<Note> {
 	const updatePayload: Record<string, unknown> = {};
@@ -124,6 +125,8 @@ export async function updateNoteEntity(
 		updatePayload.is_favorite = updates.is_favorite;
 	if (updates.is_expanded !== undefined)
 		updatePayload.is_expanded = updates.is_expanded;
+	if (updates.sort_order !== undefined)
+		updatePayload.sort_order = updates.sort_order;
 
 	const { data, error } = await supabase
 		.from("sitecue_notes")
@@ -171,4 +174,85 @@ export async function getMatchingNoteCount(
 
 	if (error) throw error;
 	return count || 0;
+}
+
+/**
+ * ノートを削除する (単一)
+ */
+export async function deleteNoteEntity(
+	supabase: SupabaseClient,
+	id: string,
+): Promise<string> {
+	const { error } = await supabase.from("sitecue_notes").delete().eq("id", id);
+	if (error) throw error;
+	return id;
+}
+
+/**
+ * ノートを削除する (複数)
+ */
+export async function deleteNotesEntity(
+	supabase: SupabaseClient,
+	ids: string[],
+): Promise<string[]> {
+	if (ids.length === 0) return [];
+	const { error } = await supabase.from("sitecue_notes").delete().in("id", ids);
+	if (error) throw error;
+	return ids;
+}
+
+/**
+ * URLパターンでノートを取得する (API用)
+ */
+export async function fetchNotesByUrlPattern(
+	supabase: SupabaseClient,
+	urlPattern?: string,
+): Promise<Note[]> {
+	let query = supabase.from("sitecue_notes").select("*");
+	if (urlPattern) {
+		query = query.eq("url_pattern", urlPattern);
+	}
+	const { data, error } = await query;
+	if (error) throw error;
+	return data as Note[];
+}
+
+/**
+ * 拡張機能用のノートメタデータ一覧を取得する
+ */
+export async function fetchExtensionNoteMetadatas(
+	supabase: SupabaseClient,
+	scopeUrls: { domain: string; exact: string },
+): Promise<Note[]> {
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select(
+			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
+		)
+		.or(
+			`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
+		)
+		.order("sort_order", { ascending: true })
+		.order("created_at", { ascending: true });
+
+	if (error) throw error;
+	return data as Note[];
+}
+
+/**
+ * 拡張機能用のノート本文をHydration取得する
+ */
+export async function fetchExtensionNoteContents(
+	supabase: SupabaseClient,
+	scopeUrls: { domain: string; exact: string },
+): Promise<{ id: string; content: string }[]> {
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select("id, content")
+		.or(
+			`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
+		);
+
+	if (error) throw error;
+	return data || [];
 }

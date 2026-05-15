@@ -1,4 +1,9 @@
-import type { SitecueDraftBase, SitecueNoteBase } from "./database";
+import type {
+	SitecueDraftBase,
+	SitecueNoteBase,
+	SitecuePinnedSiteBase,
+	SitecueTemplateBase,
+} from "./database";
 
 export type NoteType = "info" | "alert" | "idea";
 export type ViewScope = "exact" | "domain" | "inbox" | "draft";
@@ -20,4 +25,8 @@ export interface Note extends NoteMetadata {
 	content: string;
 }
 
-export type Draft = SitecueDraftBase;
+export type Draft = SitecueDraftBase & {
+	sitecue_templates?: Template | null;
+};
+export type Template = SitecueTemplateBase;
+export type PinnedSite = SitecuePinnedSiteBase;

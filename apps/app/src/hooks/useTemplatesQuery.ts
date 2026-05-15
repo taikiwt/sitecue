@@ -1,7 +1,7 @@
 "use client";
 
+import type { Template } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Template } from "@/../../../types/app";
 import { createClient } from "@/utils/supabase/client";
 
 export const TEMPLATES_QUERY_KEY = ["templates"];

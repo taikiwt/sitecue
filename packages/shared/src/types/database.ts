@@ -29,3 +29,21 @@ export interface SitecueDraftBase {
 	metadata: Record<string, unknown> | null;
 	template_id: string | null;
 }
+
+export interface SitecueTemplateBase {
+	id: string;
+	created_at: string;
+	user_id: string;
+	name: string;
+	boilerplate: string | null;
+	max_length: number | null;
+	weave_prompt: string | null;
+}
+
+export interface SitecuePinnedSiteBase {
+	id: string;
+	user_id: string;
+	title: string;
+	url: string;
+	created_at: string;
+}

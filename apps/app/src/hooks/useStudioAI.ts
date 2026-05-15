@@ -1,8 +1,8 @@
+import type { Note, Template } from "@sitecue/shared";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
-import type { Note, Template } from "../../../../types/app";
 
 export function useStudioAI() {
 	const supabase = createClient();
