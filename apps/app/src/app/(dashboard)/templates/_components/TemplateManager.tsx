@@ -1,5 +1,6 @@
 "use client";
 
+import type { Template } from "@sitecue/shared";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,7 +27,6 @@ import {
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import type { Template } from "../../../../../../../types/app";
 
 export function TemplateManager({
 	initialTemplates,

@@ -1,5 +1,6 @@
+import { getScopeUrls } from "@sitecue/shared";
 import { useEffect, useState } from "react";
-import { getCurrentTabInfo, getScopeUrls } from "../utils/url";
+import { getCurrentTabInfo } from "../utils/browser";
 
 interface TabChangeInfo {
 	url?: string;

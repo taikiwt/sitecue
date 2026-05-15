@@ -1,3 +1,4 @@
+import { getScopeUrls } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	Check,
@@ -19,7 +20,6 @@ import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
-import { getScopeUrls } from "../utils/url";
 import MarkdownRenderer from "./MarkdownRenderer";
 
 const COLLAPSE_THRESHOLD = 160;

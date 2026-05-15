@@ -1,5 +1,6 @@
 "use client";
 
+import type { Draft, Note, Template } from "@sitecue/shared";
 import { extractTags } from "@sitecue/shared";
 import { ArrowLeft, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -36,7 +37,6 @@ import { useEditorStore } from "@/store/useEditorStore";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
-import type { Draft, Note, Template } from "../../../../../../types/app.ts";
 import { DraftEditorHeader } from "../studio/_components/DraftEditorHeader";
 import StudioMaterialsPane from "../studio/_components/StudioMaterialsPane";
 import StudioReviewPane from "../studio/_components/StudioReviewPane";
@@ -72,7 +72,7 @@ export default function DraftEditor({
 	const [savedState, setSavedState] = useState({
 		content: initialDraft?.content || template?.boilerplate || "",
 		title: initialDraft?.title || "",
-		slug: initialDraft?.metadata?.slug || "",
+		slug: (initialDraft?.metadata?.slug as string) || "",
 	});
 	const [content, setContent] = useState(savedState.content);
 	const [title, setTitle] = useState(savedState.title);

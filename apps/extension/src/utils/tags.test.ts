@@ -1,5 +1,5 @@
+import { extractTags } from "@sitecue/shared";
 import { describe, expect, it } from "vitest";
-import { extractTags } from "./tags";
 
 describe("extractTags", () => {
 	it("通常のハッシュタグを抽出できること", () => {

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Note } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -14,7 +15,6 @@ import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
-import type { Note } from "../../../../../../../types/app.ts";
 
 interface NoteCardProps {
 	note: Note;

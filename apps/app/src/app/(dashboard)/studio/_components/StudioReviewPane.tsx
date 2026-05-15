@@ -15,6 +15,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { Note } from "@sitecue/shared";
 import { Loader2, Sparkles } from "lucide-react";
 import {
 	AlertDialog,
@@ -28,7 +29,6 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import type { Note } from "../../../../../../../types/app.ts";
 import NoteEditor from "../../_components/NoteEditor";
 import NoteCard from "./NoteCard";
 

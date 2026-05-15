@@ -1,19 +1,26 @@
 import type { Session } from "@supabase/supabase-js";
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { supabase } from "../supabaseClient";
 import { useNotes } from "./useNotes";
 
-// Supabaseのモック
-vi.mock("../supabaseClient", () => ({
-	supabase: {
-		from: vi.fn().mockReturnThis(),
-		select: vi.fn().mockReturnThis(),
-		or: vi.fn().mockReturnThis(),
-		order: vi.fn().mockReturnThis(),
-		eq: vi.fn().mockReturnThis(),
-	},
-}));
+// @sitecue/sharedのモック
+vi.mock("@sitecue/shared", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@sitecue/shared")>();
+	return {
+		...actual,
+		fetchExtensionNoteMetadatas: vi.fn(),
+		fetchExtensionNoteContents: vi.fn(),
+		updateNoteEntity: vi.fn(),
+		deleteNoteEntity: vi.fn(),
+		createNoteEntity: vi.fn(),
+	};
+});
+
+import {
+	fetchExtensionNoteContents,
+	fetchExtensionNoteMetadatas,
+	type Note,
+} from "@sitecue/shared";
 
 describe("useNotes hook (Hybrid Fetching)", () => {
 	const mockSession = { user: { id: "user-1" } } as unknown as Session;
@@ -25,23 +32,10 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		];
 
 		// モックの挙動設定: 初回フェッチ
-		vi.mocked(supabase.from).mockReturnValue({
-			select: vi.fn().mockImplementation((query) => {
-				// content が含まれていないことを期待
-				if (query.includes("content")) {
-					return { or: vi.fn().mockResolvedValue({ data: [], error: null }) };
-				}
-				return {
-					or: vi.fn().mockReturnValue({
-						order: vi.fn().mockReturnValue({
-							order: vi
-								.fn()
-								.mockResolvedValue({ data: mockSlimNotes, error: null }),
-						}),
-					}),
-				};
-			}),
-		});
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
+			mockSlimNotes as unknown as Note[],
+		);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result } = renderHook(() =>
 			useNotes(mockSession, mockUrl, vi.fn(), "domain"),
@@ -66,28 +60,10 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		const mockHydratedData = [{ id: "note-1", content: "Hydrated Content" }];
 
 		// モックの挙動設定: SlimフェッチとHydrationフェッチ
-		vi.mocked(supabase.from).mockImplementation(() => ({
-			select: vi.fn().mockImplementation((query) => {
-				if (query === "id, content") {
-					// Hydrationフェッチ
-					return {
-						or: vi
-							.fn()
-							.mockResolvedValue({ data: mockHydratedData, error: null }),
-					};
-				}
-				// Slimフェッチ
-				return {
-					or: vi.fn().mockReturnValue({
-						order: vi.fn().mockReturnValue({
-							order: vi
-								.fn()
-								.mockResolvedValue({ data: mockSlimNotes, error: null }),
-						}),
-					}),
-				};
-			}),
-		}));
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
+			mockSlimNotes as unknown as Note[],
+		);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue(mockHydratedData);
 
 		const { result } = renderHook(() =>
 			useNotes(mockSession, mockUrl, vi.fn(), "domain"),
@@ -113,17 +89,10 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		];
 
 		// Supabaseモックの初期設定
-		vi.mocked(supabase.from).mockImplementation(() => ({
-			select: vi.fn().mockImplementation(() => ({
-				or: vi.fn().mockReturnValue({
-					order: vi.fn().mockReturnValue({
-						order: vi
-							.fn()
-							.mockResolvedValue({ data: mockInboxNotes, error: null }),
-					}),
-				}),
-			})),
-		}));
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
+			mockInboxNotes as unknown as Note[],
+		);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result, rerender } = renderHook(
 			({ url, scope }) => useNotes(mockSession, url, vi.fn(), scope),
@@ -146,14 +115,14 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		// URLのみを変更して再レンダリング
 		rerender({ url: "https://another-page.com", scope: "inbox" as const });
 
-		// 少し待っても supabase.from が呼ばれていないことを確認
+		// 少し待っても fetchExtensionNoteMetadatas が呼ばれていないことを確認
 		await new Promise((resolve) => setTimeout(resolve, 100));
-		expect(supabase.from).not.toHaveBeenCalled();
+		expect(fetchExtensionNoteMetadatas).not.toHaveBeenCalled();
 
 		// 逆に、スコープが domain に変わった場合はフェッチが走るはず
 		rerender({ url: "https://another-page.com", scope: "domain" as const });
 		await waitFor(() => {
-			expect(supabase.from).toHaveBeenCalledWith("sitecue_notes");
+			expect(fetchExtensionNoteMetadatas).toHaveBeenCalled();
 		});
 	});
 });

@@ -1,6 +1,6 @@
+import type { Template } from "@sitecue/shared";
 import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
-import type { Template } from "../../../../../../types/app";
 import { TemplateManager } from "./_components/TemplateManager";
 import { TemplatesPageSkeleton } from "./_components/TemplatesSkeletons";
 
