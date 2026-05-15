@@ -27,6 +27,9 @@ export function useNotes(
 	const [loading, setLoading] = useState(false);
 	const prevUrlRef = useRef<string>(currentFullUrl);
 
+	// 💡 修正: 危険な notesRef を排除し、「初回フェッチが完了したか」だけを追跡する安全なフラグを導入
+	const hasInitialFetchRef = useRef(false);
+
 	const hydrateContent = useCallback(async () => {
 		if (!currentFullUrl || !session) return;
 		try {
@@ -56,17 +59,32 @@ export function useNotes(
 		}
 		prevUrlRef.current = currentFullUrl;
 
-		setLoading(true);
+		// 💡 修正: 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
+		if (!hasInitialFetchRef.current) {
+			setLoading(true);
+		}
+
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
 			const data = await fetchExtensionNoteMetadatas(supabase, scopeUrls);
 
-			setNotes(data || []);
+			// 既存の content（入力中のテキスト等）をマージして保護する
+			setNotes((prevNotes) => {
+				return (data || []).map((newNote) => {
+					const existing = prevNotes.find((n) => n.id === newNote.id);
+					return existing?.content
+						? ({ ...newNote, content: existing.content } as Note)
+						: (newNote as Note);
+				});
+			});
+
 			// Fetch full content in background
 			hydrateContent();
 		} catch (error) {
 			console.error("Failed to fetch notes", error);
 		} finally {
+			// フェッチ完了後、初回フラグを true にして以降の setLoading(true) をブロックする
+			hasInitialFetchRef.current = true;
 			setLoading(false);
 		}
 	}, [currentFullUrl, session, hydrateContent, viewScope]);
