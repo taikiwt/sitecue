@@ -27,7 +27,7 @@ export function useNotes(
 	const [loading, setLoading] = useState(false);
 	const prevUrlRef = useRef<string>(currentFullUrl);
 
-	// 💡 修正: 危険な notesRef を排除し、「初回フェッチが完了したか」だけを追跡する安全なフラグを導入
+	// 危険な notesRef を排除し、「初回フェッチが完了したか」だけを追跡する安全なフラグを導入
 	const hasInitialFetchRef = useRef(false);
 
 	const hydrateContent = useCallback(async () => {
@@ -59,7 +59,7 @@ export function useNotes(
 		}
 		prevUrlRef.current = currentFullUrl;
 
-		// 💡 修正: 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
+		// 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
 		if (!hasInitialFetchRef.current) {
 			setLoading(true);
 		}
