@@ -11,38 +11,80 @@ import "../styles/global.css";
     <meta name="description" content="Capture your thoughts instantly, right on the spot. sitecue pins your memos directly to the web pages you are working on." />
   </head>
   <body class="bg-white antialiased">
-    <main class="max-w-5xl mx-auto px-6 py-24 md:py-36">
-      <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-16">
-        <!-- Text Group -->
-        <div class="flex flex-col items-start">
-          <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#062032] leading-tight">
-            Capture your thoughts instantly, right on the spot.
-          </h1>
-          <h2 class="mt-4 text-xl md:text-2xl font-medium text-zinc-500">
-            Notes that wait exactly where you left them.
-          </h2>
-          <p class="mt-8 text-zinc-500 text-lg leading-relaxed">
-            Never worry about where to save or find your notes again. sitecue pins your memos directly to the web pages you are working on. Write immediately, change tabs freely, and let AI weave your thoughts at your Base Camp.
-          </p>
-          <div class="mt-10">
-            <a 
-              href="#" 
-              class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity"
-            >
-              Get sitecue for Chrome
-            </a>
+    <main>
+      <!-- Hero Section -->
+      <section class="max-w-5xl mx-auto px-6 py-24 md:py-36">
+        <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-16">
+          <!-- Text Group -->
+          <div class="flex flex-col items-start">
+            <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#062032] leading-tight">
+              Capture your thoughts instantly, right on the spot.
+            </h1>
+            <p class="mt-4 text-xl md:text-2xl font-medium text-zinc-500">
+              Notes that wait exactly where you left them.
+            </p>
+            <p class="mt-8 text-zinc-500 text-lg leading-relaxed">
+              Never worry about where to save or find your notes again. sitecue pins your memos directly to the web pages you are working on. Write immediately, change tabs freely, and let AI weave your thoughts at your Base Camp.
+            </p>
+            <div class="mt-10">
+              <a 
+                href="#" 
+                class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity"
+              >
+                Get sitecue for Chrome
+              </a>
+            </div>
+          </div>
+
+          <!-- Mockup Image -->
+          <div class="flex justify-center">
+            <img 
+              src="/assets/hero-mock.png" 
+              alt="sitecue hero mockup" 
+              class="md:w-full h-auto"
+            />
           </div>
         </div>
+      </section>
 
-        <!-- Mockup Image -->
-        <div class="flex justify-center">
-          <img 
-            src="/assets/hero-mock.png" 
-            alt="sitecue hero mockup" 
-            class="md:w-full h-auto"
-          />
+      <!-- Why sitecue? Section -->
+      <section class="max-w-3xl mx-auto px-6 py-24 md:py-36">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight text-[#062032] leading-tight">
+          The internet is full of inspiration, but capturing it is broken. Are you tired of these mental noises?
+        </h2>
+        
+        <div class="mt-24 md:mt-32 flex flex-col space-y-16 md:space-y-24">
+          <!-- Item 1 -->
+          <div>
+            <h3 class="text-xl md:text-2xl font-bold text-[#062032]">
+              Where did I save it?
+            </h3>
+            <p class="mt-4 text-zinc-500 text-lg leading-relaxed">
+              Losing focus by opening heavy apps just to write a simple thought.
+            </p>
+          </div>
+
+          <!-- Item 2 -->
+          <div>
+            <h3 class="text-xl md:text-2xl font-bold text-[#062032]">
+              Where did I see it?
+            </h3>
+            <p class="mt-4 text-zinc-500 text-lg leading-relaxed">
+              Forgetting the original web page or context when you look back at your notes.
+            </p>
+          </div>
+
+          <!-- Item 3 -->
+          <div>
+            <h3 class="text-xl md:text-2xl font-bold text-[#062032]">
+              Did I already write this?
+            </h3>
+            <p class="mt-4 text-zinc-500 text-lg leading-relaxed">
+              Leaving the exact same memo because your old notes are buried and forgotten.
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   </body>
 </html>
