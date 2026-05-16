@@ -3,18 +3,47 @@
 import "../styles/global.css";
 ---
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>sitecue</title>
+    <title>sitecue - Capture your thoughts instantly</title>
+    <meta name="description" content="Capture your thoughts instantly, right on the spot. sitecue pins your memos directly to the web pages you are working on." />
   </head>
-  <body class="bg-white text-zinc-900 antialiased selection:bg-zinc-100">
-    <main class="max-w-5xl mx-auto px-6 py-32">
-      <h1 class="text-4xl font-normal tracking-tight text-zinc-900">sitecue</h1>
-      <p class="mt-6 text-zinc-500 font-normal leading-relaxed max-w-2xl">
-        Subtraction Aesthetics. (Powered by Astro v6 & Tailwind v4)
-      </p>
+  <body class="bg-white antialiased">
+    <main class="max-w-5xl mx-auto px-6 py-24 md:py-36">
+      <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-16">
+        <!-- Text Group -->
+        <div class="flex flex-col items-start">
+          <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#062032] leading-tight">
+            Capture your thoughts instantly, right on the spot.
+          </h1>
+          <h2 class="mt-4 text-xl md:text-2xl font-medium text-zinc-500">
+            Notes that wait exactly where you left them.
+          </h2>
+          <p class="mt-8 text-zinc-500 text-lg leading-relaxed">
+            Never worry about where to save or find your notes again. sitecue pins your memos directly to the web pages you are working on. Write immediately, change tabs freely, and let AI weave your thoughts at your Base Camp.
+          </p>
+          <div class="mt-10">
+            <a 
+              href="#" 
+              class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity"
+            >
+              Get sitecue for Chrome
+            </a>
+          </div>
+        </div>
+
+        <!-- Mockup Image -->
+        <div class="flex justify-center">
+          <img 
+            src="/assets/hero-mock.png" 
+            alt="sitecue hero mockup" 
+            class="md:w-full h-auto"
+          />
+        </div>
+      </div>
     </main>
   </body>
 </html>
+
