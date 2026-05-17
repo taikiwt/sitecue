@@ -34,7 +34,7 @@ export async function RecentDraftsSection() {
 					<Link
 						key={draft.id}
 						href={`/studio/${draft.id}`}
-						className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 -mx-3 px-3 rounded-lg launchpad-transition launchpad-card-recent"
+						className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 md:-mx-3 md:px-3 rounded-lg launchpad-transition launchpad-card-recent"
 					>
 						<div className="min-w-0 flex-1">
 							<h3 className="text-sm text-action truncate group-hover:text-action-hover">
