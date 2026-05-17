@@ -11,7 +11,7 @@ export async function RecentDraftsSection() {
 		.limit(5);
 
 	return (
-		<div>
+		<div className="w-full min-w-0">
 			<div className="mb-4 md:mb-6 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<Clock className="w-4 h-4 text-neutral-400" aria-hidden="true" />
@@ -24,7 +24,7 @@ export async function RecentDraftsSection() {
 					View all
 				</Link>
 			</div>
-			<div className="flex flex-col">
+			<div className="flex flex-col w-full min-w-0">
 				{(!recentDrafts || recentDrafts.length === 0) && (
 					<div className="py-8 text-center border border-dashed border-base-border rounded-xl">
 						<p className="text-xs text-neutral-400 italic">No drafts yet.</p>
@@ -34,14 +34,14 @@ export async function RecentDraftsSection() {
 					<Link
 						key={draft.id}
 						href={`/studio/${draft.id}`}
-						className="group flex items-center justify-between py-3 border-b border-base-border/50 last:border-0 md:-mx-3 md:px-3 rounded-lg launchpad-transition launchpad-card-recent"
+						className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 py-3 border-b border-base-border/50 last:border-0 md:-mx-3 md:px-3 rounded-lg launchpad-transition launchpad-card-recent"
 					>
-						<div className="min-w-0 flex-1">
+						<div className="min-w-0">
 							<h3 className="text-sm text-action truncate group-hover:text-action-hover">
 								{draft.title || "Untitled Draft"}
 							</h3>
 						</div>
-						<div className="flex items-center gap-3 shrink-0 ml-4">
+						<div className="flex items-center gap-3">
 							<span className="text-[10px] text-neutral-400 font-mono">
 								{new Date(draft.updated_at).toLocaleDateString()}
 							</span>
