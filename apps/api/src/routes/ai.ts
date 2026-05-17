@@ -86,7 +86,7 @@ ai.post("/review", async (c) => {
 	}
 
 	try {
-		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
 		const reviews = await generateReview(
 			c.env.GEMINI_API_KEY,
 			modelName,
@@ -125,7 +125,7 @@ ai.post("/hint", async (c) => {
 	}
 
 	try {
-		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+		const modelName = c.env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
 		const hint = await generateHint(
 			c.env.GEMINI_API_KEY,
 			modelName,

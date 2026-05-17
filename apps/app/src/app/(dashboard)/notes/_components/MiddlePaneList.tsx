@@ -30,9 +30,7 @@ import {
 	Lightbulb,
 	ListChecks,
 	Plus,
-	Search,
 	Trash2,
-	X,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -46,6 +44,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useUpdateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
@@ -459,37 +458,16 @@ export function MiddlePaneList(props: Props) {
 
 				{/* Search & Filters */}
 				<div className="space-y-3">
-					<div className="relative flex items-center">
-						<Search
-							className="absolute left-3 w-4 h-4 text-base-content opacity-50"
-							aria-hidden="true"
-						/>
-						<input
-							type="text"
-							value={inputValue}
-							onChange={(e) => setInputValue(e.target.value)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter") {
-									updateParams("q", inputValue);
-								}
-							}}
-							placeholder="Search notes..."
-							className="w-full pl-9 pr-8 py-2 text-sm bg-base-surface border border-transparent focus:border-action rounded-md outline-none transition-colors"
-						/>
-						{inputValue && (
-							<button
-								type="button"
-								onClick={() => {
-									setInputValue("");
-									updateParams("q", "");
-								}}
-								className="absolute right-2 p-1 text-base-content opacity-50 hover:opacity-100 hover:text-action transition-all cursor-pointer"
-								aria-label="Clear search"
-							>
-								<X className="w-3.5 h-3.5" aria-hidden="true" />
-							</button>
-						)}
-					</div>
+					<SearchInputBase
+						value={inputValue}
+						onChange={setInputValue}
+						onClear={() => {
+							setInputValue("");
+							updateParams("q", "");
+						}}
+						onSubmit={() => updateParams("q", inputValue)}
+						placeholder="Search notes..."
+					/>
 
 					{/* Note Filters (Moved from internal header) */}
 					{isSelected && currentView !== "drafts" && isShowingNotesList && (

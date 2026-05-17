@@ -67,7 +67,7 @@ export async function weaveDocument(
 	);
 
 	const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-	const modelName = env.GEMINI_MODEL_NAME || "gemini-2.5-flash";
+	const modelName = env.GEMINI_MODEL_NAME || "gemini-3.1-flash-lite";
 	const model = genAI.getGenerativeModel({ model: modelName });
 
 	const result = await model.generateContent(fullPrompt);
