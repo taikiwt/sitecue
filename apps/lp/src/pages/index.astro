@@ -1,7 +1,10 @@
 ---
 import Layout from "../layouts/Layout.astro";
 ---
-<Layout>
+<Layout 
+  title="sitecue — Capture on the web. Think deeply at Base Camp." 
+  description="The frictionless extension to save your thoughts, and the quiet studio to weave them."
+>
   <main>
     <!-- Hero Section -->
     <section class="max-w-5xl mx-auto px-6 py-24 md:py-36">
@@ -9,28 +12,34 @@ import Layout from "../layouts/Layout.astro";
         <!-- Text Group -->
         <div class="flex flex-col items-start">
           <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-[#062032] leading-tight">
-            Capture your thoughts instantly, right on the spot.
+            Capture on the web. Think deeply at Base Camp.
           </h1>
           <p class="mt-4 text-xl md:text-2xl font-medium text-zinc-500">
-            Notes that wait exactly where you left them.
+            The frictionless extension to save your thoughts, and the quiet studio to weave them.
           </p>
           <p class="mt-8 text-zinc-500 text-lg leading-relaxed">
             Never worry about where to save or find your notes again. sitecue pins your memos directly to the web pages you are working on. Write immediately, change tabs freely, and let AI weave your thoughts at your Base Camp.
           </p>
-          <div class="mt-10">
+          <div class="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <a 
-              href="#" 
-              class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity"
+              href="https://chromewebstore.google.com/detail/sitecue/flnajjlpgkgaboljmeinffhgohlhemak" 
+              class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity text-center"
             >
               Get sitecue for Chrome
+            </a>
+            <a 
+              href="https://app.sitecue.app" 
+              class="inline-block border border-[#062032] text-[#062032] px-8 py-4 font-bold hover:bg-zinc-50 transition-colors text-center"
+            >
+              Open Basecamp
             </a>
           </div>
         </div>
 
         <!-- Mockup Image -->
-        <div class="flex justify-center">
+        <div class="hidden md:flex justify-center">
           <img 
-            src="/assets/hero-mock.png" 
+            src="/assets/hero-combined.png" 
             alt="sitecue hero mockup" 
             class="md:w-full h-auto"
           />
@@ -81,7 +90,7 @@ import Layout from "../layouts/Layout.astro";
     <section class="max-w-5xl mx-auto px-6 py-24 md:py-36">
       <div class="grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-16">
         <!-- Image Column -->
-        <div class="flex justify-center">
+        <div class="hidden md:flex justify-center">
           <img 
             src="/assets/extension-detail.png" 
             alt="sitecue extension interface" 
@@ -159,7 +168,7 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <!-- Middle: Large Image -->
-      <div class="mt-16 md:mt-24">
+      <div class="hidden md:block mt-16 md:mt-24">
         <img 
           src="/assets/basecamp-studio.png" 
           alt="sitecue Base Camp Studio interface" 
@@ -212,7 +221,7 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <!-- Middle: Symbolic Image -->
-      <div class="mt-12 md:mt-16">
+      <div class="hidden md:block mt-12 md:mt-16">
         <img 
           src="/assets/usecases-symbol.png" 
           alt="sitecue daily workflow visual" 
@@ -255,14 +264,20 @@ import Layout from "../layouts/Layout.astro";
     <!-- Footer CTA Section -->
     <section class="max-w-3xl mx-auto px-6 py-32 md:py-48 text-center flex flex-col items-center">
       <h2 class="text-3xl md:text-5xl font-bold tracking-tight text-[#062032] leading-tight">
-        Ready to travel light across the web?
+        Ready to capture and create?
       </h2>
-      <div class="mt-12">
+      <div class="mt-12 flex flex-col sm:flex-row gap-4 justify-center w-full sm:w-auto">
         <a 
-          href="#" 
-          class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity"
+          href="https://chromewebstore.google.com/detail/sitecue/flnajjlpgkgaboljmeinffhgohlhemak" 
+          class="inline-block bg-[#062032] text-white px-8 py-4 font-bold hover:opacity-90 transition-opacity text-center"
         >
           Get sitecue for Chrome
+        </a>
+        <a 
+          href="https://app.sitecue.app" 
+          class="inline-block border border-[#062032] text-[#062032] px-8 py-4 font-bold hover:bg-zinc-50 transition-colors text-center"
+        >
+          Open Basecamp
         </a>
       </div>
     </section>
