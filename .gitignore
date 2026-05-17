@@ -68,3 +68,7 @@ dist/
 
 # Diffファイル
 *.diff
+
+# --- Astro.js ---
+dist/
+.astro/
