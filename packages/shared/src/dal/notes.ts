@@ -256,3 +256,33 @@ export async function fetchExtensionNoteContents(
 	if (error) throw error;
 	return data || [];
 }
+
+/**
+ * ノート数が多い上位ドメインのアクティビティを取得する (RSC用)
+ */
+export async function fetchTopDomainActivity(
+	supabase: SupabaseClient,
+	userId: string,
+	limit = 6,
+): Promise<{ domain: string; noteCount: number }[]> {
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select("url_pattern")
+		.eq("user_id", userId)
+		.eq("scope", "domain");
+
+	if (error) throw error;
+	if (!data) return [];
+
+	const counts: Record<string, number> = {};
+	for (const row of data) {
+		if (row.url_pattern) {
+			counts[row.url_pattern] = (counts[row.url_pattern] || 0) + 1;
+		}
+	}
+
+	return Object.entries(counts)
+		.map(([domain, count]) => ({ domain, noteCount: count }))
+		.sort((a, b) => b.noteCount - a.noteCount)
+		.slice(0, limit);
+}

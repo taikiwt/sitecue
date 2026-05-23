@@ -1,86 +1,188 @@
-import type { PinnedSite } from "@sitecue/shared";
-import { ArrowRight, Library } from "lucide-react";
+import { fetchTopDomainActivity } from "@sitecue/shared";
+import { ArrowRight, Calendar, Clock, Layers } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
-import { PinnedSitesManager } from "./_components/PinnedSitesManager";
-import { RecentDraftsSection } from "./_components/RecentDraftsSection";
-import {
-	PinnedSitesSkeleton,
-	RecentDraftsSkeleton,
-	StatsOverviewSkeleton,
-	TemplateSelectorSkeleton,
-} from "./_components/Skeletons";
-import { StatsOverviewSection } from "./_components/StatsOverviewSection";
-import { TemplateSelectorSection } from "./_components/TemplateSelectorSection";
+import { ContributionTimeline } from "./_components/ContributionTimeline";
+import { DomainDashboardCard } from "./_components/DomainDashboardCard";
+import { RadialActivityChart } from "./_components/RadialActivityChart";
 
-// Server Actionsを利用したServer Component
-async function PinnedSitesSection() {
-	const { supabase } = await requireUser("/");
-	const { data: pinnedSites } = await supabase
-		.from("sitecue_pinned_sites")
-		.select("*")
-		.order("created_at", { ascending: false });
+// Today's Stats card component
+async function TodayRecapCard() {
+	const { supabase, user } = await requireUser("/");
+
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const startOfDay = today.toISOString();
+
+	const [{ count: todayNotes }, { count: todayDrafts }] = await Promise.all([
+		supabase
+			.from("sitecue_notes")
+			.select("*", { count: "exact", head: true })
+			.eq("user_id", user.id)
+			.gte("created_at", startOfDay),
+		supabase
+			.from("sitecue_drafts")
+			.select("*", { count: "exact", head: true })
+			.eq("user_id", user.id)
+			.gte("created_at", startOfDay),
+	]);
+
+	const todayTotal = (todayNotes || 0) + (todayDrafts || 0);
+
+	const formattedDate = new Date().toLocaleDateString("en-US", {
+		weekday: "short",
+		month: "short",
+		day: "numeric",
+	});
 
 	return (
-		<PinnedSitesManager initialSites={(pinnedSites as PinnedSite[]) ?? []} />
+		<div className="flex flex-col justify-between p-5 rounded-xl bg-base-surface border border-base-border h-full">
+			<div className="flex justify-between items-start">
+				<div>
+					<span className="text-[10px] uppercase tracking-wider text-neutral-400 font-mono">
+						Today's Focus
+					</span>
+					<h3 className="text-sm font-semibold text-neutral-500 mt-1">
+						{formattedDate}
+					</h3>
+				</div>
+				<Calendar className="w-4 h-4 text-neutral-400" aria-hidden="true" />
+			</div>
+
+			<div className="my-2">
+				<span className="text-5xl font-extrabold tracking-tighter text-action">
+					{todayTotal}
+				</span>
+				<span className="text-xs text-neutral-500 ml-1.5 font-medium">
+					new entries today
+				</span>
+			</div>
+
+			<Link
+				href="/notes"
+				className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover-safe:text-action transition-colors group/link mt-auto"
+			>
+				<span>Open inbox</span>
+				<ArrowRight
+					className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-0.5"
+					aria-hidden="true"
+				/>
+			</Link>
+		</div>
 	);
 }
 
+// Domain Dashboard Grid Component
+async function DomainDashboardGrid() {
+	const { supabase, user } = await requireUser("/");
+	const topDomains = await fetchTopDomainActivity(supabase, user.id, 6);
+
+	if (topDomains.length === 0) {
+		return (
+			<div className="rounded-xl border border-dashed border-base-border p-8 text-center text-sm text-neutral-500">
+				No active domain tracking detected. Capture notes via Extension to build
+				domain activity.
+			</div>
+		);
+	}
+
+	const domainsWithNotes = await Promise.all(
+		topDomains.map(async (d) => {
+			const { data: notes } = await supabase
+				.from("sitecue_notes")
+				.select("id, content")
+				.eq("user_id", user.id)
+				.eq("scope", "domain")
+				.eq("url_pattern", d.domain)
+				.order("created_at", { ascending: false })
+				.limit(3);
+			return {
+				domain: d.domain,
+				totalCount: d.noteCount,
+				recentNotes: notes || [],
+			};
+		}),
+	);
+
+	return (
+		<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+			{domainsWithNotes.map((item) => (
+				<DomainDashboardCard
+					key={item.domain}
+					domain={item.domain}
+					totalCount={item.totalCount}
+					recentNotes={item.recentNotes}
+				/>
+			))}
+		</div>
+	);
+}
+
+// Main page component
 export default async function LaunchpadPage() {
-	// 最速で認証ガードのみ通過させる
 	await requireUser("/");
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto">
-			<main className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-12">
-				<div className="mb-8 md:mb-16">
-					<Suspense fallback={<PinnedSitesSkeleton />}>
-						<PinnedSitesSection />
+			<main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-10">
+				{/* ① [最上部] ダッシュボード（Radial Chart & 今日のノート等） */}
+				<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<Suspense
+						fallback={
+							<div className="h-48 md:col-span-2 bg-base-surface rounded-xl border border-base-border animate-pulse" />
+						}
+					>
+						<RadialActivityChart />
 					</Suspense>
-				</div>
-
-				<div className="mb-8 md:mb-20 grid gap-8 md:gap-12 md:grid-cols-[1fr_2fr] items-start">
-					<div>
-						<Suspense fallback={<StatsOverviewSkeleton />}>
-							<StatsOverviewSection />
-						</Suspense>
-					</div>
-					<div>
-						<Suspense fallback={<RecentDraftsSkeleton />}>
-							<RecentDraftsSection />
-						</Suspense>
-					</div>
-				</div>
-
-				<section className="mb-12 md:mb-20">
-					<Suspense fallback={<TemplateSelectorSkeleton />}>
-						<TemplateSelectorSection />
+					<Suspense
+						fallback={
+							<div className="h-48 bg-base-surface rounded-xl border border-base-border animate-pulse" />
+						}
+					>
+						<TodayRecapCard />
 					</Suspense>
 				</section>
 
-				<section className="mb-12">
-					<Link
-						href="/notes"
-						className="group flex w-full items-center justify-between rounded-xl border border-base-border bg-base-surface p-4 cursor-pointer launchpad-transition launchpad-card-manage"
-					>
-						<div className="flex items-center gap-3">
-							<Library
-								className="w-5 h-5 text-neutral-500"
-								aria-hidden="true"
-							/>
-							<div>
-								<h3 className="text-base text-action">Manage Notes</h3>
-								<p className="text-xs text-neutral-500">
-									View and organize all your created notes and drafts.
-								</p>
+				{/* ② [中央] Domain Activity 情報コンテナ */}
+				<section>
+					<div className="flex items-center gap-2 mb-4">
+						<Layers className="w-4 h-4 text-neutral-400" aria-hidden="true" />
+						<h2 className="text-base font-bold tracking-tight text-action">
+							Domain Activity
+						</h2>
+					</div>
+					<Suspense
+						fallback={
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
+								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
+								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
 							</div>
-						</div>
-						<ArrowRight
-							className="w-4 h-4 text-neutral-400 group-hover:translate-x-1 transition-transform"
-							aria-hidden="true"
-						/>
-					</Link>
+						}
+					>
+						<DomainDashboardGrid />
+					</Suspense>
+				</section>
+
+				{/* ③ [下部] Contribution Activity タイムライン */}
+				<section className="pb-8">
+					<div className="flex items-center gap-2 mb-5">
+						<Clock className="w-4 h-4 text-neutral-400" aria-hidden="true" />
+						<h2 className="text-base font-bold tracking-tight text-action">
+							Activity Log
+						</h2>
+					</div>
+					<Suspense
+						fallback={
+							<div className="pl-4 ml-2 flex flex-col gap-4">
+								<div className="h-8 w-2/3 bg-base-surface/50 rounded animate-pulse" />
+								<div className="h-8 w-1/2 bg-base-surface/50 rounded animate-pulse" />
+							</div>
+						}
+					>
+						<ContributionTimeline />
+					</Suspense>
 				</section>
 			</main>
 		</div>

@@ -1,40 +1,79 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { NOTES_LIMIT } from "@/constants/limits";
-import { StatsOverviewSection } from "./_components/StatsOverviewSection";
+import LaunchpadPage from "./page";
 
-// Next.js Server Component 用の Supabase モック
+// Next.js Server Component mock for Supabase & Auth
 vi.mock("@/utils/supabase/server", () => {
-	const mockSupabaseBuilder = {
+	const mockBuilder = {
 		select: vi.fn().mockReturnThis(),
+		eq: vi.fn().mockReturnThis(),
 		order: vi.fn().mockReturnThis(),
 		limit: vi.fn().mockReturnThis(),
+		gte: vi.fn().mockReturnThis(),
 		// biome-ignore lint/suspicious/noThenProperty: Supabase mock needs to be thenable
 		then: vi.fn().mockImplementation((onFulfilled) => {
-			return Promise.resolve(onFulfilled({ count: 450, data: [] }));
+			return Promise.resolve(
+				onFulfilled({
+					count: 0,
+					data: [],
+					error: null,
+				}),
+			);
 		}),
 	};
+
 	const mockSupabase = {
-		from: vi.fn().mockReturnValue(mockSupabaseBuilder),
+		from: vi.fn().mockReturnValue(mockBuilder),
 	};
+
 	return {
 		requireUser: vi.fn().mockResolvedValue({
 			supabase: mockSupabase,
-			user: { id: "test-user" },
+			user: { id: "test-user-id" },
 		}),
 		createClient: vi.fn().mockResolvedValue(mockSupabase),
 	};
 });
 
-describe("StatsOverviewSection - Note Limit Warning", () => {
-	it("renders warning banner when notesCount is at or above WARNING_THRESHOLD", async () => {
-		// Async Server Component を解決してレンダリング
-		const Section = await StatsOverviewSection();
-		render(Section);
+// Mock fetchTopDomainActivity from shared DAL
+vi.mock("@sitecue/shared", () => ({
+	fetchTopDomainActivity: vi.fn().mockResolvedValue([
+		{ domain: "github.com", noteCount: 5 },
+		{ domain: "127.0.0.1", noteCount: 2 }, // IP fallback test
+	]),
+}));
 
-		// 警告メッセージが表示されていることを確認
-		const warningText = `Note storage almost full (450/${NOTES_LIMIT.MAX_FREE}). Upgrade to unlock unlimited notes.`;
-		expect(screen.getByText(warningText)).toBeInTheDocument();
-		expect(screen.getByText("Upgrade")).toBeInTheDocument();
+describe("LaunchpadPage - High Density Linear Style UI", () => {
+	it("renders refined sections correctly", async () => {
+		// Resolve Async Server Component
+		const PageComponent = await LaunchpadPage();
+
+		await act(async () => {
+			render(PageComponent);
+		});
+
+		// 1. Verify voxel bar capacity metrics text is completely removed
+		expect(
+			screen.queryByText("Total processed capacity"),
+		).not.toBeInTheDocument();
+		expect(
+			screen.queryByText("Total processed capacity: 42 notes"),
+		).not.toBeInTheDocument();
+
+		// 2. Verify new dashboard sections render correctly
+		expect(await screen.findByText("Weekly Progress")).toBeInTheDocument();
+		expect(await screen.findByText("Notes Captured")).toBeInTheDocument();
+		expect(await screen.findByText("Drafts Created")).toBeInTheDocument();
+
+		// 3. Verify Today's Focus / Recap section renders
+		expect(await screen.findByText("Today's Focus")).toBeInTheDocument();
+
+		// 4. Verify Domain Activity grid header and cards render (including IP domain)
+		expect(await screen.findByText("Domain Activity")).toBeInTheDocument();
+		expect(await screen.findByText("github.com")).toBeInTheDocument();
+		expect(await screen.findByText("127.0.0.1")).toBeInTheDocument();
+
+		// 5. Verify Activity Log timeline renders
+		expect(await screen.findByText("Activity Log")).toBeInTheDocument();
 	});
 });
