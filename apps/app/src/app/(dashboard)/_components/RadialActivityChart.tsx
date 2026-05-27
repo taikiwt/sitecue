@@ -44,7 +44,7 @@ export async function RadialActivityChart() {
 	const offset2 = c2 - (draftPct / 100) * c2;
 
 	return (
-		<div className="flex flex-col md:flex-row items-center gap-6 p-6 rounded-xl bg-base-surface border border-base-border md:col-span-2">
+		<div className="flex flex-col md:flex-row items-center gap-6 p-6 rounded-xl border border-base-border md:col-span-2">
 			<div className="relative w-32 h-32 flex items-center justify-center shrink-0">
 				<svg
 					className="w-full h-full transform -rotate-90"

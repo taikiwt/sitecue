@@ -125,16 +125,9 @@ export default async function LaunchpadPage() {
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto">
-			<main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-10">
+			<main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
 				{/* ① [最上部] ダッシュボード（Radial Chart & 今日のノート等） */}
 				<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<Suspense
-						fallback={
-							<div className="h-48 md:col-span-2 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-						}
-					>
-						<RadialActivityChart />
-					</Suspense>
 					<Suspense
 						fallback={
 							<div className="h-48 bg-base-surface rounded-xl border border-base-border animate-pulse" />
@@ -142,13 +135,20 @@ export default async function LaunchpadPage() {
 					>
 						<TodayRecapCard />
 					</Suspense>
+					<Suspense
+						fallback={
+							<div className="h-48 md:col-span-2 bg-base-surface rounded-xl border border-base-border animate-pulse" />
+						}
+					>
+						<RadialActivityChart />
+					</Suspense>
 				</section>
 
 				{/* ② [中央] Domain Activity 情報コンテナ */}
 				<section>
 					<div className="flex items-center gap-2 mb-4">
-						<Layers className="w-4 h-4 text-neutral-400" aria-hidden="true" />
-						<h2 className="text-base font-bold tracking-tight text-action">
+						<Layers className="w-5 h-5 text-neutral-400" aria-hidden="true" />
+						<h2 className="text-3xl font-bold tracking-tight text-action">
 							Domain Activity
 						</h2>
 					</div>
@@ -168,8 +168,8 @@ export default async function LaunchpadPage() {
 				{/* ③ [下部] Contribution Activity タイムライン */}
 				<section className="pb-8">
 					<div className="flex items-center gap-2 mb-5">
-						<Clock className="w-4 h-4 text-neutral-400" aria-hidden="true" />
-						<h2 className="text-base font-bold tracking-tight text-action">
+						<Clock className="w-5 h-5 text-neutral-400" aria-hidden="true" />
+						<h2 className="text-3xl font-bold tracking-tight text-action">
 							Activity Log
 						</h2>
 					</div>
