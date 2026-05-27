@@ -32,7 +32,7 @@ export function DomainDashboardCard({
 		domain.includes("127.0.0.1") || domain.includes("localhost");
 
 	return (
-		<div className="relative group overflow-hidden rounded-xl bg-base-surface border border-base-border p-5 transition-all duration-300 hover-safe:shadow-md hover-safe:border-neutral-400">
+		<div className="relative group overflow-hidden rounded-xl border border-base-border p-5 transition-all duration-300 hover-safe:shadow-md hover-safe:border-neutral-400">
 			{/* カード全体の透明リンク（SSOTパラメータ） */}
 			<Link
 				href={`/notes?domain=${domain}&view=domain`}
@@ -41,10 +41,10 @@ export function DomainDashboardCard({
 			/>
 
 			{/* インラインスタイルによる極細かつシャープな髪の毛アクセント線 */}
-			<div
-				className="absolute left-0 top-0 bottom-0 w-[2px]"
-				style={{ backgroundColor: theme.color }}
-			/>
+			{/* <div */}
+			{/* 	className="absolute left-0 top-0 bottom-0 w-[2px]" */}
+			{/* 	style={{ backgroundColor: theme.color }} */}
+			{/* /> */}
 
 			<div className="relative z-10 flex flex-col gap-3 pointer-events-none">
 				<div className="flex justify-between items-start">
