@@ -30,3 +30,23 @@ export type Draft = SitecueDraftBase & {
 };
 export type Template = SitecueTemplateBase;
 export type PinnedSite = SitecuePinnedSiteBase;
+
+export interface DashboardSnippetNote {
+	id: string;
+	content: string;
+}
+
+export interface DashboardPageActivity {
+	page_url: string;
+	page_title: string | null;
+	page_count: number;
+	page_notes: DashboardSnippetNote[];
+}
+
+export interface DashboardDomainActivity {
+	domain: string;
+	total_count: number;
+	domain_notes: DashboardSnippetNote[];
+	top_pages: DashboardPageActivity[];
+}
+
