@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Note, NoteMetadata } from "../types/app";
+import type { Note, NoteMetadata, DashboardDomainActivity } from "../types/app";
 import { type CreateNoteInput, resolveNotePayload } from "../utils/notes";
 import { extractTags } from "../utils/tags";
 import { normalizeUrl } from "../utils/url";
@@ -286,3 +286,21 @@ export async function fetchTopDomainActivity(
 		.sort((a, b) => b.noteCount - a.noteCount)
 		.slice(0, limit);
 }
+
+/**
+ * ダッシュボード用のドメインアクティビティを一括取得する (RSC用)
+ * N+1クエリを回避し、単一のRPCで取得する。
+ */
+export async function fetchDashboardDomainActivity(
+	supabase: SupabaseClient,
+	userId: string,
+	limit = 6,
+): Promise<DashboardDomainActivity[]> {
+	const { data, error } = await supabase.rpc("get_dashboard_domain_activity", {
+		p_user_id: userId,
+		p_limit: limit,
+	});
+	if (error) throw error;
+	return (data as DashboardDomainActivity[]) || [];
+}
+

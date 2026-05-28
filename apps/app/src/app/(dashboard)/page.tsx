@@ -1,4 +1,4 @@
-import { fetchTopDomainActivity } from "@sitecue/shared";
+import { fetchDashboardDomainActivity } from "@sitecue/shared";
 import { ArrowRight, Calendar, Clock, Layers } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -76,9 +76,9 @@ async function TodayRecapCard() {
 // Domain Dashboard Grid Component
 async function DomainDashboardGrid() {
 	const { supabase, user } = await requireUser("/");
-	const topDomains = await fetchTopDomainActivity(supabase, user.id, 6);
+	const activities = await fetchDashboardDomainActivity(supabase, user.id, 6);
 
-	if (topDomains.length === 0) {
+	if (activities.length === 0) {
 		return (
 			<div className="rounded-xl border border-dashed border-base-border p-8 text-center text-sm text-neutral-500">
 				No active domain tracking detected. Capture notes via Extension to build
@@ -87,33 +87,10 @@ async function DomainDashboardGrid() {
 		);
 	}
 
-	const domainsWithNotes = await Promise.all(
-		topDomains.map(async (d) => {
-			const { data: notes } = await supabase
-				.from("sitecue_notes")
-				.select("id, content")
-				.eq("user_id", user.id)
-				.eq("scope", "domain")
-				.eq("url_pattern", d.domain)
-				.order("created_at", { ascending: false })
-				.limit(3);
-			return {
-				domain: d.domain,
-				totalCount: d.noteCount,
-				recentNotes: notes || [],
-			};
-		}),
-	);
-
 	return (
-		<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-			{domainsWithNotes.map((item) => (
-				<DomainDashboardCard
-					key={item.domain}
-					domain={item.domain}
-					totalCount={item.totalCount}
-					recentNotes={item.recentNotes}
-				/>
+		<div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+			{activities.map((activity) => (
+				<DomainDashboardCard key={activity.domain} data={activity} />
 			))}
 		</div>
 	);
