@@ -1,5 +1,5 @@
 import type { DashboardDomainActivity } from "@sitecue/shared";
-import { ArrowUpRight, FileText, Globe } from "lucide-react";
+import { FileText, Globe, FolderOpen } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 
@@ -20,7 +20,7 @@ export function DomainDashboardCard({ data }: Props) {
 	return (
 		<div className="border border-base-border rounded-xl p-5 flex flex-col gap-4">
 			{/* ドメインヘッダー: Gridによる完全保護 */}
-			<div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center w-full">
+			<div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center w-full pb-3 border-b border-base-border/50 ">
 				<div className="flex items-center min-w-0 gap-2">
 					<a
 						href={`https://${data.domain}`}
@@ -31,7 +31,7 @@ export function DomainDashboardCard({ data }: Props) {
 						{data.domain.includes("localhost") ||
 						data.domain.includes("127.0.0.1") ? (
 							<Globe
-								className="w-4 h-4 shrink-0 text-note-info"
+								className="w-5 h-5 shrink-0 text-note-info"
 								aria-hidden="true"
 							/>
 						) : (
@@ -39,11 +39,14 @@ export function DomainDashboardCard({ data }: Props) {
 							<img
 								src={`https://www.google.com/s2/favicons?domain=${data.domain}&sz=32`}
 								alt=""
-								className="w-4 h-4 shrink-0"
+								className="w-5 h-5 shrink-0"
 								aria-hidden="true"
 							/>
 						)}
-						<span className="truncate block font-medium" title={data.domain}>
+						<span
+							className="truncate block font-medium text-2xl"
+							title={data.domain}
+						>
 							{data.domain}
 						</span>
 					</a>
@@ -54,7 +57,7 @@ export function DomainDashboardCard({ data }: Props) {
 				<div className="shrink-0">
 					<Link
 						href={`/notes?domain=${data.domain}&view=domain`}
-						className={buttonVariants({ variant: "outline", size: "sm" })}
+						className={buttonVariants({ variant: "outline", size: "lg" })}
 					>
 						Open
 					</Link>
@@ -63,13 +66,17 @@ export function DomainDashboardCard({ data }: Props) {
 
 			{/* ドメイン直下 (scope = 'domain') の最新ノートスニペット (クリッカブル、親コンテキスト保持) */}
 			{data.domain_notes.length > 0 && (
-				<div className="flex flex-col gap-1.5 border-t border-base-border/50 pt-3">
+				<div className="flex flex-col gap-1.5">
 					{data.domain_notes.map((note) => (
 						<Link
 							key={note.id}
 							href={`/notes?domain=${data.domain}&view=domain&noteId=${note.id}`}
-							className="text-xs font-normal text-neutral-400 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
+							className="text-xs font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
 						>
+							<FileText
+								className="w-2.5 h-2.5 text-neutral-400 shrink-0 inline-block mr-1"
+								aria-hidden="true"
+							/>
 							{note.content
 								? note.content.substring(0, 45).replace(/[#*`-]/g, "")
 								: "Untitled note"}
@@ -80,7 +87,7 @@ export function DomainDashboardCard({ data }: Props) {
 
 			{/* 子階層：個別ページ */}
 			{data.top_pages.length > 0 && (
-				<div className="flex flex-col gap-3 pl-4 border-l border-base-border/50 mt-1">
+				<div className="flex flex-col gap-3 pl-2 border-l border-base-border/50 mt-1">
 					{data.top_pages.map((page) => {
 						const safeUrl = page.page_url.startsWith("http")
 							? page.page_url
@@ -93,14 +100,21 @@ export function DomainDashboardCard({ data }: Props) {
 											href={safeUrl}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="text-xs font-medium hover-safe:underline truncate flex items-center gap-1.5 text-neutral-400 hover-safe:text-action transition-colors min-w-0"
+											className="text-xs hover-safe:underline truncate flex items-center gap-1 hover-safe:text-action transition-colors min-w-0"
 											title={page.page_url}
 										>
-											<FileText
-												className="w-3.5 h-3.5 text-neutral-400 shrink-0"
+											{/* biome-ignore lint/performance/noImgElement: Using dynamic external google favicon API */}
+											<img
+												src={`https://www.google.com/s2/favicons?domain=${data.domain}&sz=32`}
+												alt=""
+												className="w-3 h-3 shrink-0"
 												aria-hidden="true"
 											/>
-											<span className="text-sm font-medium text-base-content line-clamp-1 truncate block min-w-0">
+											{/* <ChevronRight */}
+											{/* 	className="w-3.5 h-3.5 shrink-0 text-neutral-400" */}
+											{/* 	aria-hidden="true" */}
+											{/* /> */}
+											<span className="text-base text-base-content line-clamp-1 truncate block min-w-0">
 												{page.page_title || getFallbackPathname(page.page_url)}
 											</span>
 										</a>
@@ -109,8 +123,9 @@ export function DomainDashboardCard({ data }: Props) {
 										href={`/notes?domain=${data.domain}&view=exact&exact=${encodeURIComponent(page.page_url)}`}
 										className="shrink-0 text-[10px] text-neutral-400 hover-safe:text-action font-medium flex items-center gap-0.5 transition-colors ml-2"
 									>
+										<FolderOpen className="w-3 h-3" aria-hidden="true" />
 										<span>{page.page_count} notes</span>
-										<ArrowUpRight className="w-3 h-3" aria-hidden="true" />
+										{/* <ArrowUpRight className="w-3 h-3" aria-hidden="true" /> */}
 									</Link>
 								</div>
 								{/* ページ個別ノートスニペット (クリッカブル、親コンテキスト保持) */}
@@ -120,8 +135,12 @@ export function DomainDashboardCard({ data }: Props) {
 											<Link
 												key={note.id}
 												href={`/notes?domain=${data.domain}&view=exact&exact=${encodeURIComponent(page.page_url)}&noteId=${note.id}`}
-												className="text-[11px] font-normal text-neutral-400/80 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
+												className="text-[11px] font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
 											>
+												<FileText
+													className="w-3 h-3 text-neutral-400 shrink-0 inline-block mr-1"
+													aria-hidden="true"
+												/>
 												{note.content
 													? note.content.substring(0, 40).replace(/[#*`-]/g, "")
 													: "Untitled note"}

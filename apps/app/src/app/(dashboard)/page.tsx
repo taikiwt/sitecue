@@ -1,5 +1,5 @@
 import { fetchDashboardDomainActivity } from "@sitecue/shared";
-import { ArrowRight, Calendar, Clock, Layers } from "lucide-react";
+import { ArrowRight, CalendarDays, Activity, Layers } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
@@ -47,7 +47,7 @@ async function TodayRecapCard() {
 						{formattedDate}
 					</h3>
 				</div>
-				<Calendar className="w-4 h-4 text-neutral-400" aria-hidden="true" />
+				<CalendarDays className="w-4 h-4 text-neutral-400" aria-hidden="true" />
 			</div>
 
 			<div className="my-2">
@@ -102,7 +102,7 @@ export default async function LaunchpadPage() {
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto">
-			<main className="mx-auto max-w-5xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
+			<main className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
 				{/* ① [最上部] ダッシュボード（Radial Chart & 今日のノート等） */}
 				<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<Suspense
@@ -123,7 +123,7 @@ export default async function LaunchpadPage() {
 
 				{/* ② [中央] Domain Activity 情報コンテナ */}
 				<section>
-					<div className="flex items-center gap-2 mb-4">
+					<div className="flex items-center gap-2 mb-6">
 						<Layers className="w-5 h-5 text-neutral-400" aria-hidden="true" />
 						<h2 className="text-3xl font-bold tracking-tight text-action">
 							Domain Activity
@@ -144,8 +144,8 @@ export default async function LaunchpadPage() {
 
 				{/* ③ [下部] Contribution Activity タイムライン */}
 				<section className="pb-8">
-					<div className="flex items-center gap-2 mb-5">
-						<Clock className="w-5 h-5 text-neutral-400" aria-hidden="true" />
+					<div className="flex items-center gap-2 mb-6">
+						<Activity className="w-5 h-5 text-neutral-400" aria-hidden="true" />
 						<h2 className="text-3xl font-bold tracking-tight text-action">
 							Activity Log
 						</h2>
