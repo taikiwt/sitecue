@@ -58,7 +58,7 @@ export async function RadialActivityChart() {
 						cy="80"
 						r={r1}
 						className="stroke-neutral-100 dark:stroke-neutral-800"
-						strokeWidth="6"
+						strokeWidth="8"
 						fill="transparent"
 					/>
 					{/* Outer Progress (Notes) */}
@@ -67,7 +67,7 @@ export async function RadialActivityChart() {
 						cy="80"
 						r={r1}
 						stroke="var(--color-note-info)"
-						strokeWidth="6"
+						strokeWidth="8"
 						fill="transparent"
 						strokeDasharray={c1}
 						strokeDashoffset={offset1}
@@ -81,7 +81,7 @@ export async function RadialActivityChart() {
 						cy="80"
 						r={r2}
 						className="stroke-neutral-100 dark:stroke-neutral-800"
-						strokeWidth="6"
+						strokeWidth="8"
 						fill="transparent"
 					/>
 					{/* Inner Progress (Drafts) */}
@@ -90,7 +90,7 @@ export async function RadialActivityChart() {
 						cy="80"
 						r={r2}
 						stroke="var(--color-note-idea)"
-						strokeWidth="6"
+						strokeWidth="8"
 						fill="transparent"
 						strokeDasharray={c2}
 						strokeDashoffset={offset2}
@@ -104,7 +104,7 @@ export async function RadialActivityChart() {
 					<span className="text-2xl font-bold tracking-tight text-action">
 						{noteCount + draftCount}
 					</span>
-					<span className="text-[10px] uppercase tracking-wider text-neutral-500 font-mono">
+					<span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono">
 						Activities
 					</span>
 				</div>
@@ -112,7 +112,7 @@ export async function RadialActivityChart() {
 
 			<div className="flex-1 flex flex-col justify-center gap-4 w-full">
 				<div>
-					<h3 className="text-sm font-bold text-action">Weekly Progress</h3>
+					<h3 className="text-xl font-bold text-action">Weekly Progress</h3>
 					<p className="text-xs text-neutral-500 mt-0.5">
 						Your note-taking activity over the last 7 days.
 					</p>
