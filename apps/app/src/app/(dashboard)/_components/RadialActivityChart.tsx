@@ -129,9 +129,9 @@ export async function RadialActivityChart() {
 							/>
 							<span className="font-medium text-action">Notes Captured</span>
 						</div>
-						<div className="font-mono text-neutral-600">
-							{noteCount}{" "}
-							<span className="text-neutral-400">/ {targetNotes}</span>
+						{/* 分母表示（/ {targetNotes}）を完全に排除し、分子の実績のみを出力 */}
+						<div className="font-mono text-neutral-600 font-bold text-sm">
+							{noteCount}
 						</div>
 					</div>
 
@@ -145,9 +145,9 @@ export async function RadialActivityChart() {
 							/>
 							<span className="font-medium text-action">Drafts Created</span>
 						</div>
-						<div className="font-mono text-neutral-600">
-							{draftCount}{" "}
-							<span className="text-neutral-400">/ {targetDrafts}</span>
+						{/* 分母表示（/ {targetDrafts}）を完全に排除し、分子の実績のみを出力 */}
+						<div className="font-mono text-neutral-600 font-bold text-sm">
+							{draftCount}
 						</div>
 					</div>
 				</div>
