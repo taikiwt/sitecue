@@ -1,7 +1,6 @@
 import { fetchDashboardDomainActivity } from "@sitecue/shared";
-import { ArrowRight, CalendarDays, Activity, Layers } from "lucide-react";
+import { Activity, CalendarDays, Layers } from "lucide-react";
 import { Suspense } from "react";
-import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
 import { ContributionTimeline } from "./_components/ContributionTimeline";
 import { DomainDashboardCard } from "./_components/DomainDashboardCard";
@@ -30,45 +29,66 @@ async function TodayRecapCard() {
 
 	const todayTotal = (todayNotes || 0) + (todayDrafts || 0);
 
-	const formattedDate = new Date().toLocaleDateString("en-US", {
-		weekday: "short",
-		month: "short",
-		day: "numeric",
-	});
+	// 日めくりカレンダーボックス用の個別パース
+	const todayObj = new Date();
+	const monthYearStr = todayObj
+		.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+		.toUpperCase(); // 例: "JUN 2026"
+	const dayNumStr = todayObj.toLocaleDateString("en-US", { day: "2-digit" }); // 例: "09"
+	const weekdayStr = todayObj
+		.toLocaleDateString("en-US", { weekday: "long" })
+		.toUpperCase(); // 例: "TUESDAY"
 
 	return (
 		<div className="flex flex-col justify-between p-5 rounded-xl bg-base-surface border border-base-border h-full">
-			<div className="flex justify-between items-start">
+			{/* ヘッダーセクション */}
+			<div className="flex justify-between items-start w-full">
 				<div>
 					<span className="text-[10px] uppercase tracking-wider text-neutral-400 font-mono">
 						Today's Focus
 					</span>
-					<h3 className="text-sm font-semibold text-neutral-500 mt-1">
-						{formattedDate}
-					</h3>
 				</div>
+				{/* 右上のカレンダーアイコンはそのまま維持 */}
 				<CalendarDays className="w-4 h-4 text-neutral-400" aria-hidden="true" />
 			</div>
 
-			<div className="my-2">
-				<span className="text-5xl font-extrabold tracking-tighter text-action">
-					{todayTotal}
-				</span>
-				<span className="text-xs text-neutral-500 ml-1.5 font-medium">
-					new entries today
-				</span>
+			{/* メインレイアウト: カレンダーボックスとライトアップ数値を配置 */}
+			<div className="flex flex-col sm:flex-row items-center gap-6 my-4 flex-1">
+				{/* 立体的な日めくりカレンダーの箱 */}
+				<div className="relative w-28 h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0">
+					{/* ヘッダー帯 */}
+					<div className="w-full bg-action py-1 text-center text-[9px] font-bold tracking-wider text-white font-mono">
+						{monthYearStr}
+					</div>
+					{/* メインステージ（巨大日付数字） */}
+					<div className="flex-1 flex items-center justify-center">
+						<span className="text-5xl font-black tracking-tighter text-neutral-900 dark:text-neutral-100 font-mono">
+							{dayNumStr}
+						</span>
+					</div>
+					{/* フッター（曜日全大文字） */}
+					<div className="w-full text-center pb-1.5 text-[9px] font-bold tracking-widest text-neutral-400 font-mono">
+						{weekdayStr}
+					</div>
+					{/* 上部リング綴じの擬似シャドウ・インセットエフェクト（立体感向上） */}
+					<div className="absolute top-4 left-5 w-1.5 h-1.5 rounded-full bg-base-bg/60 border border-base-border/20 shadow-inner" />
+					<div className="absolute top-4 right-5 w-1.5 h-1.5 rounded-full bg-base-bg/60 border border-base-border/20 shadow-inner" />
+				</div>
+
+				{/* 実績値のライトアップステージ */}
+				<div className="flex flex-col justify-center text-center sm:text-left">
+					<div className="flex items-baseline justify-center sm:justify-start gap-1">
+						<span className="text-6xl font-black tracking-tighter text-action drop-shadow-sm font-mono animate-fade-in">
+							{todayTotal}
+						</span>
+					</div>
+					<span className="text-xs text-neutral-500 font-medium tracking-wide uppercase font-mono mt-1">
+						new entries today
+					</span>
+				</div>
 			</div>
 
-			<Link
-				href="/notes"
-				className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 hover-safe:text-action transition-colors group/link mt-auto"
-			>
-				<span>Open inbox</span>
-				<ArrowRight
-					className="w-3.5 h-3.5 transition-transform group-hover/link:translate-x-0.5"
-					aria-hidden="true"
-				/>
-			</Link>
+			{/* 「Open inbox」ナビゲーションリンクはノイズとなるため完全に削除（パージ） */}
 		</div>
 	);
 }
