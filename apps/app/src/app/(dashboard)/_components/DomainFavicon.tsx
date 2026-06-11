@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Globe } from "lucide-react";
 
 interface DomainFaviconProps {
@@ -10,8 +10,18 @@ interface DomainFaviconProps {
 
 export function DomainFavicon({ domain, sizeClassName = "w-5 h-5" }: DomainFaviconProps) {
 	const [isFallback, setIsFallback] = useState(false);
+	const imgRef = useRef<HTMLImageElement>(null);
 
-	// 1. 代替フラグが立った、またはドメインが空の時は即座に美しいLucideのGlobeを返す
+	// useEffect を早期リターン（if文）よりも「上」に配置
+	useEffect(() => {
+		if (imgRef.current && imgRef.current.complete) {
+			if (imgRef.current.naturalWidth === 16 && imgRef.current.naturalHeight === 16) {
+				setIsFallback(true);
+			}
+		}
+	}, []);
+
+	// 早期リターン（条件分岐でのUI変更）は、すべてのフックが宣言し終わった「後」に行う
 	if (isFallback || !domain) {
 		return (
 			<Globe
@@ -21,18 +31,17 @@ export function DomainFavicon({ domain, sizeClassName = "w-5 h-5" }: DomainFavic
 		);
 	}
 
-	// 最も安定しているオリジナルのAPIを、大きめのサイズ（sz=64）で叩く
 	const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
 
 	return (
 		// biome-ignore lint/performance/noImgElement: Dynamic external favicon URLs cannot be optimized using Next.js Image component
 		<img
+			ref={imgRef}
 			src={faviconUrl}
 			alt=""
 			className={`${sizeClassName} shrink-0 object-contain align-middle`}
 			onError={() => setIsFallback(true)}
 			onLoad={(e) => {
-				// 💡 ユーザーのアイデア：Googleのデフォルト地球儀は sz=64 を指定していても強制的に 16x16 で届く
 				const img = e.currentTarget;
 				if (img.naturalWidth === 16 && img.naturalHeight === 16) {
 					setIsFallback(true);
