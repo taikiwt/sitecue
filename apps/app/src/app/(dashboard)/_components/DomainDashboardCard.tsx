@@ -1,7 +1,8 @@
 import type { DashboardDomainActivity } from "@sitecue/shared";
-import { FileText, Globe, FolderOpen } from "lucide-react";
+import { FileText, FolderOpen } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { DomainFavicon } from "./DomainFavicon"; //
 
 const getFallbackPathname = (urlStr: string) => {
 	try {
@@ -28,21 +29,8 @@ export function DomainDashboardCard({ data }: Props) {
 						rel="noopener noreferrer"
 						className="flex items-center gap-2 text-base-text hover-safe:text-action hover-safe:underline min-w-0"
 					>
-						{data.domain.includes("localhost") ||
-						data.domain.includes("127.0.0.1") ? (
-							<Globe
-								className="w-5 h-5 shrink-0 text-note-info"
-								aria-hidden="true"
-							/>
-						) : (
-							// biome-ignore lint/performance/noImgElement: Using dynamic external google favicon API
-							<img
-								src={`https://www.google.com/s2/favicons?domain=${data.domain}&sz=32`}
-								alt=""
-								className="w-5 h-5 shrink-0"
-								aria-hidden="true"
-							/>
-						)}
+						<DomainFavicon domain={data.domain} />
+
 						<span
 							className="truncate block font-medium text-2xl"
 							title={data.domain}
@@ -103,17 +91,8 @@ export function DomainDashboardCard({ data }: Props) {
 											className="text-xs hover-safe:underline truncate flex items-center gap-1 hover-safe:text-action transition-colors min-w-0"
 											title={page.page_url}
 										>
-											{/* biome-ignore lint/performance/noImgElement: Using dynamic external google favicon API */}
-											<img
-												src={`https://www.google.com/s2/favicons?domain=${data.domain}&sz=32`}
-												alt=""
-												className="w-3 h-3 shrink-0"
-												aria-hidden="true"
-											/>
-											{/* <ChevronRight */}
-											{/* 	className="w-3.5 h-3.5 shrink-0 text-neutral-400" */}
-											{/* 	aria-hidden="true" */}
-											{/* /> */}
+											<DomainFavicon domain={data.domain} sizeClassName="w-3 h-3" />
+
 											<span className="text-base text-base-content line-clamp-1 truncate block min-w-0">
 												{page.page_title || getFallbackPathname(page.page_url)}
 											</span>
@@ -125,7 +104,6 @@ export function DomainDashboardCard({ data }: Props) {
 									>
 										<FolderOpen className="w-3 h-3" aria-hidden="true" />
 										<span>{page.page_count} notes</span>
-										{/* <ArrowUpRight className="w-3 h-3" aria-hidden="true" /> */}
 									</Link>
 								</div>
 								{/* ページ個別ノートスニペット (クリッカブル、親コンテキスト保持) */}

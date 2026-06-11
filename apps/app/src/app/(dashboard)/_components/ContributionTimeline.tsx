@@ -1,6 +1,7 @@
-import { Edit3, FileText } from "lucide-react";
+import { Edit3, FileText, Zap } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
+import { DomainFavicon } from "./DomainFavicon";
 
 export interface ActivityItem {
 	id: string;
@@ -8,6 +9,7 @@ export interface ActivityItem {
 	content?: string;
 	domain?: string;
 	noteType?: "info" | "alert" | "idea";
+	scope?: "exact" | "domain" | "inbox";
 }
 
 export interface ActivityEvent {
@@ -44,6 +46,13 @@ function getDisplayDate(dateStr: string) {
 		day: "numeric",
 		year: "numeric",
 	});
+}
+
+function extractDomain(url: string): string {
+	if (!url || url === "inbox") return "inbox";
+	// プロトコルやwwwを除去し、最初のスラッシュまでを取得
+	const cleanUrl = url.replace(/^(?:https?:\/\/)?(?:www\.)?/, "");
+	return cleanUrl.split("/")[0];
 }
 
 export async function ContributionTimeline() {
@@ -91,14 +100,11 @@ export async function ContributionTimeline() {
 		}
 		activityMap[dateKey].noteItems.push({
 			id: note.id,
-			title:
-				note.scope === "domain"
-					? note.url_pattern || ""
-					: note.scope || "inbox",
+			title: note.scope === "inbox" ? "Inbox" : note.url_pattern || "",
 			content: note.content || "",
-			domain:
-				note.scope === "domain" ? note.url_pattern || undefined : undefined,
-			noteType: note.note_type || undefined,
+			domain: extractDomain(note.url_pattern || ""),
+			noteType: (note.note_type as "info" | "alert" | "idea") || undefined,
+			scope: (note.scope as "exact" | "domain" | "inbox") || undefined,
 		});
 	}
 
@@ -146,10 +152,13 @@ export async function ContributionTimeline() {
 		});
 
 	return (
-		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-6">
+		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-4 w-full min-w-0">
 			{dailyActivities.map((day) => (
-				<div key={day.date} className="relative flex flex-col gap-2 group">
-					{/* Day dot node */}
+				<div
+					key={day.date}
+					className="relative flex flex-col gap-2 group w-full min-w-0"
+				>
+					{/* 日ごとの左ノード */}
 					<div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-600 ring-4 ring-base-bg transition-transform duration-300 group-hover:scale-125" />
 
 					<div className="flex items-center gap-2">
@@ -161,13 +170,16 @@ export async function ContributionTimeline() {
 						</span>
 					</div>
 
-					<div className="flex flex-col gap-4 pl-2 border-l border-neutral-100 dark:border-neutral-800">
+					<div className="flex flex-col gap-2 pl-2 border-l border-neutral-100 dark:border-neutral-800 w-full min-w-0">
 						{day.events.map((event) => (
-							<div key={event.type} className="flex flex-col gap-1.5">
+							<div
+								key={event.type}
+								className="flex flex-col gap-1 w-full min-w-0"
+							>
 								<div className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-wider text-neutral-400">
 									{event.type === "note_captured" ? (
 										<FileText
-											className="w-3 h-3 text-neutral-400"
+											className="w-2.5 h-2.5 text-neutral-400"
 											aria-hidden="true"
 										/>
 									) : (
@@ -179,38 +191,88 @@ export async function ContributionTimeline() {
 									<span>{event.label}</span>
 								</div>
 
-								<div className="flex flex-col gap-1">
+								<div className="flex flex-col w-full min-w-0">
 									{event.items.map((item) => {
-										const href =
-											event.type === "draft_created"
-												? `/studio?draftId=${item.id}&view=drafts`
-												: `/notes?noteId=${item.id}&domain=${item.domain || "inbox"}`;
+										let href = "";
 
-										let dotColor = "bg-neutral-400";
-										if (item.noteType === "idea") dotColor = "bg-note-idea";
-										if (item.noteType === "info") dotColor = "bg-note-info";
-										if (item.noteType === "alert") dotColor = "bg-note-alert";
+										if (event.type === "draft_created") {
+											// ドラフト成果物はスタジオの動的ルートへダイレクトパス遷移
+											href = `/studio/${item.id}`;
+										} else {
+											// ノートはスコープに応じてパラメータを厳密に分離マッピング
+											if (item.scope === "inbox") {
+												href = `/notes?view=inbox&noteId=${item.id}`;
+											} else if (item.scope === "domain") {
+												href = `/notes?domain=${encodeURIComponent(item.title)}&exact=all&noteId=${item.id}`;
+											} else if (item.scope === "exact") {
+												const targetDomain = item.domain || "inbox";
+												href = `/notes?domain=${encodeURIComponent(targetDomain)}&exact=${encodeURIComponent(item.title)}&noteId=${item.id}`;
+											}
+										}
+
+										// 第1軸: ドットのカラー決定
+										let dotColor = "bg-action"; // Draftsデフォルト
+										if (event.type === "note_captured") {
+											dotColor = "bg-neutral-400";
+											if (item.noteType === "idea") dotColor = "bg-note-idea";
+											if (item.noteType === "info") dotColor = "bg-note-info";
+											if (item.noteType === "alert") dotColor = "bg-note-alert";
+										}
+
+										// コンテンツプレビューのクリーンアップ
+										const contentPreview = item.content
+											? item.content.replace(/[#*`-]/g, "")
+											: "No content preview";
 
 										return (
 											<Link
 												key={item.id}
 												href={href}
-												className="flex items-center gap-2 text-xs text-neutral-500 hover-safe:text-action transition-colors truncate py-0.5"
+												className="grid grid-cols-[12px_1fr] gap-3 items-center text-xs text-neutral-500 hover-safe:text-action transition-colors w-full min-w-0 group/item"
 											>
-												{event.type === "note_captured" && (
+												{/* 第1軸: 垂直ロックされたドット */}
+												<div className="flex md:items-center justify-center h-5 w-3 shrink-0">
 													<div
 														className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`}
 													/>
-												)}
-												<span className="font-semibold text-action shrink-0">
-													{item.title}
-												</span>
-												<span className="text-neutral-400 shrink-0">•</span>
-												<span className="truncate">
-													{item.content
-														? item.content.replace(/[#*`-]/g, "")
-														: "No content preview"}
-												</span>
+												</div>
+
+												{/* 第2軸: コンテキスト＆コンテンツ */}
+												<div className="grid grid-cols-1 md:grid-cols-[minmax(0,auto)_minmax(0,1fr)] items-center gap-x-3 md:gap-y-1 min-w-0 w-full min-h-[20px]">
+													{/* コンテキスト領域 */}
+													<div className="flex items-center gap-2 min-w-0 shrink-0 h-5">
+														{event.type === "note_captured" &&
+															item.scope !== "inbox" && (
+																<DomainFavicon domain={item.domain || item.title} sizeClassName="w-3 h-3" />
+															)}
+														{event.type === "note_captured" &&
+															item.scope === "inbox" && (
+																<Zap
+																	className="w-3 h-3 text-yellow-500 shrink-0"
+																	aria-hidden="true"
+																/>
+															)}
+														<span
+															className="font-semibold text-action truncate max-w-[200px] md:max-w-[300px] leading-none pt-[1px]"
+															title={item.title}
+														>
+															{item.title}
+														</span>
+													</div>
+
+													{/* コンテンツ領域 */}
+													<div className="flex items-center gap-2 min-w-0 w-full h-5">
+														<span className="hidden md:inline text-neutral-300 shrink-0 select-none leading-none">
+															•
+														</span>
+														<span
+															className="truncate text-neutral-400 group-hover/item:text-neutral-500 transition-colors w-full leading-none"
+															title={contentPreview}
+														>
+															{contentPreview}
+														</span>
+													</div>
+												</div>
 											</Link>
 										);
 									})}
