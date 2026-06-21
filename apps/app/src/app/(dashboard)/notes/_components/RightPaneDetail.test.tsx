@@ -18,11 +18,15 @@ import { useUserStore } from "@/store/useUserStore";
 import { createMockDraft, createMockNote } from "../../../../mocks/factories";
 import { RightPaneDetail } from "./RightPaneDetail";
 
-// useNotesQuery のモック
 vi.mock("@/hooks/useNotesQuery", () => ({
 	useCreateNote: vi.fn(),
 	useUpdateNote: vi.fn(),
 	useDeleteNote: vi.fn(),
+}));
+
+vi.mock("@/hooks/useDiariesQuery", () => ({
+	useFetchDiaries: vi.fn(() => ({ data: [] })),
+	useAppendDiary: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
 // next/navigation のモック
@@ -289,13 +293,13 @@ describe("RightPaneDetail", () => {
 			id: "1",
 			updates: {
 				content: "Test Content",
-				tags: [],
-				url_pattern: "changed-domain.com",
+				currentUrl: "changed-domain.com",
 				scope: "domain",
 				note_type: "idea",
 			},
 		});
 	});
+
 
 	it("opens delete dialog after clicking delete in more menu with delay", async () => {
 		vi.useFakeTimers();

@@ -50,3 +50,11 @@ export interface DashboardDomainActivity {
 	top_pages: DashboardPageActivity[];
 }
 
+export interface Diary {
+	user_id: string;
+	date: string; // YYYY-MM-DD 形式のSSOT文字列
+	content: string;
+	topics: string[];
+	created_at: string;
+	updated_at: string;
+}

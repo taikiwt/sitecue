@@ -1,3 +1,4 @@
+export * from "./dal/diaries";
 export * from "./dal/notes";
 export * from "./types/app";
 export * from "./types/database";

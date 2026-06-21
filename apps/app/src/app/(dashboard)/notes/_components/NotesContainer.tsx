@@ -1,8 +1,10 @@
 "use client";
 
+import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes } from "@/store/useNotesStore";
@@ -17,6 +19,7 @@ export function NotesContainer() {
 	const router = useRouter();
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
+	const { data: diaries = [], isLoading: isDiariesLoading } = useFetchDiaries();
 	const { mutate: fetchContentForIds } = useFetchNoteContents();
 
 	const groupedNotes = useMemo(() => {
@@ -24,7 +27,7 @@ export function NotesContainer() {
 		return groupNotes(notes, drafts);
 	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
-	const isDataReady = !isNotesLoading && !isDraftsLoading;
+	const isDataReady = !isNotesLoading && !isDraftsLoading && !isDiariesLoading;
 
 	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {
@@ -37,6 +40,9 @@ export function NotesContainer() {
 			new: searchParams.get("new") || undefined,
 			q: searchParams.get("q") || undefined,
 			tags: searchParams.get("tags") || undefined,
+			year: searchParams.get("year") || undefined,
+			month: searchParams.get("month") || undefined,
+			date: searchParams.get("date") || undefined,
 		};
 	}, [searchParams]);
 
@@ -67,9 +73,11 @@ export function NotesContainer() {
 		if (!isDataReady || !groupedNotes) return [];
 
 		// 1. View / Domain による一次フィルタリング
-		let items: (Note | Draft)[] = [];
+		let items: (Note | Draft | Diary)[] = [];
 		if (effectiveView === "drafts") {
 			items = drafts;
+		} else if (effectiveView === "diaries") {
+			items = diaries;
 		} else if (exact === "all") {
 			items = groupedNotes.domains[domain || ""]?.domainNotes || [];
 		} else if (exact) {
@@ -110,9 +118,12 @@ export function NotesContainer() {
 		if (!query) return items;
 
 		return items.filter((item) => {
-			const isNote = "url_pattern" in item;
+			if ("date" in item) {
+				const diary = item as Diary;
+				return diary.content?.toLowerCase().includes(query) ?? false;
+			}
 
-			if (isNote) {
+			if ("url_pattern" in item) {
 				const note = item as Note;
 
 				if (effectiveView === "domains" && !domain) {
@@ -130,23 +141,20 @@ export function NotesContainer() {
 						: note.url_pattern;
 					return searchablePath.toLowerCase().includes(query);
 				}
+
+				// Slim Fetching対応: 本文が未取得（undefined）の場合は除外せず残す
+				// これにより、描画された瞬間に fetchContentForIds が走り、
+				// データ取得後に再レンダリング & 再フィルタリングが走る
+				if (note.content === undefined) return true;
+				// nullチェック（空のノート）
+				if (!note.content) return false;
+
+				return note.content.toLowerCase().includes(query);
 			}
 
-			// Notes / Drafts の場合
-			if (!isNote) {
-				// Drafts: タイトル（content）で検索
-				return (item as Draft).content?.toLowerCase().includes(query);
-			}
-
-			// Slim Fetching対応: 本文が未取得（undefined）の場合は除外せず残す
-			// これにより、描画された瞬間に fetchContentForIds が走り、
-			// データ取得後に再レンダリング & 再フィルタリングが走る
-			const note = item as Note;
-			if (note.content === undefined) return true;
-			// nullチェック（空のノート）
-			if (!note.content) return false;
-
-			return note.content.toLowerCase().includes(query);
+			// Drafts: タイトル（content）で検索
+			const draft = item as Draft;
+			return draft.content?.toLowerCase().includes(query) ?? false;
 		});
 	}, [
 		groupedNotes,
@@ -157,6 +165,7 @@ export function NotesContainer() {
 		query,
 		notes,
 		drafts,
+		diaries,
 		isDataReady,
 	]);
 
@@ -194,6 +203,7 @@ export function NotesContainer() {
 			<ResponsiveNotesLayout
 				selectedNoteId={params.noteId ?? null}
 				selectedDraftId={params.draftId ?? null}
+				selectedDate={params.date ?? null}
 				middleNode={<MiddlePaneListSkeleton />}
 				rightNode={null}
 			/>
@@ -206,6 +216,7 @@ export function NotesContainer() {
 		<ResponsiveNotesLayout
 			selectedNoteId={params.noteId ?? null}
 			selectedDraftId={params.draftId ?? null}
+			selectedDate={params.date ?? null}
 			middleNode={
 				<MiddlePaneList
 					items={filteredItems}

@@ -12,6 +12,7 @@ interface ResponsiveNotesLayoutProps {
 	rightNode: ReactNode;
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
+	selectedDate?: string | null;
 }
 
 export function ResponsiveNotesLayout({
@@ -19,6 +20,7 @@ export function ResponsiveNotesLayout({
 	rightNode,
 	selectedNoteId,
 	selectedDraftId,
+	selectedDate,
 }: ResponsiveNotesLayoutProps) {
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 	const router = useRouter();
@@ -28,6 +30,7 @@ export function ResponsiveNotesLayout({
 	const isDetailOpenUrl = !!(
 		selectedNoteId ||
 		selectedDraftId ||
+		selectedDate ||
 		searchParams.get("new") === "note"
 	);
 
@@ -50,6 +53,7 @@ export function ResponsiveNotesLayout({
 
 				params.delete("noteId");
 				params.delete("draftId");
+				params.delete("date");
 				params.delete("new");
 
 				router.push(`/notes?${params.toString()}`);

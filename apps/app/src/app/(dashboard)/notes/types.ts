@@ -15,7 +15,7 @@ export type GroupedNotes = {
 };
 
 export type SearchParams = {
-	view?: "inbox" | "drafts" | "domains";
+	view?: "inbox" | "drafts" | "domains" | "diaries";
 	domain?: string;
 	exact?: string;
 	noteId?: string;
@@ -23,4 +23,8 @@ export type SearchParams = {
 	new?: string;
 	q?: string;
 	tags?: string;
+	year?: string;
+	month?: string;
+	date?: string;
 };
+

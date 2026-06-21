@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
+import { CustomLink as Link } from "@/components/ui/custom-link";
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
@@ -40,6 +41,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import {
 	useCreateNote,
 	useDeleteNote,
@@ -61,7 +63,11 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const deleteNoteMutation = useDeleteNote();
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const selectedDate = searchParams.get("date");
+	const { data: diaries = [] } = useFetchDiaries();
+	const diary = diaries.find((d) => d.date === selectedDate);
 	const [isEditing, setIsEditing] = useState(false);
+
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 
@@ -143,7 +149,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		}
 	}, [note?.content, isNewNote]);
 
-	if (!note && !draft && !isNewNote) {
+	if (!note && !draft && !isNewNote && !diary) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center bg-base-bg text-gray-400 p-8">
 				<MousePointerClick
@@ -153,6 +159,47 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 				<p className="text-lg font-medium">
 					Please select a note or draft from the list
 				</p>
+			</div>
+		);
+	}
+
+	if (diary) {
+		const diaryDate = new Date(diary.date);
+		const formattedDiaryDate = diaryDate.toLocaleDateString("en-US", {
+			weekday: "long",
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+
+		return (
+			<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
+				{/* Header */}
+				<div className="flex items-center justify-between p-6 border-b border-base-border shrink-0">
+					<div>
+						<h2 className="text-xl font-bold text-action leading-tight">
+							{formattedDiaryDate}
+						</h2>
+						<p className="text-xs text-gray-400 mt-1">
+							Last updated:{" "}
+							{new Date(diary.updated_at).toLocaleTimeString("en-US", {
+								hour: "2-digit",
+								minute: "2-digit",
+							})}
+						</p>
+					</div>
+					<HoverRevealButton
+						href={`/diaries/${diary.date}`}
+						icon={<Pencil aria-hidden="true" />}
+						text="Open Studio"
+						className="cursor-pointer shadow-sm ml-1 bg-action hover-safe:bg-action! text-action-text hover-safe:text-action-text!"
+					/>
+				</div>
+
+				{/* Content */}
+				<div className="flex-1 overflow-y-auto p-8 prose max-w-none">
+					<MarkdownRenderer content={diary.content} />
+				</div>
 			</div>
 		);
 	}

@@ -1,5 +1,4 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-
 import toast from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -16,7 +15,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("react-hot-toast", () => ({
-	default: { error: vi.fn() },
+	default: { error: vi.fn(), success: vi.fn() },
 }));
 
 // カスタムフックのモック
@@ -28,6 +27,13 @@ const mockMutateAsync = vi.fn().mockRejectedValue({
 vi.mock("@/hooks/useNotesQuery", () => ({
 	useCreateNote: () => ({
 		mutateAsync: mockMutateAsync,
+	}),
+}));
+
+vi.mock("@/hooks/useDiariesQuery", () => ({
+	useFetchDiaries: vi.fn(() => ({ data: [] })),
+	useAppendDiary: () => ({
+		mutateAsync: vi.fn().mockResolvedValue({}),
 	}),
 }));
 
@@ -52,7 +58,9 @@ describe("GlobalNewNoteDialog", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		useUserStore.setState({ isPaywallOpen: false });
-		mockUseSearchParams.mockReturnValue(new URLSearchParams("globalNew=note"));
+		mockUseSearchParams.mockReturnValue(
+			new URLSearchParams("globalNew=note&intent=note"),
+		);
 	});
 
 	it("closes itself and opens paywall when limit reached error occurs", async () => {
@@ -77,7 +85,7 @@ describe("GlobalNewNoteDialog", () => {
 
 	it("sanitizes 'all' reserved words from search parameters", async () => {
 		// モックの URLSearchParams を "exact=all&domain=all" で再定義
-		const params = new URLSearchParams("globalNew=note&exact=all&domain=all");
+		const params = new URLSearchParams("globalNew=note&intent=note&exact=all&domain=all");
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -93,7 +101,7 @@ describe("GlobalNewNoteDialog", () => {
 	});
 
 	it("falls back to domain scope when domain is valid and not 'all'", async () => {
-		const params = new URLSearchParams("globalNew=note&domain=example.com");
+		const params = new URLSearchParams("globalNew=note&intent=note&domain=example.com");
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -106,7 +114,7 @@ describe("GlobalNewNoteDialog", () => {
 	});
 
 	it("disables Save button when scope requires URL but it is empty", async () => {
-		const params = new URLSearchParams("globalNew=note&domain=example.com");
+		const params = new URLSearchParams("globalNew=note&intent=note&domain=example.com");
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -151,5 +159,45 @@ describe("GlobalNewNoteDialog", () => {
 		expect(mockReplace).toHaveBeenCalled();
 		// Studio画面へ遷移したことの確認
 		expect(mockPush).toHaveBeenCalledWith("/studio/new");
+	});
+
+	it("renders diary input layout when globalNew is 'diary'", async () => {
+		mockUseSearchParams.mockReturnValue(
+			new URLSearchParams("?globalNew=diary"),
+		);
+		render(<GlobalNewNoteDialog />);
+
+		// New Note title should not be rendered
+		expect(screen.queryByText("New Note")).toBeNull();
+
+		// Large text area should be present
+		const textarea = screen.getByPlaceholderText(
+			"Write down your thoughts for today... (No title required)",
+		);
+		expect(textarea).toBeInTheDocument();
+	});
+});
+
+describe("GlobalNewNoteDialog - Entry Gate & Morphing UX", () => {
+	it("クエリパラメータ指示がない場合、第一形態（エントリゲート）の見出しが縦積みFlowで美しく描画されること", () => {
+		mockUseSearchParams.mockReturnValue(new URLSearchParams("?globalNew=note"));
+		render(<GlobalNewNoteDialog />);
+
+		expect(screen.getByText("What would you like to capture?")).toBeInTheDocument();
+		expect(screen.getByText("Quick Note")).toBeInTheDocument();
+		expect(screen.getByText("Daily Diary")).toBeInTheDocument();
+	});
+
+	it("Daily Diaryボタンをクリックした際、日記専用の顔に変形し指定のプレースホルダーと16pxテキストエリアが出現すること", () => {
+		mockUseSearchParams.mockReturnValue(new URLSearchParams("?globalNew=note"));
+		render(<GlobalNewNoteDialog />);
+
+		const diaryButton = screen.getByText("Daily Diary").closest("button");
+		expect(diaryButton).toBeInTheDocument();
+		fireEvent.click(diaryButton!);
+
+		const textarea = screen.getByPlaceholderText("Write down your thoughts for today... (No title required)");
+		expect(textarea).toBeInTheDocument();
+		expect(textarea).toHaveClass("text-base"); // iOSズーム防止の16px
 	});
 });

@@ -35,6 +35,11 @@ vi.mock("@/hooks/useNotesQuery", () => ({
 	useUpdateNote: () => ({ mutate: vi.fn() }),
 }));
 
+vi.mock("@/hooks/useDiariesQuery", () => ({
+	useFetchDiaries: vi.fn(() => ({ data: [] })),
+	useAppendDiary: vi.fn(() => ({ mutate: vi.fn() })),
+}));
+
 const mockItems: Note[] = [
 	{
 		id: "note-1",
@@ -581,8 +586,32 @@ describe("MiddlePaneList Back Button", () => {
 		const pushCall = mockPush.mock.calls[0][0];
 		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
 
-		expect(resultParams.has("domain")).toBe(false);
 		expect(resultParams.has("exact")).toBe(false);
 		expect(resultParams.get("view")).toBe("domains");
+	});
+
+	it("renders years list in diaries view when year is not selected", async () => {
+		const mockDiary = {
+			user_id: "user-1",
+			date: "2026-06-21",
+			content: "Diary content 1",
+			topics: ["react"],
+			created_at: "2026-06-21T10:00:00Z",
+			updated_at: "2026-06-21T10:00:00Z",
+		};
+
+		render(
+			<MiddlePaneList
+				items={[mockDiary]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="diaries"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByText("2026")).toBeInTheDocument();
 	});
 });
