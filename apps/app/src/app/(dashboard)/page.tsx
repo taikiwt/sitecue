@@ -1,5 +1,6 @@
 import { fetchDashboardDomainActivity } from "@sitecue/shared";
 import { Activity, CalendarDays, Layers } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
 import { ContributionTimeline } from "./_components/ContributionTimeline";
@@ -53,42 +54,45 @@ async function TodayRecapCard() {
 			</div>
 
 			{/* メインレイアウト: カレンダーボックスとライトアップ数値を配置 */}
-			<div className="flex flex-col sm:flex-row items-center gap-6 my-4 flex-1">
-				{/* 立体的な日めくりカレンダーの箱 */}
-				<div className="relative w-28 h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0">
-					{/* ヘッダー帯 */}
+			<div className="flex flex-col items-center gap-4 my-4 flex-1">
+				{/* 修正ポイント1: 遷移先を現在のダッシュボードを維持したクエリパラメータのみに変更（背景遷移をパージ） */}
+				<Link
+					className="relative w-28 h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0 hover:scale-102 transition-transform cursor-pointer group/box"
+					href="?globalNew=note&intent=diary"
+				>
 					<div className="w-full bg-action py-1 text-center text-[9px] font-bold tracking-wider text-white font-mono">
 						{monthYearStr}
 					</div>
-					{/* メインステージ（巨大日付数字） */}
 					<div className="flex-1 flex items-center justify-center">
 						<span className="text-5xl font-black tracking-tighter text-neutral-900 dark:text-neutral-100 font-mono">
 							{dayNumStr}
 						</span>
 					</div>
-					{/* フッター（曜日全大文字） */}
 					<div className="w-full text-center pb-1.5 text-[9px] font-bold tracking-widest text-neutral-400 font-mono">
 						{weekdayStr}
 					</div>
-					{/* 上部リング綴じの擬似シャドウ・インセットエフェクト（立体感向上） */}
-					<div className="absolute top-4 left-5 w-1.5 h-1.5 rounded-full bg-base-bg/60 border border-base-border/20 shadow-inner" />
-					<div className="absolute top-4 right-5 w-1.5 h-1.5 rounded-full bg-base-bg/60 border border-base-border/20 shadow-inner" />
-				</div>
+				</Link>
 
-				{/* 実績値のライトアップステージ */}
-				<div className="flex flex-col justify-center text-center sm:text-left">
-					<div className="flex items-baseline justify-center sm:justify-start gap-1">
-						<span className="text-6xl font-black tracking-tighter text-action drop-shadow-sm font-mono animate-fade-in">
+				{/* 修正ポイント2: カレンダーの真下にエントリーテキストリンクを美しくFlow配置 */}
+				<Link
+					className="text-[11px] text-neutral-400 hover:text-action font-mono tracking-wide uppercase transition-colors underline decoration-dotted underline-offset-4"
+					href="?globalNew=note&intent=diary"
+				>
+					+ append to today's diary
+				</Link>
+
+				{/* 修正ポイント3: 勝手に削除された元の実績表示文言（new entries today）を完全に復活 */}
+				<div className="flex flex-col justify-center items-center text-center mt-2">
+					<div className="flex items-baseline gap-1">
+						<span className="text-4xl font-black tracking-tighter text-action drop-shadow-sm font-mono">
 							{todayTotal}
 						</span>
+						<span className="text-xs text-neutral-400 font-bold font-mono">
+							new entries today
+						</span>
 					</div>
-					<span className="text-xs text-neutral-500 font-medium tracking-wide uppercase font-mono mt-1">
-						new entries today
-					</span>
 				</div>
 			</div>
-
-			{/* 「Open inbox」ナビゲーションリンクはノイズとなるため完全に削除（パージ） */}
 		</div>
 	);
 }

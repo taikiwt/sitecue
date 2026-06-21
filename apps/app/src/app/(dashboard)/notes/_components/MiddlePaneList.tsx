@@ -13,7 +13,7 @@ import {
 	SortableContext,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { getSafeUrl } from "@sitecue/shared";
+import { type Diary, getSafeUrl } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	Archive,
@@ -53,7 +53,7 @@ import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
 
 type Props = {
-	items: (Note | Draft)[];
+	items: (Note | Draft | Diary)[];
 	groupedNotes: GroupedNotes;
 	currentView: string | null;
 	currentDomain: string | null;
@@ -77,8 +77,14 @@ export function MiddlePaneList(props: Props) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const supabase = createClient();
+	const diaries = items.filter(
+		(item): item is Diary => "date" in item && !("note_type" in item),
+	);
+	const currentYear = searchParams.get("year");
+	const currentMonth = searchParams.get("month");
 
 	const currentQuery = searchParams.get("q") || "";
+
 	const [inputValue, setInputValue] = useState(currentQuery);
 	// 🚨 追加: 自分が最後にURLへプッシュした値を記録する
 	const lastPushedQueryRef = useRef(currentQuery);
@@ -134,24 +140,40 @@ export function MiddlePaneList(props: Props) {
 
 	const handleBack = () => {
 		const params = new URLSearchParams(searchParams.toString());
-		if (currentExact) {
-			// ページ一覧（または全ノート表示）からドメインルートに戻る
-			params.delete("exact");
-		} else if (currentDomain) {
-			// ドメインルートからドメイン一覧に戻る
-			params.delete("domain");
-			params.set("view", "domains");
+		if (currentView === "diaries") {
+			if (currentMonth) {
+				params.delete("month");
+			} else if (currentYear) {
+				params.delete("year");
+			}
+		} else {
+			if (currentExact) {
+				// ページ一覧（または全ノート表示）からドメインルートに戻る
+				params.delete("exact");
+			} else if (currentDomain) {
+				// ドメインルートからドメイン一覧に戻る
+				params.delete("domain");
+				params.set("view", "domains");
+			}
 		}
 		router.push(`${pathname}?${params.toString()}`);
 	};
 
-	const [localItems, setLocalItems] = useState<(Note | Draft)[]>(items);
-	const [prevItems, setPrevItems] = useState<(Note | Draft)[]>(items);
+	const [localItems, setLocalItems] = useState<(Note | Draft | Diary)[]>(items);
+	const [prevItems, setPrevItems] = useState<(Note | Draft | Diary)[]>(items);
 
 	if (items !== prevItems) {
-		const validItems = items.filter((item) => item?.id);
+		const validItems = items.filter(
+			(item) => item && ("id" in item || "date" in item),
+		);
 		const uniqueItems = validItems.filter(
-			(item, index, self) => index === self.findIndex((t) => t.id === item.id),
+			(item, index, self) =>
+				index ===
+				self.findIndex((t) => {
+					if ("id" in t && "id" in item) return t.id === item.id;
+					if ("date" in t && "date" in item) return t.date === item.date;
+					return false;
+				}),
 		);
 		setPrevItems(items);
 		setLocalItems(uniqueItems);
@@ -195,7 +217,10 @@ export function MiddlePaneList(props: Props) {
 		setFilterType("all");
 	}, [currentView, currentDomain, currentExact]);
 
-	const displayItems = localItems.filter((item) => {
+	const displayItems = localItems.filter((item): item is Note | Draft => {
+		const isDiary = "date" in item && !("note_type" in item);
+		if (isDiary) return false;
+
 		const isNote = "note_type" in item;
 		if (isNote && item.is_resolved && !showResolved) return false;
 
@@ -257,12 +282,22 @@ export function MiddlePaneList(props: Props) {
 	const isShowingNotesList =
 		currentView === "inbox" || (currentView === "domains" && !!currentExact);
 
+	const isDiariesView = currentView === "diaries";
+	const plusHref = isDiariesView
+		? "/notes?view=diaries&globalNew=note&intent=diary"
+		: `/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`;
+	const plusTitle = isDiariesView ? "New Diary Log" : "New Note here";
+
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
 		if (!over || active.id === over.id) return;
 
-		const oldIndex = localItems.findIndex((item) => item.id === active.id);
-		const newIndex = localItems.findIndex((item) => item.id === over.id);
+		const oldIndex = localItems.findIndex(
+			(item) => "id" in item && item.id === active.id,
+		);
+		const newIndex = localItems.findIndex(
+			(item) => "id" in item && item.id === over.id,
+		);
 
 		const updatedItems = arrayMove(localItems, oldIndex, newIndex);
 		setLocalItems(updatedItems);
@@ -331,7 +366,8 @@ export function MiddlePaneList(props: Props) {
 				<div className="flex items-center justify-between">
 					<div className="flex items-center space-x-2">
 						{/* 🚨 修正: ドリルダウン中のみ戻るボタンを表示 */}
-						{currentDomain && currentDomain !== "inbox" && (
+						{((currentDomain && currentDomain !== "inbox") ||
+							(currentView === "diaries" && (currentYear || currentMonth))) && (
 							<button
 								type="button"
 								onClick={handleBack}
@@ -342,7 +378,7 @@ export function MiddlePaneList(props: Props) {
 							</button>
 						)}
 
-						{["inbox", "domains", "drafts"].map((view) => (
+						{["inbox", "domains", "drafts", "diaries"].map((view) => (
 							<button
 								key={view}
 								type="button"
@@ -363,9 +399,9 @@ export function MiddlePaneList(props: Props) {
 					{isSelected && (currentView !== "domains" || !!currentExact) && (
 						<div className="flex items-center gap-1">
 							<Link
-								href={`/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`}
+								href={plusHref}
 								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
-								title="New Note here"
+								title={plusTitle}
 							>
 								<Plus className="size-4" />
 							</Link>
@@ -551,8 +587,90 @@ export function MiddlePaneList(props: Props) {
 			</div>
 
 			<div className="flex-1 overflow-y-auto divide-y divide-base-border">
-				{/* 1. Root Domains View */}
-				{currentView === "domains" && !currentDomain ? (
+				{/* Diaries View */}
+				{currentView === "diaries" ? (
+					(() => {
+						const years = Array.from(
+							new Set(diaries.map((d) => d.date.split("-")[0])),
+						).sort((a, b) => b.localeCompare(a));
+						if (!currentYear) {
+							return years.length > 0 ? (
+								years.map((year) => (
+									<button
+										key={year}
+										type="button"
+										onClick={() => updateParams("year", year)}
+										className="w-full flex items-center justify-between p-4 hover-safe:bg-base-surface text-left cursor-pointer transition-colors group"
+									>
+										<span className="text-sm font-medium text-action">
+											{year}
+										</span>
+										<ChevronRight className="w-4 h-4 text-gray-300 group-hover-safe:text-action" />
+									</button>
+								))
+							) : (
+								<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
+									<Inbox
+										className="w-12 h-12 mb-4 text-base-border"
+										aria-hidden="true"
+									/>
+									<p className="text-sm font-medium">No diaries found</p>
+								</div>
+							);
+						}
+
+						if (currentYear && !currentMonth) {
+							const months = Array.from(
+								new Set(
+									diaries
+										.filter((d) => d.date.startsWith(currentYear))
+										.map((d) => d.date.split("-")[1]),
+								),
+							).sort((a, b) => b.localeCompare(a));
+							return months.map((month) => (
+								<button
+									key={month}
+									type="button"
+									onClick={() => updateParams("month", month)}
+									className="w-full flex items-center justify-between p-4 hover-safe:bg-base-surface text-left cursor-pointer transition-colors group"
+								>
+									<span className="text-sm font-medium text-action">
+										{month}
+									</span>
+									<ChevronRight className="w-4 h-4 text-gray-300 group-hover-safe:text-action" />
+								</button>
+							));
+						}
+
+						const filteredDiaries = diaries.filter((d) =>
+							d.date.startsWith(`${currentYear}-${currentMonth}`),
+						);
+						return filteredDiaries.length > 0 ? (
+							filteredDiaries.map((diary) => (
+								<NoteItem
+									key={diary.date}
+									item={diary}
+									searchParams={searchParams}
+									selectedNoteId={selectedNoteId}
+									selectedDraftId={selectedDraftId}
+									currentExact={currentExact}
+									selectable={false}
+									onTodoToggle={() => {}}
+								/>
+							))
+						) : (
+							<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
+								<Inbox
+									className="w-12 h-12 mb-4 text-base-border"
+									aria-hidden="true"
+								/>
+								<p className="text-sm font-medium">
+									No diaries found for this month
+								</p>
+							</div>
+						);
+					})()
+				) : currentView === "domains" && !currentDomain ? (
 					Object.entries(groupedNotes.domains)
 						.filter(([domain]) => domain !== "inbox")
 						.filter(

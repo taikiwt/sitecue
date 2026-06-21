@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
 import { GripVertical, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -33,7 +34,7 @@ export function NoteItem({
 	onSelectChange,
 	onTodoToggle,
 }: {
-	item: Note | Draft;
+	item: Note | Draft | Diary;
 	currentExact: string | null;
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
@@ -53,6 +54,58 @@ export function NoteItem({
 			if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
 		};
 	}, []);
+
+	const isDiary = "date" in item && !("note_type" in item);
+
+	if (isDiary) {
+		const diary = item as Diary;
+		const diaryDate = new Date(diary.date);
+		const dayLabel = diaryDate.toLocaleDateString("en-US", {
+			day: "numeric",
+			weekday: "short",
+		}); // e.g. "21 (Sun)"
+		const isActive = searchParams.get("date") === diary.date;
+
+		const params = new URLSearchParams(searchParams.toString());
+		params.set("date", diary.date);
+		params.delete("noteId");
+		params.delete("draftId");
+
+		return (
+			<div
+				className={cn(
+					"group/card relative flex items-stretch transition-all duration-200",
+					isActive ? "bg-base-surface" : "hover-safe:bg-base-surface/50",
+				)}
+			>
+				<Link
+					aria-label="View diary detail"
+					className="absolute inset-0 z-0"
+					href={`/notes?${params.toString()}`}
+				/>
+				<div className="flex-1 block py-4 px-4 pointer-events-none relative z-10 min-w-0">
+					<div className="flex justify-between items-start mb-1">
+						<h3 className="text-sm font-bold text-action">{dayLabel}</h3>
+					</div>
+					<p className="text-sm text-action line-clamp-1 break-words mb-2">
+						{diary.content.replace(/\[\d{2}:\d{2}\]\n/g, "").split("\n")[0]}
+					</p>
+					{diary.topics && diary.topics.length > 0 && (
+						<div className="flex flex-wrap gap-1">
+							{diary.topics.map((topic) => (
+								<span
+									key={topic}
+									className="text-[10px] bg-base-border text-action px-1.5 py-0.5 rounded font-mono"
+								>
+									#{topic}
+								</span>
+							))}
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	}
 
 	const isNote = "note_type" in item;
 	const isResolved = isNote && item.is_resolved;

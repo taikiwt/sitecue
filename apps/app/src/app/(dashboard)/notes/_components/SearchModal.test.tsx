@@ -307,7 +307,8 @@ describe("SearchModal Context Jump", () => {
 		);
 
 		const input = screen.getByPlaceholderText(/search notes/i);
-		// "example" で検索した場合、ドメインがマッチするので "https://example.com/page-1" はPagesから除外されるはず
+		// Focus timer is 100ms, so wait for it to settle
+		await new Promise((resolve) => setTimeout(resolve, 150));
 		await user.type(input, "example");
 		await user.keyboard("{Enter}");
 

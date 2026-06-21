@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Note, NoteMetadata, DashboardDomainActivity } from "../types/app";
+import type { DashboardDomainActivity, Note, NoteMetadata } from "../types/app";
 import { type CreateNoteInput, resolveNotePayload } from "../utils/notes";
 import { extractTags } from "../utils/tags";
 import { normalizeUrl } from "../utils/url";
@@ -303,4 +303,3 @@ export async function fetchDashboardDomainActivity(
 	if (error) throw error;
 	return (data as DashboardDomainActivity[]) || [];
 }
-

@@ -35,11 +35,15 @@ vi.mock("@/utils/supabase/server", () => {
 	};
 });
 
-// Mock fetchTopDomainActivity from shared DAL
+// Mock shared DAL functions
 vi.mock("@sitecue/shared", () => ({
 	fetchTopDomainActivity: vi.fn().mockResolvedValue([
 		{ domain: "github.com", noteCount: 5 },
 		{ domain: "127.0.0.1", noteCount: 2 }, // IP fallback test
+	]),
+	fetchDashboardDomainActivity: vi.fn().mockResolvedValue([
+		{ domain: "github.com", note_count: 5, domain_notes: [], top_pages: [] },
+		{ domain: "127.0.0.1", note_count: 2, domain_notes: [], top_pages: [] },
 	]),
 }));
 

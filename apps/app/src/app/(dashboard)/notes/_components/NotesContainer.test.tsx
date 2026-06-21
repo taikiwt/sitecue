@@ -25,6 +25,10 @@ vi.mock("@/hooks/useDraftsQuery", () => ({
 	useFetchDrafts: vi.fn(() => ({ data: [], isLoading: false })),
 }));
 
+vi.mock("@/hooks/useDiariesQuery", () => ({
+	useFetchDiaries: vi.fn(() => ({ data: [], isLoading: false })),
+}));
+
 vi.mock("./MiddlePaneList", () => ({
 	MiddlePaneList: () => <div data-testid="middle-pane" />,
 }));
