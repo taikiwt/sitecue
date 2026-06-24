@@ -175,7 +175,7 @@ describe("MiddlePaneList Bulk Actions", () => {
 		expect(screen.getByText("Note 2")).toBeInTheDocument(); // idea note
 
 		// Click Idea filter
-		const ideaFilterBtn = screen.getByLabelText("Idea");
+		const ideaFilterBtn = screen.getAllByRole("button", { name: "Idea" })[0];
 		await user.click(ideaFilterBtn);
 
 		// Only Note 2 (idea) should be visible
@@ -613,5 +613,57 @@ describe("MiddlePaneList Back Button", () => {
 		);
 
 		expect(screen.getByText("2026")).toBeInTheDocument();
+	});
+
+	it("ビュー切り替え時に正しいコンテキストタイトルが表示されること", async () => {
+		const { rerender } = render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+		expect(screen.getByText("Domain List")).toBeInTheDocument();
+
+		rerender(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="drafts"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+		expect(screen.getByText("Draft List")).toBeInTheDocument();
+	});
+
+	it("ドメイン一覧（ルート）コンテキストでは、新規作成やアクション群がDOMからパージされていること", async () => {
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={{
+					domains: { "example.com": { domainNotes: [], pages: {} } },
+					inbox: [],
+					drafts: [],
+				}}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// アクション群（New NoteやSelect Mode）が存在しないことを検証
+		expect(screen.queryByTitle("New Note here")).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Select Mode")).not.toBeInTheDocument();
+		// 代わりに中央に Domain List がマウントされていることを検証
+		expect(screen.getByText("Domain List")).toBeInTheDocument();
 	});
 });

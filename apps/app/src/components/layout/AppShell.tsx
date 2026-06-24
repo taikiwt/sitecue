@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 		<div className="flex h-dvh w-full overflow-hidden bg-base-bg text-action">
 			{/* h-screen を h-dvh に変更し、動的な高さを確保 */}
 			{/* PC Sidebar (Persistent Rail UI) */}
-			<aside className="hidden md:flex flex-col w-16 bg-action shrink-0 my-4 ml-4 rounded-full shadow-lg overflow-visible">
+			<aside className="hidden md:flex flex-col w-16 bg-action shrink-0 my-4 mx-2 rounded-full shadow-lg overflow-visible">
 				<Suspense fallback={null}>
 					<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
 				</Suspense>

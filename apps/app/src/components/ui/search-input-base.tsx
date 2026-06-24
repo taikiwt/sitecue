@@ -2,19 +2,17 @@ import { Search, X } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-interface SearchInputBaseProps {
+interface SearchInputBaseProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "value"> {
 	value: string;
 	onChange: (value: string) => void;
 	onClear: () => void;
 	onSubmit?: () => void;
-	placeholder?: string;
-	className?: string;
 }
 
 export const SearchInputBase = React.forwardRef<
 	HTMLInputElement,
 	SearchInputBaseProps
->(({ value, onChange, onClear, onSubmit, placeholder, className }, ref) => {
+>(({ value, onChange, onClear, onSubmit, placeholder, className, ...rest }, ref) => {
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 		if (e.key === "Enter" && onSubmit) {
 			e.preventDefault();
@@ -39,7 +37,8 @@ export const SearchInputBase = React.forwardRef<
 				onChange={(e) => onChange(e.target.value)}
 				onKeyDown={handleKeyDown}
 				placeholder={placeholder || "Search..."}
-				className="w-full pl-9 pr-8 py-2 text-base md:text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-lg transition-all outline-none"
+				className="w-full pl-9 pr-8 py-2 text-base md:text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-full transition-all outline-none"
+				{...rest}
 			/>
 			{value && (
 				<button
