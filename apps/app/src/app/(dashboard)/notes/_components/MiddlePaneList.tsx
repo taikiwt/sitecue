@@ -15,7 +15,6 @@ import {
 } from "@dnd-kit/sortable";
 import { type Diary, getSafeUrl } from "@sitecue/shared";
 import {
-	AlertTriangle,
 	Archive,
 	ArrowLeft,
 	Check,
@@ -26,11 +25,12 @@ import {
 	FileText,
 	Globe,
 	Inbox,
-	Info,
-	Lightbulb,
 	ListChecks,
 	Plus,
+	Search,
 	Trash2,
+	X,
+	SquareCheckBig
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -86,8 +86,10 @@ export function MiddlePaneList(props: Props) {
 	const currentQuery = searchParams.get("q") || "";
 
 	const [inputValue, setInputValue] = useState(currentQuery);
+	const [isSearchExpanded, setIsSearchExpanded] = useState(!!currentQuery);
 	// 🚨 追加: 自分が最後にURLへプッシュした値を記録する
 	const lastPushedQueryRef = useRef(currentQuery);
+	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	// 1. URLの変化をローカルの状態に同期（外部からの変更、例えばタブ切り替え時のクリア用）
 	useEffect(() => {
@@ -127,6 +129,19 @@ export function MiddlePaneList(props: Props) {
 		params.delete("noteId");
 		params.delete("draftId");
 		params.delete("q"); // 検索も基本リセット推奨の仕様に合わせる
+
+		if (newView === "diaries") {
+			if (!params.has("year") || !params.has("month")) {
+				const now = new Date();
+				const yyyy = now.getFullYear().toString();
+				const mm = String(now.getMonth() + 1).padStart(2, "0");
+				params.set("year", yyyy);
+				params.set("month", mm);
+			}
+		} else {
+			params.delete("year");
+			params.delete("month");
+		}
 
 		router.push(`${pathname}?${params.toString()}`);
 	};
@@ -217,6 +232,15 @@ export function MiddlePaneList(props: Props) {
 		setFilterType("all");
 	}, [currentView, currentDomain, currentExact]);
 
+	useEffect(() => {
+		if (isSearchExpanded && searchInputRef.current) {
+			const timer = setTimeout(() => {
+				searchInputRef.current?.focus();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+	}, [isSearchExpanded]);
+
 	const displayItems = localItems.filter((item): item is Note | Draft => {
 		const isDiary = "date" in item && !("note_type" in item);
 		if (isDiary) return false;
@@ -279,7 +303,7 @@ export function MiddlePaneList(props: Props) {
 	const isSelected =
 		!!currentView || !!currentDomain || !!currentExact || isSearchActive;
 
-	const isShowingNotesList =
+	const _isShowingNotesList =
 		currentView === "inbox" || (currentView === "domains" && !!currentExact);
 
 	const isDiariesView = currentView === "diaries";
@@ -287,6 +311,33 @@ export function MiddlePaneList(props: Props) {
 		? "/notes?view=diaries&globalNew=note&intent=diary"
 		: `/notes?domain=${currentDomain || "inbox"}${currentExact ? `&exact=${encodeURIComponent(currentExact)}` : ""}&new=note`;
 	const plusTitle = isDiariesView ? "New Diary Log" : "New Note here";
+
+	const isRouteDomains = currentView === "domains" && !currentDomain;
+	const showActionGroup =
+		isSelected &&
+		currentView !== "drafts" &&
+		currentView !== "diaries" &&
+		!isRouteDomains;
+
+	// 2段目のデッドスペースを埋めるためのビュー説明文言（英語）の導出
+	const getContextTitle = (): string | null => {
+		if (currentView === "domains" && !currentDomain) return "Domain List";
+		if (currentView === "drafts") return "Draft List";
+		if (currentView === "diaries" && (!currentYear || !currentMonth))
+			return "Diary Archive";
+		return null;
+	};
+
+	const contextTitle = getContextTitle();
+	// 2段目に通常の操作要素（フィルターやボタン）が表示されるかどうかの判定
+	const hasTier2Controls =
+		isSelected &&
+		currentView !== "drafts" &&
+		currentView !== "diaries" &&
+		!isRouteDomains;
+	const hasBackButton =
+		(currentDomain && currentDomain !== "inbox") ||
+		(currentView === "diaries" && (currentYear || currentMonth));
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -359,203 +410,242 @@ export function MiddlePaneList(props: Props) {
 	};
 
 	return (
-		<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
-			{/* Header Controls (Blueprint) */}
-			<div className="flex-shrink-0 p-4 space-y-3 border-b border-base-border">
-				{/* Tabs & Top Actions */}
-				<div className="flex items-center justify-between">
-					<div className="flex items-center space-x-2">
-						{/* 🚨 修正: ドリルダウン中のみ戻るボタンを表示 */}
-						{((currentDomain && currentDomain !== "inbox") ||
-							(currentView === "diaries" && (currentYear || currentMonth))) && (
-							<button
-								type="button"
-								onClick={handleBack}
-								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors animate-in fade-in zoom-in duration-200 cursor-pointer"
-								title="Go back"
-							>
-								<ArrowLeft className="size-4" aria-hidden="true" />
-							</button>
-						)}
+			<div className="flex flex-col h-full bg-base-bg md:border-r md:border-base-border md:w-96">
+				{/* Morphing Header Container */}
+				<div className="flex-shrink-0 p-4 space-y-3 border-b border-base-border bg-base-bg">
 
-						{["inbox", "domains", "drafts", "diaries"].map((view) => (
-							<button
-								key={view}
-								type="button"
-								onClick={() => updateView(view)}
-								className={cn(
-									"px-3 py-1.5 text-sm font-medium rounded-md transition-colors cursor-pointer",
-									currentView === view ||
-										(currentView === null && view === "inbox")
-										? "bg-action text-action-text"
-										: "text-base-content hover:bg-base-surface",
-								)}
-							>
-								{view.charAt(0).toUpperCase() + view.slice(1)}
-							</button>
-						))}
-					</div>
-					{/* Action Buttons (Moved from internal header) */}
-					{isSelected && (currentView !== "domains" || !!currentExact) && (
-						<div className="flex items-center gap-1">
-							<Link
-								href={plusHref}
-								className="p-1.5 text-gray-400 hover:text-action rounded-md hover:bg-base-surface transition-colors"
-								title={plusTitle}
-							>
-								<Plus className="size-4" />
-							</Link>
-							<AnimatedIconButton
-								type="button"
-								onClick={() => {
-									setIsSelectMode(!isSelectMode);
-									if (!isSelectMode === false) setSelectedIds(new Set());
-								}}
-								isActive={isSelectMode}
-								icon={<ListChecks className="size-4" aria-hidden="true" />}
-								activeIcon={
-									<ListChecks className="size-4" aria-hidden="true" />
-								}
-								className={cn(
-									"cursor-pointer",
-									isSelectMode
-										? "text-neutral-900 bg-neutral-100"
-										: "text-gray-400 hover:text-action",
-								)}
-								title="Select Mode"
-							/>
-							<Popover
-								open={isCopyPopoverOpen}
-								onOpenChange={setIsCopyPopoverOpen}
-							>
-								<PopoverTrigger
-									render={
-										<HoverSwapButton
-											type="button"
-											defaultIcon={
-												<Copy className="size-4" aria-hidden="true" />
-											}
-											hoverIcon={
-												<ClipboardCopy className="size-4" aria-hidden="true" />
-											}
-											disableSuccessState={true}
-											className={cn(
-												"transition-colors cursor-pointer",
-												copiedType !== null
-													? "text-note-info"
-													: "text-gray-400 hover:text-action",
-											)}
-											title="Bulk Copy"
-										/>
-									}
-								/>
-								<PopoverContent className="w-48 p-2" align="end">
-									<div className="flex flex-col gap-1">
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={handleCopyAsText}
-											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-										>
-											{copiedType === "text" ? (
-												<Check
-													className="w-3.5 h-3.5 text-note-info"
-													aria-hidden="true"
-												/>
-											) : (
-												<FileText className="w-3.5 h-3.5" aria-hidden="true" />
-											)}
-											{copiedType === "text" ? "Copied!" : "as Text"}
-										</Button>
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											onClick={handleCopyAsJson}
-											className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
-										>
-											{copiedType === "json" ? (
-												<Check
-													className="w-3.5 h-3.5 text-note-info"
-													aria-hidden="true"
-												/>
-											) : (
-												<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
-											)}
-											{copiedType === "json" ? "Copied!" : "as JSON"}
-										</Button>
-									</div>
-								</PopoverContent>
-							</Popover>
-						</div>
-					)}
-				</div>
-
-				{/* Search & Filters */}
-				<div className="space-y-3">
-					<SearchInputBase
-						value={inputValue}
-						onChange={setInputValue}
-						onClear={() => {
-							setInputValue("");
-							updateParams("q", "");
-						}}
-						onSubmit={() => updateParams("q", inputValue)}
-						placeholder="Search notes..."
-					/>
-
-					{/* Note Filters (Moved from internal header) */}
-					{isSelected && currentView !== "drafts" && isShowingNotesList && (
-						<div className="flex items-center justify-between w-full">
-							<div className="flex items-center gap-0.5 bg-base-surface border border-base-border w-fit p-0.5 rounded-lg animate-in fade-in duration-200">
-								<FilterBadge
-									isActive={filterType === "all"}
-									onClick={() => setFilterType("all")}
+					{/* 1段目：メインナビゲーション（4つ1行・大きめの左寄せカプセル構造） */}
+					<div className="flex justify-start w-full items-center h-11">
+						<div className="grid grid-cols-4 gap-1 w-full bg-base-surface rounded-full border-none">
+							{["inbox", "domains", "drafts", "diaries"].map((view) => (
+								<button
+									key={view}
+									type="button"
+									onClick={() => updateView(view)}
+									className={cn(
+										"px-1 py-2.5 text-xs font-bold rounded-full transition-all cursor-pointer text-center",
+										currentView === view || (currentView === null && view === "inbox")
+											? "bg-action text-action-text shadow-sm"
+											: "text-neutral-500 hover:text-action hover:bg-base-bg/60",
+									)}
 								>
-									All
-								</FilterBadge>
-								<FilterBadge
-									isActive={filterType === "info"}
-									onClick={() => setFilterType("info")}
-									icon={<Info className="w-3.5 h-3.5" aria-hidden="true" />}
-									aria-label="Info"
-								/>
-								<FilterBadge
-									isActive={filterType === "alert"}
-									onClick={() => setFilterType("alert")}
-									icon={
-										<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
-									}
-									aria-label="Alert"
-								/>
-								<FilterBadge
-									isActive={filterType === "idea"}
-									onClick={() => setFilterType("idea")}
-									icon={
-										<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
-									}
-									aria-label="Idea"
-								/>
-							</div>
-							<Button
-								type="button"
-								variant={showResolved ? "secondary" : "ghost"}
-								size="sm"
-								onClick={() => setShowResolved(!showResolved)}
-								className="transition-colors cursor-pointer text-xs font-bold text-gray-500 hover:text-action"
-								title="Show Resolved Notes"
-							>
-								<Archive className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
-								Resolved
-							</Button>
+									{view.charAt(0).toUpperCase() + view.slice(1)}
+								</button>
+							))}
 						</div>
-					)}
-				</div>
+					</div>
 
-				{/* Bulk Selection Bar */}
+					{/* 2段目：コントロール操作バー */}
+					<div className="flex items-center justify-between w-full min-h-9 gap-2 relative">
+						{/* 戻るボタン */}
+						<div className="flex items-center min-w-[32px] relative z-10">
+							{hasBackButton && (
+								<button
+									type="button"
+									onClick={handleBack}
+									className="p-1.5 text-gray-400 hover:text-action rounded-full hover:bg-base-surface transition-colors animate-in fade-in zoom-in duration-200 cursor-pointer border border-base-border bg-base-bg"
+									title="Go back"
+								>
+									<ArrowLeft className="size-4" aria-hidden="true" />
+								</button>
+							)}
+						</div>
+
+						{/* 一体型セグメントフィルター または ビュー説明文言（絶対中央配置化） */}
+						<div
+							className={cn(
+								"flex items-center justify-center",
+								hasTier2Controls
+									? "flex-1 mx-auto"
+									: "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full pointer-events-none",
+							)}
+						>
+							{hasTier2Controls ? (
+								<div className="flex items-center gap-0.5 bg-base-surface p-2 rounded-full animate-in fade-in duration-200">
+									<FilterBadge
+										isActive={filterType === "all"}
+										onClick={() => setFilterType("all")}
+										className="rounded-full px-2.5 py-1 text-xs"
+									>
+										All
+									</FilterBadge>
+									<FilterBadge
+										isActive={filterType === "info"}
+										onClick={() => setFilterType("info")}
+										className="rounded-full px-2.5 py-1 text-xs"
+									>
+										Info
+									</FilterBadge>
+									<FilterBadge
+										isActive={filterType === "alert"}
+										onClick={() => setFilterType("alert")}
+										className="rounded-full px-2.5 py-1 text-xs"
+									>
+										Alert
+									</FilterBadge>
+									<FilterBadge
+										isActive={filterType === "idea"}
+										onClick={() => setFilterType("idea")}
+										className="rounded-full px-2.5 py-1 text-xs"
+									>
+										Idea
+									</FilterBadge>
+								</div>
+							) : (
+								contextTitle && (
+									<span className="text-xs font-bold text-gray-400 tracking-wide uppercase animate-in fade-in duration-300  bg-base-surface rounded-full py-1 px-4">
+										{contextTitle}
+									</span>
+								)
+							)}
+						</div>
+
+						{/* 右端アクション：Resolved トグルのみ（検索ボタンは廃止） */}
+						<div className="flex items-center gap-1 justify-end min-w-[32px] relative z-10">
+							{isSelected &&
+								currentView !== "drafts" &&
+								currentView !== "diaries" &&
+								!isRouteDomains && (
+									<button
+										type="button"
+										onClick={() => setShowResolved(!showResolved)}
+										className={cn(
+											"p-1.5 rounded-full border transition-colors cursor-pointer",
+											showResolved
+												? "bg-action text-action-text border-action"
+												: "bg-base-bg text-gray-400 border-base-border hover:text-action hover:bg-base-surface",
+										)}
+										title="Show Resolved Notes"
+									>
+										<SquareCheckBig className="w-4 h-4" aria-hidden="true" />
+									</button>
+								)}
+						</div>
+					</div>
+
+					{/* 3段目：可変検索窓 ＆ アクションボタン群の「常時1行横並び」エリア */}
+					<div className="flex items-center w-full gap-2 animate-in fade-in duration-300">
+						{/* 検索窓コンテナ (flex-1 により、右側が消えたら自動的にフル幅へモーフィング) */}
+						<div className="flex-1 min-w-0">
+							<SearchInputBase
+								ref={searchInputRef}
+								value={inputValue}
+								onChange={setInputValue}
+								onClear={() => {
+									setInputValue("");
+									updateParams("q", "");
+								}}
+								onSubmit={() => updateParams("q", inputValue)}
+								placeholder="Search notes..."
+								className="rounded-full text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-border/50"
+								autoFocus={false}
+							/>
+						</div>
+
+						{/* アクションボタン群 */}
+						{showActionGroup && (
+							<div className="flex items-center gap-1 p-1 rounded-full shrink-0">
+								<Link
+									href={plusHref}
+									className="p-1.5 text-gray-400 hover:text-action rounded-full hover:bg-base-surface transition-colors flex items-center justify-center w-7 h-7"
+									title={plusTitle}
+								>
+									<Plus className="size-4" />
+								</Link>
+
+								<AnimatedIconButton
+									type="button"
+									onClick={() => {
+										setIsSelectMode(!isSelectMode);
+										if (isSelectMode) setSelectedIds(new Set());
+									}}
+									isActive={isSelectMode}
+									icon={<ListChecks className="size-4" aria-hidden="true" />}
+									activeIcon={
+										<ListChecks className="size-4" aria-hidden="true" />
+									}
+									className={cn(
+										"cursor-pointer rounded-full p-1 flex items-center justify-center w-7 h-7",
+										isSelectMode
+											? "text-neutral-900 bg-base-bg shadow-sm"
+											: "text-gray-400 hover:text-action",
+									)}
+									title="Select Mode"
+								/>
+								<Popover
+									open={isCopyPopoverOpen}
+									onOpenChange={setIsCopyPopoverOpen}
+								>
+									<PopoverTrigger
+										render={
+											<HoverSwapButton
+												type="button"
+												defaultIcon={
+													<Copy className="size-4" aria-hidden="true" />
+												}
+												hoverIcon={
+													<ClipboardCopy
+														className="size-4"
+														aria-hidden="true"
+													/>
+												}
+												disableSuccessState={true}
+												className={cn(
+													"transition-colors cursor-pointer rounded-full p-1 flex items-center justify-center w-7 h-7",
+													copiedType !== null
+														? "text-note-info"
+														: "text-gray-400 hover:text-action",
+												)}
+												title="Bulk Copy"
+											/>
+										}
+									/>
+									<PopoverContent className="w-48 p-2 rounded-xl" align="end">
+										<div className="flex flex-col gap-1">
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={handleCopyAsText}
+												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+											>
+												{copiedType === "text" ? (
+													<Check
+														className="w-3.5 h-3.5 text-note-info"
+														aria-hidden="true"
+													/>
+												) : (
+													<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+												)}
+												{copiedType === "text" ? "Copied!" : "as Text"}
+											</Button>
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={handleCopyAsJson}
+												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-neutral-500 hover:text-neutral-900 cursor-pointer"
+											>
+												{copiedType === "json" ? (
+													<Check
+														className="w-3.5 h-3.5 text-note-info"
+														aria-hidden="true"
+													/>
+												) : (
+													<FileJson className="w-3.5 h-3.5" aria-hidden="true" />
+												)}
+												{copiedType === "json" ? "Copied!" : "as JSON"}
+											</Button>
+										</div>
+									</PopoverContent>
+								</Popover>
+							</div>
+						)}
+					</div>
+
+				{/* 4段目：一括操作バー（Bulk Actions） */}
 				{selectedIds.size > 0 && (
-					<div className="flex items-center justify-between pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+					<div className="flex items-center justify-between pt-1 border-t border-base-border border-dashed animate-in fade-in slide-in-from-top-1 duration-200">
 						<span className="text-xs font-semibold text-action">
 							{selectedIds.size} selected
 						</span>
@@ -565,7 +655,7 @@ export function MiddlePaneList(props: Props) {
 								variant="ghost"
 								size="sm"
 								onClick={() => setSelectedIds(new Set())}
-								className="text-gray-500 hover:text-action font-medium cursor-pointer"
+								className="text-gray-500 hover:text-action font-medium cursor-pointer rounded-full px-3"
 								disabled={isDeletingBulk}
 							>
 								Cancel
@@ -575,7 +665,7 @@ export function MiddlePaneList(props: Props) {
 								variant="destructive"
 								size="sm"
 								onClick={handleDeleteSelected}
-								className="flex items-center gap-1.5 font-bold cursor-pointer"
+								className="flex items-center gap-1.5 font-bold cursor-pointer rounded-full px-3"
 								disabled={isDeletingBulk}
 							>
 								<Trash2 className="w-3 h-3" aria-hidden="true" />
