@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { FileText, Home, Search } from "lucide-react";
+import { FileText, Home, Search, Library, LibraryBig } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -31,7 +31,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	return (
 		<div className="flex flex-col h-full w-full bg-transparent items-center justify-between py-6 px-2 select-none">
 			{/* 🏝️ 島1（最上部）：ホームエリア */}
-			<div className="w-full bg-base-surface rounded-full flex flex-col items-center p-2 shadow-sm shrink-0 gap-4">
+			<div className="w-full bg-base-surface rounded-full flex flex-col items-center p-2 shrink-0 gap-4">
 				<Link
 					className="flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors"
 					href="/"
@@ -43,7 +43,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 			</div>
 
 			{/* 🏝️ 島2（中央・メインアクションエリア）：まとまり（質量）を表現 */}
-			<div className="w-full bg-base-surface rounded-full flex flex-col items-center p-2 gap-4 shadow-sm shrink-0">
+			<div className="w-full bg-base-surface rounded-full flex flex-col items-center p-2 gap-4 shrink-0">
 				{/* sitecue（新規作成）アイコン */}
 				<button
 					type="button"
@@ -58,7 +58,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 				>
 					<Image
 						alt="sitecue logo"
-						className="drop-shadow-sm w-full h-full object-contain"
+						className=" w-full h-full object-contain hover:scale-105 transition-all duration-300"
 						height={40}
 						src="/logo.svg"
 						width={40}
@@ -80,12 +80,12 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 						onClick={onClose}
 						className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${
 							isNotes
-								? "bg-base-bg text-action shadow-sm scale-105"
+								? "bg-base-bg text-action scale-105"
 								: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
 						}`}
 						title="Notes"
 					>
-						<FileText aria-hidden="true" className="w-5 h-5" />
+						<Library aria-hidden="true" className="w-5 h-5" />
 					</Link>
 				</nav>
 			</div>
