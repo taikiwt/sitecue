@@ -91,7 +91,10 @@ export function DomainDashboardCard({ data }: Props) {
 											className="text-xs hover-safe:underline truncate flex items-center gap-1 hover-safe:text-action transition-colors min-w-0"
 											title={page.page_url}
 										>
-											<DomainFavicon domain={data.domain} sizeClassName="w-3 h-3" />
+											<DomainFavicon
+												domain={data.domain}
+												sizeClassName="w-3 h-3"
+											/>
 
 											<span className="text-base text-base-content line-clamp-1 truncate block min-w-0">
 												{page.page_title || getFallbackPathname(page.page_url)}

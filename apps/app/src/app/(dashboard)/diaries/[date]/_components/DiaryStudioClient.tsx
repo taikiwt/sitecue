@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import type { Diary } from "@sitecue/shared";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -21,7 +22,6 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUpdateDiary } from "@/hooks/useDiariesQuery";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import type { Diary } from "@sitecue/shared";
 import { DiaryMaterialsPane } from "./DiaryMaterialsPane";
 
 interface Props {
@@ -34,7 +34,9 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 	const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
+	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
+		"idle",
+	);
 
 	const [content, setContent] = useState(initialDiary?.content || "");
 	const updateDiaryMutation = useUpdateDiary();
@@ -109,7 +111,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							</div>
 						</header>
 
-						<main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10 bg-base-bg min-w-0">
+						<div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10 bg-base-bg min-w-0">
 							<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-6 min-w-0">
 								<div className="text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
 									Canvas: Daily Sandbox
@@ -124,7 +126,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 									/>
 								</div>
 							</div>
-						</main>
+						</div>
 					</Panel>
 
 					<PanelResizeHandle className="w-1 bg-transparent hover:bg-neutral-200 active:bg-neutral-300 transition-colors cursor-col-resize" />
@@ -186,7 +188,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 					</div>
 				</header>
 
-				<main className="flex-1 overflow-y-auto px-4 py-6 bg-base-bg">
+				<div className="flex-1 overflow-y-auto px-4 py-6 bg-base-bg">
 					<div className="relative w-full text-base min-w-0">
 						<StudioEditor
 							onChange={(val) => setContent(val)}
@@ -196,14 +198,11 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							onGenerateHint={async () => null}
 						/>
 					</div>
-				</main>
+				</div>
 			</div>
 
 			<div className="fixed bottom-6 right-6 z-50">
-				<Drawer
-					onOpenChange={setIsMobileDrawerOpen}
-					open={isMobileDrawerOpen}
-				>
+				<Drawer onOpenChange={setIsMobileDrawerOpen} open={isMobileDrawerOpen}>
 					<DrawerTrigger asChild>
 						<button
 							type="button"

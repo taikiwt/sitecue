@@ -615,6 +615,33 @@ describe("MiddlePaneList Back Button", () => {
 		expect(screen.getByText("2026")).toBeInTheDocument();
 	});
 
+	it("renders months list in diaries view when year is selected but month is not", async () => {
+		const mockDiary = {
+			user_id: "user-1",
+			date: "2026-06-21",
+			content: "Diary content 1",
+			topics: ["react"],
+			created_at: "2026-06-21T10:00:00Z",
+			updated_at: "2026-06-21T10:00:00Z",
+		};
+
+		searchParamsMock.mockReturnValue(new URLSearchParams("year=2026"));
+
+		render(
+			<MiddlePaneList
+				items={[mockDiary]}
+				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				currentView="diaries"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByText("Jun")).toBeInTheDocument();
+	});
+
 	it("ビュー切り替え時に正しいコンテキストタイトルが表示されること", async () => {
 		const { rerender } = render(
 			<MiddlePaneList

@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Home, Search, Library } from "lucide-react";
+import { Home, Library, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -40,7 +40,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 
 				{/* 中央エリア：メインアクション（新規作成、検索、一覧）を大ぶりの白いカプセル島として独立化 */}
 				<div className="flex-1 flex justify-center items-center">
-					<div className="flex items-center justify-between bg-base-surface rounded-full p-0.5 px-2.5 gap-3 shadow-sm w-full max-w-[220px]">
+					<div className="w-48 h-16 bg-base-surface rounded-full flex items-center justify-between p-2 shrink-0 shadow-sm">
 						{/* Notes 一覧（ヒットエリア48pxを完全死守、アイコンも24pxへ拡大） */}
 						<Link
 							href="/notes"

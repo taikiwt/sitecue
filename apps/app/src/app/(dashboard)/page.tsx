@@ -126,7 +126,7 @@ export default async function LaunchpadPage() {
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto">
-			<main className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
+			<div className="mx-auto px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
 				{/* ① [最上部] ダッシュボード（Radial Chart & 今日のノート等） */}
 				<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<Suspense
@@ -185,7 +185,7 @@ export default async function LaunchpadPage() {
 						<ContributionTimeline />
 					</Suspense>
 				</section>
-			</main>
+			</div>
 		</div>
 	);
 }

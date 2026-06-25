@@ -85,7 +85,9 @@ describe("GlobalNewNoteDialog", () => {
 
 	it("sanitizes 'all' reserved words from search parameters", async () => {
 		// モックの URLSearchParams を "exact=all&domain=all" で再定義
-		const params = new URLSearchParams("globalNew=note&intent=note&exact=all&domain=all");
+		const params = new URLSearchParams(
+			"globalNew=note&intent=note&exact=all&domain=all",
+		);
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -101,7 +103,9 @@ describe("GlobalNewNoteDialog", () => {
 	});
 
 	it("falls back to domain scope when domain is valid and not 'all'", async () => {
-		const params = new URLSearchParams("globalNew=note&intent=note&domain=example.com");
+		const params = new URLSearchParams(
+			"globalNew=note&intent=note&domain=example.com",
+		);
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -114,7 +118,9 @@ describe("GlobalNewNoteDialog", () => {
 	});
 
 	it("disables Save button when scope requires URL but it is empty", async () => {
-		const params = new URLSearchParams("globalNew=note&intent=note&domain=example.com");
+		const params = new URLSearchParams(
+			"globalNew=note&intent=note&domain=example.com",
+		);
 		mockUseSearchParams.mockReturnValue(params);
 
 		render(<GlobalNewNoteDialog />);
@@ -183,7 +189,9 @@ describe("GlobalNewNoteDialog - Entry Gate & Morphing UX", () => {
 		mockUseSearchParams.mockReturnValue(new URLSearchParams("?globalNew=note"));
 		render(<GlobalNewNoteDialog />);
 
-		expect(screen.getByText("What would you like to capture?")).toBeInTheDocument();
+		expect(
+			screen.getByText("What would you like to capture?"),
+		).toBeInTheDocument();
 		expect(screen.getByText("Quick Note")).toBeInTheDocument();
 		expect(screen.getByText("Daily Diary")).toBeInTheDocument();
 	});
@@ -196,7 +204,9 @@ describe("GlobalNewNoteDialog - Entry Gate & Morphing UX", () => {
 		expect(diaryButton).toBeInTheDocument();
 		fireEvent.click(diaryButton!);
 
-		const textarea = screen.getByPlaceholderText("Write down your thoughts for today... (No title required)");
+		const textarea = screen.getByPlaceholderText(
+			"Write down your thoughts for today... (No title required)",
+		);
 		expect(textarea).toBeInTheDocument();
 		expect(textarea).toHaveClass("text-base"); // iOSズーム防止の16px
 	});

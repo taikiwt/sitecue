@@ -1,21 +1,27 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { Globe } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface DomainFaviconProps {
 	domain: string;
 	sizeClassName?: string;
 }
 
-export function DomainFavicon({ domain, sizeClassName = "w-5 h-5" }: DomainFaviconProps) {
+export function DomainFavicon({
+	domain,
+	sizeClassName = "w-5 h-5",
+}: DomainFaviconProps) {
 	const [isFallback, setIsFallback] = useState(false);
 	const imgRef = useRef<HTMLImageElement>(null);
 
 	// useEffect を早期リターン（if文）よりも「上」に配置
 	useEffect(() => {
 		if (imgRef.current && imgRef.current.complete) {
-			if (imgRef.current.naturalWidth === 16 && imgRef.current.naturalHeight === 16) {
+			if (
+				imgRef.current.naturalWidth === 16 &&
+				imgRef.current.naturalHeight === 16
+			) {
 				setIsFallback(true);
 			}
 		}

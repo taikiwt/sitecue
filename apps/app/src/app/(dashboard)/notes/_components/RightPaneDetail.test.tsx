@@ -300,7 +300,6 @@ describe("RightPaneDetail", () => {
 		});
 	});
 
-
 	it("opens delete dialog after clicking delete in more menu with delay", async () => {
 		vi.useFakeTimers();
 		const mockNote = createMockNote({

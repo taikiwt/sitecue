@@ -27,4 +27,3 @@ export type SearchParams = {
 	month?: string;
 	date?: string;
 };
-
