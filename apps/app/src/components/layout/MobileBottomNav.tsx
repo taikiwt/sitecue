@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Home, Search } from "lucide-react";
+import { FileText, Home, Search, Library } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -47,7 +47,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 							className="flex items-center justify-center w-12 h-12 rounded-full text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors"
 							aria-label="Notes"
 						>
-							<FileText className="w-6 h-6" aria-hidden="true" />
+							<Library className="w-6 h-6" aria-hidden="true" />
 						</Link>
 
 						{/* Logo（新規作成：w-12の座布団サイズいっぱいにブルーロゴを完全同期・質量最大化） */}
