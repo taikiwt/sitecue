@@ -73,7 +73,7 @@ export function ResponsiveNotesLayout({
 	return (
 		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
 			{/* List Area */}
-			<main
+			<div
 				className={cn(
 					"flex-1 overflow-hidden",
 					isDrawerOpen && "pointer-events-none",
@@ -82,7 +82,7 @@ export function ResponsiveNotesLayout({
 				aria-hidden={isDrawerOpen ? "true" : "false"}
 			>
 				{middleNode}
-			</main>
+			</div>
 
 			{/* Detail Stack (Mobile Only) */}
 			<div

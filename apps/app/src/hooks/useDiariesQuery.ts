@@ -1,9 +1,13 @@
 "use client";
 
+import type { Diary } from "@sitecue/shared";
+import {
+	appendDiaryLog,
+	fetchDiariesList,
+	updateDiaryContent,
+} from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
-import { appendDiaryLog, fetchDiariesList, updateDiaryContent } from "@sitecue/shared";
-import type { Diary } from "@sitecue/shared";
 
 export function useFetchDiaries() {
 	return useQuery({
@@ -57,13 +61,7 @@ export function useUpdateDiary() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async ({
-			date,
-			text,
-		}: {
-			date: string;
-			text: string;
-		}) => {
+		mutationFn: async ({ date, text }: { date: string; text: string }) => {
 			const supabase = createClient();
 			const {
 				data: { user },

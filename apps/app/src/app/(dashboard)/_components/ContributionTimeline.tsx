@@ -243,7 +243,10 @@ export async function ContributionTimeline() {
 													<div className="flex items-center gap-2 min-w-0 shrink-0 h-5">
 														{event.type === "note_captured" &&
 															item.scope !== "inbox" && (
-																<DomainFavicon domain={item.domain || item.title} sizeClassName="w-3 h-3" />
+																<DomainFavicon
+																	domain={item.domain || item.title}
+																	sizeClassName="w-3 h-3"
+																/>
 															)}
 														{event.type === "note_captured" &&
 															item.scope === "inbox" && (

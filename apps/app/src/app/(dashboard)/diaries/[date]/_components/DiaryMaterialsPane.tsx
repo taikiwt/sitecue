@@ -2,7 +2,7 @@
 
 import type { Draft, Note } from "@sitecue/shared";
 import { fetchDraftsByDate, fetchNotesByDate } from "@sitecue/shared";
-import { FileText, Globe, Calendar } from "lucide-react";
+import { Calendar, FileText, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 

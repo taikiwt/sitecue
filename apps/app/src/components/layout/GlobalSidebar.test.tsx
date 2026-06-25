@@ -86,9 +86,7 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 
 		// Notes should be active
 		const notesLink = screen.getByTitle("Notes").closest("a");
-		expect(notesLink?.className).toContain(
-			"bg-base-bg text-action shadow-sm scale-105",
-		);
+		expect(notesLink?.className).toContain("bg-base-bg text-action scale-105");
 	});
 
 	it("should call router.push with globalNew=note when Logo button is clicked", () => {

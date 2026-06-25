@@ -35,55 +35,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 	const { isPaywallOpen, paywallType, closePaywall, plan } = useUserStore();
 
 	return (
-		<div className="flex h-dvh w-full overflow-hidden bg-base-bg text-action">
-			{/* h-screen を h-dvh に変更し、動的な高さを確保 */}
-			{/* PC Sidebar (Persistent Rail UI) */}
-			<aside className="hidden md:flex flex-col w-16 bg-action shrink-0 my-4 mx-2 rounded-full shadow-lg overflow-visible">
-				<Suspense fallback={null}>
-					<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
-				</Suspense>
-			</aside>
-
-			{/* Mobile Menu */}
-			<Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-				<SheetContent side="left" className="p-0 w-72">
-					<SheetHeader className="sr-only">
-						<SheetTitle>Navigation Menu</SheetTitle>
-						<SheetDescription>
-							Access your inbox, drafts, and domains
-						</SheetDescription>
-					</SheetHeader>
+		<div className="w-full bg-base-bg min-h-dvh flex flex-col">
+			<div className="flex h-dvh w-full overflow-hidden bg-base-bg text-action">
+				{/* PC Sidebar (Persistent Rail UI) */}
+				<aside className="hidden md:flex flex-col w-20 shrink-0 my-4 mx-4 items-center overflow-visible">
 					<Suspense fallback={null}>
 						<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
 					</Suspense>
-				</SheetContent>
-			</Sheet>
+				</aside>
 
-			<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
-				{/* Mobile Toggle Header -> 静的ヘッダーに変更 */}
-				<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border z-20">
-					<Link
-						href="/"
-						className="flex items-center text-lg font-bold tracking-tight text-action"
-					>
-						sitecue
-					</Link>
-					<div className="w-10 h-10">
+				{/* Mobile Menu */}
+				<Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+					<SheetContent side="left" className="p-0 w-72">
+						<SheetHeader className="sr-only">
+							<SheetTitle>Navigation Menu</SheetTitle>
+							<SheetDescription>
+								Access your inbox, drafts, and domains
+							</SheetDescription>
+						</SheetHeader>
 						<Suspense fallback={null}>
-							<UserMenu />
+							<GlobalSidebar onSearchOpen={() => setIsSearchModalOpen(true)} />
 						</Suspense>
+					</SheetContent>
+				</Sheet>
+
+				<main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+					{/* Mobile Toggle Header -> 静的ヘッダーに変更 */}
+					<header className="md:hidden h-14 flex items-center justify-between px-4 shrink-0 bg-base-bg border-b border-base-border z-20">
+						<Link
+							href="/"
+							className="flex items-center text-lg font-bold tracking-tight text-action"
+						>
+							sitecue
+						</Link>
+						<div className="w-10 h-10">
+							<Suspense fallback={null}>
+								<UserMenu />
+							</Suspense>
+						</div>
+					</header>
+
+					{/* Content Area */}
+					<div className="flex-1 overflow-y-auto relative flex flex-col min-w-0">
+						{children}
 					</div>
-				</header>
 
-				{/* Content Area */}
-				<div className="flex-1 overflow-y-auto relative flex flex-col min-w-0">
-					{children}
-				</div>
-
-				{!hideBottomNav && (
-					<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
-				)}
-			</main>
+					{!hideBottomNav && (
+						<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
+					)}
+				</main>
+			</div>
 
 			{/* Global Dialog */}
 			<Suspense fallback={null}>

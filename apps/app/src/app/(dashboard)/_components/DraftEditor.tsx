@@ -517,7 +517,7 @@ export default function DraftEditor({
 						onBack={handleBack}
 					/>
 
-					<main className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10">
+					<div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10">
 						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
 							{/* Metadata & Title Area */}
 							<div className="flex flex-col gap-4">
@@ -589,7 +589,7 @@ export default function DraftEditor({
 								/>
 							</div>
 						</div>
-					</main>
+					</div>
 				</Panel>
 				{/* 右ペイン: コンテキストバー (Desktop only) */}
 				{isDesktop && (

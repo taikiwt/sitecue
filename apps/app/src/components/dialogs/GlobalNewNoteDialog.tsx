@@ -1,10 +1,14 @@
 "use client";
 
-import type { CreateNoteInput, Note, ViewScope as NoteScope } from "@sitecue/shared";
+import type {
+	CreateNoteInput,
+	Note,
+	ViewScope as NoteScope,
+} from "@sitecue/shared";
+import { ArrowLeft, CalendarDays, Inbox, PenTool } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Inbox, PenTool, CalendarDays, ArrowLeft } from "lucide-react";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -181,7 +185,9 @@ export function GlobalNewNoteDialog() {
 							>
 								<Inbox className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
 								<div className="flex flex-col">
-									<span className="text-sm font-bold text-action">Quick Note</span>
+									<span className="text-sm font-bold text-action">
+										Quick Note
+									</span>
 									<span className="text-xs text-gray-400">
 										Capture an instantaneous text linked to context
 									</span>
@@ -198,7 +204,9 @@ export function GlobalNewNoteDialog() {
 							>
 								<PenTool className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
 								<div className="flex flex-col">
-									<span className="text-sm font-bold text-action">Blank Draft</span>
+									<span className="text-sm font-bold text-action">
+										Blank Draft
+									</span>
 									<span className="text-xs text-gray-400">
 										Open full-pane studio to author a heavy document
 									</span>
@@ -212,7 +220,9 @@ export function GlobalNewNoteDialog() {
 							>
 								<CalendarDays className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
 								<div className="flex flex-col">
-									<span className="text-sm font-bold text-action">Daily Diary</span>
+									<span className="text-sm font-bold text-action">
+										Daily Diary
+									</span>
 									<span className="text-xs text-gray-400">
 										Atomic titleless log appending to today's timeline
 									</span>
