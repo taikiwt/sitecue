@@ -3,7 +3,8 @@
 import type { NoteType } from "@sitecue/shared";
 import { normalizeUrlForGrouping } from "@sitecue/shared";
 import {
-	Clipboard,
+  Copy,
+  Clipboard,
 	ClipboardCopy,
 	MoreHorizontal,
 	MousePointerClick,
@@ -404,8 +405,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
 			{/* 1. Header (Fixed) */}
-			<div className="shrink-0 z-10 bg-base-bg pt-6 md:pt-8 px-4 md:px-8">
-				<div className="max-w-3xl mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
+			<div className="shrink-0 z-10 bg-base-bg pt-6 md:pt-8 px-4 md:px-10">
+				<div className="mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
 					{/* Left: Badge and Date */}
 					<div className="flex flex-col gap-1">
 						<div className="flex items-center gap-2 group/meta">
@@ -444,7 +445,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									type="button"
 									onClick={handleCopyAll}
 									defaultIcon={
-										<Clipboard
+										<Copy
 											className="size-5 md:size-4"
 											aria-hidden="true"
 										/>
@@ -599,7 +600,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 
 			{/* 2. Content Area (Scrollable) */}
 			<div className="flex-1 overflow-y-auto">
-				<div className="px-4 py-8 md:px-8 max-w-3xl mx-auto w-full">
+				<div className="px-4 py-8 md:px-12 mx-auto w-full">
 					{!note && draft?.title && (
 						<div className="mb-8 flex flex-col gap-2">
 							<div className="flex items-center justify-between px-1">
