@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
+import { Button } from "@/components/ui/button"; // 👈 追加
 import { CustomLink as Link } from "@/components/ui/custom-link";
 
 interface GlobalSidebarProps {
@@ -29,69 +30,78 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const isNotes = pathname.startsWith("/notes");
 
 	return (
-		<div className="flex flex-col h-full w-18 bg-action shadow-lg rounded-full items-center justify-between py-4 px-2 select-none">
+		<div className="flex flex-col h-full w-18 bg-action rounded-full items-center justify-between py-4 px-2 select-none">
 			{/* 🏝️ 島1（最上部）：ホームエリア */}
 			<div className="w-14 bg-base-surface rounded-full flex flex-col items-center p-2 shrink-0 gap-4">
+				{/* バリアントとサイズ駆動に移行。size-10 でサイドバーの物理サイズを維持 */}
 				<Link
-					className="flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors"
+					variant="ghost"
+					size="icon"
+					className="size-10 text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
 					href="/"
 					onClick={onClose}
 					title="Home"
 				>
-					<Home aria-hidden="true" className="w-5 h-5" />
+					<Home aria-hidden="true" className="size-5" />
 				</Link>
 			</div>
 
 			{/* 🏝️ 島2（中央・メインアクションエリア）：まとまり（質量）を表現 */}
 			<div className="w-14 bg-base-surface rounded-full flex flex-col items-center p-2 gap-4 shrink-0">
-				{/* sitecue（新規作成）アイコン */}
-				<button
-					type="button"
+				{/* sitecue（新規作成）アイコン: 共通Buttonのghost+iconでリセットクラスをパージ */}
+				<Button
+					variant="ghost"
+					size="icon"
 					onClick={() => {
 						const params = new URLSearchParams(searchParams.toString());
 						params.set("globalNew", "note");
 						router.push(`${pathname}?${params.toString()}`);
 						onClose?.();
 					}}
-					className="group cursor-pointer appearance-none bg-transparent border-none p-0 w-10 h-10 flex items-center justify-center rounded-full transition-transform active:scale-95"
+					className="size-10 p-0 transition-transform active:scale-95"
 					title="New Note"
 				>
 					<Image
 						alt="sitecue logo"
-						className=" w-full h-full object-contain hover:scale-105 transition-all duration-300"
+						className="w-full h-full object-contain hover:scale-105 transition-all duration-300"
 						height={40}
 						src="/logo.svg"
 						width={40}
 					/>
-				</button>
+				</Button>
 
-				<button
-					type="button"
+				{/* 生ボタンから共通Buttonコンポーネントへリプレイス */}
+				<Button
+					variant="ghost"
+					size="icon"
 					onClick={onSearchOpen}
-					className="flex items-center justify-center w-10 h-10 rounded-full text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors cursor-pointer"
+					className="size-10 text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
 					title="Search"
 				>
-					<Search aria-hidden="true" className="w-5 h-5" />
-				</button>
+					<Search aria-hidden="true" className="size-5" />
+				</Button>
 
 				<nav className="flex flex-col items-center w-full">
+					{/* アクティブ/非アクティブの見た目をバリアントと最小限のトグルクラスで制御 */}
 					<Link
 						href="/notes"
 						onClick={onClose}
-						className={`w-10 h-10 rounded-full transition-all flex items-center justify-center ${
+						variant={isNotes ? "secondary" : "ghost"}
+						size="icon"
+						className={`size-10 transition-all ${
 							isNotes
-								? "bg-base-bg text-action scale-105"
-								: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
+								? "bg-base-bg text-action scale-105 hover-safe:bg-base-hover"
+								: "text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
 						}`}
 						title="Notes"
 					>
-						<Library aria-hidden="true" className="w-5 h-5" />
+						<Library aria-hidden="true" className="size-5" />
 					</Link>
 				</nav>
 			</div>
 
 			{/* 🏝️ 島3（最下部）：ユーザーエリア。Popover見切れ防止のため overflow-hidden は絶対禁止 */}
-			<div className="w-14 bg-base-surface rounded-full flex flex-col items-center p-2 shadow-sm shrink-0 relative gap-4">
+			<div className="w-14 bg-base-surface rounded-full flex flex-col items-center p-2 shrink-0 relative gap-4">
 				<div className="w-10 h-10 flex items-center justify-center">
 					<UserMenu />
 				</div>

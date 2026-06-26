@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import React from "react";
+import { type VariantProps } from "class-variance-authority";
 import { useEditorStore } from "@/store/useEditorStore";
+import { buttonVariants } from "./button";
+import { cn } from "@/lib/utils";
 
-type CustomLinkProps = React.ComponentProps<typeof Link>;
+type CustomLinkProps = React.ComponentProps<typeof Link> & VariantProps<typeof buttonVariants>;
 
 export const CustomLink = React.forwardRef<HTMLAnchorElement, CustomLinkProps>(
-	({ onClick, href, ...props }, ref) => {
+	({ onClick, href, variant, size, radius, className, ...props }, ref) => {
 		const isDirty = useEditorStore((state) => state.isDirty);
 
 		const handleClick = (
@@ -27,7 +30,12 @@ export const CustomLink = React.forwardRef<HTMLAnchorElement, CustomLinkProps>(
 			}
 		};
 
-		return <Link href={href} {...props} onClick={handleClick} ref={ref} />;
+		// variant や size や radius が指定されている場合は buttonVariants を適用し、そうでなければピュアな Link として振る舞う
+		const combinedClassName = (variant || size || radius)
+			? cn(buttonVariants({ variant, size, radius, className }))
+			: className;
+
+		return <Link href={href} {...props} onClick={handleClick} ref={ref} className={combinedClassName} />;
 	},
 );
 

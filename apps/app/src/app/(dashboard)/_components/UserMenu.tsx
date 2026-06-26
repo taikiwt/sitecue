@@ -4,6 +4,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
 	Popover,
@@ -64,9 +65,11 @@ export function UserMenu() {
 		<Popover open={isMenuOpen} onOpenChange={setIsMenuOpen}>
 			<PopoverTrigger
 				render={
-					<button
+					<Button
 						type="button"
-						className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-base-surface text-action transition-colors shadow-sm overflow-hidden hover-safe:border-action cursor-pointer"
+						variant="ghost"
+						size="icon"
+						className="size-9 border-none p-0 bg-base-surface text-action shadow-sm overflow-hidden hover-safe:border-action"
 						aria-label="User menu"
 					>
 						{user.user_metadata?.avatar_url ? (
@@ -77,9 +80,10 @@ export function UserMenu() {
 								className="h-full w-full object-cover"
 							/>
 						) : (
-							<User className="h-4 w-4" aria-hidden="true" />
+							/* 💡 アイコンの縮小を防ぐため className を size-5 に変更 */
+							<User className="size-5" aria-hidden="true" />
 						)}
-					</button>
+					</Button>
 				}
 			/>
 

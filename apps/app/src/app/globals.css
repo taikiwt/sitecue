@@ -113,6 +113,7 @@
   --color-base-bg: #ffffff;
   --color-base-surface: #f9fafb;
   --color-base-border: #e5e7eb;
+  --color-base-hover: #e5e7eb;
   --color-action: var(--action);
   --color-action-hover: oklch(from var(--action) calc(l + 0.2) c h);
   --color-action-text: #ffffff;
