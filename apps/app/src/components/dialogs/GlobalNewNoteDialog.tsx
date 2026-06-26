@@ -181,14 +181,14 @@ export function GlobalNewNoteDialog() {
 							<button
 								type="button"
 								onClick={() => setMode("note")}
-								className="flex items-center gap-3 w-full p-4 rounded-xl border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group"
+								className="flex items-center gap-4 w-full p-4 rounded-[2rem] border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<Inbox className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-								<div className="flex flex-col">
+								<Inbox className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
 										Quick Note
 									</span>
-									<span className="text-xs text-gray-400">
+									<span className="text-xs text-gray-400 truncate">
 										Capture an instantaneous text linked to context
 									</span>
 								</div>
@@ -200,14 +200,14 @@ export function GlobalNewNoteDialog() {
 									handleCancel();
 									router.push("/studio/new");
 								}}
-								className="flex items-center gap-3 w-full p-4 rounded-xl border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group"
+								className="flex items-center gap-4 w-full p-4 rounded-[2rem] border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<PenTool className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-								<div className="flex flex-col">
+								<PenTool className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
 										Blank Draft
 									</span>
-									<span className="text-xs text-gray-400">
+									<span className="text-xs text-gray-400 truncate">
 										Open full-pane studio to author a heavy document
 									</span>
 								</div>
@@ -216,14 +216,14 @@ export function GlobalNewNoteDialog() {
 							<button
 								type="button"
 								onClick={() => setMode("diary")}
-								className="flex items-center gap-3 w-full p-4 rounded-xl border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group"
+								className="flex items-center gap-4 w-full p-4 rounded-[2rem] border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<CalendarDays className="w-5 h-5 text-gray-400 group-hover-safe:text-action" />
-								<div className="flex flex-col">
+								<CalendarDays className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
 										Daily Diary
 									</span>
-									<span className="text-xs text-gray-400">
+									<span className="text-xs text-gray-400 truncate">
 										Atomic titleless log appending to today's timeline
 									</span>
 								</div>
