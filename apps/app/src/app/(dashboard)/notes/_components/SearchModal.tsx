@@ -1,12 +1,13 @@
 "use client";
 
-import { normalizeUrlForGrouping } from "@sitecue/shared";
+import { type Diary, normalizeUrlForGrouping } from "@sitecue/shared";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
+import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import type { Note } from "../types";
 
 interface SearchModalProps {
@@ -20,6 +21,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const { data = { notes: [], drafts: [] }, isLoading } =
 		useSearchNotes(searchQuery);
+	const { data: diariesData = [] } = useFetchDiaries();
 	const { mutate: fetchContents } = useFetchNoteContents();
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +39,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 		const domains = new Set<string>();
 		const pages = new Set<string>();
 		const notes: Note[] = [];
+		const diaries: Diary[] = [];
 
 		data.notes.forEach((note) => {
 			if (note.url_pattern) {
@@ -64,13 +67,27 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 				notes.push(note);
 			}
 		});
+
+		if (searchQuery) {
+			const q = searchQuery.toLowerCase();
+			diariesData.forEach((diary) => {
+				const contentMatch = diary.content?.toLowerCase().includes(q);
+				const dateMatch = diary.date?.toLowerCase().includes(q);
+				const topicsMatch = diary.topics?.some((t) => t.toLowerCase().includes(q));
+				if (contentMatch || dateMatch || topicsMatch) {
+					diaries.push(diary);
+				}
+			});
+		}
+
 		return {
 			domains: Array.from(domains),
 			pages: Array.from(pages),
 			notes,
 			drafts: data.drafts,
+			diaries,
 		};
-	}, [data, searchQuery]);
+	}, [data, diariesData, searchQuery]);
 
 	// Fetch contents for search results to show snippets
 	useEffect(() => {
@@ -144,7 +161,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 							</div>
 						) : searchQuery &&
 							data.notes.length === 0 &&
-							data.drafts.length === 0 ? (
+							data.drafts.length === 0 &&
+							groupedResults.diaries.length === 0 ? (
 							<div className="p-8 text-center text-gray-400">
 								No results found for "{searchQuery}"
 							</div>
@@ -264,6 +282,42 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 													</p>
 												</button>
 											))}
+										</div>
+									</div>
+								)}
+
+								{groupedResults.diaries.length > 0 && (
+									<div>
+										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
+											Diaries
+										</h3>
+										<div className="space-y-1">
+											{groupedResults.diaries.map((diary) => {
+												const [yyyy, mm] = diary.date.split("-");
+												const diaryDate = new Date(diary.date);
+												const dayLabel = diaryDate.toLocaleDateString("en-US", { day: "numeric", weekday: "short" });
+												const firstLine = diary.content.split("\n")[0] || "No content";
+												return (
+													<button
+														key={diary.date}
+														type="button"
+														onClick={() => {
+															onClose();
+															router.push(`/notes?view=diaries&year=${yyyy}&month=${mm}&date=${diary.date}`);
+														}}
+														className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer group text-sm"
+													>
+														<div className="flex items-center justify-between mb-1">
+															<span className="text-xs font-semibold text-note-info tracking-wider">
+																{diary.date} ({dayLabel})
+															</span>
+														</div>
+														<p className="text-sm text-action font-medium truncate">
+															{firstLine}
+														</p>
+													</button>
+												);
+											})}
 										</div>
 									</div>
 								)}

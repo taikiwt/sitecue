@@ -18,6 +18,14 @@ vi.mock("@/hooks/useNotesQuery", () => ({
 	useFetchNoteContents: () => ({ mutate: mockFetchNoteContents }),
 }));
 
+const mockFetchDiaries = vi.fn(() => ({ data: [] as any[] }));
+vi.mock("@/hooks/useDiariesQuery", () => ({
+	useFetchDiaries: () => mockFetchDiaries(),
+	useAppendDiary: () => ({ mutate: vi.fn() }),
+	useUpdateDiary: () => ({ mutate: vi.fn() }),
+}));
+
+
 describe("SearchModal Context Jump", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -319,6 +327,60 @@ describe("SearchModal Context Jump", () => {
 			expect(
 				screen.queryByText("https://example.com/page-1"),
 			).not.toBeInTheDocument();
+		});
+	});
+
+	it("グローバル検索で日記データが検索され、クリック時に正しいコンテキストパラメータにジャンプすること", async () => {
+		const user = userEvent.setup();
+		mockSearchNotes.mockReturnValue({
+			data: { notes: [], drafts: [] },
+			isLoading: false,
+		});
+		mockFetchDiaries.mockReturnValue({
+			data: [
+				{
+					user_id: "user-1",
+					date: "2026-06-27",
+					content: "Diaries integrated test text line\nSecond line",
+					topics: ["test"],
+					created_at: new Date().toISOString(),
+					updated_at: new Date().toISOString(),
+				},
+			],
+		});
+
+		const queryClient = new QueryClient({
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
+		});
+		render(
+			<QueryClientProvider client={queryClient}>
+				<SearchModal isOpen={true} onClose={vi.fn()} />
+			</QueryClientProvider>,
+		);
+
+		const input = screen.getByPlaceholderText(/search notes/i);
+		// Focus timer is 100ms, so wait for it to settle
+		await new Promise((resolve) => setTimeout(resolve, 150));
+		await user.type(input, "integrated");
+		await user.keyboard("{Enter}");
+
+		// セクションおよび本文スニペット（一行目）の存在を確認
+		await waitFor(() => {
+			expect(screen.getByText("Diaries")).toBeInTheDocument();
+			expect(screen.getByText("Diaries integrated test text line")).toBeInTheDocument();
+		});
+
+		// クリックによる厳密なパラメータ遷移を検証
+		const diaryResult = screen.getByText("Diaries integrated test text line");
+		await user.click(diaryResult);
+
+		await waitFor(() => {
+			expect(mockPush).toHaveBeenCalledWith(
+				"/notes?view=diaries&year=2026&month=06&date=2026-06-27",
+			);
 		});
 	});
 });
