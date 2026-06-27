@@ -13,6 +13,7 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
   - コンポーネントの置き換えやアニメーションの導入時、既存の `className` を不用意に削除したり、パディング・マージンを変更してレイアウトシフト（要素のがたつき）を発生させてはならない。
   - `InlineCopyButton` 等を導入する際は、元のボタンが持っていたサイズ感や余白を `className` で補完し、視覚的な一貫性を維持すること。
 - **Context Preservation in Global Actions**: グローバルアクション（Quick Capture等）における「保存」は、現在のコンテキスト（閲覧中のページ）を維持するためダイアログの閉鎖のみを行い、画面遷移は行わない。ただし、明確なユーザーの意図による「Studioへ昇格」等のアクション時は遷移を許容する。
+- **詳細ペインにおけるコンテキスト・マルチプレキシング（多重化の完全排除）**: 右ペイン（`RightPaneDetail`）などのコンテキスト駆動型ビューは、単一のパラメータの有無（例: `date`）に依存して描画を決定してはならない。必ず現在の主軸となるビューモード（`view` パラメータ等）と照合し、「今その世界線（コンテキスト）に本当にいるか」を判定のトップレベルに据えること。
 
 - ドキュメント内のメイン領域を定義する `<main>` 要素は `AppShell.tsx` の最外殻を唯一の信頼できる情報源（SSOT）とし、ページ下層コンポーネント内での `<main>` のネスト・重複記述を永続的に禁止する。
 - PC版サイドバー（`GlobalSidebar`）はその外殻（`bg-action shadow-lg rounded-full`）の装飾責務を自身の中に完全にカプセル化し、親のレイアウトに依存せず独立して成立する構造を維持する。
@@ -118,6 +119,8 @@ Tailwindのデフォルトカラースケール（例: `bg-blue-500`, `text-red-
 - **Domain（ドメイン）ノート**: `/notes?domain=[domain_name]&exact=all&noteId=[id]`
 - **Exact（ページ）ノート**: `/notes?domain=[domain_name]&exact=[encoded_full_url_pattern]&noteId=[id]`
 - **Draft（成果物ドラフト）**: スタジオの動的ルートへの直接遷移 `/studio/[draftId]`
+- **Diary（日記ログ）**: `/notes?view=diaries&year=[yyyy]&month=[mm]&date=[YYYY-MM-DD]`
+  - *補足*: 日記コンテキストでは、`view=diaries` を主軸とし、`year` および `month` でアーカイブ階層を制御する。右ペインに特定の日記を描画する際は、ブラウザローカルタイムに基づく `date` パラメータ（プレーン文字列）をSSOTとして扱う。
 
 ## 7. Favicon Integration & Fallback Strategy (ファビコン表示・フォールバック規約)
 アプリケーション全体（Launchpad, タイムライン等）において、ドメインや外部URL of ファビコンを描画・表示する際は、生の `<img>` タグを個別に配置したり、推測で外部APIを乱打することを厳禁とする。

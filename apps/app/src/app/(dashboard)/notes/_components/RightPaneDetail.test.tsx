@@ -9,6 +9,7 @@ import {
 import type { ReactNode } from "react";
 import toast from "react-hot-toast";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as useDiariesQuery from "@/hooks/useDiariesQuery";
 import {
 	useCreateNote,
 	useDeleteNote,
@@ -29,10 +30,12 @@ vi.mock("@/hooks/useDiariesQuery", () => ({
 	useAppendDiary: vi.fn(() => ({ mutate: vi.fn() })),
 }));
 
+let mockSearchParams = new URLSearchParams("?new=true");
+
 // next/navigation のモック
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ replace: vi.fn() }),
-	useSearchParams: () => new URLSearchParams("?new=true"),
+	useSearchParams: () => mockSearchParams,
 }));
 
 // react-hot-toast のモック
@@ -91,6 +94,7 @@ describe("RightPaneDetail", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mockSearchParams = new URLSearchParams("?new=true");
 		Object.assign(navigator, {
 			clipboard: {
 				writeText: writeTextMock,
@@ -344,5 +348,32 @@ describe("RightPaneDetail", () => {
 		expect(screen.getByText("Are you absolutely sure?")).toBeInTheDocument();
 
 		vi.useRealTimers();
+	});
+
+	it("does not render diary when date param exists but current view is not diaries", () => {
+		// view=drafts だが、過去の遺物として date=2026-06-21 が残っている状況
+		mockSearchParams = new URLSearchParams("?view=drafts&date=2026-06-21");
+
+		// useFetchDiaries がモックデータ（該当日の日記）を返す状態を作る
+		vi.spyOn(useDiariesQuery, "useFetchDiaries").mockReturnValue({
+			data: [
+				{
+					date: "2026-06-21",
+					content: "This is a leaked diary text",
+					updated_at: new Date().toISOString(),
+				},
+			],
+		} as unknown as ReturnType<typeof useDiariesQuery.useFetchDiaries>);
+
+		render(<RightPaneDetail />);
+
+		// 日記の内容が詳細ビューに貫通（リーク）していないことを検証
+		expect(
+			screen.queryByText("This is a leaked diary text"),
+		).not.toBeInTheDocument();
+		// 代わりに適切な空状態（Please select a note...）が表示されていることを確認
+		expect(
+			screen.getByText("Please select a note or draft from the list"),
+		).toBeInTheDocument();
 	});
 });

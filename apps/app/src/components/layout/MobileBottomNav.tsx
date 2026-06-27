@@ -4,9 +4,9 @@ import { Home, Library, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { cn } from "@/lib/utils"; // 👈 💡 この1行を手打ちで追加してください！
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { cn } from "@/lib/utils"; // 👈 💡 この1行を手打ちで追加してください！
 
 // --- 以下、既存のコードのまま ---
 
@@ -58,7 +58,9 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 							size="icon"
 							className={cn(
 								"size-12 transition-all",
-								isNotes ? "bg-base-bg text-action scale-105" : "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg"
+								isNotes
+									? "bg-base-bg text-action scale-105"
+									: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg",
 							)}
 							aria-label="Notes"
 						>

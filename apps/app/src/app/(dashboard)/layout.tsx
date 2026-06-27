@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
