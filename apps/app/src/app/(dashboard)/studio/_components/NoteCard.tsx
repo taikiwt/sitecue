@@ -5,13 +5,15 @@ import {
 	AlertTriangle,
 	ArrowLeft,
 	Check,
+	ChevronDown,
+	ChevronUp,
 	Info,
 	Lightbulb,
 	Pencil,
 	Trash2,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,7 @@ interface NoteCardProps {
 	onUpdate?: (id: string, content: string) => void;
 	onDelete?: (id: string) => void;
 	onInsert?: (content: string) => void;
+	showTimeOnly?: boolean;
 }
 
 export default function NoteCard({
@@ -28,9 +31,32 @@ export default function NoteCard({
 	onUpdate,
 	onDelete,
 	onInsert,
+	showTimeOnly = false,
 }: NoteCardProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState(note.content);
+
+	const [isExpanded, setIsExpanded] = useState(false);
+	const [hasOverflow, setHasOverflow] = useState(false);
+	const contentRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const element = contentRef.current;
+		if (!element || isEditing) return;
+
+		const _content = note.content;
+
+		const checkOverflow = () => {
+			const isOverflowing = element.scrollHeight > 76;
+			setHasOverflow(isOverflowing);
+		};
+
+		checkOverflow();
+
+		const observer = new ResizeObserver(checkOverflow);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [note.content, isEditing]);
 
 	const handleSave = () => {
 		if (onUpdate) {
@@ -44,18 +70,26 @@ export default function NoteCard({
 		setIsEditing(false);
 	};
 
+	const timeStr = note.created_at
+		? new Date(note.created_at).toLocaleTimeString("en-US", {
+				hour: "2-digit",
+				minute: "2-digit",
+				hour12: false,
+			})
+		: "";
+
 	return (
-		<div className="group cursor-default rounded-xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-400">
+		<div className="group cursor-default rounded-xl border border-base-border bg-base-bg p-4 transition-all hover:border-neutral-400 min-w-0 w-full overflow-hidden">
 			<div className="mb-2 flex items-center justify-between">
 				<div className="flex items-center gap-2">
 					<span
 						className={cn(
 							"flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide w-fit",
 							note.note_type === "alert"
-								? "bg-note-alert/5 text-note-alert"
+								? "bg-note-alert/10 text-note-alert"
 								: note.note_type === "idea"
-									? "bg-note-idea/5 text-note-idea"
-									: "bg-note-info/5 text-note-info",
+									? "bg-note-idea/10 text-note-idea"
+									: "bg-note-info/10 text-note-info",
 						)}
 					>
 						{note.note_type === "alert" ? (
@@ -67,8 +101,12 @@ export default function NoteCard({
 						)}
 						{note.note_type || "info"}
 					</span>
-					<span className="text-[10px] text-neutral-400">
-						{note.created_at ? note.created_at.split("T")[0] : ""}
+					<span className="text-[10px] font-mono text-neutral-400 font-bold">
+						{showTimeOnly
+							? timeStr
+							: note.created_at
+								? note.created_at.split("T")[0]
+								: ""}
 					</span>
 				</div>
 
@@ -137,11 +175,41 @@ export default function NoteCard({
 					</div>
 				</div>
 			) : (
-				<div className="min-w-0 w-full overflow-hidden">
-					<MarkdownRenderer
-						content={note.content}
-						className="text-sm leading-snug text-neutral-600 group-hover:text-neutral-900 [&_p]:[overflow-wrap:anywhere] [&_a]:break-all [&_a]:[overflow-wrap:anywhere] [&_code]:[overflow-wrap:anywhere]"
-					/>
+				<div className="min-w-0 w-full overflow-hidden space-y-1.5">
+					<div
+						ref={contentRef}
+						className={cn(
+							"min-w-0 w-full overflow-hidden transition-all duration-200",
+							!isExpanded && !isEditing && "max-h-[72px]",
+						)}
+					>
+						<MarkdownRenderer
+							content={note.content}
+							className="text-sm leading-snug text-neutral-600 group-hover:text-neutral-900 [&_p]:[overflow-wrap:anywhere] [&_a]:break-all [&_a]:[overflow-wrap:anywhere] [&_code]:[overflow-wrap:anywhere]"
+						/>
+					</div>
+
+					{hasOverflow && (
+						<div className="flex justify-start pt-0.5">
+							<button
+								type="button"
+								onClick={() => setIsExpanded(!isExpanded)}
+								className="text-[10px] font-bold text-neutral-400 hover:text-action flex items-center gap-0.5 uppercase tracking-wider transition-colors cursor-pointer"
+							>
+								{isExpanded ? (
+									<>
+										<ChevronUp className="w-3 h-3" aria-hidden="true" /> Show
+										less
+									</>
+								) : (
+									<>
+										<ChevronDown className="w-3 h-3" aria-hidden="true" /> Read
+										more
+									</>
+								)}
+							</button>
+						</div>
+					)}
 				</div>
 			)}
 

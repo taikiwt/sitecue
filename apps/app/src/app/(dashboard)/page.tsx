@@ -1,7 +1,7 @@
 import { fetchDashboardDomainActivity } from "@sitecue/shared";
 import { Activity, CalendarDays, Layers } from "lucide-react";
-import Link from "next/link";
 import { Suspense } from "react";
+import { CustomLink } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
 import { ContributionTimeline } from "./_components/ContributionTimeline";
 import { DomainDashboardCard } from "./_components/DomainDashboardCard";
@@ -11,9 +11,19 @@ import { RadialActivityChart } from "./_components/RadialActivityChart";
 async function TodayRecapCard() {
 	const { supabase, user } = await requireUser("/");
 
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
-	const startOfDay = today.toISOString();
+	// 基準となる Date インスタンスの生成と JST（UTC+9時間）への厳格な物理オフセット補正
+	const d = new Date();
+	const jstTime = d.getTime() + 9 * 60 * 60 * 1000;
+	const jstDate = new Date(jstTime);
+
+	// サーバー環境に左右されない JST 基準の日付プレーン文字列（YYYY-MM-DD）の切り出し
+	const year = jstDate.getUTCFullYear();
+	const month = String(jstDate.getUTCMonth() + 1).padStart(2, "0");
+	const day = String(jstDate.getUTCDate()).padStart(2, "0");
+	const todayStr = `${year}-${month}-${day}`;
+
+	// 統計クエリ用の「JSTの今日の始まり（00:00:00+09:00）」のISO文字列を完全固定生成
+	const startOfDay = `${todayStr}T00:00:00+09:00`;
 
 	const [{ count: todayNotes }, { count: todayDrafts }] = await Promise.all([
 		supabase
@@ -30,15 +40,21 @@ async function TodayRecapCard() {
 
 	const todayTotal = (todayNotes || 0) + (todayDrafts || 0);
 
-	// 日めくりカレンダーボックス用の個別パース
-	const todayObj = new Date();
-	const monthYearStr = todayObj
-		.toLocaleDateString("en-US", { month: "short", year: "numeric" })
-		.toUpperCase(); // 例: "JUN 2026"
-	const dayNumStr = todayObj.toLocaleDateString("en-US", { day: "2-digit" }); // 例: "09"
-	const weekdayStr = todayObj
-		.toLocaleDateString("en-US", { weekday: "long" })
-		.toUpperCase(); // 例: "TUESDAY"
+	// 日めくりカレンダーボックス用のパースも、JST基準の jstDate から安全に組み立てる
+	const monthYearStr = jstDate
+		.toLocaleDateString("en-US", {
+			month: "short",
+			year: "numeric",
+			timeZone: "UTC",
+		})
+		.toUpperCase();
+	const dayNumStr = day;
+	const weekdayStr = jstDate
+		.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+		.toUpperCase();
+
+	const currentYear = year.toString();
+	const currentMonth = month;
 
 	return (
 		<div className="flex flex-col justify-between p-5 rounded-xl bg-base-surface border border-base-border h-full">
@@ -49,16 +65,22 @@ async function TodayRecapCard() {
 						Today's Focus
 					</span>
 				</div>
-				{/* 右上のカレンダーアイコンはそのまま維持 */}
-				<CalendarDays className="w-4 h-4 text-neutral-400" aria-hidden="true" />
+				{/* 右上のカレンダーアイコン（CustomLink で囲う。カプセルUIの掟に従い rounded-full と hover-safe を適用） */}
+				<CustomLink
+					href={`/notes?view=diaries&year=${currentYear}&month=${currentMonth}`}
+					className="p-1.5 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-full transition-colors"
+					title="View Diaries Timeline"
+				>
+					<CalendarDays className="w-4 h-4" aria-hidden="true" />
+				</CustomLink>
 			</div>
 
 			{/* メインレイアウト: カレンダーボックスとライトアップ数値を配置 */}
 			<div className="flex flex-col items-center gap-4 my-4 flex-1">
-				{/* 修正ポイント1: 遷移先を現在のダッシュボードを維持したクエリパラメータのみに変更（背景遷移をパージ） */}
-				<Link
+				{/* 1. 日めくりカレンダーボックス（CustomLink に置換） */}
+				<CustomLink
 					className="relative w-28 h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0 hover:scale-102 transition-transform cursor-pointer group/box"
-					href="?globalNew=note&intent=diary"
+					href={`/diaries/${todayStr}`}
 				>
 					<div className="w-full bg-action py-1 text-center text-[9px] font-bold tracking-wider text-white font-mono">
 						{monthYearStr}
@@ -71,15 +93,15 @@ async function TodayRecapCard() {
 					<div className="w-full text-center pb-1.5 text-[9px] font-bold tracking-widest text-neutral-400 font-mono">
 						{weekdayStr}
 					</div>
-				</Link>
+				</CustomLink>
 
-				{/* 修正ポイント2: カレンダーの真下にエントリーテキストリンクを美しくFlow配置 */}
-				<Link
+				{/* 2. 「+ append to today's diary」テキストリンク（CustomLink に置換） */}
+				<CustomLink
 					className="text-[11px] text-neutral-400 hover:text-action font-mono tracking-wide uppercase transition-colors underline decoration-dotted underline-offset-4"
 					href="?globalNew=note&intent=diary"
 				>
 					+ append to today's diary
-				</Link>
+				</CustomLink>
 
 				{/* 修正ポイント3: 勝手に削除された元の実績表示文言（new entries today）を完全に復活 */}
 				<div className="flex flex-col justify-center items-center text-center mt-2">

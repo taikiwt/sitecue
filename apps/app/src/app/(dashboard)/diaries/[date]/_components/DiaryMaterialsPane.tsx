@@ -1,44 +1,36 @@
 "use client";
 
-import type { Draft, Note } from "@sitecue/shared";
 import { fetchDraftsByDate, fetchNotesByDate } from "@sitecue/shared";
-import { Calendar, FileText, Globe } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, FileText } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
+import NoteCard from "../../../studio/_components/NoteCard";
 
 interface Props {
 	date: string;
+	onInsert?: (content: string) => void;
 }
 
-export function DiaryMaterialsPane({ date }: Props) {
-	const [notes, setNotes] = useState<Note[]>([]);
-	const [drafts, setDrafts] = useState<Draft[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-
-	useEffect(() => {
-		const loadMaterials = async () => {
+export function DiaryMaterialsPane({ date, onInsert }: Props) {
+	const { data: materials, isLoading } = useQuery({
+		queryKey: ["materials", date],
+		queryFn: async () => {
 			const supabase = createClient();
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();
-			if (!user) return;
+			if (!user) return { notes: [], drafts: [] };
 
-			try {
-				const [fetchedNotes, fetchedDrafts] = await Promise.all([
-					fetchNotesByDate(supabase, user.id, date),
-					fetchDraftsByDate(supabase, user.id, date),
-				]);
-				setNotes(fetchedNotes);
-				setDrafts(fetchedDrafts);
-			} catch (err) {
-				console.error("Failed to load materials:", err);
-			} finally {
-				setIsLoading(false);
-			}
-		};
+			const [fetchedNotes, fetchedDrafts] = await Promise.all([
+				fetchNotesByDate(supabase, user.id, date),
+				fetchDraftsByDate(supabase, user.id, date),
+			]);
+			return { notes: fetchedNotes, drafts: fetchedDrafts };
+		},
+	});
 
-		loadMaterials();
-	}, [date]);
+	const notes = materials?.notes || [];
+	const drafts = materials?.drafts || [];
 
 	if (isLoading) {
 		return (
@@ -76,26 +68,12 @@ export function DiaryMaterialsPane({ date }: Props) {
 								</h3>
 								<div className="space-y-2">
 									{notes.map((note) => (
-										<div
+										<NoteCard
 											key={note.id}
-											className="p-3 bg-base-bg border border-base-border rounded-lg space-y-1.5"
-										>
-											<div className="flex items-center justify-between text-[10px] text-gray-400">
-												<span className="flex items-center gap-1">
-													<Globe className="w-3 h-3" />
-													{note.scope}
-												</span>
-												<span>
-													{new Date(note.created_at).toLocaleTimeString(
-														"en-US",
-														{ hour: "2-digit", minute: "2-digit" },
-													)}
-												</span>
-											</div>
-											<p className="text-sm text-action break-words">
-												{note.content}
-											</p>
-										</div>
+											note={note}
+											onInsert={onInsert}
+											showTimeOnly={true}
+										/>
 									))}
 								</div>
 							</div>

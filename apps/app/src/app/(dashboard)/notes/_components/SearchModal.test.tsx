@@ -25,7 +25,6 @@ vi.mock("@/hooks/useDiariesQuery", () => ({
 	useUpdateDiary: () => ({ mutate: vi.fn() }),
 }));
 
-
 describe("SearchModal Context Jump", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -370,7 +369,9 @@ describe("SearchModal Context Jump", () => {
 		// セクションおよび本文スニペット（一行目）の存在を確認
 		await waitFor(() => {
 			expect(screen.getByText("Diaries")).toBeInTheDocument();
-			expect(screen.getByText("Diaries integrated test text line")).toBeInTheDocument();
+			expect(
+				screen.getByText("Diaries integrated test text line"),
+			).toBeInTheDocument();
 		});
 
 		// クリックによる厳密なパラメータ遷移を検証

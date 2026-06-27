@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DiaryStudioClient } from "./_components/DiaryStudioClient";
 
@@ -12,18 +13,29 @@ vi.mock("@/hooks/useDiariesQuery", () => ({
 }));
 
 vi.mock("./_components/DiaryMaterialsPane", () => ({
-	DiaryMaterialsPane: () => <div data-testid="materials-pane">Materials</div>,
+	DiaryMaterialsPane: () =>
+		React.createElement(
+			"div",
+			{ "data-testid": "materials-pane" },
+			"Materials",
+		),
 }));
 
 // CodeMirrorエディタのクラッシュを防ぐため textarea へ安全にモック化
 vi.mock("@/components/editor/StudioEditor", () => ({
-	StudioEditor: ({ value, onChange }: any) => (
-		<textarea
-			data-testid="mock-code-editor"
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-		/>
-	),
+	StudioEditor: ({
+		value,
+		onChange,
+	}: {
+		value: string;
+		onChange: (v: string) => void;
+	}) =>
+		React.createElement("textarea", {
+			"data-testid": "mock-code-editor",
+			value,
+			onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) =>
+				onChange(e.target.value),
+		}),
 }));
 
 describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
@@ -37,7 +49,12 @@ describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
 			created_at: "",
 			updated_at: "",
 		};
-		render(<DiaryStudioClient date="2026-06-21" initialDiary={mockDiary} />);
+		render(
+			React.createElement(DiaryStudioClient, {
+				date: "2026-06-21",
+				initialDiary: mockDiary,
+			}),
+		);
 
 		expect(screen.getByText("Diary Studio")).toBeInTheDocument();
 		expect(screen.getByText("2026-06-21")).toBeInTheDocument();
@@ -56,7 +73,10 @@ describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
 			updated_at: "",
 		};
 		const { container } = render(
-			<DiaryStudioClient date="2026-06-21" initialDiary={mockDiary} />,
+			React.createElement(DiaryStudioClient, {
+				date: "2026-06-21",
+				initialDiary: mockDiary,
+			}),
 		);
 
 		const editor = screen.getByTestId("mock-code-editor");
