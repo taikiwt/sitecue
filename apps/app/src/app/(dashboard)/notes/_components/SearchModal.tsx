@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
-import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
+import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
 import type { Note } from "../types";
 
 interface SearchModalProps {
@@ -73,7 +73,9 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 			diariesData.forEach((diary) => {
 				const contentMatch = diary.content?.toLowerCase().includes(q);
 				const dateMatch = diary.date?.toLowerCase().includes(q);
-				const topicsMatch = diary.topics?.some((t) => t.toLowerCase().includes(q));
+				const topicsMatch = diary.topics?.some((t) =>
+					t.toLowerCase().includes(q),
+				);
 				if (contentMatch || dateMatch || topicsMatch) {
 					diaries.push(diary);
 				}
@@ -295,15 +297,21 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 											{groupedResults.diaries.map((diary) => {
 												const [yyyy, mm] = diary.date.split("-");
 												const diaryDate = new Date(diary.date);
-												const dayLabel = diaryDate.toLocaleDateString("en-US", { day: "numeric", weekday: "short" });
-												const firstLine = diary.content.split("\n")[0] || "No content";
+												const dayLabel = diaryDate.toLocaleDateString("en-US", {
+													day: "numeric",
+													weekday: "short",
+												});
+												const firstLine =
+													diary.content.split("\n")[0] || "No content";
 												return (
 													<button
 														key={diary.date}
 														type="button"
 														onClick={() => {
 															onClose();
-															router.push(`/notes?view=diaries&year=${yyyy}&month=${mm}&date=${diary.date}`);
+															router.push(
+																`/notes?view=diaries&year=${yyyy}&month=${mm}&date=${diary.date}`,
+															);
 														}}
 														className="w-full text-left px-3 py-2 rounded-lg hover-safe:bg-base-surface transition-colors cursor-pointer group text-sm"
 													>

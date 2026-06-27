@@ -1,7 +1,7 @@
 "use client";
 
 import type { Note } from "@sitecue/shared";
-import ReadOnlyNoteCard from "./ReadOnlyNoteCard";
+import NoteCard from "./NoteCard";
 import StudioSearchInput from "./StudioSearchInput";
 
 interface StudioMaterialsPaneProps {
@@ -20,9 +20,9 @@ export default function StudioMaterialsPane({
 	isSearching,
 }: StudioMaterialsPaneProps) {
 	return (
-		<div className="flex h-full flex-col bg-neutral-50/10">
+		<div className="flex h-full flex-col bg-neutral-50/10 min-w-0 w-full overflow-hidden">
 			{/* Search Bar */}
-			<div className="p-4 border-b border-neutral-200 bg-white/50 sticky top-0 z-10 backdrop-blur-md">
+			<div className="p-4 border-b border-neutral-200 bg-white/50 sticky top-0 z-10 backdrop-blur-md shrink-0">
 				<StudioSearchInput
 					searchKeyword={searchKeyword}
 					onSearchKeywordChange={onSearchKeywordChange}
@@ -31,8 +31,8 @@ export default function StudioMaterialsPane({
 			</div>
 
 			{/* Search Results */}
-			<div className="flex-1 p-4 overflow-y-auto pb-safe">
-				<div className="grid gap-3">
+			<div className="flex-1 p-4 overflow-y-auto pb-safe w-full min-w-0 overflow-x-hidden">
+				<div className="grid grid-cols-[minmax(0,1fr)] gap-3 w-full min-w-0 overflow-hidden">
 					{isSearching ? (
 						Array.from({ length: 3 }).map((_, i) => (
 							<div
@@ -54,7 +54,9 @@ export default function StudioMaterialsPane({
 						</div>
 					) : (
 						searchResults.map((note) => (
-							<ReadOnlyNoteCard key={note.id} note={note} />
+							<div key={note.id} className="min-w-0 w-full overflow-hidden">
+								<NoteCard note={note} />
+							</div>
 						))
 					)}
 				</div>

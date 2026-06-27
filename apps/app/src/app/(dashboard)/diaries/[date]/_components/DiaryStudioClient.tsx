@@ -41,6 +41,8 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 	const [content, setContent] = useState(initialDiary?.content || "");
 	const updateDiaryMutation = useUpdateDiary();
 
+	const isDirty = content !== (initialDiary?.content || "");
+
 	const handleSave = async () => {
 		setStatus("saving");
 		try {
@@ -56,6 +58,10 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 	const handleBack = () => {
 		if (window.history.length > 2) router.back();
 		else router.push("/notes?view=diaries");
+	};
+
+	const handleInsertMaterial = (text: string) => {
+		setContent((prev) => (prev ? `${prev}\n\n${text}` : text));
 	};
 
 	const charCount = content.length;
@@ -97,7 +103,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								</span>
 								<Button
 									className="shadow-sm font-bold min-w-[80px] cursor-pointer"
-									disabled={status === "saving"}
+									disabled={status === "saving" || !isDirty}
 									onClick={handleSave}
 									size="sm"
 									variant="default"
@@ -121,7 +127,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										onChange={(val) => setContent(val)}
 										value={content}
 										placeholder="Write down your thoughts for today... (Markdown supported)"
-										isDirty={content !== (initialDiary?.content || "")}
+										isDirty={isDirty}
 										onGenerateHint={async () => null}
 									/>
 								</div>
@@ -138,7 +144,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 						minSize="20%"
 					>
 						<div className="flex-1 overflow-hidden">
-							<DiaryMaterialsPane date={date} />
+							<DiaryMaterialsPane date={date} onInsert={handleInsertMaterial} />
 						</div>
 					</Panel>
 				</PanelGroup>
@@ -174,7 +180,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 						</span>
 						<Button
 							className="shadow-sm font-bold min-w-[80px] cursor-pointer"
-							disabled={status === "saving"}
+							disabled={status === "saving" || !isDirty}
 							onClick={handleSave}
 							size="sm"
 							variant="default"
@@ -194,7 +200,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							onChange={(val) => setContent(val)}
 							value={content}
 							placeholder="Write down your thoughts for today... (Markdown supported)"
-							isDirty={content !== (initialDiary?.content || "")}
+							isDirty={isDirty}
 							onGenerateHint={async () => null}
 						/>
 					</div>
@@ -233,7 +239,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							</Button>
 						</div>
 						<div className="flex-1 overflow-hidden">
-							<DiaryMaterialsPane date={date} />
+							<DiaryMaterialsPane date={date} onInsert={handleInsertMaterial} />
 						</div>
 					</DrawerContent>
 				</Drawer>
