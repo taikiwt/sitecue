@@ -131,4 +131,3 @@ export async function fetchDiaryByDate(
 	if (error) throw error;
 	return data as Diary | null;
 }
-

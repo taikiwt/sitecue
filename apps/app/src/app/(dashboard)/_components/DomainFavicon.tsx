@@ -17,7 +17,7 @@ export function DomainFavicon({
 
 	// useEffect を早期リターン（if文）よりも「上」に配置
 	useEffect(() => {
-		if (imgRef.current && imgRef.current.complete) {
+		if (imgRef.current?.complete) {
 			if (
 				imgRef.current.naturalWidth === 16 &&
 				imgRef.current.naturalHeight === 16

@@ -64,9 +64,12 @@ export function NoteItem({
 			day: "numeric",
 			weekday: "short",
 		}); // e.g. "21 (Sun)"
-		const isActive = searchParams.get("date") === diary.date;
+		const isActive =
+			searchParams.get("date") === diary.date &&
+			searchParams.get("view") === "diaries";
 
 		const params = new URLSearchParams(searchParams.toString());
+		params.set("view", "diaries");
 		params.set("date", diary.date);
 		params.delete("noteId");
 		params.delete("draftId");

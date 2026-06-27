@@ -15,7 +15,6 @@ import {
 } from "@dnd-kit/sortable";
 import { type Diary, getSafeUrl } from "@sitecue/shared";
 import {
-	Archive,
 	ArrowLeft,
 	Check,
 	ChevronRight,
@@ -27,10 +26,8 @@ import {
 	Inbox,
 	ListChecks,
 	Plus,
-	Search,
 	SquareCheckBig,
 	Trash2,
-	X,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -102,7 +99,7 @@ export function MiddlePaneList(props: Props) {
 	const currentQuery = searchParams.get("q") || "";
 
 	const [inputValue, setInputValue] = useState(currentQuery);
-	const [isSearchExpanded, setIsSearchExpanded] = useState(!!currentQuery);
+	const [isSearchExpanded, _setIsSearchExpanded] = useState(!!currentQuery);
 	// 🚨 追加: 自分が最後にURLへプッシュした値を記録する
 	const lastPushedQueryRef = useRef(currentQuery);
 	const searchInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +141,7 @@ export function MiddlePaneList(props: Props) {
 		params.delete("exact");
 		params.delete("noteId");
 		params.delete("draftId");
+		params.delete("date");
 		params.delete("q"); // 検索も基本リセット推奨の仕様に合わせる
 
 		if (newView === "diaries") {

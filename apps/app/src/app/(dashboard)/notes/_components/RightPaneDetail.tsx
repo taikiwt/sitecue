@@ -3,9 +3,8 @@
 import type { NoteType } from "@sitecue/shared";
 import { normalizeUrlForGrouping } from "@sitecue/shared";
 import {
-  Copy,
-  Clipboard,
 	ClipboardCopy,
+	Copy,
 	MoreHorizontal,
 	MousePointerClick,
 	Pencil,
@@ -30,7 +29,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
-import { CustomLink as Link } from "@/components/ui/custom-link";
 import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
@@ -64,6 +62,13 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const deleteNoteMutation = useDeleteNote();
 	const router = useRouter();
 	const searchParams = useSearchParams();
+
+	// 1. URLパラメータから現在の「主軸となるビューモード」をSSOTとして解決する
+	const viewParam = searchParams.get("view");
+	const domainParam = searchParams.get("domain");
+	const currentView =
+		viewParam || (domainParam && domainParam !== "inbox" ? "domains" : "inbox");
+
 	const selectedDate = searchParams.get("date");
 	const { data: diaries = [] } = useFetchDiaries();
 	const diary = diaries.find((d) => d.date === selectedDate);
@@ -150,7 +155,9 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		}
 	}, [note?.content, isNewNote]);
 
-	if (!note && !draft && !isNewNote && !diary) {
+	// 2. 物理的な外殻コンテナ構造（Anti-CLS）を破壊しないトップレベルガードの構造化
+	// ① 何も選択されていない空状態のガード
+	if (!note && !draft && !isNewNote && !(currentView === "diaries" && diary)) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center bg-base-bg text-gray-400 p-8">
 				<MousePointerClick
@@ -164,7 +171,8 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		);
 	}
 
-	if (diary) {
+	// ② 日記コンテキスト（view === "diaries" かつ diary が存在するときのみ許容）
+	if (currentView === "diaries" && diary) {
 		const diaryDate = new Date(diary.date);
 		const formattedDiaryDate = diaryDate.toLocaleDateString("en-US", {
 			weekday: "long",
@@ -445,10 +453,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									type="button"
 									onClick={handleCopyAll}
 									defaultIcon={
-										<Copy
-											className="size-5 md:size-4"
-											aria-hidden="true"
-										/>
+										<Copy className="size-5 md:size-4" aria-hidden="true" />
 									}
 									hoverIcon={
 										<ClipboardCopy
