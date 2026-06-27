@@ -99,39 +99,46 @@ export function MiddlePaneList(props: Props) {
 	const currentQuery = searchParams.get("q") || "";
 
 	const [inputValue, setInputValue] = useState(currentQuery);
+	const query = inputValue.toLowerCase().trim();
 	const [isSearchExpanded, _setIsSearchExpanded] = useState(!!currentQuery);
-	// 🚨 追加: 自分が最後にURLへプッシュした値を記録する
-	const lastPushedQueryRef = useRef(currentQuery);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
-	// 1. URLの変化をローカルの状態に同期（外部からの変更、例えばタブ切り替え時のクリア用）
+	// 1. 【パッシブ初期化】外部（SearchModalやURL直打ち）から検索クエリ（q）を持ち込まれた場合のみ、
+	// 初回マウント時または外部からの強烈なURL変更時に優しく検索窓へ値を復元してあげる（IME妨害ガード付き）
 	useEffect(() => {
-		// 🚨 重要: URLの値が「自分が直前に送った値」と異なる場合のみ同期する
-		// これにより、入力中に自分の送った古いURL値で上書きされるのを防ぎます
-		if (currentQuery !== lastPushedQueryRef.current) {
-			setInputValue(currentQuery);
-			lastPushedQueryRef.current = currentQuery;
+		if (
+			searchInputRef.current &&
+			document.activeElement === searchInputRef.current
+		) {
+			return;
 		}
-	}, [currentQuery]);
+		const currentQ = searchParams.get("q") || "";
+		setInputValue(currentQ);
+	}, [searchParams]);
 
-	// 2. ローカルの入力をURLに同期（デバウンス処理）
+	const prevContextRef = useRef({
+		view: currentView,
+		domain: currentDomain,
+		exact: currentExact,
+	});
+	// 2. 【ノイズキャンセリング】中ペインの階層コンテキスト（タブビュー、ドメイン、個別ページ）が
+	// 切り替わったアクションを検知した際は、古い入力文字が次のリストを不正に消し込むのを防ぐため、
+	// 即座に検索窓のローカル文字状態を安全に自動リセット（空文字化）する
 	useEffect(() => {
-		const timer = setTimeout(() => {
-			if (inputValue !== currentQuery) {
-				// 🚨 URLを更新する前に「これは自分が送った値である」と記録する
-				lastPushedQueryRef.current = inputValue;
-
-				const params = new URLSearchParams(searchParams.toString());
-				if (inputValue) params.set("q", inputValue);
-				else params.delete("q");
-
-				// Use replace to avoid polluting history with every keystroke
-				router.replace(`${pathname}?${params.toString()}`);
-			}
-		}, 300);
-
-		return () => clearTimeout(timer);
-	}, [inputValue, currentQuery, pathname, searchParams, router]);
+		const prev = prevContextRef.current;
+		if (
+			prev.view !== currentView ||
+			prev.domain !== currentDomain ||
+			prev.exact !== currentExact
+		) {
+			setInputValue("");
+		}
+		prevContextRef.current = {
+			view: currentView,
+			domain: currentDomain,
+			exact: currentExact,
+		};
+	}, [currentView, currentDomain, currentExact]);
 
 	const updateView = (newView: string) => {
 		const params = new URLSearchParams(searchParams.toString());
@@ -269,6 +276,17 @@ export function MiddlePaneList(props: Props) {
 		return true;
 	});
 
+	const searchedDisplayItems = displayItems.filter((item) => {
+		if (!query) return true;
+		const contentMatch =
+			"content" in item && item.content?.toLowerCase().includes(query);
+		const titleMatch =
+			"title" in item && item.title?.toLowerCase().includes(query);
+		const tagsMatch =
+			"tags" in item && item.tags?.some((t) => t.toLowerCase().includes(query));
+		return contentMatch || titleMatch || tagsMatch;
+	});
+
 	const handleCopyAsText = async () => {
 		// 未完了のノートのみを抽出
 		const itemsToCopy = displayItems.filter(
@@ -313,7 +331,7 @@ export function MiddlePaneList(props: Props) {
 		}),
 	);
 
-	const isSearchActive = !!searchParams.get("q") || !!searchParams.get("tags");
+	const isSearchActive = !!inputValue || !!searchParams.get("tags");
 	const isSelected =
 		!!currentView || !!currentDomain || !!currentExact || isSearchActive;
 
@@ -544,12 +562,19 @@ export function MiddlePaneList(props: Props) {
 						<SearchInputBase
 							ref={searchInputRef}
 							value={inputValue}
-							onChange={setInputValue}
+							onChange={setInputValue} // リアルタイムにローカルStateを更新
 							onClear={() => {
 								setInputValue("");
-								updateParams("q", "");
+								// 外部（SearchModal等）から持ち込まれたURLのqが存在する場合のみ、優しくクリアしてあげる
+								const params = new URLSearchParams(searchParams.toString());
+								if (params.has("q")) {
+									params.delete("q");
+									router.replace(`${pathname}?${params.toString()}`);
+								}
 							}}
-							onSubmit={() => updateParams("q", inputValue)}
+							onSubmit={() => {
+								searchInputRef.current?.blur(); // エンター時は入力を確定させてフォーカスを外すだけ
+							}}
 							placeholder="Search notes..."
 							className="rounded-full text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-border/50"
 							autoFocus={false}
@@ -694,9 +719,12 @@ export function MiddlePaneList(props: Props) {
 						const years = Array.from(
 							new Set(diaries.map((d) => d.date.split("-")[0])),
 						).sort((a, b) => b.localeCompare(a));
+						const filteredYears = years.filter(
+							(year) => !query || year.includes(query),
+						);
 						if (!currentYear) {
-							return years.length > 0 ? (
-								years.map((year) => (
+							return filteredYears.length > 0 ? (
+								filteredYears.map((year) => (
 									<button
 										key={year}
 										type="button"
@@ -728,26 +756,73 @@ export function MiddlePaneList(props: Props) {
 										.map((d) => d.date.split("-")[1]),
 								),
 							).sort((a, b) => b.localeCompare(a));
-							return months.map((month) => (
-								<button
-									key={month}
-									type="button"
-									onClick={() => updateParams("month", month)}
-									className="w-full flex items-center justify-between p-4 hover-safe:bg-base-surface text-left cursor-pointer transition-colors group"
-								>
-									<span className="text-sm font-medium text-action">
-										{MONTH_MAP[month] || month}
-									</span>
-									<ChevronRight className="w-4 h-4 text-gray-300 group-hover-safe:text-action" />
-								</button>
-							));
+							const fullMonths: Record<string, string> = {
+								"01": "january",
+								"02": "february",
+								"03": "march",
+								"04": "april",
+								"05": "may",
+								"06": "june",
+								"07": "july",
+								"08": "august",
+								"09": "september",
+								"10": "october",
+								"11": "november",
+								"12": "december",
+							};
+							const filteredMonths = months.filter((month) => {
+								if (!query) return true;
+								const shortEng = (MONTH_MAP[month] || "").toLowerCase();
+								const fullEng = fullMonths[month] || "";
+								return (
+									month.includes(query) ||
+									shortEng.includes(query) ||
+									fullEng.includes(query)
+								);
+							});
+							return filteredMonths.length > 0 ? (
+								filteredMonths.map((month) => (
+									<button
+										key={month}
+										type="button"
+										onClick={() => updateParams("month", month)}
+										className="w-full flex items-center justify-between p-4 hover-safe:bg-base-surface text-left cursor-pointer transition-colors group"
+									>
+										<span className="text-sm font-medium text-action">
+											{MONTH_MAP[month] || month}
+										</span>
+										<ChevronRight className="w-4 h-4 text-gray-300 group-hover-safe:text-action" />
+									</button>
+								))
+							) : (
+								<div className="flex flex-col items-center justify-center h-64 p-8 text-center text-gray-400">
+									<Inbox
+										className="w-12 h-12 mb-4 text-base-border"
+										aria-hidden="true"
+									/>
+									<p className="text-sm font-medium">
+										No diaries found for this year
+									</p>
+								</div>
+							);
 						}
 
 						const filteredDiaries = diaries.filter((d) =>
 							d.date.startsWith(`${currentYear}-${currentMonth}`),
 						);
-						return filteredDiaries.length > 0 ? (
-							filteredDiaries.map((diary) => (
+						const displayDiaries = filteredDiaries.filter((diary) => {
+							if (!query) return true;
+							const diaryDate = new Date(diary.date);
+							const dayLabel = diaryDate.toLocaleDateString("en-US", {
+								day: "numeric",
+								weekday: "short",
+							}); // 例: "27 Sat"
+							const matchStr =
+								`${diary.content} ${diary.date} ${dayLabel}`.toLowerCase();
+							return matchStr.includes(query);
+						});
+						return displayDiaries.length > 0 ? (
+							displayDiaries.map((diary) => (
 								<NoteItem
 									key={diary.date}
 									item={diary}
@@ -775,9 +850,7 @@ export function MiddlePaneList(props: Props) {
 					Object.entries(groupedNotes.domains)
 						.filter(([domain]) => domain !== "inbox")
 						.filter(
-							([domain]) =>
-								!currentQuery ||
-								domain.toLowerCase().includes(currentQuery.toLowerCase()),
+							([domain]) => !query || domain.toLowerCase().includes(query),
 						)
 						.map(([domain, data]) => (
 							<Link
@@ -809,7 +882,7 @@ export function MiddlePaneList(props: Props) {
 				) : currentDomain && currentDomain !== "inbox" && !currentExact ? (
 					/* 2. Domain Pages View */
 					<>
-						{!currentQuery && (
+						{!query && (
 							<Link
 								href={`/notes?domain=${currentDomain}&exact=all`}
 								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
@@ -827,15 +900,13 @@ export function MiddlePaneList(props: Props) {
 						)}
 						{Object.entries(groupedNotes.domains[currentDomain]?.pages || {})
 							.filter(([url]) => {
-								if (!currentQuery) return true;
+								if (!query) return true;
 								const safeUrl = getSafeUrl(url);
 								const searchablePath = safeUrl
 									? safeUrl.pathname + safeUrl.search
 									: url;
 
-								return searchablePath
-									.toLowerCase()
-									.includes(currentQuery.toLowerCase());
+								return searchablePath.toLowerCase().includes(query);
 							})
 							.map(([url, notes]) => {
 								const safeUrl = getSafeUrl(url);
@@ -885,10 +956,10 @@ export function MiddlePaneList(props: Props) {
 									to see the list of items
 								</p>
 							</div>
-						) : displayItems.length > 0 ? (
+						) : searchedDisplayItems.length > 0 ? (
 							<div className="divide-y divide-base-border">
 								{currentView === "drafts" ? (
-									displayItems.map((item) => (
+									searchedDisplayItems.map((item) => (
 										<NoteItem
 											key={item.id}
 											item={item}
@@ -908,10 +979,10 @@ export function MiddlePaneList(props: Props) {
 										onDragEnd={handleDragEnd}
 									>
 										<SortableContext
-											items={displayItems.map((item) => item.id)}
+											items={searchedDisplayItems.map((item) => item.id)}
 											strategy={verticalListSortingStrategy}
 										>
-											{displayItems.map((item) => (
+											{searchedDisplayItems.map((item) => (
 												<SortableNoteItem
 													key={item.id}
 													item={item}

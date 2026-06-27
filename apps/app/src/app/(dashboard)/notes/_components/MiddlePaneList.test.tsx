@@ -293,7 +293,7 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		vi.useRealTimers();
 	});
 
-	it("updates URL params when tab is clicked or search is submitted", async () => {
+	it("updates URL params when tab is clicked, but search does not navigate", async () => {
 		const user = userEvent.setup();
 		render(
 			<MiddlePaneList
@@ -314,12 +314,15 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 			expect.stringContaining("view=domains"),
 		);
 
-		// 検索の実行
+		// mockPushとmockReplaceの履歴をクリア
+		mockPush.mockClear();
+		mockReplace.mockClear();
+
+		// 検索の入力および実行
 		const searchInput = screen.getByPlaceholderText("Search notes...");
 		await user.type(searchInput, "test query{Enter}");
-		expect(mockPush).toHaveBeenCalledWith(
-			expect.stringContaining("q=test+query"),
-		);
+		expect(mockPush).not.toHaveBeenCalled();
+		expect(mockReplace).not.toHaveBeenCalled();
 	});
 
 	it("cleans up context parameters when switching tabs", async () => {
@@ -382,7 +385,7 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		await user.click(clearButton);
 
 		expect(searchInput.value).toBe("");
-		expect(mockPush).toHaveBeenCalledWith(expect.not.stringContaining("q="));
+		expect(mockReplace).toHaveBeenCalledWith(expect.not.stringContaining("q="));
 	});
 
 	it("excludes 'inbox' from domains list", () => {
@@ -449,13 +452,11 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		expect(screen.queryByText("apple.com")).not.toBeInTheDocument();
 	});
 
-	it("updates URL with debounce when typing in search input", async () => {
-		vi.useFakeTimers();
-
+	it("すべてのタブ（Inbox/Notes）において、URLパラメータを変更せずローカルState(inputValue)のみで超軽量インメモリ検索ができること", async () => {
 		render(
 			<MiddlePaneList
-				items={[]}
-				groupedNotes={{ domains: {}, inbox: [], drafts: [] }}
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
 				currentView="inbox"
 				currentDomain="inbox"
 				currentExact={null}
@@ -464,17 +465,20 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 			/>,
 		);
 
+		// 初期状態では Note 1 と Note 2 の双方が描画されている
+		expect(screen.getByText("Note 1")).toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
+
+		// 検索窓に "Note 2" を入力（URLのモック変更やタイマーの前進は不要）
 		const searchInput = screen.getByPlaceholderText("Search notes...");
-		fireEvent.change(searchInput, { target: { value: "debounced" } });
+		fireEvent.change(searchInput, { target: { value: "Note 2" } });
 
-		// advance timers to trigger the debounce
-		vi.advanceTimersByTime(300);
+		// 【インメモリの証】URL遷移（mockReplace / mockPush）は1回も呼ばれていないことを検証
+		expect(mockReplace).not.toHaveBeenCalled();
 
-		expect(mockReplace).toHaveBeenCalledWith(
-			expect.stringContaining("q=debounced"),
-		);
-
-		vi.useRealTimers();
+		// DOMが0msで直接フィルタリングされ、Note 1が消えてNote 2だけが残る
+		expect(screen.queryByText("Note 1")).not.toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
 	});
 });
 
@@ -692,5 +696,93 @@ describe("MiddlePaneList Back Button", () => {
 		expect(screen.queryByTitle("Select Mode")).not.toBeInTheDocument();
 		// 代わりに中央に Domain List がマウントされていることを検証
 		expect(screen.getByText("Domain List")).toBeInTheDocument();
+	});
+
+	it("diariesビューで表示値(27 Sat)や日付によって正しくインクリメンタル検索・消し込みされること", async () => {
+		const mockDiary = {
+			user_id: "user-1",
+			date: "2026-06-27",
+			content: "Special integrated diary text",
+			topics: [],
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+		};
+		searchParamsMock.mockReturnValue(
+			new URLSearchParams("view=diaries&year=2026&month=06"),
+		);
+
+		render(
+			<MiddlePaneList
+				items={[mockDiary]}
+				groupedNotes={{
+					domains: {},
+					inbox: [],
+					drafts: [],
+				}}
+				currentView="diaries"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// 初期ロード時は表示されている
+		expect(
+			screen.getByText("Special integrated diary text"),
+		).toBeInTheDocument();
+
+		// ヒットしないクエリを入力
+		const searchInput = screen.getByPlaceholderText("Search notes...");
+		fireEvent.change(searchInput, { target: { value: "notfoundtext" } });
+		expect(
+			screen.queryByText("Special integrated diary text"),
+		).not.toBeInTheDocument();
+
+		// UI表示値（日・曜日ラベル "27 Sat"）を入力して再ヒットすることを確認
+		fireEvent.change(searchInput, { target: { value: "27 Sat" } });
+		expect(
+			screen.getByText("Special integrated diary text"),
+		).toBeInTheDocument();
+	});
+
+	it("検索窓に入力がある状態で別タブへ切り替えた際、検索窓のローカルテキストが自動で綺麗にクリアされること", async () => {
+		const { rerender } = render(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const searchInput = screen.getByPlaceholderText(
+			"Search notes...",
+		) as HTMLInputElement;
+
+		// 検索窓に文字を入力
+		fireEvent.change(searchInput, {
+			target: { value: "Active Search Filter" },
+		});
+		expect(searchInput.value).toBe("Active Search Filter");
+
+		// ユーザーがタブをクリックして view=drafts へ切り替わった状態を想定して再レンダリング
+		rerender(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="drafts"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// 安全装置が作動し、入力値が自動リセットされていることを検証
+		expect(searchInput.value).toBe("");
 	});
 });
