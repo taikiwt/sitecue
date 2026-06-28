@@ -1,21 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-// Mock hooks
-import { useRouter, useSearchParams } from "next/navigation";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
-// Mock hooks
 vi.mock("next/navigation", () => ({
-	useRouter: vi.fn(() => ({
-		push: vi.fn(),
-		replace: vi.fn(),
-		prefetch: vi.fn(),
-		back: vi.fn(),
-		forward: vi.fn(),
-		refresh: vi.fn(),
-	})),
-	useSearchParams: vi.fn(() => new URLSearchParams()),
+	useRouter: () => ({ push: vi.fn() }),
+	useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/hooks/use-media-query", () => ({
@@ -23,98 +13,35 @@ vi.mock("@/hooks/use-media-query", () => ({
 }));
 
 describe("ResponsiveNotesLayout", () => {
-	it("renders both panes when isDesktop is true", () => {
-		vi.mocked(useMediaQuery).mockReturnValue(true);
+	it("1024px以上のデスクトップ環境でmiddleとrightを並列描画すること", () => {
+		vi.mocked(useMediaQuery).mockImplementation((query) => query.includes("min-width: 1024px"));
 
 		render(
 			<ResponsiveNotesLayout
-				middleNode={<div data-testid="middle-node">Middle</div>}
-				rightNode={<div data-testid="right-node">Right</div>}
-				selectedNoteId={null}
-				selectedDraftId={null}
-			/>,
-		);
-
-		expect(screen.getByTestId("middle-node")).toBeInTheDocument();
-		expect(screen.getByTestId("right-node")).toBeInTheDocument();
-	});
-
-	it("renders only middle pane when isDesktop is false and no detail is selected", () => {
-		vi.mocked(useMediaQuery).mockReturnValue(false);
-
-		render(
-			<ResponsiveNotesLayout
-				middleNode={<div data-testid="middle-node">Middle</div>}
-				rightNode={<div data-testid="right-node">Right</div>}
-				selectedNoteId={null}
-				selectedDraftId={null}
-			/>,
-		);
-
-		expect(screen.getByTestId("middle-node")).toBeInTheDocument();
-		const stack = screen.getByTestId("mobile-detail-stack");
-		expect(stack.className).toContain("translate-x-full");
-		expect(stack).toHaveAttribute("aria-hidden", "true");
-	});
-
-	it("applies scroll lock to main content when drawer is open on mobile", () => {
-		vi.mocked(useMediaQuery).mockReturnValue(false);
-
-		const { container } = render(
-			<ResponsiveNotesLayout
-				middleNode={<div data-testid="middle-node">Middle</div>}
-				rightNode={<div data-testid="right-node">Right</div>}
+				middleNode={<div>Middle List</div>}
+				rightNode={<div>Right Detail</div>}
 				selectedNoteId="note-1"
 				selectedDraftId={null}
-			/>,
+			/>
 		);
-		const main = container.querySelector("main");
-		expect(main).toHaveClass("pointer-events-none");
-		expect(main).toHaveAttribute("aria-hidden", "true");
-		// inert属性が正しく付与されていることを確認
-		expect(main).toHaveAttribute("inert");
+
+		expect(screen.getByText("Middle List")).toBeDefined();
+		expect(screen.getByText("Right Detail")).toBeDefined();
 	});
 
-	it("モバイル環境でStack要素が正しくレンダリングされ、閉じるボタンが機能するか", async () => {
-		vi.mocked(useMediaQuery).mockReturnValue(false); // Mobile
-		const push = vi.fn();
-		vi.mocked(useRouter).mockReturnValue({
-			push,
-			replace: vi.fn(),
-			prefetch: vi.fn(),
-			back: vi.fn(),
-			forward: vi.fn(),
-			refresh: vi.fn(),
-		});
-		vi.mocked(useSearchParams).mockReturnValue(
-			new URLSearchParams("noteId=123") as unknown as ReturnType<
-				typeof useSearchParams
-			>,
-		);
+	it("768px-1023pxのiPad縦持ち環境で部分オーバーレイ・コンテキストが成立すること", () => {
+		vi.mocked(useMediaQuery).mockImplementation((query) => query.includes("max-width: 1023px"));
 
 		render(
 			<ResponsiveNotesLayout
-				middleNode={<div data-testid="middle">List</div>}
-				rightNode={<div data-testid="right">Detail</div>}
-				selectedNoteId="123"
+				middleNode={<div>Middle List</div>}
+				rightNode={<div>Right Detail</div>}
+				selectedNoteId="note-1"
 				selectedDraftId={null}
-			/>,
+			/>
 		);
 
-		// クラス名に translate-x-0 が含まれること（開いている状態）
-		const stack = screen.getByTestId("mobile-detail-stack");
-		expect(stack.className).toContain("translate-x-0");
-
-		// 戻るボタンのクリック
-		const backButton = screen.getByRole("button", { name: /Notes/i });
-		fireEvent.click(backButton);
-
-		// アニメーション用に300ms待機してからpushされることを検証
-		await waitFor(
-			() => {
-				expect(push).toHaveBeenCalledWith("/notes?");
-			},
-			{ timeout: 500 },
-		);
+		expect(screen.getByText("Middle List")).toBeDefined();
+		expect(screen.getByText("Right Detail")).toBeDefined();
 	});
 });

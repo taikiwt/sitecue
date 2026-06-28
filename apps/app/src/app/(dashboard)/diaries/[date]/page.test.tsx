@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { DiaryStudioClient } from "./_components/DiaryStudioClient";
 
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ push: vi.fn() }),
+	useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+	useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/hooks/useDiariesQuery", () => ({

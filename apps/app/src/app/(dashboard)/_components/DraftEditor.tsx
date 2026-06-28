@@ -2,7 +2,7 @@
 
 import type { Draft, Note, Template } from "@sitecue/shared";
 import { extractTags } from "@sitecue/shared";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -33,6 +33,7 @@ import {
 } from "@/hooks/useDraftsQuery";
 import { useDeleteNotes, useUpsertNotes } from "@/hooks/useNotesQuery";
 import { useStudioAI } from "@/hooks/useStudioAI";
+import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
@@ -57,8 +58,25 @@ export default function DraftEditor({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const supabase = createClient();
-	const activePane = searchParams.get("pane") || "review";
+	const activePane =
+		searchParams.get("panel") === "materials" ? "materials" : "review";
+	const isPanelOpen = !!searchParams.get("panel");
+
+	const togglePanel = () => {
+		const params = new URLSearchParams(searchParams.toString());
+		if (isPanelOpen) {
+			params.delete("panel");
+		} else {
+			params.set("panel", activePane);
+		}
+		router.replace(`${window.location.pathname}?${params.toString()}`);
+	};
 	const isDesktop = useMediaQuery("(min-width: 768px)");
+	const isLargeDesktop = useMediaQuery("(min-width: 1024px)");
+	const isTabletPortrait = useMediaQuery(
+		"(min-width: 768px) and (max-width: 1023px)",
+	);
+	const _isMobile = useMediaQuery("(max-width: 767px)");
 	const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
 	const [status, setStatus] = useState<"idle" | "saving" | "success" | "error">(
@@ -474,7 +492,7 @@ export default function DraftEditor({
 
 	const updatePane = (pane: string) => {
 		const params = new URLSearchParams(searchParams.toString());
-		params.set("pane", pane);
+		params.set("panel", pane);
 		router.replace(`?${params.toString()}`);
 	};
 
@@ -490,17 +508,198 @@ export default function DraftEditor({
 		}
 	};
 
+	if (isLargeDesktop) {
+		return (
+			<div className="flex-1 h-full w-full flex flex-col min-h-0 relative">
+				<PanelGroup
+					className="flex-1 w-full h-full overflow-hidden bg-base-bg text-action"
+					orientation="horizontal"
+				>
+					<Panel
+						className="flex h-full flex-col overflow-hidden border-r border-base-border bg-base-bg"
+						defaultSize="65%"
+						minSize="30%"
+					>
+						<DraftEditorHeader
+							isSidebarOpen={isSidebarOpen}
+							canUndo={historyIndex > 0}
+							canRedo={historyIndex < historyLength - 1}
+							onUndo={handleUndo}
+							onRedo={handleRedo}
+							onSave={handleSave}
+							status={status}
+							hasDraftId={!!initialDraft?.id}
+							onSaveAsTemplate={() => setIsSaveTemplateDialogOpen(true)}
+							onDeleteDraft={handleDeleteDraft}
+							isOverLimit={isOverLimit}
+							onBack={handleBack}
+						/>
+
+						<div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10">
+							<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
+								{/* Metadata & Title Area */}
+								<div className="flex flex-col gap-4">
+									<div className="flex items-center justify-between">
+										<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+											{activeTemplate
+												? `Template: ${activeTemplate.name}`
+												: "Blank Canvas"}
+										</span>
+										{isNearLimit && (
+											<span
+												className={`text-sm font-mono font-bold ${isOverLimit ? "text-note-alert" : "text-neutral-400"}`}
+											>
+												{charCount.toLocaleString()} /{" "}
+												{effectiveLimit.toLocaleString()}
+											</span>
+										)}
+									</div>
+									<div className="grid gap-4">
+										<div className="flex items-start gap-2 group/title">
+											<TextareaAutosize
+												placeholder={
+													activeTemplate?.name === "Zenn"
+														? "Enter article title..."
+														: "Title (optional)"
+												}
+												value={title}
+												onChange={(e) => setTitle(e.target.value)}
+												className="w-full bg-transparent text-3xl md:text-4xl font-extrabold placeholder:text-neutral-300 focus:outline-none resize-none leading-tight"
+											/>
+											<InlineCopyButton
+												text={title}
+												className="mt-2 opacity-100 md:opacity-0 md:group-hover/title:opacity-100 transition-opacity"
+											/>
+										</div>
+										{activeTemplate?.name === "Zenn" && (
+											<div className="flex items-center gap-2 text-sm text-neutral-400 group/slug">
+												<span>slug:</span>
+												<input
+													type="text"
+													placeholder="example-article-slug"
+													value={slug}
+													onChange={(e) => setSlug(e.target.value)}
+													className="flex-1 bg-transparent font-mono focus:outline-none"
+												/>
+												<InlineCopyButton
+													text={slug}
+													className="opacity-100 md:opacity-0 md:group-hover/slug:opacity-100 transition-opacity"
+												/>
+											</div>
+										)}
+									</div>
+								</div>
+
+								{/* Editor Area */}
+								<div className="relative w-full">
+									<div className="absolute top-4 right-4 z-10">
+										<InlineCopyButton
+											text={content}
+											className="bg-white/80 backdrop-blur shadow-sm border border-neutral-100"
+										/>
+									</div>
+									<StudioEditor
+										value={content}
+										onChange={(val) => setContent(val)}
+										placeholder="Write down your thoughts..."
+										isDirty={isDirty}
+										onGenerateHint={handleGenerateHint}
+									/>
+								</div>
+							</div>
+						</div>
+					</Panel>
+					<PanelResizeHandle className="w-1 bg-transparent hover:bg-neutral-200 active:bg-neutral-300 transition-colors cursor-col-resize" />
+					<Panel
+						className="flex h-full flex-col overflow-hidden bg-base-surface border-l border-base-border"
+						defaultSize="35%"
+						maxSize="50%"
+						minSize="20%"
+					>
+						<header className="border-b border-base-border p-2">
+							<div className="flex rounded-lg bg-base-border/50 p-1">
+								<button
+									type="button"
+									onClick={() => updatePane("review")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "review"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									SELF REVIEW
+								</button>
+								<button
+									type="button"
+									onClick={() => updatePane("materials")}
+									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										activePane === "materials"
+											? "bg-base-bg text-action shadow-sm"
+											: "text-gray-500 hover:text-action"
+									}`}
+								>
+									GLOBAL MATERIALS
+								</button>
+							</div>
+						</header>
+
+						{/* Tab Content */}
+						<div className="flex-1 overflow-hidden">
+							{activePane === "review" ? (
+								<StudioReviewPane
+									reviewNotes={reviewNotes}
+									isLoadingReview={isLoadingReview}
+									onAddNote={handleAddNote}
+									onUpdateNote={handleUpdateNote}
+									onDeleteNote={handleDeleteNote}
+									onDeleteAllNotes={handleDeleteAllNotes}
+									onReorderNotes={handleReorderNotes}
+									onInsertToEditor={handleInsertToEditor}
+									onWeave={handleWeave}
+									isWeaving={isWeaving}
+									onGenerateReview={handleGenerateReview}
+									isGeneratingReview={isGeneratingReview}
+								/>
+							) : (
+								<StudioMaterialsPane
+									searchKeyword={searchKeyword}
+									onSearchKeywordChange={setSearchKeyword}
+									onSearch={handleSearch}
+									searchResults={searchResults}
+									isSearching={isSearching}
+								/>
+							)}
+						</div>
+
+						<div className="border-t border-base-border p-4 text-center bg-base-bg/50">
+							<p className="text-[10px] text-neutral-400 font-medium">
+								Weave Studio Power User Mode
+							</p>
+						</div>
+					</Panel>
+				</PanelGroup>
+				<SaveAsTemplateDialog
+					isOpen={isSaveTemplateDialogOpen}
+					onOpenChange={setIsSaveTemplateDialogOpen}
+					initialTitle={title}
+					initialContent={content}
+					onSuccess={handleTemplateSaved}
+				/>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex-1 h-full w-full flex flex-col min-h-0 relative">
-			<PanelGroup
-				orientation="horizontal"
-				className="flex-1 w-full h-full overflow-hidden bg-base-bg text-action"
-			>
+			<div className="flex-grow w-full h-full flex relative overflow-hidden bg-base-bg text-action">
 				{/* 左ペイン: メインエディタ */}
-				<Panel
-					defaultSize="65%"
-					minSize="30%"
-					className="flex h-full flex-col overflow-hidden border-r border-base-border bg-base-bg"
+				<div
+					className={cn(
+						"h-full flex flex-col transition-all duration-300 ease-in-out overflow-hidden min-w-0 bg-base-bg",
+						isTabletPortrait && isPanelOpen
+							? "w-1/2 border-r border-base-border"
+							: "w-full",
+					)}
 				>
 					<DraftEditorHeader
 						isSidebarOpen={isSidebarOpen}
@@ -590,17 +789,36 @@ export default function DraftEditor({
 							</div>
 						</div>
 					</div>
-				</Panel>
-				{/* 右ペイン: コンテキストバー (Desktop only) */}
-				{isDesktop && (
-					<PanelResizeHandle className="w-1 bg-transparent hover:bg-neutral-200 active:bg-neutral-300 transition-colors cursor-col-resize" />
+				</div>
+
+				{/* 境界線 / エッジ・フローティングノブ: iPad縦持ち環境のみ */}
+				{isTabletPortrait && (
+					<button
+						type="button"
+						onClick={togglePanel}
+						className={cn(
+							"fixed top-1/2 -translate-y-1/2 z-40 bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all duration-300 ease-in-out flex items-center justify-center cursor-pointer",
+							isPanelOpen
+								? "right-[50%] -mr-4 size-8 rounded-full"
+								: "right-0 rounded-l-full h-12 w-6",
+						)}
+						title={isPanelOpen ? "Close Panel" : "Open AI Review"}
+					>
+						{isPanelOpen ? (
+							<ChevronRight className="w-4 h-4" aria-hidden="true" />
+						) : (
+							<ChevronLeft className="w-4 h-4" aria-hidden="true" />
+						)}
+					</button>
 				)}
-				{isDesktop && (
-					<Panel
-						defaultSize="35%"
-						minSize="20%"
-						maxSize="50%"
-						className="flex h-full flex-col overflow-hidden bg-base-surface border-l border-base-border"
+
+				{/* 右ペイン (Tablet width = 50%, hidden on mobile via isTabletPortrait wrap) */}
+				{isTabletPortrait && (
+					<div
+						className={cn(
+							"h-full bg-base-surface transition-all duration-300 ease-in-out flex flex-col overflow-hidden shrink-0",
+							isPanelOpen ? "w-1/2" : "w-0 opacity-0 pointer-events-none",
+						)}
 					>
 						<header className="border-b border-base-border p-2">
 							<div className="flex rounded-lg bg-base-border/50 p-1">
@@ -662,9 +880,9 @@ export default function DraftEditor({
 								Weave Studio Power User Mode
 							</p>
 						</div>
-					</Panel>
+					</div>
 				)}
-			</PanelGroup>
+			</div>
 
 			{/* Floating Mobile Trigger */}
 			{!isDesktop && (

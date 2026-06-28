@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
-import { HoverRevealButton } from "@/components/ui/hover-reveal-button";
 import { HoverSwapButton } from "@/components/ui/hover-swap-button";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
 import { Input } from "@/components/ui/input";
@@ -197,12 +196,32 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							})}
 						</p>
 					</div>
-					<HoverRevealButton
-						href={`/diaries/${diary.date}`}
-						icon={<Pencil aria-hidden="true" />}
-						text="Open Studio"
-						className="cursor-pointer shadow-sm ml-1 bg-action hover-safe:bg-action! text-action-text hover-safe:text-action-text!"
-					/>
+					{/* PCサイズ（1024px以上）: HoverRevealButton をパージし、テキスト常時露出カプセルボタンへ */}
+					<div className="hidden lg:block">
+						<Button
+							onClick={() => router.push(`/diaries/${diary.date}`)}
+							type="button"
+							variant="default"
+							className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
+						>
+							<Pencil aria-hidden="true" className="size-4" />
+							Open Studio
+						</Button>
+					</div>
+					{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
+					<div className="block lg:hidden">
+						<Button
+							onClick={() => router.push(`/diaries/${diary.date}`)}
+							type="button"
+							variant="default"
+							size="icon"
+							className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
+							title="Open Studio"
+						>
+							<Pencil aria-hidden="true" className="size-4" />
+							<span className="sr-only">Open Studio</span>
+						</Button>
+					</div>
 				</div>
 
 				{/* Content */}
@@ -442,13 +461,32 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 					<div className="flex items-center gap-2">
 						{note && !isEditing && (
 							<>
-								<HoverRevealButton
-									type="button"
-									onClick={handleEdit}
-									icon={<Pencil className="size-4" aria-hidden="true" />}
-									text="Edit"
-									className="cursor-pointer shadow-sm ml-1 bg-action hover-safe:bg-action! text-action-text hover-safe:text-action-text!"
-								/>
+								{/* PCサイズ（1024px以上）: 常時テキスト露出カプセルボタン */}
+								<div className="hidden lg:block">
+									<Button
+										type="button"
+										onClick={handleEdit}
+										variant="default"
+										className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover:bg-action-hover"
+									>
+										<Pencil className="size-4" aria-hidden="true" />
+										Edit
+									</Button>
+								</div>
+								{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
+								<div className="block lg:hidden">
+									<Button
+										type="button"
+										onClick={handleEdit}
+										variant="default"
+										size="icon"
+										className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover:bg-action-hover"
+										title="Edit"
+									>
+										<Pencil className="size-4" aria-hidden="true" />
+										<span className="sr-only">Edit</span>
+									</Button>
+								</div>
 								<HoverSwapButton
 									type="button"
 									onClick={handleCopyAll}
@@ -538,12 +576,34 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 						)}
 
 						{!note && draft && (
-							<HoverRevealButton
-								href={`/studio/${draft.id}`}
-								icon={<Pencil aria-hidden="true" />}
-								text="Edit in Studio"
-								className="cursor-pointer shadow-sm ml-1 bg-action hover-safe:bg-action! text-action-text hover-safe:text-action-text!"
-							/>
+							<>
+								{/* PCサイズ（1024px以上）: HoverRevealButton をパージし、テキスト常時露出カプセルボタンへ */}
+								<div className="hidden lg:block">
+									<Button
+										onClick={() => router.push(`/studio/${draft.id}`)}
+										type="button"
+										variant="default"
+										className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
+									>
+										<Pencil aria-hidden="true" className="size-4" />
+										Edit in Studio
+									</Button>
+								</div>
+								{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
+								<div className="block lg:hidden">
+									<Button
+										onClick={() => router.push(`/studio/${draft.id}`)}
+										type="button"
+										variant="default"
+										size="icon"
+										className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
+										title="Edit in Studio"
+									>
+										<Pencil aria-hidden="true" className="size-4" />
+										<span className="sr-only">Edit in Studio</span>
+									</Button>
+								</div>
+							</>
 						)}
 						<div className="flex gap-1 ml-2">
 							{note && (

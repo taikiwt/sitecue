@@ -31,10 +31,15 @@ vi.mock("@/hooks/useDiariesQuery", () => ({
 }));
 
 let mockSearchParams = new URLSearchParams("?new=true");
+const mockReplace = vi.fn();
+const mockPush = vi.fn();
 
 // next/navigation のモック
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ replace: vi.fn() }),
+	useRouter: () => ({
+		replace: mockReplace,
+		push: mockPush,
+	}),
 	useSearchParams: () => mockSearchParams,
 }));
 
@@ -128,9 +133,12 @@ describe("RightPaneDetail", () => {
 			</QueryClientProvider>,
 		);
 
-		const editLink = await screen.findByTestId("hover-reveal-link");
-		expect(editLink).toHaveAttribute("href", "/studio/draft-123");
-		expect(editLink).toHaveTextContent("Edit in Studio");
+		const editButtons = screen.getAllByRole("button", { name: "Edit in Studio" });
+		expect(editButtons.length).toBeGreaterThan(0);
+		await act(async () => {
+			fireEvent.click(editButtons[0]);
+		});
+		expect(mockPush).toHaveBeenCalledWith("/studio/draft-123");
 	});
 
 	it("shows paywall modal when storage limit is reached", async () => {
@@ -263,7 +271,7 @@ describe("RightPaneDetail", () => {
 		);
 
 		// 1. メインのEditボタン（テキスト="Edit"のリンク/ボタン）をクリック
-		const editButton = screen.getByText("Edit");
+		const editButton = screen.getAllByText("Edit")[0];
 		await act(async () => {
 			fireEvent.click(editButton);
 		});
