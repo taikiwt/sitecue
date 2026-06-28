@@ -52,7 +52,7 @@ export function NotesContainer() {
 	const effectiveView = useMemo(() => {
 		if (params.view) return params.view;
 		if (params.domain && params.domain !== "inbox") return "domains";
-		return "inbox";
+		return "domains"; // デフォルトフォールバックを domains に変更
 	}, [params.view, params.domain]);
 
 	// Inbox URLのクリーンアップ (domain=inbox の排除)
@@ -110,8 +110,8 @@ export function NotesContainer() {
 			// 全件からの検索（ビュー指定がない場合）
 			items = [...notes, ...drafts];
 		} else {
-			// デフォルト（inbox）
-			items = groupedNotes.inbox;
+			// デフォルト（domains一覧用ソースとして、全notesをアタッチ）
+			items = notes;
 		}
 
 		// 2. クイックフィルター (q パラメータによる絞り込み)

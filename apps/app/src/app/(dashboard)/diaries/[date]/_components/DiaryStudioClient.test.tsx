@@ -6,7 +6,8 @@ import { DiaryStudioClient } from "./DiaryStudioClient";
 
 // useRouter等のモック化
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ push: vi.fn(), back: vi.fn() }),
+	useRouter: () => ({ push: vi.fn(), back: vi.fn(), replace: vi.fn() }),
+	useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
@@ -70,7 +71,6 @@ describe("DiaryStudioClient", () => {
 
 	it("初期状態（変更なし）ではSaveボタンが非活性であること", () => {
 		setup({
-			id: "d1",
 			user_id: "u1",
 			date: "2026-06-28",
 			content: "Original Content",
@@ -84,7 +84,6 @@ describe("DiaryStudioClient", () => {
 
 	it("エディタの内容が変更されたらSaveボタンが活性化すること", async () => {
 		setup({
-			id: "d1",
 			user_id: "u1",
 			date: "2026-06-28",
 			content: "Original Content",
@@ -100,7 +99,6 @@ describe("DiaryStudioClient", () => {
 
 	it("素材のインサートボタンを押した際にエディタの末尾にテキストが追記結合されること", () => {
 		setup({
-			id: "d1",
 			user_id: "u1",
 			date: "2026-06-28",
 			content: "Original",

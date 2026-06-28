@@ -448,7 +448,7 @@ export function MiddlePaneList(props: Props) {
 				{/* 1段目：メインナビゲーション（4つ1行・大きめの左寄せカプセル構造） */}
 				<div className="flex justify-start w-full items-center h-11">
 					<div className="grid grid-cols-4 gap-1 w-full bg-base-surface rounded-full border-none">
-						{["inbox", "domains", "drafts", "diaries"].map((view) => (
+						{["domains", "inbox", "drafts", "diaries"].map((view) => (
 							<button
 								key={view}
 								type="button"
@@ -456,7 +456,7 @@ export function MiddlePaneList(props: Props) {
 								className={cn(
 									"px-1 py-2.5 text-xs font-bold rounded-full transition-all cursor-pointer text-center",
 									currentView === view ||
-										(currentView === null && view === "inbox")
+										(currentView === null && view === "domains")
 										? "bg-action text-action-text shadow-sm"
 										: "text-neutral-500 hover:text-action hover:bg-base-bg/60",
 								)}

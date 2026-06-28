@@ -22,11 +22,11 @@ export function ResponsiveNotesLayout({
 	selectedDraftId,
 	selectedDate,
 }: ResponsiveNotesLayoutProps) {
-	const isDesktop = useMediaQuery("(min-width: 768px)");
+	const isLargeDesktop = useMediaQuery("(min-width: 1024px)");
+	const isTabletPortrait = useMediaQuery("(min-width: 768px) and (max-width: 1023px)");
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
-	// URLから導出される本来の開閉状態
 	const isDetailOpenUrl = !!(
 		selectedNoteId ||
 		selectedDraftId ||
@@ -34,34 +34,28 @@ export function ResponsiveNotesLayout({
 		searchParams.get("new") === "note"
 	);
 
-	// UI上のDrawer開閉状態（アニメーション制御用ローカルステート）
 	const [isDrawerOpen, setIsDrawerOpen] = useState(isDetailOpenUrl);
 
-	// URLの状態が変更されたら、Drawerの開閉状態を同期する
 	useEffect(() => {
 		setIsDrawerOpen(isDetailOpenUrl);
 	}, [isDetailOpenUrl]);
 
 	const handleCloseDetail = (open: boolean) => {
 		if (!open) {
-			// 1. まずUI側のDrawerを閉じるアニメーションを開始
 			setIsDrawerOpen(false);
-
-			// 2. アニメーション完了（約300ms）を待ってからURLコンテキストを更新・遷移
 			setTimeout(() => {
 				const params = new URLSearchParams(searchParams.toString());
-
 				params.delete("noteId");
 				params.delete("draftId");
 				params.delete("date");
 				params.delete("new");
-
 				router.push(`/notes?${params.toString()}`);
 			}, 300);
 		}
 	};
 
-	if (isDesktop) {
+	// 1. PC大画面（1024px以上）: 完全3ペイン並列 Flow 配置
+	if (isLargeDesktop) {
 		return (
 			<div className="flex h-full overflow-hidden bg-base-bg font-sans text-action">
 				<Fragment key="middle">{middleNode}</Fragment>
@@ -70,30 +64,56 @@ export function ResponsiveNotesLayout({
 		);
 	}
 
+	// 2. iPad縦持ち（768px 〜 1023px）: 中ペイン固定 ＋ 右詳細部分オーバーレイ
+	if (isTabletPortrait) {
+		return (
+			<div className="relative flex h-full overflow-hidden bg-base-bg font-sans text-action">
+				{/* Middle List: 常時固定描画 */}
+				<div className="w-96 shrink-0 h-full overflow-hidden border-r border-base-border">
+					{middleNode}
+				</div>
+
+				{/* Tap-to-Close Backdrop: 露出している中ペイン左側部分を優しく防御 */}
+				{isDrawerOpen && (
+					<div
+						className="absolute inset-0 z-20 bg-black/10 transition-opacity duration-300 cursor-pointer"
+						onClick={() => handleCloseDetail(false)}
+						aria-hidden="true"
+					/>
+				)}
+
+				{/* Right Detail Pane: 滑らかにスライドインする絶対配置ドロワー */}
+				<div
+					className={cn(
+						"absolute top-0 right-0 z-30 h-full w-[500px] bg-base-bg shadow-2xl border-l border-base-border transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
+						isDrawerOpen ? "translate-x-0" : "translate-x-full"
+					)}
+				>
+					<div className="flex-1 overflow-hidden">{rightNode}</div>
+				</div>
+			</div>
+		);
+	}
+
+	// 3. モバイル環境（767px以下）: 既存のStack遷移を100%維持
 	return (
 		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
-			{/* List Area */}
 			<div
-				className={cn(
-					"flex-1 overflow-hidden",
-					isDrawerOpen && "pointer-events-none",
-				)}
+				className={cn("flex-1 overflow-hidden", isDrawerOpen && "pointer-events-none")}
 				inert={isDrawerOpen ? true : undefined}
 				aria-hidden={isDrawerOpen ? "true" : "false"}
 			>
 				{middleNode}
 			</div>
 
-			{/* Detail Stack (Mobile Only) */}
 			<div
 				className={cn(
 					"fixed inset-0 z-30 bg-base-bg transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
-					isDrawerOpen ? "translate-x-0" : "translate-x-full",
+					isDrawerOpen ? "translate-x-0" : "translate-x-full"
 				)}
 				aria-hidden={!isDrawerOpen}
 				data-testid="mobile-detail-stack"
 			>
-				{/* Mobile Header with Back Button */}
 				<div className="shrink-0 flex items-center px-4 py-2 border-b border-base-border pt-safe">
 					<Button
 						onClick={() => handleCloseDetail(false)}
@@ -105,8 +125,6 @@ export function ResponsiveNotesLayout({
 						Notes
 					</Button>
 				</div>
-
-				{/* Scrollable Content Area */}
 				<div className="flex-1 overflow-y-auto">{rightNode}</div>
 			</div>
 		</div>
