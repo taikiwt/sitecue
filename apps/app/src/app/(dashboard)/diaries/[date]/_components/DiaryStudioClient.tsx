@@ -6,8 +6,9 @@ import {
 	CalendarDays,
 	ChevronLeft,
 	ChevronRight,
+	X,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
 	Panel,
@@ -37,17 +38,10 @@ interface Props {
 
 export function DiaryStudioClient({ initialDiary, date }: Props) {
 	const router = useRouter();
-	const searchParams = useSearchParams();
-	const isPanelOpen = searchParams.get("panel") === "materials";
+	const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 	const togglePanel = () => {
-		const params = new URLSearchParams(searchParams.toString());
-		if (isPanelOpen) {
-			params.delete("panel");
-		} else {
-			params.set("panel", "materials");
-		}
-		router.replace(`${window.location.pathname}?${params.toString()}`);
+		setIsPanelOpen(!isPanelOpen);
 	};
 
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
@@ -61,15 +55,71 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 		"idle",
 	);
 
-	const [content, setContent] = useState(initialDiary?.content || "");
+	const [savedContent, setSavedContent] = useState(initialDiary?.content || "");
+	const [savedTopics, setSavedTopics] = useState<string[]>(
+		initialDiary?.topics || [],
+	);
+
+	const [content, setContent] = useState(savedContent);
+	const [topics, setTopics] = useState<string[]>(savedTopics);
+	const [newTopic, setNewTopic] = useState("");
+	const [editingIndex, setEditingIndex] = useState<number | null>(null);
+	const [editingText, setEditingText] = useState("");
+
+	const handleStartEdit = (index: number, text: string) => {
+		setEditingIndex(index);
+		setEditingText(text);
+	};
+
+	const handleSaveEdit = (index: number) => {
+		const trimmed = editingText.trim();
+		if (!trimmed) {
+			handleRemoveTopic(index);
+			return;
+		}
+		if (trimmed.length > 50) {
+			alert("Topic length cannot exceed 50 characters");
+			return;
+		}
+		const updated = [...topics];
+		updated[index] = trimmed;
+		setTopics(updated);
+		setEditingIndex(null);
+	};
 	const updateDiaryMutation = useUpdateDiary();
 
-	const isDirty = content !== (initialDiary?.content || "");
+	const isDirty =
+		content !== savedContent ||
+		JSON.stringify(topics) !== JSON.stringify(savedTopics);
+
+	const handleAddTopic = (e: React.FormEvent) => {
+		e.preventDefault();
+		const trimmed = newTopic.trim();
+		if (!trimmed) return;
+		if (trimmed.length > 50) {
+			alert("Topic length cannot exceed 50 characters");
+			return;
+		}
+		if (topics.length >= 10) {
+			alert("Maximum 10 topics allowed");
+			return;
+		}
+		if (!topics.includes(trimmed)) {
+			setTopics([...topics, trimmed]);
+		}
+		setNewTopic("");
+	};
+
+	const handleRemoveTopic = (indexToRemove: number) => {
+		setTopics(topics.filter((_, i) => i !== indexToRemove));
+	};
 
 	const handleSave = async () => {
 		setStatus("saving");
 		try {
-			await updateDiaryMutation.mutateAsync({ date, text: content });
+			await updateDiaryMutation.mutateAsync({ date, text: content, topics });
+			setSavedContent(content);
+			setSavedTopics(topics);
 			setStatus("success");
 			setTimeout(() => setStatus("idle"), 2000);
 		} catch (err) {
@@ -121,9 +171,6 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								</div>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="text-xs font-mono font-bold text-neutral-400 mr-2">
-									{charCount.toLocaleString()} chars
-								</span>
 								<Button
 									className="shadow-sm font-bold min-w-[80px] cursor-pointer"
 									disabled={status === "saving" || !isDirty}
@@ -145,6 +192,96 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								<div className="text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
 									Canvas: Daily Sandbox
 								</div>
+
+								{/* Topics Section */}
+								<div className="flex flex-col gap-3 w-full border border-base-border bg-base-surface/30 p-4 rounded-xl mb-4">
+									<span className="text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-wider">
+										Key Events of the Day ({topics.length}/10)
+									</span>
+									<div className="flex flex-col gap-2 w-full">
+										{topics.map((topic, index) => (
+											<div
+												key={topic}
+												className="w-full rounded-full bg-base-surface border border-base-border text-xs px-4 py-1.5 flex items-center justify-between text-neutral-700 font-medium min-h-[36px]"
+											>
+												{editingIndex === index ? (
+													<input
+														type="text"
+														value={editingText}
+														onChange={(e) => setEditingText(e.target.value)}
+														onBlur={() => handleSaveEdit(index)}
+														onKeyDown={(e) => {
+															if (e.key === "Enter") {
+																if (e.nativeEvent.isComposing) return;
+																e.preventDefault();
+																handleSaveEdit(index);
+															}
+															if (e.key === "Escape") {
+																setEditingIndex(null);
+															}
+														}}
+														className="flex-1 bg-transparent focus:outline-none text-xs text-neutral-900 font-semibold"
+														// biome-ignore lint/a11y/noAutofocus: Focus input immediately on start editing
+														autoFocus
+														maxLength={50}
+													/>
+												) : (
+													// biome-ignore lint/a11y/noStaticElementInteractions: Click span to start editing topic
+													// biome-ignore lint/a11y/useKeyWithClickEvents: Trigger edit mode via click
+													<span
+														className="truncate pr-4 flex-1 cursor-pointer hover:text-action transition-colors"
+														onClick={() => handleStartEdit(index, topic)}
+														title="Click to edit topic"
+													>
+														{topic}
+													</span>
+												)}
+
+												<div className="flex items-center gap-1.5 shrink-0">
+													{editingIndex !== index && (
+														<button
+															type="button"
+															onClick={() => handleRemoveTopic(index)}
+															className="text-neutral-400 hover:text-note-alert p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
+															aria-label="Remove topic"
+														>
+															<X className="w-3 h-3" aria-hidden="true" />
+														</button>
+													)}
+												</div>
+											</div>
+										))}
+									</div>
+									{topics.length < 10 && (
+										<form
+											onSubmit={handleAddTopic}
+											className="flex items-center gap-2 mt-1"
+										>
+											<input
+												type="text"
+												value={newTopic}
+												onChange={(e) => setNewTopic(e.target.value)}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" && e.nativeEvent.isComposing) {
+														e.stopPropagation();
+													}
+												}}
+												placeholder="+ Add key event of the day... (Max 50 chars)"
+												className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-xs py-1 px-1 text-neutral-600"
+												maxLength={50}
+											/>
+											<Button
+												type="submit"
+												size="sm"
+												variant="ghost"
+												className="text-[10px] uppercase font-mono tracking-wider font-bold h-7 rounded-full"
+											>
+												Add
+											</Button>
+										</form>
+									)}
+								</div>
+
 								<div className="relative w-full text-base md:text-sm min-w-0">
 									<StudioEditor
 										onChange={(val) => setContent(val)}
@@ -153,6 +290,9 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										isDirty={isDirty}
 										onGenerateHint={async () => null}
 									/>
+									<div className="flex justify-end pt-2 text-[10px] font-mono font-bold text-neutral-400">
+										{charCount.toLocaleString()} chars
+									</div>
 								</div>
 							</div>
 						</div>
@@ -202,9 +342,6 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<span className="text-xs font-mono font-bold text-neutral-400 mr-2">
-								{charCount.toLocaleString()} chars
-							</span>
 							<Button
 								className="shadow-sm font-bold min-w-[80px] cursor-pointer"
 								disabled={status === "saving" || !isDirty}
@@ -226,6 +363,96 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							<div className="text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
 								Canvas: Daily Sandbox
 							</div>
+
+							{/* Topics Section */}
+							<div className="flex flex-col gap-3 w-full border border-base-border bg-base-surface/30 p-4 rounded-xl mb-4">
+								<span className="text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-wider">
+									Key Events of the Day ({topics.length}/10)
+								</span>
+								<div className="flex flex-col gap-2 w-full">
+									{topics.map((topic, index) => (
+										<div
+											key={topic}
+											className="w-full rounded-full bg-base-surface border border-base-border text-xs px-4 py-1.5 flex items-center justify-between text-neutral-700 font-medium min-h-[36px]"
+										>
+											{editingIndex === index ? (
+												<input
+													type="text"
+													value={editingText}
+													onChange={(e) => setEditingText(e.target.value)}
+													onBlur={() => handleSaveEdit(index)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter") {
+															if (e.nativeEvent.isComposing) return;
+															e.preventDefault();
+															handleSaveEdit(index);
+														}
+														if (e.key === "Escape") {
+															setEditingIndex(null);
+														}
+													}}
+													className="flex-1 bg-transparent focus:outline-none text-xs text-neutral-900 font-semibold"
+													// biome-ignore lint/a11y/noAutofocus: Focus input immediately on start editing
+													autoFocus
+													maxLength={50}
+												/>
+											) : (
+												// biome-ignore lint/a11y/noStaticElementInteractions: Click span to start editing topic
+												// biome-ignore lint/a11y/useKeyWithClickEvents: Trigger edit mode via click
+												<span
+													className="truncate pr-4 flex-1 cursor-pointer hover:text-action transition-colors"
+													onClick={() => handleStartEdit(index, topic)}
+													title="Click to edit topic"
+												>
+													{topic}
+												</span>
+											)}
+
+											<div className="flex items-center gap-1.5 shrink-0">
+												{editingIndex !== index && (
+													<button
+														type="button"
+														onClick={() => handleRemoveTopic(index)}
+														className="text-neutral-400 hover:text-note-alert p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
+														aria-label="Remove topic"
+													>
+														<X className="w-3 h-3" aria-hidden="true" />
+													</button>
+												)}
+											</div>
+										</div>
+									))}
+								</div>
+								{topics.length < 10 && (
+									<form
+										onSubmit={handleAddTopic}
+										className="flex items-center gap-2 mt-1"
+									>
+										<input
+											type="text"
+											value={newTopic}
+											onChange={(e) => setNewTopic(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === "Enter" && e.nativeEvent.isComposing) {
+													e.stopPropagation();
+												}
+											}}
+											placeholder="+ Add key event of the day... (Max 50 chars)"
+											className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-xs py-1 px-1 text-neutral-600"
+											maxLength={50}
+										/>
+										<Button
+											type="submit"
+											size="sm"
+											variant="ghost"
+											className="text-[10px] uppercase font-mono tracking-wider font-bold h-7 rounded-full"
+										>
+											Add
+										</Button>
+									</form>
+								)}
+							</div>
+
 							<div className="relative w-full text-base md:text-sm min-w-0">
 								<StudioEditor
 									onChange={(val) => setContent(val)}
@@ -234,31 +461,43 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 									isDirty={isDirty}
 									onGenerateHint={async () => null}
 								/>
+								<div className="flex justify-end pt-2 text-[10px] font-mono font-bold text-neutral-400">
+									{charCount.toLocaleString()} chars
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				{/* 境界線 / エッジ・フローティングノブ: iPad縦持ち環境のみ */}
-				{isTabletPortrait && (
-					<button
-						type="button"
-						onClick={togglePanel}
-						className={cn(
-							"fixed top-1/2 -translate-y-1/2 z-40 bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all duration-300 ease-in-out flex items-center justify-center cursor-pointer",
-							isPanelOpen
-								? "right-[50%] -mr-4 size-8 rounded-full"
-								: "right-0 rounded-l-full h-12 w-6",
-						)}
-						title={isPanelOpen ? "Close Panel" : "Open Materials"}
-					>
-						{isPanelOpen ? (
-							<ChevronRight className="w-4 h-4" aria-hidden="true" />
-						) : (
-							<ChevronLeft className="w-4 h-4" aria-hidden="true" />
-						)}
-					</button>
-				)}
+				{isTabletPortrait &&
+					(isPanelOpen ? (
+						/* 展開時：邪魔にならないよう文字を排除し、アイコン単体の物理的正円（size-10）を死守 */
+						<button
+							type="button"
+							onClick={togglePanel}
+							className="fixed right-[50%] -mr-5 top-1/2 -translate-y-1/2 z-40 size-10 rounded-full bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center select-none cursor-pointer active:bg-action active:text-action-text active:border-action"
+							title="Close right panel"
+						>
+							<ChevronRight className="w-5 h-5 shrink-0" aria-hidden="true" />
+						</button>
+					) : (
+						/* 閉鎖時：横幅を w-[80px] に拡張、フォントサイズを text-xs (12px) に引き上げて視認性を最大化 */
+						<button
+							type="button"
+							onClick={togglePanel}
+							className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-[80px] h-[160px] rounded-l-full bg-base-surface border border-base-border border-r-0 shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center gap-1 pl-2 select-none cursor-pointer group/knob active:bg-action active:text-action-text active:border-action"
+							title="Open right panel"
+						>
+							<ChevronLeft
+								className="w-5 h-5 shrink-0 transition-transform group-hover/knob:-translate-x-0.5"
+								aria-hidden="true"
+							/>
+							<div className="flex flex-col text-left font-mono text-xs font-black uppercase tracking-tight leading-none text-neutral-500 group-active:text-action-text">
+								<span>Open</span>
+								<span>Panel</span>
+							</div>
+						</button>
+					))}
 
 				{/* 右側パネル: iPad縦持ちで開いている場合のみ幅50% */}
 				{isTabletPortrait && (

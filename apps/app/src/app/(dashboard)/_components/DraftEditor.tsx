@@ -59,17 +59,11 @@ export default function DraftEditor({
 	const searchParams = useSearchParams();
 	const supabase = createClient();
 	const activePane =
-		searchParams.get("panel") === "materials" ? "materials" : "review";
-	const isPanelOpen = !!searchParams.get("panel");
+		searchParams.get("tab") === "materials" ? "materials" : "review";
+	const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 	const togglePanel = () => {
-		const params = new URLSearchParams(searchParams.toString());
-		if (isPanelOpen) {
-			params.delete("panel");
-		} else {
-			params.set("panel", activePane);
-		}
-		router.replace(`${window.location.pathname}?${params.toString()}`);
+		setIsPanelOpen(!isPanelOpen);
 	};
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 	const isLargeDesktop = useMediaQuery("(min-width: 1024px)");
@@ -492,7 +486,8 @@ export default function DraftEditor({
 
 	const updatePane = (pane: string) => {
 		const params = new URLSearchParams(searchParams.toString());
-		params.set("panel", pane);
+		params.set("tab", pane);
+		setIsPanelOpen(true);
 		router.replace(`?${params.toString()}`);
 	};
 
@@ -539,21 +534,6 @@ export default function DraftEditor({
 							<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
 								{/* Metadata & Title Area */}
 								<div className="flex flex-col gap-4">
-									<div className="flex items-center justify-between">
-										<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
-											{activeTemplate
-												? `Template: ${activeTemplate.name}`
-												: "Blank Canvas"}
-										</span>
-										{isNearLimit && (
-											<span
-												className={`text-sm font-mono font-bold ${isOverLimit ? "text-note-alert" : "text-neutral-400"}`}
-											>
-												{charCount.toLocaleString()} /{" "}
-												{effectiveLimit.toLocaleString()}
-											</span>
-										)}
-									</div>
 									<div className="grid gap-4">
 										<div className="flex items-start gap-2 group/title">
 											<TextareaAutosize
@@ -605,6 +585,25 @@ export default function DraftEditor({
 										isDirty={isDirty}
 										onGenerateHint={handleGenerateHint}
 									/>
+									<div className="flex justify-between items-center pt-2 text-[10px] font-mono font-bold text-neutral-400">
+										<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+											{activeTemplate
+												? `Template: ${activeTemplate.name}`
+												: "Blank Canvas"}
+										</span>
+										{isNearLimit ? (
+											<span
+												className={
+													isOverLimit ? "text-note-alert" : "text-neutral-400"
+												}
+											>
+												{charCount.toLocaleString()} /{" "}
+												{effectiveLimit.toLocaleString()} chars
+											</span>
+										) : (
+											<span>{charCount.toLocaleString()} chars</span>
+										)}
+									</div>
 								</div>
 							</div>
 						</div>
@@ -720,21 +719,6 @@ export default function DraftEditor({
 						<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-8">
 							{/* Metadata & Title Area */}
 							<div className="flex flex-col gap-4">
-								<div className="flex items-center justify-between">
-									<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
-										{activeTemplate
-											? `Template: ${activeTemplate.name}`
-											: "Blank Canvas"}
-									</span>
-									{isNearLimit && (
-										<span
-											className={`text-sm font-mono font-bold ${isOverLimit ? "text-note-alert" : "text-neutral-400"}`}
-										>
-											{charCount.toLocaleString()} /{" "}
-											{effectiveLimit.toLocaleString()}
-										</span>
-									)}
-								</div>
 								<div className="grid gap-4">
 									<div className="flex items-start gap-2 group/title">
 										<TextareaAutosize
@@ -786,31 +770,59 @@ export default function DraftEditor({
 									isDirty={isDirty}
 									onGenerateHint={handleGenerateHint}
 								/>
+								<div className="flex justify-between items-center pt-2 text-[10px] font-mono font-bold text-neutral-400">
+									<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
+										{activeTemplate
+											? `Template: ${activeTemplate.name}`
+											: "Blank Canvas"}
+									</span>
+									{isNearLimit ? (
+										<span
+											className={
+												isOverLimit ? "text-note-alert" : "text-neutral-400"
+											}
+										>
+											{charCount.toLocaleString()} /{" "}
+											{effectiveLimit.toLocaleString()} chars
+										</span>
+									) : (
+										<span>{charCount.toLocaleString()} chars</span>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 
-				{/* 境界線 / エッジ・フローティングノブ: iPad縦持ち環境のみ */}
-				{isTabletPortrait && (
-					<button
-						type="button"
-						onClick={togglePanel}
-						className={cn(
-							"fixed top-1/2 -translate-y-1/2 z-40 bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all duration-300 ease-in-out flex items-center justify-center cursor-pointer",
-							isPanelOpen
-								? "right-[50%] -mr-4 size-8 rounded-full"
-								: "right-0 rounded-l-full h-12 w-6",
-						)}
-						title={isPanelOpen ? "Close Panel" : "Open AI Review"}
-					>
-						{isPanelOpen ? (
-							<ChevronRight className="w-4 h-4" aria-hidden="true" />
-						) : (
-							<ChevronLeft className="w-4 h-4" aria-hidden="true" />
-						)}
-					</button>
-				)}
+				{isTabletPortrait &&
+					(isPanelOpen ? (
+						/* 展開時：邪魔にならないよう文字を排除し、アイコン単体の物理的正円（size-10）を死守 */
+						<button
+							type="button"
+							onClick={togglePanel}
+							className="fixed right-[50%] -mr-5 top-1/2 -translate-y-1/2 z-40 size-10 rounded-full bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center select-none cursor-pointer active:bg-action active:text-action-text active:border-action"
+							title="Close right panel"
+						>
+							<ChevronRight className="w-5 h-5 shrink-0" aria-hidden="true" />
+						</button>
+					) : (
+						/* 閉鎖時：横幅を w-[80px] に拡張、フォントサイズを text-xs (12px) に引き上げて視認性を最大化 */
+						<button
+							type="button"
+							onClick={togglePanel}
+							className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-[80px] h-[160px] rounded-l-full bg-base-surface border border-base-border border-r-0 shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center gap-1 pl-2 select-none cursor-pointer group/knob active:bg-action active:text-action-text active:border-action"
+							title="Open right panel"
+						>
+							<ChevronLeft
+								className="w-5 h-5 shrink-0 transition-transform group-hover/knob:-translate-x-0.5"
+								aria-hidden="true"
+							/>
+							<div className="flex flex-col text-left font-mono text-xs font-black uppercase tracking-tight leading-none text-neutral-500 group-active:text-action-text">
+								<span>Open</span>
+								<span>Panel</span>
+							</div>
+						</button>
+					))}
 
 				{/* 右ペイン (Tablet width = 50%, hidden on mobile via isTabletPortrait wrap) */}
 				{isTabletPortrait && (

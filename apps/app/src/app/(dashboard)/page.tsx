@@ -57,7 +57,7 @@ async function TodayRecapCard() {
 	const currentMonth = month;
 
 	return (
-		<div className="flex flex-col justify-between p-5 rounded-xl bg-base-surface border border-base-border h-full">
+		<div className="flex flex-col justify-between items-center p-5 rounded-xl bg-base-surface border border-base-border h-full min-h-[340px] md:min-h-[320px]">
 			{/* ヘッダーセクション */}
 			<div className="flex justify-between items-start w-full">
 				<div>
@@ -79,7 +79,7 @@ async function TodayRecapCard() {
 			<div className="flex flex-col items-center gap-4 my-4 flex-1">
 				{/* 1. 日めくりカレンダーボックス（CustomLink に置換） */}
 				<CustomLink
-					className="relative w-28 h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0 hover:scale-102 transition-transform cursor-pointer group/box"
+					className="relative w-24 h-28 md:w-20 md:h-24 lg:w-28 lg:h-32 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-base-border/60 overflow-hidden flex flex-col items-center select-none shrink-0 hover:scale-102 transition-transform cursor-pointer group/box"
 					href={`/diaries/${todayStr}`}
 				>
 					<div className="w-full bg-action py-1 text-center text-[9px] font-bold tracking-wider text-white font-mono">
