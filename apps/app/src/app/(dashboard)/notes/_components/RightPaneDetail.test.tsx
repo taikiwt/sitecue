@@ -133,7 +133,9 @@ describe("RightPaneDetail", () => {
 			</QueryClientProvider>,
 		);
 
-		const editButtons = screen.getAllByRole("button", { name: "Edit in Studio" });
+		const editButtons = screen.getAllByRole("button", {
+			name: "Edit in Studio",
+		});
 		expect(editButtons.length).toBeGreaterThan(0);
 		await act(async () => {
 			fireEvent.click(editButtons[0]);

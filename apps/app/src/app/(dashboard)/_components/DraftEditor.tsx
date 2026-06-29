@@ -616,26 +616,28 @@ export default function DraftEditor({
 						minSize="20%"
 					>
 						<header className="border-b border-base-border p-2">
-							<div className="flex rounded-lg bg-base-border/50 p-1">
+							<div className="flex rounded-full bg-base-surface p-1">
 								<button
 									type="button"
 									onClick={() => updatePane("review")}
-									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									className={cn(
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 										activePane === "review"
-											? "bg-base-bg text-action shadow-sm"
-											: "text-gray-500 hover:text-action"
-									}`}
+											? "bg-action text-action-text shadow-sm"
+											: "text-neutral-500 hover-safe:text-action",
+									)}
 								>
 									SELF REVIEW
 								</button>
 								<button
 									type="button"
 									onClick={() => updatePane("materials")}
-									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									className={cn(
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 										activePane === "materials"
-											? "bg-base-bg text-action shadow-sm"
-											: "text-gray-500 hover:text-action"
-									}`}
+											? "bg-action text-action-text shadow-sm"
+											: "text-neutral-500 hover-safe:text-action",
+									)}
 								>
 									GLOBAL MATERIALS
 								</button>
@@ -833,26 +835,28 @@ export default function DraftEditor({
 						)}
 					>
 						<header className="border-b border-base-border p-2">
-							<div className="flex rounded-lg bg-base-border/50 p-1">
+							<div className="flex rounded-full bg-base-surface p-1">
 								<button
 									type="button"
 									onClick={() => updatePane("review")}
-									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									className={cn(
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 										activePane === "review"
-											? "bg-base-bg text-action shadow-sm"
-											: "text-gray-500 hover:text-action"
-									}`}
+											? "bg-action text-action-text shadow-sm"
+											: "text-neutral-500 hover-safe:text-action",
+									)}
 								>
 									SELF REVIEW
 								</button>
 								<button
 									type="button"
 									onClick={() => updatePane("materials")}
-									className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+									className={cn(
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 										activePane === "materials"
-											? "bg-base-bg text-action shadow-sm"
-											: "text-gray-500 hover:text-action"
-									}`}
+											? "bg-action text-action-text shadow-sm"
+											: "text-neutral-500 hover-safe:text-action",
+									)}
 								>
 									GLOBAL MATERIALS
 								</button>
@@ -934,26 +938,28 @@ export default function DraftEditor({
 									</Button>
 								</div>
 								{/* Tab Navigation */}
-								<div className="flex rounded-lg bg-neutral-200/50 p-1">
+								<div className="flex rounded-full bg-base-surface p-1">
 									<button
 										type="button"
 										onClick={() => updatePane("review")}
-										className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										className={cn(
+											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 											activePane === "review"
-												? "bg-base-bg text-action shadow-sm"
-												: "text-gray-500 hover:text-action"
-										}`}
+												? "bg-action text-action-text shadow-sm"
+												: "text-neutral-500 hover-safe:text-action",
+										)}
 									>
 										SELF REVIEW
 									</button>
 									<button
 										type="button"
 										onClick={() => updatePane("materials")}
-										className={`flex-1 rounded-md py-1.5 text-xs font-bold transition-all ${
+										className={cn(
+											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
 											activePane === "materials"
-												? "bg-base-bg text-action shadow-sm"
-												: "text-gray-500 hover:text-action"
-										}`}
+												? "bg-action text-action-text shadow-sm"
+												: "text-neutral-500 hover-safe:text-action",
+										)}
 									>
 										GLOBAL MATERIALS
 									</button>
