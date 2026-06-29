@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ push: vi.fn() }),
@@ -14,7 +14,9 @@ vi.mock("@/hooks/use-media-query", () => ({
 
 describe("ResponsiveNotesLayout", () => {
 	it("1024px以上のデスクトップ環境でmiddleとrightを並列描画すること", () => {
-		vi.mocked(useMediaQuery).mockImplementation((query) => query.includes("min-width: 1024px"));
+		vi.mocked(useMediaQuery).mockImplementation((query) =>
+			query.includes("min-width: 1024px"),
+		);
 
 		render(
 			<ResponsiveNotesLayout
@@ -22,7 +24,7 @@ describe("ResponsiveNotesLayout", () => {
 				rightNode={<div>Right Detail</div>}
 				selectedNoteId="note-1"
 				selectedDraftId={null}
-			/>
+			/>,
 		);
 
 		expect(screen.getByText("Middle List")).toBeDefined();
@@ -30,7 +32,9 @@ describe("ResponsiveNotesLayout", () => {
 	});
 
 	it("768px-1023pxのiPad縦持ち環境で部分オーバーレイ・コンテキストが成立すること", () => {
-		vi.mocked(useMediaQuery).mockImplementation((query) => query.includes("max-width: 1023px"));
+		vi.mocked(useMediaQuery).mockImplementation((query) =>
+			query.includes("max-width: 1023px"),
+		);
 
 		render(
 			<ResponsiveNotesLayout
@@ -38,7 +42,7 @@ describe("ResponsiveNotesLayout", () => {
 				rightNode={<div>Right Detail</div>}
 				selectedNoteId="note-1"
 				selectedDraftId={null}
-			/>
+			/>,
 		);
 
 		expect(screen.getByText("Middle List")).toBeDefined();

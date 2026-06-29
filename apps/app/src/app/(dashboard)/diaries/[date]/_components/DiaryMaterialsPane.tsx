@@ -1,8 +1,9 @@
 "use client";
 
+import type { Note } from "@sitecue/shared";
 import { fetchDraftsByDate, fetchNotesByDate } from "@sitecue/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, FileText, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import NoteCard from "../../../studio/_components/NoteCard";
 
@@ -86,49 +87,46 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 									Drafts ({drafts.length})
 								</h3>
 								<div className="space-y-2">
-									{drafts.map((draft) => {
-										const timeStr = new Date(draft.updated_at).toLocaleTimeString("en-US", {
-											hour: "2-digit",
-											minute: "2-digit",
-											hour12: true,
-										});
-										const [rawTime, ampm] = timeStr.split(" ");
-
-										return (
-											<div
-												key={draft.id}
-												className="group cursor-default rounded-xl border border-base-border bg-base-bg p-4 transition-all hover:border-neutral-400 min-w-0 w-full overflow-hidden space-y-1.5"
-											>
-												<div className="mb-2 flex items-center justify-between">
-													<div className="flex items-center gap-2">
-														<span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide w-fit bg-note-info/10 text-note-info">
-															<FileText className="w-3.5 h-3.5" aria-hidden="true" />
-															Draft
-														</span>
-														<span className="text-[10px] font-mono text-neutral-400 font-bold">
-															{rawTime} <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 ml-0.5">{ampm}</span>
-														</span>
-													</div>
-													{onInsert && (
-														<button
-															type="button"
-															onClick={() => onInsert(draft.content || "")}
-															className="p-1 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-md transition-colors opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100"
-															title="Insert to Editor"
-														>
-															<ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-														</button>
-													)}
-												</div>
-												<h4 className="text-sm font-bold text-action truncate">
-													{draft.title || "Untitled Draft"}
-												</h4>
-												<p className="text-sm text-neutral-600 line-clamp-3 break-words">
-													{draft.content}
-												</p>
-											</div>
-										);
-									})}
+									{drafts.map((draft) => (
+										<NoteCard
+											key={draft.id}
+											note={
+												{
+													id: draft.id,
+													content: draft.content || "",
+													note_type: "info",
+													created_at: draft.updated_at,
+													updated_at: draft.updated_at,
+													url_pattern: "",
+													user_id: draft.user_id,
+													is_expanded: false,
+													is_favorite: false,
+													is_pinned: false,
+													is_resolved: false,
+													sort_order: 0,
+													tags: draft.tags,
+													draft_id: null,
+												} as Note
+											}
+											isDraft={true}
+											showTimeOnly={true}
+											rightAction={
+												onInsert && (
+													<button
+														type="button"
+														onClick={() => onInsert(draft.content || "")}
+														className="p-1 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-md transition-colors"
+														title="Insert to Editor"
+													>
+														<ArrowLeft
+															className="w-3.5 h-3.5"
+															aria-hidden="true"
+														/>
+													</button>
+												)
+											}
+										/>
+									))}
 								</div>
 							</div>
 						)}

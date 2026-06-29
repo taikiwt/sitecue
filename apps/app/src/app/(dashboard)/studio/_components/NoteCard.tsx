@@ -7,6 +7,7 @@ import {
 	Check,
 	ChevronDown,
 	ChevronUp,
+	FileText,
 	Info,
 	Lightbulb,
 	Pencil,
@@ -24,6 +25,8 @@ interface NoteCardProps {
 	onDelete?: (id: string) => void;
 	onInsert?: (content: string) => void;
 	showTimeOnly?: boolean;
+	isDraft?: boolean;
+	rightAction?: React.ReactNode;
 }
 
 export default function NoteCard({
@@ -32,6 +35,8 @@ export default function NoteCard({
 	onDelete,
 	onInsert,
 	showTimeOnly = false,
+	isDraft = false,
+	rightAction,
 }: NoteCardProps) {
 	const [isEditing, setIsEditing] = useState(false);
 	const [editContent, setEditContent] = useState(note.content);
@@ -74,7 +79,7 @@ export default function NoteCard({
 		? new Date(note.created_at).toLocaleTimeString("en-US", {
 				hour: "2-digit",
 				minute: "2-digit",
-				hour12: false,
+				hour12: true,
 			})
 		: "";
 
@@ -85,21 +90,25 @@ export default function NoteCard({
 					<span
 						className={cn(
 							"flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide w-fit",
-							note.note_type === "alert"
-								? "bg-note-alert/10 text-note-alert"
-								: note.note_type === "idea"
-									? "bg-note-idea/10 text-note-idea"
-									: "bg-note-info/10 text-note-info",
+							isDraft
+								? "bg-neutral-100 text-neutral-600"
+								: note.note_type === "alert"
+									? "bg-note-alert/10 text-note-alert"
+									: note.note_type === "idea"
+										? "bg-note-idea/10 text-note-idea"
+										: "bg-note-info/10 text-note-info",
 						)}
 					>
-						{note.note_type === "alert" ? (
+						{isDraft ? (
+							<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+						) : note.note_type === "alert" ? (
 							<AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
 						) : note.note_type === "idea" ? (
 							<Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
 						) : (
 							<Info className="w-3.5 h-3.5" aria-hidden="true" />
 						)}
-						{note.note_type || "info"}
+						{isDraft ? "Draft" : note.note_type || "info"}
 					</span>
 					<span className="text-[10px] font-mono text-neutral-400 font-bold">
 						{showTimeOnly
@@ -112,6 +121,7 @@ export default function NoteCard({
 
 				{!isEditing && (
 					<div className="flex items-center gap-1 opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100 transition-opacity">
+						{rightAction}
 						{onInsert && (
 							<button
 								type="button"

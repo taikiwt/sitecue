@@ -23,7 +23,9 @@ export function ResponsiveNotesLayout({
 	selectedDate,
 }: ResponsiveNotesLayoutProps) {
 	const isLargeDesktop = useMediaQuery("(min-width: 1024px)");
-	const isTabletPortrait = useMediaQuery("(min-width: 768px) and (max-width: 1023px)");
+	const isTabletPortrait = useMediaQuery(
+		"(min-width: 768px) and (max-width: 1023px)",
+	);
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -86,7 +88,7 @@ export function ResponsiveNotesLayout({
 				<div
 					className={cn(
 						"absolute top-0 right-0 z-30 h-full w-[500px] bg-base-bg shadow-2xl border-l border-base-border transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
-						isDrawerOpen ? "translate-x-0" : "translate-x-full"
+						isDrawerOpen ? "translate-x-0" : "translate-x-full",
 					)}
 				>
 					<div className="flex-1 overflow-hidden">{rightNode}</div>
@@ -99,7 +101,10 @@ export function ResponsiveNotesLayout({
 	return (
 		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
 			<div
-				className={cn("flex-1 overflow-hidden", isDrawerOpen && "pointer-events-none")}
+				className={cn(
+					"flex-1 overflow-hidden",
+					isDrawerOpen && "pointer-events-none",
+				)}
 				inert={isDrawerOpen ? true : undefined}
 				aria-hidden={isDrawerOpen ? "true" : "false"}
 			>
@@ -109,7 +114,7 @@ export function ResponsiveNotesLayout({
 			<div
 				className={cn(
 					"fixed inset-0 z-30 bg-base-bg transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
-					isDrawerOpen ? "translate-x-0" : "translate-x-full"
+					isDrawerOpen ? "translate-x-0" : "translate-x-full",
 				)}
 				aria-hidden={!isDrawerOpen}
 				data-testid="mobile-detail-stack"

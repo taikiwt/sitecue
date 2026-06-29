@@ -29,6 +29,7 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import NoteEditor from "../../_components/NoteEditor";
 import NoteCard from "./NoteCard";
 
@@ -93,11 +94,19 @@ export default function StudioReviewPane({
 						</span>
 						<Button
 							type="button"
-							variant="outline"
+							/* variant="ghost" を明示して大元のソリッドな背景定義をパージ */
+							variant="ghost"
 							size="sm"
 							onClick={onGenerateReview}
 							disabled={isGeneratingReview}
-							className="h-7 text-xs font-bold uppercase gap-1.5 text-action hover:bg-neutral-100 border-neutral-200"
+							className={cn(
+								"h-7 text-xs font-bold uppercase gap-1.5 rounded-full border-transparent shadow-none cursor-pointer transition-all duration-100 select-none text-action",
+								/* 通常時の10%の淡い輝き */
+								"bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-pink-500/10",
+								/* 大元のグレーホバーを完全に上書きし、20%の滑らかな不透明度とスケールで極上の手触りを実現 */
+								"hover-safe:bg-gradient-to-r hover-safe:from-purple-500/20 hover-safe:to-pink-500/20 hover-safe:scale-[1.01]",
+								"active:scale-95",
+							)}
 						>
 							{isGeneratingReview ? (
 								<Loader2 className="w-3 h-3 animate-spin" />
@@ -202,28 +211,43 @@ export default function StudioReviewPane({
 
 			{/* Weave Action Bar */}
 			<div className="shrink-0 p-4 border-t border-neutral-200/50 bg-white/80 backdrop-blur-md pb-safe">
-				<div className="p-1 rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-neutral-200/50">
-					<button
+				<div className="p-1 rounded-full bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-neutral-200/50">
+					<Button
 						type="button"
 						onClick={onWeave}
 						disabled={isWeaving}
-						className={`relative w-full flex items-center justify-center p-3 rounded-[14px] transition-all duration-300 ${
+						className={cn(
+							"relative w-full flex items-center justify-center p-3 rounded-full font-bold cursor-pointer transition-all duration-300 active:scale-[0.98]",
 							isWeaving
 								? "bg-neutral-50 text-neutral-400 cursor-not-allowed"
-								: "bg-neutral-900 text-white hover:bg-neutral-800 hover:scale-[1.01] active:scale-[0.99] cursor-pointer font-bold"
-						}`}
+								: "bg-action shadow-md hover-safe:opacity-90 hover-safe:scale-[1.005]",
+						)}
 					>
-						<div className="flex items-center gap-3 pl-1">
+						<div className="flex items-center gap-3 pl-1 select-none">
 							{isWeaving ? (
-								<Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+								<Loader2
+									className="h-5 w-5 animate-spin text-neutral-400"
+									aria-hidden="true"
+								/>
 							) : (
-								<Sparkles className="h-5 w-5 text-white" aria-hidden="true" />
+								/* text-transparentの伝播によるアイコン消失を防ぐため、輝きに馴染むソリッドな有彩色を指定 */
+								<Sparkles
+									className="h-5 w-5 text-indigo-200 shrink-0"
+									aria-hidden="true"
+								/>
 							)}
-							<span className="text-sm tracking-tight">
+							<span
+								className={cn(
+									"text-sm tracking-tight font-black transition-all",
+									isWeaving
+										? "text-neutral-400"
+										: "bg-gradient-to-r from-purple-200 via-indigo-200 to-blue-200 bg-clip-text text-transparent",
+								)}
+							>
 								{isWeaving ? "WEAVING..." : "WEAVE WITH AI"}
 							</span>
 						</div>
-					</button>
+					</Button>
 				</div>
 			</div>
 		</div>
