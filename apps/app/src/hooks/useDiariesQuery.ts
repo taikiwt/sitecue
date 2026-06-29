@@ -61,13 +61,21 @@ export function useUpdateDiary() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async ({ date, text }: { date: string; text: string }) => {
+		mutationFn: async ({
+			date,
+			text,
+			topics,
+		}: {
+			date: string;
+			text: string;
+			topics?: string[];
+		}) => {
 			const supabase = createClient();
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error("Unauthenticated");
-			return updateDiaryContent(supabase, user.id, date, text);
+			return updateDiaryContent(supabase, user.id, date, text, topics);
 		},
 		onSuccess: (newDiary) => {
 			queryClient.setQueriesData<Diary[]>({ queryKey: ["diaries"] }, (old) => {

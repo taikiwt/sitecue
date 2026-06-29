@@ -100,13 +100,20 @@ export async function updateDiaryContent(
 	userId: string,
 	dateStr: string,
 	fullContent: string,
+	topics?: string[],
 ): Promise<Diary> {
+	if (topics && topics.length > 10)
+		throw new Error("Maximum 10 topics allowed");
+	if (topics?.some((t) => t.length > 50))
+		throw new Error("Topic length cannot exceed 50 characters");
+
 	const { data, error } = await supabase
 		.from("sitecue_diaries")
 		.upsert({
 			user_id: userId,
 			date: dateStr,
 			content: fullContent,
+			topics: topics || [],
 			updated_at: new Date().toISOString(),
 		})
 		.select()
