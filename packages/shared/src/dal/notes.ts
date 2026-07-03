@@ -25,9 +25,6 @@ export async function fetchNoteMetadatas(
 	return (data as NoteMetadata[]) || [];
 }
 
-/**
- * ノートを作成する
- */
 export async function createNoteEntity(
 	supabase: SupabaseClient,
 	userId: string,
@@ -35,21 +32,35 @@ export async function createNoteEntity(
 ): Promise<Note> {
 	const payload = resolveNotePayload(input);
 
+	// 未ピン留めノートの中から最も若い（最小の）sort_orderを取得する
 	const { data: existingNotes, error: fetchError } = await supabase
 		.from("sitecue_notes")
 		.select("sort_order")
 		.eq("user_id", userId)
 		.eq("scope", payload.scope)
-		.order("sort_order", { ascending: false })
+		.eq("is_pinned", false)
+		.order("sort_order", { ascending: true })
 		.limit(1);
 
 	if (fetchError) throw fetchError;
 
-	const maxSortOrder =
-		existingNotes && existingNotes.length > 0
-			? existingNotes[0].sort_order
-			: -1;
-	const newSortOrder = maxSortOrder + 1.0;
+	let newSortOrder = 0.0;
+	if (existingNotes && existingNotes.length > 0) {
+		// 最小値からさらに -1.0 減算することで、ピン留め直下の最上部に差し込む若い値を採番
+		newSortOrder = existingNotes[0].sort_order - 1.0;
+	} else {
+		// 未ピン留めノートが存在しない場合は、全ノートの最小値を取得して基準とする
+		const { data: allNotes, error: allFetchError } = await supabase
+			.from("sitecue_notes")
+			.select("sort_order")
+			.eq("user_id", userId)
+			.eq("scope", payload.scope)
+			.order("sort_order", { ascending: true })
+			.limit(1);
+		
+		if (allFetchError) throw allFetchError;
+		newSortOrder = allNotes && allNotes.length > 0 ? allNotes[0].sort_order - 1.0 : 0.0;
+	}
 
 	const insertData = {
 		user_id: userId,
