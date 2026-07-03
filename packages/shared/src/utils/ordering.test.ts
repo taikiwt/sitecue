@@ -4,45 +4,43 @@ import { calculateOrderForDirection } from "./ordering";
 describe("Ordering Utilities: calculateOrderForDirection", () => {
 	it("正常な少数オーダーの隙間に正しく中間値が算出されること", () => {
 		const items = [
-			{ id: "A", sort_order: 1.0 },
-			{ id: "B", sort_order: 2.0 },
-			{ id: "C", sort_order: 3.0 },
+			{ id: "A", sort_order: 1.0, created_at: "2026-01-01T00:00:00.000Z" },
+			{ id: "B", sort_order: 2.0, created_at: "2026-01-02T00:00:00.000Z" },
+			{ id: "C", sort_order: 3.0, created_at: "2026-01-03T00:00:00.000Z" },
 		];
-		// Bを上に移動 ➔ 先頭越えになるため全体の最小値(1.0) - 1.0 = 0
+		// Bを上に移動 -> 先頭アイテムAを追い越すため A(1.0) - 1.0 = 0
 		expect(calculateOrderForDirection(items, "B", "up")).toBe(0);
-		// Bを下に移動 ➔ 末尾越えになるため全体の最大値(3.0) + 1.0 = 4.0
+		// Bを下に移動 -> 末尾アイテムCを追い越すため C(3.0) + 1.0 = 4.0
 		expect(calculateOrderForDirection(items, "B", "down")).toBe(4.0);
 	});
 
-	it("sort_orderがすべて同値(0)の競合地帯からの脱出時、既存の誰とも被らない全体境界値が割り当てられること", () => {
+	it("sort_orderがすべて同値(0)の競合地帯からの脱出時、極小オフセットによる防壁防護で境界線をすり抜けること", () => {
 		const items = [
-			{ id: "A", sort_order: 0 },
-			{ id: "B", sort_order: 0 },
-			{ id: "C", sort_order: 0 },
-			{ id: "D", sort_order: 0 },
+			{ id: "A", sort_order: 0, created_at: "2026-01-01T00:00:00.000Z" },
+			{ id: "B", sort_order: 0, created_at: "2026-01-02T00:00:00.000Z" },
+			{ id: "C", sort_order: 0, created_at: "2026-01-03T00:00:00.000Z" },
+			{ id: "D", sort_order: 0, created_at: "2026-01-04T00:00:00.000Z" },
 		];
-		// 隙間がないため、Cを上に動かすと全体の最小値(0)から確実に引き算される
-		expect(calculateOrderForDirection(items, "C", "up")).toBe(-1.0);
-		// Bを下に動かすと全体の最大値(0)から確実に加算される
-		expect(calculateOrderForDirection(items, "B", "down")).toBe(1.0);
+		// Cを上に動かすと、Bのsort_order(0)から極小オフセット(0.0001)が減算され、-0.0001になることを証明
+		expect(calculateOrderForDirection(items, "C", "up")).toBe(-0.0001);
+		// Bを下に動かすと、Cのsort_order(0)から極小オフセット(0.0001)が加算され、0.0001になることを証明
+		expect(calculateOrderForDirection(items, "B", "down")).toBe(0.0001);
 	});
 
-	it("【重要】すでに移動済みのマイナス値が存在する混迷状態でも、移動先での値の衝突を起こさずに確実なブレイク値を返すこと", () => {
-		// ユーザー操作履歴によって一部のノートだけ先行してマイナス値になっているケース（2回クリックバグの原因モデル）
+	it("【重要】すでに移動済みのマイナス値が存在する混迷状態でも、移動先での衝突を起こさずにオフセットブレイク値を返すこと", () => {
 		const items = [
-			{ id: "A", sort_order: -1.0 },
-			{ id: "B", sort_order: 0 },
-			{ id: "C", sort_order: 0 }, // Bと同値競合中
+			{ id: "A", sort_order: -1.0, created_at: "2026-01-01T00:00:00.000Z" },
+			{ id: "B", sort_order: 0, created_at: "2026-01-02T00:00:00.000Z" },
+			{ id: "C", sort_order: 0, created_at: "2026-01-03T00:00:00.000Z" },
 		];
-		// Cを上に動かした際、単に B(0) - 1.0 をすると A(-1.0) と衝突して空振りする。
-		// グローバル境界ロジックにより、全体の最小値(-1.0)からさらに引いた -2.0 が返ることを証明する。
-		expect(calculateOrderForDirection(items, "C", "up")).toBe(-2.0);
+		// Cを上に動かした際、B(0)との衝突を検知して 0 - 0.0001 = -0.0001 となり、A(-1.0)と衝突せず安全に割り込めることを実証
+		expect(calculateOrderForDirection(items, "C", "up")).toBe(-0.0001);
 	});
 
 	it("移動不可な境界操作時はnullを返すこと", () => {
 		const items = [
-			{ id: "A", sort_order: 0 },
-			{ id: "B", sort_order: 1 },
+			{ id: "A", sort_order: 0, created_at: "2026-01-01T00:00:00.000Z" },
+			{ id: "B", sort_order: 1, created_at: "2026-01-02T00:00:00.000Z" },
 		];
 		expect(calculateOrderForDirection(items, "A", "up")).toBeNull();
 		expect(calculateOrderForDirection(items, "B", "down")).toBeNull();

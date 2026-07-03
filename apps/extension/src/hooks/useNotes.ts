@@ -25,6 +25,18 @@ export function useNotes(
 ) {
 	const [notes, setNotes] = useState<Note[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [processingNoteIds, setProcessingNoteIds] = useState<Set<string>>(
+		new Set(),
+	);
+
+	// ソート条件式の共通化ヘルパー（DB側 order("sort_order").order("created_at") と100%同期）
+	const sortNotesConsistent = (a: Note, b: Note) => {
+		if ((a.sort_order ?? 0) !== (b.sort_order ?? 0)) {
+			return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+		}
+		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+	};
+
 	const prevUrlRef = useRef<string>(currentFullUrl);
 
 	// 危険な notesRef を排除し、「初回フェッチが完了したか」だけを追跡する安全なフラグを導入
@@ -277,37 +289,50 @@ export function useNotes(
 		}
 	};
 
-	const updateNoteOrder = async (id: string, direction: "up" | "down") => {
+	const updateNoteOrder = async (
+		id: string,
+		direction: "up" | "down",
+		currentVisibleNotes: Note[],
+	) => {
+		// 二重防壁ロック: すでに処理中なら即座にガードブロック
+		if (processingNoteIds.has(id)) return false;
+
 		const targetNote = notes.find((n) => n.id === id);
 		if (!targetNote) return false;
 
-		// NoteList.tsx の表示グループ（Favorites / Page / Pinned）に準拠してソート対象を抽出
-		const filtered = notes.filter((n) => {
+		// ソフトウェアロック of 有効化
+		setProcessingNoteIds((prev) => {
+			const next = new Set(prev);
+			next.add(id);
+			return next;
+		});
+
+		// 画面上に実際に見えているノート配列（フィルター適用後）から、同じ表示グループ（Favorite / Pinned / Normal）を抽出
+		const filtered = currentVisibleNotes.filter((n) => {
 			if (targetNote.is_favorite) return n.is_favorite;
 			return !n.is_favorite && n.is_pinned === targetNote.is_pinned;
 		});
 
-		const group = [...filtered].sort(
-			(a, b) =>
-				(a.sort_order || 0) - (b.sort_order || 0) ||
-				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-		);
+		// 一貫性あるソート関数を適用
+		const group = [...filtered].sort(sortNotesConsistent);
 
-		// 純粋関数により最適なオーダー値を一意に取得
+		// 純粋関数により最適なオーダー値を一意に取得（画面外のノートはOFFSETガードですり抜ける）
 		const newSortOrder = calculateOrderForDirection(group, id, direction);
-		if (newSortOrder === null) return false;
+		if (newSortOrder === null) {
+			setProcessingNoteIds((prev) => {
+				const next = new Set(prev);
+				next.delete(id);
+				return next;
+			});
+			return false;
+		}
 
-		// Optimistic UI Update
+		// 0msレスポンスのインメモリ楽観的UI更新
 		setNotes((prevNotes) => {
 			const newNotes = prevNotes.map((n) =>
 				n.id === id ? { ...n, sort_order: newSortOrder } : n,
 			);
-			newNotes.sort(
-				(a, b) =>
-					(a.sort_order || 0) - (b.sort_order || 0) ||
-					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-			);
-			return newNotes;
+			return newNotes.sort(sortNotesConsistent);
 		});
 
 		try {
@@ -316,8 +341,15 @@ export function useNotes(
 		} catch (error) {
 			console.error("Failed to update note order", error);
 			toast.error("Failed to reorder notes");
-			fetchNotes(); // エラー時は確実なロールバック
+			fetchNotes(); // ロールバック
 			return false;
+		} finally {
+			// ソフトウェアロックの解除
+			setProcessingNoteIds((prev) => {
+				const next = new Set(prev);
+				next.delete(id);
+				return next;
+			});
 		}
 	};
 
