@@ -141,7 +141,7 @@ export default function NoteList({
 	};
 
 	return (
-		<>
+		<div className="space-y-4 relative">
 			{favoriteNotes.length > 0 && (
 				<div className="space-y-3">
 					<button
@@ -179,6 +179,6 @@ export default function NoteList({
 					</div>
 				</div>
 			)}
-		</>
+		</div>
 	);
 }

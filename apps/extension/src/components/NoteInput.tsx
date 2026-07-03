@@ -1,5 +1,5 @@
-import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
-import { useRef, useState } from "react";
+import { AlertTriangle, Info, Lightbulb, Send, X } from "lucide-react";
+import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { APP_LIMITS } from "../constants/limits";
 import { useAutoIndent } from "../hooks/useAutoIndent";
@@ -14,6 +14,8 @@ interface NoteInputProps {
 		scope: NoteScope,
 		type: NoteType,
 	) => Promise<boolean>;
+	onClose: () => void;
+	textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 export default function NoteInput({
@@ -21,11 +23,12 @@ export default function NoteInput({
 	totalNoteCount,
 	maxFreeNotes,
 	onAddNote,
+	onClose,
+	textareaRef,
 }: NoteInputProps) {
 	const [selectedScope, setSelectedScope] = useState<NoteScope>("exact");
 	const [selectedType, setSelectedType] = useState<NoteType>("info");
 	const [newNote, setNewNote] = useState("");
-	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const handleAutoIndent = useAutoIndent();
 
 	const isNearLimit = totalNoteCount >= maxFreeNotes * 0.9;
@@ -42,6 +45,8 @@ export default function NoteInput({
 
 		// 即座に入力欄をクリアしてUXを向上（オプティミスティック更新）
 		setNewNote("");
+		// フォーカスを自動維持して連続タイピングフローを保護
+		setTimeout(() => textareaRef?.current?.focus(), 10);
 
 		const success = await onAddNote(content, selectedScope, selectedType);
 		if (!success) {
@@ -51,10 +56,22 @@ export default function NoteInput({
 	};
 
 	return (
-		<div className="p-4 bg-base-surface border-t border-base-border space-y-3">
-			<div className="flex items-center justify-between">
-				<div className="flex items-center gap-4 text-xs">
-					<label className="flex items-center gap-1.5 cursor-pointer text-action hover:text-action-hover">
+		<div className="p-4 bg-base-surface border border-base-border/60 rounded-2xl shadow-2xl space-y-3 relative transition-all duration-200">
+			{/* 右上の閉じるボタン「×」 */}
+			<button
+				type="button"
+				onClick={onClose}
+				className="absolute top-3 right-3 p-1 rounded-full text-muted-foreground hover:text-black hover:bg-neutral-100 transition-colors cursor-pointer"
+				title="Close input"
+			>
+				<X className="w-4 h-4" aria-hidden="true" />
+			</button>
+
+			<div className="flex items-center justify-between pr-6">
+				<div className="flex items-center gap-3 text-xs">
+					<label
+						className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "exact" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
+					>
 						<input
 							type="radio"
 							name="scope"
@@ -64,7 +81,9 @@ export default function NoteInput({
 						/>
 						<span>Page</span>
 					</label>
-					<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+					<label
+						className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "domain" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
+					>
 						<input
 							type="radio"
 							name="scope"
@@ -74,7 +93,9 @@ export default function NoteInput({
 						/>
 						<span>Domain</span>
 					</label>
-					<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+					<label
+						className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "inbox" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
+					>
 						<input
 							type="radio"
 							name="scope"
@@ -86,50 +107,31 @@ export default function NoteInput({
 					</label>
 				</div>
 
-				<div className="flex items-center gap-3">
-					{/* カウンターは引き算の美学に基づき非表示化。将来の参考のためコメントアウトで残す */}
-					{/* {userPlan === "free" && (
-						<div className="flex items-center gap-2">
-							{isNearLimit && (
-								<span className="text-[9px] text-note-alert opacity-90 hidden sm:inline">
-									To manage or upgrade, visit the App.
-								</span>
-							)}
-							<span
-								className={`text-[10px] font-medium ${isNearLimit ? "text-note-alert" : "text-muted-foreground"}`}
-							>
-								{totalNoteCount}
-							</span>
-						</div>
-					)}
-					*/}
-
-					<div className="flex bg-base-surface p-0.5 rounded-md">
-						<button
-							type="button"
-							onClick={() => setSelectedType("info")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "info" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
-							title="Info"
-						>
-							<Info className="w-4 h-4" />
-						</button>
-						<button
-							type="button"
-							onClick={() => setSelectedType("alert")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "alert" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
-							title="Alert"
-						>
-							<AlertTriangle className="w-4 h-4" />
-						</button>
-						<button
-							type="button"
-							onClick={() => setSelectedType("idea")}
-							className={`cursor-pointer p-1 rounded ${selectedType === "idea" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
-							title="Idea"
-						>
-							<Lightbulb className="w-4 h-4" />
-						</button>
-					</div>
+				<div className="flex bg-neutral-100 p-0.5 rounded-full">
+					<button
+						type="button"
+						onClick={() => setSelectedType("info")}
+						className={`cursor-pointer p-1 rounded-full ${selectedType === "info" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
+						title="Info"
+					>
+						<Info className="w-3.5 h-3.5" />
+					</button>
+					<button
+						type="button"
+						onClick={() => setSelectedType("alert")}
+						className={`cursor-pointer p-1 rounded-full ${selectedType === "alert" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
+						title="Alert"
+					>
+						<AlertTriangle className="w-3.5 h-3.5" />
+					</button>
+					<button
+						type="button"
+						onClick={() => setSelectedType("idea")}
+						className={`cursor-pointer p-1 rounded-full ${selectedType === "idea" ? "bg-action shadow-sm text-action-text" : "text-muted-foreground hover:text-action"}`}
+						title="Idea"
+					>
+						<Lightbulb className="w-3.5 h-3.5" />
+					</button>
 				</div>
 			</div>
 
@@ -143,7 +145,10 @@ export default function NoteInput({
 				</div>
 			)}
 
-			<form onSubmit={handleSubmit} className="flex gap-2 items-center">
+			<form
+				onSubmit={handleSubmit}
+				className="flex gap-2 items-center relative"
+			>
 				{userPlan === "free" && isLimitReached ? (
 					<div className="w-full bg-note-idea/10 border border-note-idea/20 rounded-lg p-3 text-sm text-note-idea flex items-start gap-3">
 						<AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -162,9 +167,11 @@ export default function NoteInput({
 							value={newNote}
 							onChange={(e) => setNewNote(e.target.value)}
 							placeholder={`Add a cue to ${selectedScope === "inbox" ? "Inbox" : selectedScope === "domain" ? "this domain" : "this page"}...`}
-							className="flex-1 resize-none border-4 border-action rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-action/5 transition-all max-h-50"
-							minRows={1}
+							className="flex-1 resize-none border border-base-border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-action/20 focus:border-action transition-all max-h-40 pr-10"
+							minRows={2}
 							onKeyDown={(e) => {
+								if (e.nativeEvent.isComposing) return;
+
 								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 									e.preventDefault();
 									handleSubmit(e);
@@ -186,7 +193,7 @@ export default function NoteInput({
 						<button
 							disabled={!newNote.trim() || isCharOverLimit}
 							type="submit"
-							className="cursor-pointer bg-action text-action-text p-2 rounded-md hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
+							className="cursor-pointer bg-action text-action-text w-9 h-9 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
 							title="Add Note"
 						>
 							<Send className="w-4 h-4" aria-hidden="true" />

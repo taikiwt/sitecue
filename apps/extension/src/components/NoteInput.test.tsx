@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import NoteInput from "./NoteInput";
@@ -7,6 +7,7 @@ describe("NoteInput Component", () => {
 	it("入力して送信ボタンを押すと、onAddNoteが呼ばれ、入力欄がクリアされること", async () => {
 		const user = userEvent.setup();
 		const mockOnAddNote = vi.fn().mockResolvedValue(true);
+		const mockOnClose = vi.fn();
 
 		render(
 			<NoteInput
@@ -14,6 +15,7 @@ describe("NoteInput Component", () => {
 				totalNoteCount={10}
 				maxFreeNotes={200}
 				onAddNote={mockOnAddNote}
+				onClose={mockOnClose}
 			/>,
 		);
 
@@ -39,12 +41,14 @@ describe("NoteInput Component", () => {
 	});
 
 	it("無料枠の上限に達している場合、入力欄が非表示になり警告メッセージが出ること", () => {
+		const mockOnClose = vi.fn();
 		render(
 			<NoteInput
 				userPlan="free"
 				totalNoteCount={200} // 上限
 				maxFreeNotes={200}
 				onAddNote={vi.fn()}
+				onClose={mockOnClose}
 			/>,
 		);
 
@@ -53,5 +57,55 @@ describe("NoteInput Component", () => {
 
 		// 警告メッセージが表示されていることを確認
 		expect(screen.getByText(/Note Limit Reached/i)).toBeInTheDocument();
+	});
+});
+
+describe("NoteInput Component - 連続作成 & IME Guard", () => {
+	const defaultProps = {
+		userPlan: "free" as const,
+		totalNoteCount: 10,
+		maxFreeNotes: 500,
+		onAddNote: vi.fn().mockResolvedValue(true),
+		onClose: vi.fn(),
+		textareaRef: {
+			current: null,
+		} as unknown as React.RefObject<HTMLTextAreaElement | null>,
+	};
+
+	it("Ctrl+EnterでのSubmit時、入力内容がクリアされ、onAddNoteが正しく呼び出されること", async () => {
+		const mockOnAddNote = vi.fn().mockResolvedValue(true);
+		render(<NoteInput {...defaultProps} onAddNote={mockOnAddNote} />);
+		const textarea = screen.getByPlaceholderText(/Add a cue to/i);
+
+		fireEvent.change(textarea, { target: { value: "ササッと連続連続メモ" } });
+		expect(textarea).toHaveValue("ササッと連続連続メモ");
+
+		fireEvent.keyDown(textarea, { key: "Enter", ctrlKey: true });
+
+		await waitFor(() => {
+			expect(mockOnAddNote).toHaveBeenCalledWith(
+				"ササッと連続連続メモ",
+				"exact",
+				"info",
+			);
+		});
+	});
+
+	it("IME変換中のEnter（isComposing=true）ではSubmitがガードされ発火しないこと", () => {
+		const mockOnAddNote = vi.fn().mockResolvedValue(true);
+		render(<NoteInput {...defaultProps} onAddNote={mockOnAddNote} />);
+		const textarea = screen.getByPlaceholderText(/Add a cue to/i);
+
+		fireEvent.change(textarea, { target: { value: "漢字変換中" } });
+
+		// nativeEvent.isComposing = true をシミュレート
+		const event = new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true });
+		Object.defineProperty(event, "nativeEvent", {
+			value: { isComposing: true },
+		});
+
+		textarea.dispatchEvent(event);
+
+		expect(mockOnAddNote).not.toHaveBeenCalled();
 	});
 });
