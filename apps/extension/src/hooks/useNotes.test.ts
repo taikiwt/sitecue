@@ -139,7 +139,7 @@ describe("useNotes - Silent Refetching", () => {
 
 		const { result, rerender } = renderHook(
 			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
-			{ initialProps: { scope: "exact" as const } },
+			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
 		);
 
 		// 初回フェッチ待ち
@@ -169,7 +169,7 @@ describe("useNotes - Silent Refetching", () => {
 
 		const { result, rerender } = renderHook(
 			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
-			{ initialProps: { scope: "exact" as const } },
+			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
 		);
 
 		// 初回フェッチ完了を待つ

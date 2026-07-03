@@ -129,7 +129,7 @@ describe("SidePanel Component", () => {
 	it("グリッドレイアウトが正しく適用されていること", () => {
 		const { container } = render(<SidePanel />);
 		const mainDiv = container.querySelector(".grid");
-		expect(mainDiv).toHaveClass("grid-rows-[auto_auto_auto_1fr_auto]");
+		expect(mainDiv).toHaveClass("grid-rows-[auto_auto_auto_auto_1fr]");
 	});
 
 	it("フィルターの切り替えで表示されるノートが連動して変わること", async () => {
