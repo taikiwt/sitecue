@@ -1,7 +1,7 @@
 import { getScopeUrls } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
-import { Loader2, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { Check, Copy, Loader2, Plus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
@@ -74,6 +74,61 @@ function NotesUI({
 	const listContainerRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+	// 📋 一括コピー用のステートとロジック
+	const [isCopied, setIsCopied] = useState(false);
+	const [isCopyMenuOpen, setIsCopyMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
+	const copyToClipboard = async (text: string) => {
+		try {
+			await navigator.clipboard.writeText(text);
+			setIsCopied(true);
+			setTimeout(() => setIsCopied(false), 2000);
+		} catch {
+			// clipboard write failed silently
+		}
+	};
+
+	const handleCopyText = async () => {
+		const text = finalFilteredNotes.map((n) => n.content ?? "").join("\n\n");
+		await copyToClipboard(text);
+		setIsCopyMenuOpen(false);
+	};
+
+	const handleCopyJson = async () => {
+		const json = finalFilteredNotes.map((n) => ({
+			type: n.note_type || "info",
+			content: n.content,
+		}));
+		await copyToClipboard(JSON.stringify(json, null, 2));
+		setIsCopyMenuOpen(false);
+	};
+
+	// Close search and menu when pressing Escape
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				setIsCopyMenuOpen(false);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, []);
+
+	// Close menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setIsCopyMenuOpen(false);
+			}
+		};
+		if (isCopyMenuOpen) {
+			document.addEventListener("mousedown", handleClickOutside);
+		}
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [isCopyMenuOpen]);
+
 	const {
 		notes,
 		loading,
@@ -95,7 +150,7 @@ function NotesUI({
 	) => {
 		const success = await originalAddNote(content, scope, type);
 		if (success) {
-			// 新規ノート追加時、背後のノートリストを最上部へ自動でスクロールバック
+			// 新規ノート追加時、背後のノートリストを最上部へ自动でスクロールバック
 			setTimeout(() => {
 				if (listContainerRef.current) {
 					listContainerRef.current.scrollTo({
@@ -217,17 +272,17 @@ function NotesUI({
 				setViewScope={setViewScope}
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
-				filteredNotes={finalFilteredNotes} // コピー対象はタグ絞り込み後の最終リスト
 				selectedTag={selectedTag}
 				setSelectedTag={setSelectedTag}
 				availableTags={availableTags}
 			/>
 
-			<div className="grid grid-cols-3 items-center px-4 py-1.5 bg-base-surface shrink-0 border-b border-base-border shadow-xs">
-				{/* 左カラム（将来の拡張アクションボタン用スペース） */}
+			{/* 🚀 等幅3カラム中央集権型アクションバー (グレー背景を白背景 bg-base-bg へ融和) */}
+			<div className="grid grid-cols-3 items-center px-4 py-2 bg-base-bg shrink-0 border-b border-base-border/40 shadow-xs">
+				{/* 左カラム：拡張用スペース */}
 				<div className="flex justify-start" />
 
-				{/* 中央カラム（「＋」ボタンを物理的中心に完全ロック） */}
+				{/* 中央カラム：「＋」ボタンを物理的中心に完全ロック */}
 				<div className="flex justify-center">
 					<button
 						type="button"
@@ -242,8 +297,47 @@ function NotesUI({
 					</button>
 				</div>
 
-				{/* 右カラム（将来の拡張アクションボタン用スペース） */}
-				<div className="flex justify-end" />
+				{/* 右カラム：移設された一括コピーボタン (ドロップダウン) */}
+				<div className="flex justify-end relative" ref={menuRef}>
+					<button
+						type="button"
+						onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
+						className={`cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 ${
+							isCopied
+								? "text-note-info bg-note-info/10"
+								: isCopyMenuOpen
+									? "text-action bg-base-border"
+									: "text-muted-foreground bg-base-surface hover:text-action hover:bg-base-border"
+						}`}
+						title={isCopied ? "Copied!" : "Copy options"}
+						aria-label={isCopied ? "Copied!" : "Open copy options menu"}
+					>
+						{isCopied ? (
+							<Check className="w-3.5 h-3.5" />
+						) : (
+							<Copy className="w-3.5 h-3.5" />
+						)}
+					</button>
+
+					{isCopyMenuOpen && (
+						<div className="absolute right-0 top-full mt-1 bg-base-surface border border-base-border rounded shadow-md z-40 py-1 min-w-[120px]">
+							<button
+								type="button"
+								onClick={handleCopyText}
+								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+							>
+								Copy as Text
+							</button>
+							<button
+								type="button"
+								onClick={handleCopyJson}
+								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+							>
+								Copy as JSON
+							</button>
+						</div>
+					)}
+				</div>
 			</div>
 
 			<div

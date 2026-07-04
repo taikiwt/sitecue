@@ -57,9 +57,10 @@ export async function createNoteEntity(
 			.eq("scope", payload.scope)
 			.order("sort_order", { ascending: true })
 			.limit(1);
-		
+
 		if (allFetchError) throw allFetchError;
-		newSortOrder = allNotes && allNotes.length > 0 ? allNotes[0].sort_order - 1.0 : 0.0;
+		newSortOrder =
+			allNotes && allNotes.length > 0 ? allNotes[0].sort_order - 1.0 : 0.0;
 	}
 
 	const insertData = {
