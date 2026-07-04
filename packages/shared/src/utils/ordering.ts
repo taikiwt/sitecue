@@ -38,7 +38,10 @@ export function calculateOrderForDirection<T extends SortableItem>(
 		const twoAboveOrder = targetTwoAbove.sort_order ?? 0;
 
 		// 境界線ブロック自動解消（防壁ロジック）: 同値衝突または中間値計算限界の検知
-		if (Math.abs(currentOrder - targetAboveOrder) < EPSILON || Math.abs(targetAboveOrder - twoAboveOrder) < EPSILON) {
+		if (
+			Math.abs(currentOrder - targetAboveOrder) < EPSILON ||
+			Math.abs(targetAboveOrder - twoAboveOrder) < EPSILON
+		) {
 			return targetAboveOrder - OFFSET;
 		}
 
@@ -47,7 +50,10 @@ export function calculateOrderForDirection<T extends SortableItem>(
 		}
 
 		const mid = (targetAboveOrder + twoAboveOrder) / 2.0;
-		if (Math.abs(mid - targetAboveOrder) < EPSILON || Math.abs(mid - twoAboveOrder) < EPSILON) {
+		if (
+			Math.abs(mid - targetAboveOrder) < EPSILON ||
+			Math.abs(mid - twoAboveOrder) < EPSILON
+		) {
 			return targetAboveOrder - OFFSET;
 		}
 		return mid;
@@ -66,7 +72,10 @@ export function calculateOrderForDirection<T extends SortableItem>(
 		const twoBelowOrder = targetTwoBelow.sort_order ?? 0;
 
 		// 境界線ブロック自動解消（防壁ロジック）: 同値衝突または中間値計算限界の検知
-		if (Math.abs(currentOrder - targetBelowOrder) < EPSILON || Math.abs(targetBelowOrder - twoBelowOrder) < EPSILON) {
+		if (
+			Math.abs(currentOrder - targetBelowOrder) < EPSILON ||
+			Math.abs(targetBelowOrder - twoBelowOrder) < EPSILON
+		) {
 			return targetBelowOrder + OFFSET;
 		}
 
@@ -75,7 +84,10 @@ export function calculateOrderForDirection<T extends SortableItem>(
 		}
 
 		const mid = (targetBelowOrder + twoBelowOrder) / 2.0;
-		if (Math.abs(mid - targetBelowOrder) < EPSILON || Math.abs(mid - twoBelowOrder) < EPSILON) {
+		if (
+			Math.abs(mid - targetBelowOrder) < EPSILON ||
+			Math.abs(mid - twoBelowOrder) < EPSILON
+		) {
 			return targetBelowOrder + OFFSET;
 		}
 		return mid;

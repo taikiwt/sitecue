@@ -236,4 +236,23 @@ describe("SidePanel Component", () => {
 			screen.queryByText("Favorite Note (Other Scope)"),
 		).not.toBeInTheDocument();
 	});
+
+	it("コピーボタンをクリックしてメニューからTextコピーができること", async () => {
+		const writeTextMock = vi.fn().mockResolvedValue(undefined);
+		Object.defineProperty(navigator, "clipboard", {
+			value: { writeText: writeTextMock },
+			configurable: true,
+		});
+
+		render(<SidePanel />);
+
+		const copyButton = screen.getByLabelText("Open copy options menu");
+		fireEvent.click(copyButton);
+
+		const copyTextButton = screen.getByText("Copy as Text");
+		fireEvent.click(copyTextButton);
+
+		// デフォルトで表示されている Exact Note のコンテンツがコピーされること
+		expect(writeTextMock).toHaveBeenCalledWith("Exact Note");
+	});
 });
