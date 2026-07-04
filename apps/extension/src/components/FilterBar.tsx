@@ -106,16 +106,16 @@ export default function FilterBar({
 	}, [isSearchOpen]);
 
 	return (
-		<div className="bg-base-surface border-b border-base-border px-2 py-2 flex flex-col gap-3 z-10 w-full min-w-0">
-			{/* Scope Tabs */}
-			<div className="flex space-x-4 border-b border-base-border">
+		<div className="bg-base-surface border-b border-base-border px-3 py-2 flex flex-col gap-2.5 z-20 w-full min-w-0">
+			{/* Scope Tabs: カプセル背景の中に綺麗に整列 */}
+			<div className="grid grid-cols-3 gap-1 bg-base-bg p-1 rounded-full border border-base-border/50">
 				<button
 					type="button"
 					onClick={() => setViewScope("exact")}
-					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "exact"
-							? "border-action text-action"
-							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
+							? "bg-action text-action-text shadow-sm"
+							: "text-muted-foreground hover-safe:bg-base-surface/50"
 					}`}
 				>
 					Page
@@ -123,10 +123,10 @@ export default function FilterBar({
 				<button
 					type="button"
 					onClick={() => setViewScope("domain")}
-					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "domain"
-							? "border-action text-action"
-							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
+							? "bg-action text-action-text shadow-sm"
+							: "text-muted-foreground hover-safe:bg-base-surface/50"
 					}`}
 				>
 					Domain
@@ -134,10 +134,10 @@ export default function FilterBar({
 				<button
 					type="button"
 					onClick={() => setViewScope("inbox")}
-					className={`cursor-pointer pb-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "inbox"
-							? "border-action text-action"
-							: "border-transparent text-muted-foreground hover:text-action hover:border-base-border"
+							? "bg-action text-action-text shadow-sm"
+							: "text-muted-foreground hover-safe:bg-base-surface/50"
 					}`}
 				>
 					Inbox
@@ -145,15 +145,15 @@ export default function FilterBar({
 			</div>
 
 			<div className="flex items-center justify-between gap-2 w-full">
-				{/* Note Type Filter */}
-				<div className="flex bg-action p-1 rounded-lg shrink-0">
+				{/* Note Type Filter: rounded-full に統一 */}
+				<div className="flex bg-base-bg p-1 rounded-full border border-base-border/50 shrink-0">
 					<button
 						type="button"
 						onClick={() => setFilterType("all")}
-						className={`cursor-pointer py-1 px-2 rounded text-xs font-medium transition-colors ${
+						className={`cursor-pointer py-1 px-2.5 rounded-full text-xs font-medium transition-colors ${
 							filterType === "all"
-								? "bg-base-surface text-action shadow-sm"
-								: "text-muted-foreground hover:text-white"
+								? "bg-action text-action-text shadow-sm"
+								: "text-muted-foreground hover-safe:text-action"
 						}`}
 					>
 						All
@@ -161,10 +161,10 @@ export default function FilterBar({
 					<button
 						type="button"
 						onClick={() => setFilterType("info")}
-						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
+						className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 							filterType === "info"
-								? "bg-base-surface text-action shadow-sm"
-								: "text-muted-foreground hover:text-white"
+								? "bg-action text-action-text shadow-sm"
+								: "text-muted-foreground hover-safe:text-note-info"
 						}`}
 						title="Filter by Info"
 					>
@@ -173,10 +173,10 @@ export default function FilterBar({
 					<button
 						type="button"
 						onClick={() => setFilterType("alert")}
-						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
+						className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 							filterType === "alert"
-								? "bg-base-surface text-action shadow-sm"
-								: "text-muted-foreground hover:text-white"
+								? "bg-action text-action-text shadow-sm"
+								: "text-muted-foreground hover-safe:text-note-alert"
 						}`}
 						title="Filter by Alert"
 					>
@@ -185,10 +185,10 @@ export default function FilterBar({
 					<button
 						type="button"
 						onClick={() => setFilterType("idea")}
-						className={`cursor-pointer py-1 px-2 rounded transition-colors ${
+						className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 							filterType === "idea"
-								? "bg-base-surface text-action shadow-sm"
-								: "text-muted-foreground hover:text-white"
+								? "bg-action text-action-text shadow-sm"
+								: "text-muted-foreground hover-safe:text-note-idea"
 						}`}
 						title="Filter by Idea"
 					>
@@ -196,73 +196,48 @@ export default function FilterBar({
 					</button>
 				</div>
 
+				{/* 右側の検索窓とResolvedトグルもすべて rounded-full (カプセル) で統一 */}
 				<div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-					{/* Search Bar */}
-					<div
-						className={`relative flex items-center shrink min-w-0 rounded transition-colors ${
-							isSearchOpen || searchQuery ? "bg-base-bg" : ""
-						}`}
-					>
-						<button
-							type="button"
-							onClick={() => setIsSearchOpen(true)}
-							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
-								isSearchOpen || searchQuery
-									? "text-action" // 背景色は親コンテナが持つため一元化
-									: "text-muted-foreground hover:text-action hover:bg-base-bg"
-							}`}
-						>
-							<Search className="w-3.5 h-3.5" />
-						</button>
-						<div
-							className={`overflow-hidden transition-all duration-200 ease-in-out shrink min-w-0 ${
-								isSearchOpen || searchQuery ? "w-32" : "w-0" // ml-1 を削除しボタンと完璧に隙間なく連結
-							}`}
-						>
-							<div className="relative flex items-center w-full min-w-0">
-								<input
-									ref={inputRef}
-									type="text"
-									placeholder="Search..."
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									onBlur={() => {
-										if (!searchQuery) setIsSearchOpen(false);
-									}}
-									// bg-base-bg と rounded を廃止し、bg-transparent を指定して下地と一体化
-									className="w-full min-w-0 text-xs pl-1 pr-6 py-1 bg-transparent border-none focus:outline-none placeholder:text-muted-foreground"
-								/>
-								{searchQuery && (
-									<button
-										type="button"
-										onMouseDown={(e) => {
-											// Prevent input from losing focus when clicking the clear button
-											e.preventDefault();
-										}}
-										onClick={() => {
-											setSearchQuery("");
-											inputRef.current?.focus();
-										}}
-										className="absolute right-1 cursor-pointer p-0.5 text-muted-foreground hover:text-action transition-colors shrink-0"
-										title="Clear search"
-									>
-										<X className="w-3 h-3" />
-									</button>
-								)}
-							</div>
-						</div>
+					{/* 検索窓コンテナ */}
+					<div className="relative flex items-center bg-base-bg border border-base-border/50 rounded-full px-2 py-0.5 flex-1 max-w-[140px]">
+						<Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+						<input
+							ref={inputRef}
+							type="text"
+							placeholder="Search..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full min-w-0 text-xs pl-1 bg-transparent border-none focus:outline-none placeholder:text-muted-foreground text-action"
+						/>
+						{searchQuery && (
+							<button
+								type="button"
+								onMouseDown={(e) => {
+									e.preventDefault();
+								}}
+								onClick={() => {
+									setSearchQuery("");
+									inputRef.current?.focus();
+								}}
+								className="absolute right-1 cursor-pointer p-0.5 text-muted-foreground hover-safe:text-action transition-colors shrink-0"
+								title="Clear search"
+							>
+								<X className="w-3 h-3" />
+							</button>
+						)}
 					</div>
+
 					{/* Copy All Dropdown */}
 					<div className="relative" ref={menuRef}>
 						<button
 							type="button"
 							onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
-							className={`cursor-pointer p-1.5 rounded transition-colors shrink-0 ${
+							className={`cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 ${
 								isCopied
 									? "text-note-info bg-note-info/10"
 									: isCopyMenuOpen
 										? "text-action bg-base-bg"
-										: "text-muted-foreground hover:text-action hover:bg-base-bg"
+										: "text-muted-foreground hover-safe:text-action hover-safe:bg-base-bg"
 							}`}
 							title={isCopied ? "Copied!" : "Copy options"}
 							aria-label={isCopied ? "Copied!" : "Open copy options menu"}
@@ -279,14 +254,14 @@ export default function FilterBar({
 								<button
 									type="button"
 									onClick={handleCopyText}
-									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover-safe:bg-base-bg transition-colors"
 								>
 									Copy as Text
 								</button>
 								<button
 									type="button"
 									onClick={handleCopyJson}
-									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+									className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover-safe:bg-base-bg transition-colors"
 								>
 									Copy as JSON
 								</button>
@@ -294,19 +269,18 @@ export default function FilterBar({
 						)}
 					</div>
 
-					{/* Resolved Toggle */}
+					{/* Resolved Toggle: カプセル型へ一元化 */}
 					<button
 						type="button"
 						onClick={() => setShowResolved(!showResolved)}
-						className={`cursor-pointer flex items-center gap-1.5 px-2 py-1 rounded text-xs border transition-colors shrink-0 ${
+						className={`cursor-pointer flex items-center justify-center p-1.5 rounded-full border transition-colors shrink-0 size-7 ${
 							showResolved
 								? "bg-action border-action text-action-text"
-								: "bg-base-surface border-dashed border-action text-action hover:text-action-text hover:border-action hover:bg-action"
+								: "bg-base-surface border-base-border text-muted-foreground hover-safe:bg-base-bg"
 						}`}
 						title="Show/Hide Resolved Notes"
 					>
 						<CheckSquare className="w-3.5 h-3.5" />
-						<span className="hidden sm:inline">Resolved</span>
 					</button>
 				</div>
 			</div>
@@ -323,7 +297,7 @@ export default function FilterBar({
 								className={`cursor-pointer whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
 									selectedTag === tag
 										? "bg-action text-action-text border-action"
-										: "bg-base-surface text-muted-foreground border-base-border hover:border-action hover:text-action"
+										: "bg-base-surface text-muted-foreground border-base-border hover-safe:border-action hover-safe:text-action"
 								}`}
 							>
 								#{tag}

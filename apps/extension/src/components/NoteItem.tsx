@@ -145,13 +145,14 @@ export default function NoteItem({
 
 	return (
 		<div
-			className={`bg-base-bg p-4 rounded-lg border border-base-border shadow-sm hover:shadow-md transition-all group relative flex flex-col ${resolvedClasses}`}
+			className={`bg-base-bg p-4 rounded-xl border border-base-border shadow-sm transition-all group relative flex flex-col ${resolvedClasses}`}
+			style={{ contentVisibility: "auto" }}
 		>
 			{isEditing ? (
 				<div className="space-y-2">
 					<div className="flex items-center justify-between mb-2">
 						<div className="flex items-center gap-4 text-xs">
-							<label className="flex items-center gap-1.5 cursor-pointer text-action hover:text-action-hover">
+							<label className="flex items-center gap-1.5 cursor-pointer text-action hover-safe:text-action-hover">
 								<input
 									type="radio"
 									name={`scope-${note.id}`}
@@ -161,7 +162,7 @@ export default function NoteItem({
 								/>
 								<span>Page</span>
 							</label>
-							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover-safe:text-black">
 								<input
 									type="radio"
 									name={`scope-${note.id}`}
@@ -171,7 +172,7 @@ export default function NoteItem({
 								/>
 								<span>Domain</span>
 							</label>
-							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
+							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover-safe:text-black">
 								<input
 									type="radio"
 									name={`scope-${note.id}`}
@@ -182,11 +183,11 @@ export default function NoteItem({
 								<span>Inbox</span>
 							</label>
 						</div>
-						<div className="flex bg-base-surface p-0.5 rounded-md w-fit">
+						<div className="flex bg-base-surface p-1 rounded-full border border-base-border/50 w-fit">
 							<button
 								type="button"
 								onClick={() => setEditType("info")}
-								className={`cursor-pointer p-1 rounded ${editType === "info" ? "bg-note-info shadow-sm text-action-text" : "text-muted-foreground hover:text-note-info"}`}
+								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "info" ? "bg-note-info text-action-text shadow-sm" : "text-muted-foreground hover-safe:text-note-info"}`}
 								title="Info"
 							>
 								<Info className="w-3.5 h-3.5" />
@@ -194,7 +195,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("alert")}
-								className={`cursor-pointer p-1 rounded ${editType === "alert" ? "bg-note-alert shadow-sm text-action-text" : "text-muted-foreground hover:text-note-alert"}`}
+								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "alert" ? "bg-note-alert text-action-text shadow-sm" : "text-muted-foreground hover-safe:text-note-alert"}`}
 								title="Alert"
 							>
 								<AlertTriangle className="w-3.5 h-3.5" />
@@ -202,7 +203,7 @@ export default function NoteItem({
 							<button
 								type="button"
 								onClick={() => setEditType("idea")}
-								className={`cursor-pointer p-1 rounded ${editType === "idea" ? "bg-note-idea shadow-sm text-action-text" : "text-muted-foreground hover:text-note-idea"}`}
+								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "idea" ? "bg-note-idea text-action-text shadow-sm" : "text-muted-foreground hover-safe:text-note-idea"}`}
 								title="Idea"
 							>
 								<Lightbulb className="w-3.5 h-3.5" />
@@ -228,7 +229,8 @@ export default function NoteItem({
 						<button
 							type="button"
 							onClick={cancelEditing}
-							className="cursor-pointer p-1 text-muted-foreground hover:text-gray-600 rounded"
+							className="cursor-pointer flex items-center justify-center rounded-full size-7 text-muted-foreground hover-safe:bg-base-surface transition-colors"
+							title="Cancel"
 						>
 							<X className="w-4 h-4" />
 						</button>
@@ -236,7 +238,8 @@ export default function NoteItem({
 							type="button"
 							onClick={handleUpdate}
 							disabled={updating}
-							className="cursor-pointer p-1 bg-action text-action-text rounded hover:bg-action-hover disabled:opacity-50"
+							className="cursor-pointer flex items-center justify-center rounded-full size-7 bg-action text-action-text hover-safe:bg-action-hover disabled:opacity-50 transition-colors"
+							title="Save"
 						>
 							{updating ? (
 								<Loader2 className="w-4 h-4 animate-spin" />
@@ -247,15 +250,16 @@ export default function NoteItem({
 					</div>
 				</div>
 			) : (
-				<div className="flex flex-col flex-1 gap-1">
-					{/* 1層目：ヘッダー（メタデータとピン/スター） */}
-					<div className="flex items-center justify-between">
-						{/* 左側：アイコン統合（Typeアイコン＋完了/未完了トグル） */}
-						<div className="flex items-center gap-2">
+				<div className="flex flex-col flex-1">
+					{/* 🚀 2段構成 Sticky ヘッダーコンテナ (背景透過度を98%に高め、境界線を常時固定) */}
+					<div className="sticky top-0 z-10 bg-base-bg/98 backdrop-blur-xs pt-1 pb-2 border-b border-base-border/40 transition-colors flex flex-col gap-1.5">
+						{/* 1段目：メタデータ、タイプ、Pin/Star（固定アクション） */}
+						<div className="flex items-center justify-between w-full">
+							{/* 左側：Typeアイコン＋完了/未完了トグル (カプセル) */}
 							<button
 								type="button"
 								onClick={() => onToggleResolved(note.id, note.is_resolved)}
-								className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80`}
+								className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover-safe:opacity-80`}
 								title={
 									note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
 								}
@@ -292,57 +296,113 @@ export default function NoteItem({
 									{note.note_type || "info"}
 								</span>
 							</button>
+
+							{/* 右側：固定アクション（正円絶対死守ルール適用 size-7） */}
+							<div className="flex items-center gap-1">
+								<button
+									type="button"
+									onClick={() => onToggleFavorite(note)}
+									className={`cursor-pointer size-7 rounded-full flex items-center justify-center transition-all ${note.is_favorite ? "text-action bg-action/5" : "text-muted-foreground hover-safe:bg-base-surface"}`}
+									title={
+										note.is_favorite
+											? "Remove from favorites"
+											: "Add to favorites"
+									}
+								>
+									<Star
+										className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-current" : ""}`}
+									/>
+								</button>
+								<button
+									type="button"
+									onClick={() => onTogglePinned(note)}
+									className={`cursor-pointer size-7 rounded-full flex items-center justify-center transition-all ${note.is_pinned ? "text-action bg-action/5" : "text-muted-foreground hover-safe:bg-base-surface"}`}
+									title={note.is_pinned ? "Unpin note" : "Pin note"}
+								>
+									<Pin
+										className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-current" : ""}`}
+									/>
+								</button>
+							</div>
 						</div>
 
-						{/* 右側：固定アクション（Info/Star/Pin） */}
-						<div className="flex items-center gap-1.5">
-							<div
-								className="flex items-center mr-0.5 outline-none cursor-default"
-								title={`Scope: ${note.scope === "exact" ? "Page" : note.scope === "inbox" ? "Inbox" : "Domain"}\nCreated: ${Intl.DateTimeFormat("sv-SE").format(new Date(note.created_at))}`}
-							>
-								<Info className="w-3.5 h-3.5 text-muted-foreground hover:text-action" />
+						{/* 2段目：操作アクション群（バリアント競合を排除し、淡色での常時露出へシフト） */}
+						<div className="flex items-center justify-between w-full pt-1.5 transition-opacity duration-200 border-t border-base-border/20">
+							{/* 左側：並び替え操作（正円サイズロック size-6） */}
+							<div className="flex items-center gap-0.5 text-muted-foreground/50">
+								{!note.is_pinned ? (
+									<>
+										<button
+											type="button"
+											onClick={handleMoveUp}
+											disabled={isFirst || isSorting}
+											className="cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/50 hover-safe:text-action hover-safe:bg-base-surface disabled:opacity-30 transition-colors"
+											title="Move up"
+										>
+											<ChevronUp className="w-3.5 h-3.5" />
+										</button>
+										<button
+											type="button"
+											onClick={handleMoveDown}
+											disabled={isLast || isSorting}
+											className="cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/50 hover-safe:text-action hover-safe:bg-base-surface disabled:opacity-30 transition-colors"
+											title="Move down"
+										>
+											<ChevronDown className="w-3.5 h-3.5" />
+										</button>
+									</>
+								) : (
+									<span className="text-[10px] text-muted-foreground/60 font-medium pl-1">
+										Pinned
+									</span>
+								)}
 							</div>
 
-							<button
-								type="button"
-								onClick={() => onToggleFavorite(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_favorite ? "text-action fill-current" : "text-muted-foreground hover:text-action"}`}
-								title={
-									note.is_favorite
-										? "Remove from favorites"
-										: "Add to favorites"
-								}
-							>
-								<Star
-									className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-current" : ""}`}
-								/>
-							</button>
-							<button
-								type="button"
-								onClick={() => onTogglePinned(note)}
-								className={`cursor-pointer hover:scale-110 transition-transform ${note.is_pinned ? "text-action fill-current" : "text-muted-foreground hover:text-action"}`}
-								title={note.is_pinned ? "Unpin note" : "Pin note"}
-							>
-								<Pin
-									className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-current" : ""}`}
-								/>
-							</button>
+							{/* 右側：共通アクション（Copy, Edit, Delete - 正円 size-7、通常時は淡色でノイズカット） */}
+							<div className="flex items-center gap-1 text-muted-foreground/50">
+								<button
+									type="button"
+									onClick={handleCopyNote}
+									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover-safe:text-action hover-safe:bg-base-surface transition-colors"
+									title="Copy note"
+								>
+									{copiedNoteId === note.id ? (
+										<Check className="w-3.5 h-3.5 text-note-info" />
+									) : (
+										<Copy className="w-3.5 h-3.5" />
+									)}
+								</button>
+								<button
+									type="button"
+									onClick={startEditing}
+									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover-safe:text-action hover-safe:bg-base-surface transition-colors"
+									title="Edit"
+								>
+									<Edit2 className="w-3.5 h-3.5" />
+								</button>
+								<button
+									type="button"
+									onClick={() => onDelete(note.id)}
+									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover-safe:text-note-alert hover-safe:bg-note-alert/10 transition-colors"
+									title="Delete"
+								>
+									<Trash2 className="w-3.5 h-3.5" />
+								</button>
+							</div>
 						</div>
 					</div>
 
-					{/* 2層目：本文 */}
-					<div className="flex-1 min-w-0">
+					{/* 本文エリア (ヘッダー境界線の常時固定化に伴い、mt-3 に微調整して美しい空気感を確保) */}
+					<div className="mt-3 flex-1 min-w-0">
 						<div
 							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} w-full`}
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm mb-0 pt-2 pl-2 ${note.is_resolved ? "line-through text-muted-foreground" : "text-action"}`}
+								className={`text-sm pt-1 pl-1 ${note.is_resolved ? "line-through text-muted-foreground" : "text-action"}`}
 							>
 								<MarkdownRenderer content={note.content} />
 							</div>
-
-							{/* 縮小時に下部を背景色へフェードアウトさせるグラデーション */}
 							{isCollapsed && (
 								<div className="absolute bottom-0 left-0 w-full h-12 bg-linear-to-t from-base-bg to-transparent pointer-events-none" />
 							)}
@@ -356,7 +416,7 @@ export default function NoteItem({
 									onClick={() =>
 										onToggleExpansion(note.id, note.is_expanded ?? false)
 									}
-									className="cursor-pointer text-[10px] text-muted-foreground hover:text-action transition-colors bg-base-surface hover:bg-base-border px-2 py-0.5 rounded"
+									className="cursor-pointer text-[10px] text-muted-foreground hover-safe:text-action transition-colors bg-base-surface hover-safe:bg-base-border px-2 py-0.5 rounded-full"
 								>
 									{isCollapsed ? "Read more" : "Show less"}
 								</button>
@@ -368,7 +428,7 @@ export default function NoteItem({
 					{isFavoriteList && note.scope !== "inbox" && (
 						<div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-1">
 							<span
-								className={`px-1 rounded border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-muted-foreground"}`}
+								className={`px-2 py-0.5 rounded-full border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-muted-foreground"}`}
 							>
 								{note.scope === "exact" ? "Page" : "Domain"}
 							</span>
@@ -380,81 +440,16 @@ export default function NoteItem({
 									href={`https://${note.url_pattern}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex items-center gap-1 hover:text-blue-400 hover:underline transition-colors max-w-48 truncate"
+									className="flex items-center gap-1 hover-safe:text-blue-400 hover-safe:underline transition-colors max-w-48 truncate"
 									title={`Open ${note.url_pattern}`}
 								>
-									<span className="truncate hover:text-action">
+									<span className="truncate hover-safe:text-action">
 										{note.url_pattern}
 									</span>
 								</a>
 							)}
 						</div>
 					)}
-
-					{/* 3層目：フッター（操作ボタン、ホバー時のみ出現） */}
-					<div className="mt-1 pt-1 border-t border-transparent group-hover:border-base-border flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-200">
-						{/* 左側：並び替え（Pinがない時のみ表示） */}
-						<div className="flex items-center gap-1">
-							{!note.is_pinned ? (
-								<>
-									<button
-										type="button"
-										onClick={handleMoveUp}
-										disabled={!onMoveUp || isSwapping || isFirst || isSorting}
-										className={`transition-colors ${!onMoveUp || isSwapping || isFirst || isSorting ? "text-base-border cursor-not-allowed" : "text-muted-foreground hover:text-action cursor-pointer"}`}
-										title="Move up"
-									>
-										<ChevronUp className="w-4 h-4" />
-									</button>
-									<button
-										type="button"
-										onClick={handleMoveDown}
-										disabled={!onMoveDown || isSwapping || isLast || isSorting}
-										className={`transition-colors ${!onMoveDown || isSwapping || isLast || isSorting ? "text-base-border cursor-not-allowed" : "text-muted-foreground hover:text-action cursor-pointer"}`}
-										title="Move down"
-									>
-										<ChevronDown className="w-4 h-4" />
-									</button>
-								</>
-							) : (
-								<span className="text-[10px] text-muted-foreground ml-1">
-									Pinned
-								</span>
-							)}
-						</div>
-
-						{/* 右側：共通アクション */}
-						<div className="flex items-center gap-3">
-							<button
-								type="button"
-								onClick={handleCopyNote}
-								className="cursor-pointer text-muted-foreground hover:text-action transition-colors"
-								title="Copy note"
-							>
-								{copiedNoteId === note.id ? (
-									<Check className="w-3.5 h-3.5 text-note-info" />
-								) : (
-									<Copy className="w-3.5 h-3.5" />
-								)}
-							</button>
-							<button
-								type="button"
-								onClick={startEditing}
-								className="cursor-pointer text-muted-foreground hover:text-action transition-colors"
-								title="Edit"
-							>
-								<Edit2 className="w-3.5 h-3.5" />
-							</button>
-							<button
-								type="button"
-								onClick={() => onDelete(note.id)}
-								className="cursor-pointer text-muted-foreground hover:text-note-alert transition-colors"
-								title="Delete"
-							>
-								<Trash2 className="w-3.5 h-3.5" />
-							</button>
-						</div>
-					</div>
 				</div>
 			)}
 		</div>

@@ -272,12 +272,17 @@ describe("useNotes - Silent Refetching", () => {
 
 		// 仕様追従: 表示コンテキストに合致するもののみを抽出して渡す
 		const visibleNotes = result.current.notes.filter(
-			(n) => n.scope === "exact" && n.url_pattern === "https://example.com/page",
+			(n) =>
+				n.scope === "exact" && n.url_pattern === "https://example.com/page",
 		);
 
 		let success = false;
 		await act(async () => {
-			success = await result.current.updateNoteOrder("note-target", "up", visibleNotes);
+			success = await result.current.updateNoteOrder(
+				"note-target",
+				"up",
+				visibleNotes,
+			);
 		});
 		expect(success).toBe(true);
 
@@ -293,10 +298,31 @@ describe("useNotes - Silent Refetching", () => {
 	it("検索やタグ等のフィルターで絞り込まれた状態でも、実際に画面に表示されているノート配列を基準に正確にごぼう抜き順序計算が行われること", async () => {
 		// 表示コンテキストは同一だが、内容フィルターによって1つ（note-hidden）が非表示になる状況を再現
 		const mockNotes = [
-			{ id: "note-1", url_pattern: "https://example.com/page", scope: "exact", sort_order: 1.0, content: "りんごのメモ #fruit", created_at: "2026-01-01T00:00:00.000Z" },
+			{
+				id: "note-1",
+				url_pattern: "https://example.com/page",
+				scope: "exact",
+				sort_order: 1.0,
+				content: "りんごのメモ #fruit",
+				created_at: "2026-01-01T00:00:00.000Z",
+			},
 			// 💥これが検索ワード「みかん」によって画面上から除外（非表示）される隠しノート
-			{ id: "note-hidden", url_pattern: "https://example.com/page", scope: "exact", sort_order: 1.5, content: "りんごのメモ2 #fruit", created_at: "2026-01-01T05:00:00.000Z" },
-			{ id: "note-2", url_pattern: "https://example.com/page", scope: "exact", sort_order: 2.0, content: "みかんのメモ #fruit", created_at: "2026-01-02T00:00:00.000Z" },
+			{
+				id: "note-hidden",
+				url_pattern: "https://example.com/page",
+				scope: "exact",
+				sort_order: 1.5,
+				content: "りんごのメモ2 #fruit",
+				created_at: "2026-01-01T05:00:00.000Z",
+			},
+			{
+				id: "note-2",
+				url_pattern: "https://example.com/page",
+				scope: "exact",
+				sort_order: 2.0,
+				content: "みかんのメモ #fruit",
+				created_at: "2026-01-02T00:00:00.000Z",
+			},
 		];
 
 		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
@@ -317,7 +343,11 @@ describe("useNotes - Silent Refetching", () => {
 		// 画面外の note-hidden (1.5) を適切にスキップしていれば、1.0 - 1.0 = 0.0 が算出される
 		let success = false;
 		await act(async () => {
-			success = await result.current.updateNoteOrder("note-2", "up", visibleNotes);
+			success = await result.current.updateNoteOrder(
+				"note-2",
+				"up",
+				visibleNotes,
+			);
 		});
 		expect(success).toBe(true);
 

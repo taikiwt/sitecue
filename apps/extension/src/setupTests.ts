@@ -1,6 +1,11 @@
 import "@testing-library/jest-dom";
 import { vi } from "vitest";
 
+// 環境変数のデフォルトモック
+const env = import.meta.env as unknown as Record<string, string>;
+env.VITE_SUPABASE_URL = env.VITE_SUPABASE_URL || "https://example.supabase.co";
+env.VITE_SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || "dummy-anon-key";
+
 // Chrome APIのグローバルモック
 vi.stubGlobal("chrome", {
 	runtime: {
