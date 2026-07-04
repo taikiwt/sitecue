@@ -246,21 +246,33 @@ function NotesUI({
 				<div className="flex justify-end" />
 			</div>
 
-			<div ref={listContainerRef} className="overflow-y-auto p-4 relative">
-				<NoteList
-					notes={finalFilteredNotes}
-					loading={loading}
-					currentFullUrl={currentFullUrl}
-					onUpdate={updateNote}
-					onDelete={deleteNote}
-					onToggleResolved={toggleResolved}
-					onToggleFavorite={toggleFavorite}
-					onTogglePinned={togglePinned}
-					onUpdateNoteOrder={(id, direction) =>
-						updateNoteOrder(id, direction, finalFilteredNotes)
-					}
-					onToggleExpansion={toggleNoteExpansion}
-				/>
+			<div
+				ref={listContainerRef}
+				className="overflow-y-auto px-4 pb-4 pt-0 relative"
+			>
+				{/* 💡 スティッキー吸着時の上部隙間をゼロにしつつ、初期状態の窮屈さを防ぐ空気感スペーサー */}
+				<div className="h-2 shrink-0" aria-hidden="true" />
+
+				{loading && notes.length === 0 ? (
+					<div className="w-full h-32 flex items-center justify-center">
+						<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+					</div>
+				) : (
+					<NoteList
+						notes={finalFilteredNotes}
+						loading={loading}
+						currentFullUrl={currentFullUrl}
+						onUpdate={updateNote}
+						onDelete={deleteNote}
+						onToggleResolved={toggleResolved}
+						onToggleFavorite={toggleFavorite}
+						onTogglePinned={togglePinned}
+						onUpdateNoteOrder={(id, direction) =>
+							updateNoteOrder(id, direction, finalFilteredNotes)
+						}
+						onToggleExpansion={toggleNoteExpansion}
+					/>
+				)}
 			</div>
 
 			{isInputModeOpen && (
