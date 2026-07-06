@@ -1,3 +1,4 @@
+import type { Session } from "@supabase/supabase-js";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import SidePanel from "./SidePanel";
@@ -29,7 +30,7 @@ vi.mock("./hooks/useAuth", () => ({
 		handleSocialLogin: vi.fn(),
 		authStatus: {
 			mode: "authenticated",
-			session: { user: { id: "user-1" } } as any,
+			session: { user: { id: "user-1" } } as unknown as Session,
 			userId: "user-1",
 		},
 		handleGuestLogin: vi.fn(),

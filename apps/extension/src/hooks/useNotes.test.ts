@@ -1,20 +1,47 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../supabaseClient", () => ({
-	supabase: {},
-	localClient: {
-		from: () => ({
-			select: () => ({
-				in: () => Promise.resolve({ data: [], error: null }),
-				eq: () => ({
-					then: (cb: any) => cb({ data: [], error: null }),
-				}),
-				then: (cb: any) => cb({ data: [], error: null }),
-			}),
-			insert: (data: any) => Promise.resolve({ data, error: null }),
-		}),
-	},
-}));
+const createMockQueryBuilder = (mockData: unknown[] = []) => {
+	const promise = Promise.resolve({ data: mockData, error: null });
+
+	const methods = {
+		select: vi.fn().mockImplementation(() => methods),
+		in: vi.fn().mockImplementation(() => promise),
+		eq: vi.fn().mockImplementation(() => methods),
+		or: vi.fn().mockImplementation(() => methods),
+		order: vi.fn().mockImplementation(() => methods),
+		limit: vi.fn().mockImplementation(() => methods),
+		insert: vi
+			.fn()
+			.mockImplementation((data: unknown) =>
+				Promise.resolve({ data, error: null }),
+			),
+		update: vi.fn().mockImplementation(() => methods),
+		delete: vi.fn().mockImplementation(() => methods),
+		single: vi
+			.fn()
+			.mockImplementation(() =>
+				Promise.resolve({ data: mockData[0] || null, error: null }),
+			),
+		maybeSingle: vi
+			.fn()
+			.mockImplementation(() =>
+				Promise.resolve({ data: mockData[0] || null, error: null }),
+			),
+	};
+
+	return Object.assign(promise, methods);
+};
+
+vi.mock("../supabaseClient", () => {
+	return {
+		supabase: {
+			from: vi.fn().mockImplementation(() => createMockQueryBuilder([])),
+		},
+		localClient: {
+			from: vi.fn().mockImplementation(() => createMockQueryBuilder([])),
+		},
+	};
+});
 
 // @sitecue/sharedのモック
 vi.mock("@sitecue/shared", async (importOriginal) => {
@@ -414,17 +441,25 @@ describe("useNotes - Guest Mode Scenario", () => {
 		});
 
 		// ノートの追加を実行
-		let success;
+		let success = false;
 		const mockCreatedNote = {
 			id: "temp-guest-id",
 			user_id: "guest-user",
+			url_pattern: "example.com",
 			content: "ゲストメモテスト #idea",
 			scope: "exact",
 			note_type: "idea",
+			sort_order: 0,
 			created_at: new Date().toISOString(),
+			is_expanded: false,
+			is_favorite: false,
+			is_pinned: false,
+			is_resolved: false,
 			tags: ["idea"],
 		};
-		vi.mocked(createNoteEntity).mockResolvedValue(mockCreatedNote as any);
+		vi.mocked(createNoteEntity).mockResolvedValue(
+			mockCreatedNote as unknown as Note,
+		);
 
 		await act(async () => {
 			success = await result.current.addNote(

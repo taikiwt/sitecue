@@ -17,7 +17,7 @@ export default defineBackground(() => {
 
 	async function updateBadge(tabId: number, url: string) {
 		// 🛡️ URL生存チェック＆特殊URL（chrome://等）の物理防御壁
-		if (!url || !url.startsWith("http")) {
+		if (!url?.startsWith("http")) {
 			await chrome.action.setBadgeText({ tabId, text: "" });
 			return;
 		}
@@ -42,7 +42,7 @@ export default defineBackground(() => {
 			if (cleanedUrl.endsWith("/")) {
 				cleanedUrl = cleanedUrl.slice(0, -1);
 			}
-			
+
 			// ドメイン部分の切り出し (最初の / より前)
 			const hostPart = url.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
 			const localDomainPattern = hostPart.replace(/^(www\.)?/, ""); // domain用
@@ -57,15 +57,17 @@ export default defineBackground(() => {
 
 				// 100%文字レベルで一致するローカルコンテキストのみを正確に集計
 				return (
-					(note.scope === "domain" && note.url_pattern === localDomainPattern) ||
+					(note.scope === "domain" &&
+						note.url_pattern === localDomainPattern) ||
 					(note.scope === "exact" && note.url_pattern === localExactPattern)
 				);
 			}).length;
 
 			// 4. バッジのテキストおよびカラーをアトミックに適用して早期リターン
-			const countStr = matchingGuestCount > 0 ? matchingGuestCount.toString() : "";
+			const countStr =
+				matchingGuestCount > 0 ? matchingGuestCount.toString() : "";
 			await chrome.action.setBadgeText({ tabId, text: countStr });
-			
+
 			if (matchingGuestCount > 0) {
 				await chrome.action.setBadgeBackgroundColor({
 					tabId,
@@ -75,7 +77,6 @@ export default defineBackground(() => {
 			}
 			return; // Supabaseへのオンライン通信を完全にバイパス
 		}
-
 
 		const { domain, exact } = getScopeUrls(url);
 

@@ -1,5 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
-import { CircleOff, ExternalLink, LogIn, LogOut, Settings } from "lucide-react";
+import {
+	CircleOff,
+	ExternalLink,
+	Glasses,
+	LogOut,
+	Settings,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import type { AuthStatus } from "../hooks/useAuth";
@@ -142,10 +148,10 @@ export default function Header({
 
 	return (
 		<div className="p-4 bg-base-surface border-b border-base-border sticky top-0 z-50 w-full min-w-0">
-			<div className="flex justify-between items-center gap-2 w-full min-w-0">
-				<div className="flex-1 min-w-0">
+			{/* 📐 完璧に対称性を保護し、カプセル膨張時の窒息を防ぐGridトラック設計 */}
+			<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 w-full">
+				<div className="min-w-0 flex flex-col justify-center">
 					<h1 className="text-lg font-semibold text-action flex items-center gap-2 w-full min-w-0">
-						{/* Indicator Dot */}
 						{settings?.color && (
 							<div
 								className="w-2 h-2 shrink-0 rounded-full"
@@ -175,6 +181,7 @@ export default function Header({
 						{url || "Waiting..."}
 					</p>
 				</div>
+
 				<div className="flex items-center gap-1.5 shrink-0">
 					<button
 						type="button"
@@ -184,15 +191,28 @@ export default function Header({
 						<Settings className="w-4 h-4" aria-hidden="true" />
 					</button>
 
-					{/* Profile Dropdown */}
+					{/* Profile Dropdown Area */}
 					<div className="relative" ref={profileMenuRef}>
 						<button
 							type="button"
 							onClick={() => setIsProfileOpen(!isProfileOpen)}
-							className="cursor-pointer w-6 h-6 rounded-full overflow-hidden border border-base-border hover:ring-2 hover:ring-action/20 transition-all focus:outline-none shrink-0"
-							title="Account & Links"
+							// 📋 ゲストモード時にカプセル型へ動的モーフィングさせるクラス結合
+							className={`cursor-pointer border border-base-border hover:ring-2 hover:ring-action/20 transition-all focus:outline-none shrink-0 flex items-center justify-center ${
+								authStatus.mode === "guest"
+									? "bg-neutral-800 text-neutral-200 px-2.5 py-1 gap-1 text-xs font-medium rounded-full border-neutral-700 shadow-sm"
+									: "w-6 h-6 rounded-full overflow-hidden"
+							}`}
+							title="Account & Status"
 						>
-							{avatarUrl ? (
+							{authStatus.mode === "guest" ? (
+								<>
+									<Glasses
+										className="w-3.5 h-3.5 text-neutral-400"
+										aria-hidden="true"
+									/>
+									<span>Guest</span>
+								</>
+							) : avatarUrl ? (
 								<img
 									src={avatarUrl}
 									alt="Avatar"
@@ -206,19 +226,34 @@ export default function Header({
 						</button>
 
 						{isProfileOpen && (
-							<div className="absolute right-0 top-full mt-2 bg-base-surface border border-base-border rounded-md shadow-md z-20 py-1 min-w-[160px] animate-in fade-in slide-in-from-top-1 duration-200">
+							<div className="absolute right-0 top-full mt-2 bg-base-surface border border-base-border rounded-md shadow-md z-20 py-1 min-w-[210px] animate-in fade-in slide-in-from-top-1 duration-200">
 								{authStatus.mode === "guest" ? (
-									<button
-										type="button"
-										onClick={() => {
-											setIsProfileOpen(false);
-											onLogout();
-										}}
-										className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
-									>
-										Log in{" "}
-										<LogIn className="w-3.5 h-3.5 ml-auto" aria-hidden="true" />
-									</button>
+									// 🛡️ 英語化されたリスク・免責の3段特設インライン構成
+									<div className="p-3 space-y-2.5">
+										<div className="text-[11px] text-note-alert font-medium leading-normal flex gap-1 items-start">
+											<span>⚠️</span>
+											<span>
+												Local Storage Only: Data may be lost if browser cache or
+												extension data is cleared.
+											</span>
+										</div>
+										<div className="text-[11px] text-muted-foreground leading-normal border-t border-base-border/50 pt-2 font-normal">
+											*Signing in switches to the cloud environment. Current
+											local notes will not be synced.
+										</div>
+										<div className="pt-1">
+											<button
+												type="button"
+												onClick={() => {
+													setIsProfileOpen(false);
+													onLogout();
+												}}
+												className="cursor-pointer bg-action text-action-text rounded-full w-full py-1.5 text-center text-xs font-semibold hover:bg-action-hover transition-colors shadow-sm block"
+											>
+												Sign in / Create Account
+											</button>
+										</div>
+									</div>
 								) : (
 									<>
 										<a
