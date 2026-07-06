@@ -27,6 +27,13 @@ vi.mock("./hooks/useAuth", () => ({
 		sessionLoading: false,
 		handleLogout: vi.fn(),
 		handleSocialLogin: vi.fn(),
+		authStatus: {
+			mode: "authenticated",
+			session: { user: { id: "user-1" } } as any,
+			userId: "user-1",
+		},
+		handleGuestLogin: vi.fn(),
+		handleGuestLogout: vi.fn(),
 	})),
 }));
 

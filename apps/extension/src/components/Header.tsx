@@ -1,15 +1,17 @@
 import type { Session } from "@supabase/supabase-js";
-import { CircleOff, ExternalLink, LogOut, Settings } from "lucide-react";
+import { CircleOff, ExternalLink, LogIn, LogOut, Settings } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { supabase } from "../supabaseClient";
+import type { AuthStatus } from "../hooks/useAuth";
+import { localClient, supabase } from "../supabaseClient";
 
 interface HeaderProps {
 	url: string;
 	title: string;
 	domain: string; // Used for settings key
-	session: Session;
+	session: Session | null;
 	onLogout: () => void;
+	authStatus: AuthStatus;
 }
 
 interface DomainSettings {
@@ -31,6 +33,7 @@ export default function Header({
 	domain,
 	session,
 	onLogout,
+	authStatus,
 }: HeaderProps) {
 	const [settings, setSettings] = useState<DomainSettings | null>(null);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -40,8 +43,13 @@ export default function Header({
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const profileMenuRef = useRef<HTMLDivElement>(null);
 
+	const client = authStatus.mode === "guest" ? localClient : supabase;
+
 	const avatarUrl = session?.user?.user_metadata?.avatar_url;
-	const emailInitial = session?.user?.email?.[0]?.toUpperCase() || "?";
+	const emailInitial =
+		authStatus.mode === "guest"
+			? "G"
+			: session?.user?.email?.[0]?.toUpperCase() || "?";
 	const webUrl = import.meta.env.VITE_WEB_URL || "https://app.sitecue.app";
 
 	// Close menu on outside click
@@ -63,7 +71,8 @@ export default function Header({
 	}, [isProfileOpen]);
 
 	const fetchSettings = useCallback(async () => {
-		const { data } = await supabase
+		if (authStatus.mode === "loading") return;
+		const { data } = await (client as unknown as typeof supabase)
 			.from("sitecue_domain_settings")
 			.select("*")
 			.eq("domain", domain)
@@ -79,37 +88,43 @@ export default function Header({
 
 			setEditLabel("");
 		}
-	}, [domain]);
+	}, [domain, authStatus.mode, client]);
 
 	useEffect(() => {
-		if (!domain || !session) return;
+		if (!domain || authStatus.mode === "loading") return;
 		fetchSettings();
-	}, [domain, session, fetchSettings]);
+	}, [domain, authStatus.mode, fetchSettings]);
 
 	const handleSave = async () => {
-		if (!domain) return;
+		if (!domain || authStatus.mode === "loading") return;
+		const currentUserId =
+			authStatus.mode === "guest" ? "guest-user" : session?.user?.id;
+		if (!currentUserId) return;
+
 		setSaving(true);
 		try {
 			if (editColor === "") {
 				// Delete settings if cleared
-				const { error } = await supabase
+				const { error } = await (client as unknown as typeof supabase)
 					.from("sitecue_domain_settings")
 					.delete()
-					.eq("user_id", session.user.id)
+					.eq("user_id", currentUserId)
 					.eq("domain", domain);
 
 				if (error) throw error;
 			} else {
 				// Upsert settings
-				const { error } = await supabase.from("sitecue_domain_settings").upsert(
-					{
-						user_id: session.user.id,
-						domain: domain,
-						color: editColor,
-						label: editLabel.trim() || null,
-					},
-					{ onConflict: "user_id, domain" },
-				);
+				const { error } = await (client as unknown as typeof supabase)
+					.from("sitecue_domain_settings")
+					.upsert(
+						{
+							user_id: currentUserId,
+							domain: domain,
+							color: editColor,
+							label: editLabel.trim() || null,
+						},
+						{ onConflict: "user_id, domain" },
+					);
 
 				if (error) throw error;
 			}
@@ -192,30 +207,49 @@ export default function Header({
 
 						{isProfileOpen && (
 							<div className="absolute right-0 top-full mt-2 bg-base-surface border border-base-border rounded-md shadow-md z-20 py-1 min-w-[160px] animate-in fade-in slide-in-from-top-1 duration-200">
-								<a
-									href={webUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
-									onClick={() => setIsProfileOpen(false)}
-								>
-									Open Basecamp{" "}
-									<ExternalLink
-										className="w-3.5 h-3.5 ml-auto text-muted-foreground"
-										aria-hidden="true"
-									/>
-								</a>
-								<button
-									type="button"
-									onClick={() => {
-										setIsProfileOpen(false);
-										onLogout();
-									}}
-									className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-note-alert hover:bg-note-alert/10 transition-colors"
-								>
-									Log out{" "}
-									<LogOut className="w-3.5 h-3.5 ml-auto" aria-hidden="true" />
-								</button>
+								{authStatus.mode === "guest" ? (
+									<button
+										type="button"
+										onClick={() => {
+											setIsProfileOpen(false);
+											onLogout();
+										}}
+										className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
+									>
+										Log in{" "}
+										<LogIn className="w-3.5 h-3.5 ml-auto" aria-hidden="true" />
+									</button>
+								) : (
+									<>
+										<a
+											href={webUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
+											onClick={() => setIsProfileOpen(false)}
+										>
+											Open Basecamp{" "}
+											<ExternalLink
+												className="w-3.5 h-3.5 ml-auto text-muted-foreground"
+												aria-hidden="true"
+											/>
+										</a>
+										<button
+											type="button"
+											onClick={() => {
+												setIsProfileOpen(false);
+												onLogout();
+											}}
+											className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-note-alert hover:bg-note-alert/10 transition-colors"
+										>
+											Log out{" "}
+											<LogOut
+												className="w-3.5 h-3.5 ml-auto"
+												aria-hidden="true"
+											/>
+										</button>
+									</>
+								)}
 							</div>
 						)}
 					</div>

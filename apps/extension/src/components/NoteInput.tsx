@@ -6,7 +6,7 @@ import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { NoteScope, NoteType } from "../hooks/useNotes";
 
 interface NoteInputProps {
-	userPlan: "free" | "pro";
+	userPlan: "free" | "pro" | "guest";
 	totalNoteCount: number;
 	maxFreeNotes: number;
 	onAddNote: (
@@ -135,28 +135,34 @@ export default function NoteInput({
 				</div>
 			</div>
 
-			{userPlan === "free" && isNearLimit && !isLimitReached && (
-				<div className="flex items-start gap-2 p-2 mb-2 text-xs text-note-alert bg-note-alert/10 border border-note-alert/20 rounded">
-					<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-					<p>
-						Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please visit
-						Basecamp to free up space or unlock unlimited notes.
-					</p>
-				</div>
-			)}
+			{(userPlan === "free" || userPlan === "guest") &&
+				isNearLimit &&
+				!isLimitReached && (
+					<div className="flex items-start gap-2 p-2 mb-2 text-xs text-note-alert bg-note-alert/10 border border-note-alert/20 rounded">
+						<AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+						<p>
+							Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please visit
+							{userPlan === "guest" ? " Login screen to sign in" : " Basecamp"}{" "}
+							to free up space or unlock unlimited notes.
+						</p>
+					</div>
+				)}
 
 			<form
 				onSubmit={handleSubmit}
 				className="flex gap-2 items-center relative"
 			>
-				{userPlan === "free" && isLimitReached ? (
+				{(userPlan === "free" || userPlan === "guest") && isLimitReached ? (
 					<div className="w-full bg-note-idea/10 border border-note-idea/20 rounded-lg p-3 text-sm text-note-idea flex items-start gap-3">
 						<AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
 						<div>
 							<div className="font-bold mb-1">Note Limit Reached</div>
 							<p className="text-xs opacity-90">
 								You have reached the {maxFreeNotes}-note limit. Please visit
-								Basecamp to free up space or upgrade for unlimited access.
+								{userPlan === "guest"
+									? " Login screen to sign in"
+									: " Basecamp"}{" "}
+								to free up space or upgrade for unlimited access.
 							</p>
 						</div>
 					</div>

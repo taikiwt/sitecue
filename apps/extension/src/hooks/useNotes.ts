@@ -9,16 +9,16 @@ import {
 	resolveNotePayload,
 	updateNoteEntity,
 } from "@sitecue/shared";
-import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { supabase } from "../supabaseClient";
+import { localClient, supabase } from "../supabaseClient";
+import type { AuthStatus } from "./useAuth";
 
 export type NoteType = Note["note_type"];
 export type { Note, NoteScope };
 
 export function useNotes(
-	session: Session | null,
+	authStatus: AuthStatus,
 	currentFullUrl: string,
 	setTotalNoteCount: React.Dispatch<React.SetStateAction<number>>,
 	viewScope: "exact" | "domain" | "inbox",
@@ -28,6 +28,10 @@ export function useNotes(
 	const [processingNoteIds, setProcessingNoteIds] = useState<Set<string>>(
 		new Set(),
 	);
+
+	const session =
+		authStatus.mode === "authenticated" ? authStatus.session : null;
+	const client = authStatus.mode === "guest" ? localClient : supabase;
 
 	// ソート条件式の共通化ヘルパー（DB側 order("sort_order").order("created_at") と100%同期）
 	const sortNotesConsistent = (a: Note, b: Note) => {
@@ -43,10 +47,13 @@ export function useNotes(
 	const hasInitialFetchRef = useRef(false);
 
 	const hydrateContent = useCallback(async () => {
-		if (!currentFullUrl || !session) return;
+		if (!currentFullUrl || authStatus.mode === "loading") return;
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
-			const data = await fetchExtensionNoteContents(supabase, scopeUrls);
+			const data = await fetchExtensionNoteContents(
+				client as unknown as typeof supabase,
+				scopeUrls,
+			);
 
 			if (data) {
 				setNotes((prevNotes) =>
@@ -59,10 +66,10 @@ export function useNotes(
 		} catch (error) {
 			console.error("Failed to hydrate notes", error);
 		}
-	}, [currentFullUrl, session]);
+	}, [currentFullUrl, authStatus.mode, client]);
 
 	const fetchNotes = useCallback(async () => {
-		if (!currentFullUrl || !session) return;
+		if (!currentFullUrl || authStatus.mode === "loading") return;
 
 		// Inbox閲覧中、かつ「URLのみ」が変化した場合は再フェッチをスキップしてちらつきを防止
 		if (viewScope === "inbox" && prevUrlRef.current !== currentFullUrl) {
@@ -72,15 +79,19 @@ export function useNotes(
 		prevUrlRef.current = currentFullUrl;
 
 		// 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
-		if (!hasInitialFetchRef.current) {
+		// ゲストモード時は通信オーバーヘッドがないため、loadingスピナーを完全にバイパス
+		if (authStatus.mode !== "guest" && !hasInitialFetchRef.current) {
 			setLoading(true);
 		}
 
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
-			const data = await fetchExtensionNoteMetadatas(supabase, scopeUrls);
+			const data = await fetchExtensionNoteMetadatas(
+				client as unknown as typeof supabase,
+				scopeUrls,
+			);
 
-			// 既存の content（入力中のテキスト等）をマージして保護する
+			// 既存 of content（入力中のテキスト等）をマージして保護する
 			setNotes((prevNotes) => {
 				return (data || []).map((newNote) => {
 					const existing = prevNotes.find((n) => n.id === newNote.id);
@@ -99,7 +110,7 @@ export function useNotes(
 			hasInitialFetchRef.current = true;
 			setLoading(false);
 		}
-	}, [currentFullUrl, session, hydrateContent, viewScope]);
+	}, [currentFullUrl, authStatus.mode, hydrateContent, viewScope, client]);
 
 	useEffect(() => {
 		fetchNotes();
@@ -110,7 +121,22 @@ export function useNotes(
 		selectedScope: NoteScope,
 		selectedType: NoteType,
 	) => {
-		if (!session?.user?.id || !content.trim()) return false;
+		if (authStatus.mode === "loading" || !content.trim()) return false;
+
+		// ゲストモード時の50件制限
+		if (
+			authStatus.mode === "guest" &&
+			notes.filter((n) => n.scope !== "inbox").length >= 50
+		) {
+			toast.error(
+				"Note storage limit reached (Max 50 notes). Please sign in for unlimited cloud sync.",
+			);
+			return false;
+		}
+
+		const currentUserId =
+			authStatus.mode === "guest" ? "guest-user" : session?.user?.id;
+		if (!currentUserId) return false;
 
 		// 楽観的UI用の一時データ作成のために純粋な解決ロジックを利用
 		const resolved = resolveNotePayload({
@@ -128,7 +154,7 @@ export function useNotes(
 		const tempId = crypto.randomUUID();
 		const tempNote = {
 			id: tempId,
-			user_id: session.user.id,
+			user_id: currentUserId,
 			url_pattern: resolved.url_pattern,
 			content: resolved.content,
 			scope: resolved.scope,
@@ -147,12 +173,16 @@ export function useNotes(
 
 		try {
 			// 新設したDALを呼び出し
-			const data = await createNoteEntity(supabase, session.user.id, {
-				content,
-				note_type: selectedType,
-				scope: selectedScope,
-				currentUrl: currentFullUrl,
-			});
+			const data = await createNoteEntity(
+				client as unknown as typeof supabase,
+				currentUserId,
+				{
+					content,
+					note_type: selectedType,
+					scope: selectedScope,
+					currentUrl: currentFullUrl,
+				},
+			);
 
 			// 確定したDBのデータでローカルステートを上書き
 			setNotes((prev) => prev.map((n) => (n.id === tempId ? data : n)));
@@ -181,12 +211,16 @@ export function useNotes(
 	) => {
 		if (!editContent.trim()) return false;
 		try {
-			const data = await updateNoteEntity(supabase, id, {
-				content: editContent,
-				note_type: editType,
-				scope: editScope,
-				currentUrl: currentFullUrl,
-			});
+			const data = await updateNoteEntity(
+				client as unknown as typeof supabase,
+				id,
+				{
+					content: editContent,
+					note_type: editType,
+					scope: editScope,
+					currentUrl: currentFullUrl,
+				},
+			);
 
 			setNotes((prevNotes) => prevNotes.map((n) => (n.id === id ? data : n)));
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
@@ -204,7 +238,7 @@ export function useNotes(
 		const noteToDelete = notes.find((n) => n.id === id);
 
 		try {
-			await deleteNoteEntity(supabase, id);
+			await deleteNoteEntity(client as unknown as typeof supabase, id);
 
 			setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
 
@@ -227,7 +261,9 @@ export function useNotes(
 	) => {
 		const nextStatus = !currentStatus;
 		try {
-			await updateNoteEntity(supabase, id, { is_resolved: nextStatus });
+			await updateNoteEntity(client as unknown as typeof supabase, id, {
+				is_resolved: nextStatus,
+			});
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -254,7 +290,9 @@ export function useNotes(
 		);
 
 		try {
-			await updateNoteEntity(supabase, note.id, { is_favorite: nextStatus });
+			await updateNoteEntity(client as unknown as typeof supabase, note.id, {
+				is_favorite: nextStatus,
+			});
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
@@ -274,7 +312,9 @@ export function useNotes(
 	const togglePinned = async (note: Note) => {
 		const nextStatus = !note.is_pinned;
 		try {
-			await updateNoteEntity(supabase, note.id, { is_pinned: nextStatus });
+			await updateNoteEntity(client as unknown as typeof supabase, note.id, {
+				is_pinned: nextStatus,
+			});
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -336,7 +376,9 @@ export function useNotes(
 		});
 
 		try {
-			await updateNoteEntity(supabase, id, { sort_order: newSortOrder });
+			await updateNoteEntity(client as unknown as typeof supabase, id, {
+				sort_order: newSortOrder,
+			});
 			return true;
 		} catch (error) {
 			console.error("Failed to update note order", error);
@@ -362,7 +404,9 @@ export function useNotes(
 			),
 		);
 		try {
-			await updateNoteEntity(supabase, id, { is_expanded: nextValue });
+			await updateNoteEntity(client as unknown as typeof supabase, id, {
+				is_expanded: nextValue,
+			});
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle expansion", error);
