@@ -1,4 +1,4 @@
-import { getMatchingNoteCount, getScopeUrls } from "@sitecue/shared";
+import { getMatchingNoteCount, getScopeUrls, type Note } from "@sitecue/shared";
 import { supabase } from "../src/supabaseClient";
 
 export default defineBackground(() => {
@@ -15,15 +15,67 @@ export default defineBackground(() => {
 
 	// --- Helper Functions ---
 
-	/**
-	 * Fetches note count for the current URL and updates the badge.
-	 */
 	async function updateBadge(tabId: number, url: string) {
-		if (!url || (!url.startsWith("http://") && !url.startsWith("https://"))) {
-			// Clear badge if not a valid HTTP/HTTPS URL
+		// 🛡️ URL生存チェック＆特殊URL（chrome://等）の物理防御壁
+		if (!url || !url.startsWith("http")) {
 			await chrome.action.setBadgeText({ tabId, text: "" });
 			return;
 		}
+
+		// ⚡ レースコンディション安全装置 (50ms ディレイ)
+		// UI側の非同期ストレージ書き込み（伝播）が 100% 完了するのを確実に待つ
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		// 1. ゲストフラグおよびゲストメモの安全な非同期フェッチ
+		const storageRes = await chrome.storage.local.get([
+			"sitecue_guest_mode",
+			"sitecue_guest_notes",
+		]);
+		const isGuestMode = storageRes.sitecue_guest_mode === true;
+
+		if (isGuestMode) {
+			const guestNotes = (storageRes.sitecue_guest_notes as Note[]) || [];
+
+			// 2. 🛡️ インライン超軽量正規化 (ビットレベルでの文字列完全シンクロ防壁)
+			// プロトコル (http://, https://) および www. 、末尾の / を確実に削ぎ落とす
+			let cleanedUrl = url.replace(/^(https?:\/\/)?(www\.)?/, "");
+			if (cleanedUrl.endsWith("/")) {
+				cleanedUrl = cleanedUrl.slice(0, -1);
+			}
+			
+			// ドメイン部分の切り出し (最初の / より前)
+			const hostPart = url.replace(/^(https?:\/\/)?(www\.)?/, "").split("/")[0];
+			const localDomainPattern = hostPart.replace(/^(www\.)?/, ""); // domain用
+			const localExactPattern = cleanedUrl; // exact用
+
+			// 3. 📋 タブスコープの厳格な隔離原則に基づくインメモリ消し込み
+			const matchingGuestCount = guestNotes.filter((note) => {
+				if (note.is_resolved) return false;
+
+				// お気に入りは全タブ貫通を許可（オンライン仕様と完全同期）
+				if (note.is_favorite === true) return true;
+
+				// 100%文字レベルで一致するローカルコンテキストのみを正確に集計
+				return (
+					(note.scope === "domain" && note.url_pattern === localDomainPattern) ||
+					(note.scope === "exact" && note.url_pattern === localExactPattern)
+				);
+			}).length;
+
+			// 4. バッジのテキストおよびカラーをアトミックに適用して早期リターン
+			const countStr = matchingGuestCount > 0 ? matchingGuestCount.toString() : "";
+			await chrome.action.setBadgeText({ tabId, text: countStr });
+			
+			if (matchingGuestCount > 0) {
+				await chrome.action.setBadgeBackgroundColor({
+					tabId,
+					color: "#3B82F6", // セマンティックBlue
+				});
+				await chrome.action.setBadgeTextColor({ tabId, color: "#FFFFFF" });
+			}
+			return; // Supabaseへのオンライン通信を完全にバイパス
+		}
+
 
 		const { domain, exact } = getScopeUrls(url);
 

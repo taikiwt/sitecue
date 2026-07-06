@@ -9,36 +9,58 @@ export function useUserStats(session: Session | null) {
 	const [userStatsLoading, setUserStatsLoading] = useState(true);
 
 	useEffect(() => {
-		const fetchUserStats = async () => {
-			if (!session?.user?.id) return;
-
-			// Fetch Profile
-			const { data: profile } = await supabase
-				.from("sitecue_profiles")
-				.select("plan, ai_usage_count")
-				.eq("id", session.user.id)
-				.single();
-
-			if (profile) {
-				setUserPlan((profile.plan as "free" | "pro") || "free");
-				setAiUsageCount(profile.ai_usage_count || 0);
-			}
-
-			// Fetch Count
-			const { count } = await supabase
-				.from("sitecue_notes")
-				.select("*", { count: "exact", head: true })
-				.eq("user_id", session.user.id);
-
-			if (count !== null) {
-				setTotalNoteCount(count);
-			}
-		};
-
-		if (session) {
-			setUserStatsLoading(true);
-			fetchUserStats().finally(() => setUserStatsLoading(false));
+		const userId = session?.user?.id;
+		if (!userId) {
+			setUserPlan("free");
+			setAiUsageCount(0);
+			setTotalNoteCount(0);
+			setUserStatsLoading(false);
+			return;
 		}
+
+		let isMounted = true;
+		setUserStatsLoading(true);
+
+		async function fetchStats() {
+			try {
+				// プロファイル情報（プラン・AI使用数）の取得
+				const { data: profile, error: profileError } = await supabase
+					.from("sitecue_profiles")
+					.select("plan, ai_usage_count")
+					.eq("id", userId)
+					.maybeSingle();
+
+				if (profileError) throw profileError;
+				if (isMounted && profile) {
+					setUserPlan((profile.plan as "free" | "pro") || "free");
+					setAiUsageCount(profile.ai_usage_count || 0);
+				}
+
+				// ノート総数の取得 (inboxを除く)
+				const { count, error: countError } = await supabase
+					.from("sitecue_notes")
+					.select("id", { count: "exact", head: true })
+					.eq("user_id", userId)
+					.not("scope", "eq", "inbox");
+
+				if (countError) throw countError;
+				if (isMounted) {
+					setTotalNoteCount(count || 0);
+				}
+			} catch (error) {
+				console.error("Failed to fetch user stats:", error);
+			} finally {
+				if (isMounted) {
+					setUserStatsLoading(false);
+				}
+			}
+		}
+
+		fetchStats();
+
+		return () => {
+			isMounted = false;
+		};
 	}, [session]);
 
 	return {

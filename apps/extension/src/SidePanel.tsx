@@ -1,5 +1,4 @@
 import { getScopeUrls } from "@sitecue/shared";
-import type { Session } from "@supabase/supabase-js";
 import { Check, Copy, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "react-hot-toast";
@@ -9,6 +8,7 @@ import LoginScreen from "./components/LoginScreen";
 import NoteInput from "./components/NoteInput";
 import NoteList from "./components/NoteList";
 import QuickLinks from "./components/QuickLinks";
+import type { AuthStatus } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
 import { useCurrentTab } from "./hooks/useCurrentTab";
 import type { NoteScope, NoteType } from "./hooks/useNotes";
@@ -25,9 +25,12 @@ export default function SidePanel() {
 		sessionLoading,
 		handleLogout,
 		handleSocialLogin,
+		authStatus,
+		handleGuestLogin,
+		handleGuestLogout,
 	} = useAuth();
 
-	if (sessionLoading) {
+	if (sessionLoading && authStatus.mode !== "guest") {
 		return (
 			<div className="w-full h-screen bg-base-surface flex flex-col items-center justify-center font-sans">
 				<Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -35,29 +38,45 @@ export default function SidePanel() {
 		);
 	}
 
-	if (!session) {
+	if (!session && authStatus.mode !== "guest") {
 		return (
 			<LoginScreen
 				authError={authError}
 				authLoading={authLoading}
 				handleSocialLogin={handleSocialLogin}
+				onGuestLogin={handleGuestLogin}
 			/>
 		);
 	}
 
-	return <NotesUI session={session} onLogout={handleLogout} />;
+	return (
+		<NotesUI
+			authStatus={authStatus}
+			onLogout={authStatus.mode === "guest" ? handleGuestLogout : handleLogout}
+		/>
+	);
 }
 
 function NotesUI({
-	session,
+	authStatus,
 	onLogout,
 }: {
-	session: Session;
+	authStatus: AuthStatus;
 	onLogout: () => void;
 }) {
+	const session =
+		authStatus.mode === "authenticated" ? authStatus.session : null;
 	const { currentFullUrl, url, title } = useCurrentTab();
-	const { userPlan, totalNoteCount, setTotalNoteCount, userStatsLoading } =
-		useUserStats(session);
+	const {
+		userPlan: dbUserPlan,
+		totalNoteCount: dbTotalNoteCount,
+		setTotalNoteCount,
+		userStatsLoading: dbUserStatsLoading,
+	} = useUserStats(session);
+
+	const isGuest = authStatus.mode === "guest";
+	const userPlan = isGuest ? "guest" : dbUserPlan;
+	const userStatsLoading = isGuest ? false : dbUserStatsLoading;
 
 	// 🔍 フィルタリング用ステート
 	const [filterType, setFilterType] = useState<
@@ -140,7 +159,11 @@ function NotesUI({
 		togglePinned,
 		updateNoteOrder,
 		toggleNoteExpansion,
-	} = useNotes(session, currentFullUrl, setTotalNoteCount, viewScope);
+	} = useNotes(authStatus, currentFullUrl, setTotalNoteCount, viewScope);
+
+	const totalNoteCount = isGuest
+		? notes.filter((n) => n.scope !== "inbox").length
+		: dbTotalNoteCount;
 
 	// スクロールバック付きのラッパー関数
 	const handleAddNote = async (
@@ -255,6 +278,7 @@ function NotesUI({
 				domain={currentFullUrl ? getScopeUrls(currentFullUrl).domain : ""}
 				session={session}
 				onLogout={onLogout}
+				authStatus={authStatus}
 			/>
 
 			<QuickLinks
@@ -282,7 +306,7 @@ function NotesUI({
 				{/* 左カラム：拡張用スペース */}
 				<div className="flex justify-start" />
 
-				{/* 中央カラム：「＋」ボタンを物理的中心に完全ロック */}
+				{/* 一角カラム：「＋」ボタンを物理的中心に完全ロック */}
 				<div className="flex justify-center">
 					<button
 						type="button"
@@ -384,14 +408,24 @@ function NotesUI({
 								<Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
 							</div>
 						) : (
-							<NoteInput
-								userPlan={userPlan}
-								totalNoteCount={totalNoteCount}
-								maxFreeNotes={MAX_FREE_NOTES}
-								onAddNote={handleAddNote}
-								onClose={() => setIsInputModeOpen(false)}
-								textareaRef={textareaRef}
-							/>
+							<>
+								{/* 🚨 ゲスト用 Note Limit 警告アラート（90%にあたる45件以上で露出） */}
+								{isGuest && totalNoteCount >= 45 && (
+									<div className="text-[11px] text-note-alert bg-note-alert/10 border border-note-alert/20 p-2.5 rounded-xl mb-2 text-center font-medium shadow-sm animate-in fade-in duration-200">
+										Note storage limit approaching ({totalNoteCount}/50).
+										<br />
+										Please sign in to enjoy unlimited cloud sync.
+									</div>
+								)}
+								<NoteInput
+									userPlan={userPlan}
+									totalNoteCount={totalNoteCount}
+									maxFreeNotes={isGuest ? 50 : MAX_FREE_NOTES}
+									onAddNote={handleAddNote}
+									onClose={() => setIsInputModeOpen(false)}
+									textareaRef={textareaRef}
+								/>
+							</>
 						)}
 					</div>
 				</>

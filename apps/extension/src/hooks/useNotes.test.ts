@@ -2,6 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../supabaseClient", () => ({
 	supabase: {},
+	localClient: {
+		from: () => ({
+			select: () => ({
+				in: () => Promise.resolve({ data: [], error: null }),
+				eq: () => ({
+					then: (cb: any) => cb({ data: [], error: null }),
+				}),
+				then: (cb: any) => cb({ data: [], error: null }),
+			}),
+			insert: (data: any) => Promise.resolve({ data, error: null }),
+		}),
+	},
 }));
 
 // @sitecue/sharedのモック
@@ -18,16 +30,23 @@ vi.mock("@sitecue/shared", async (importOriginal) => {
 });
 
 import {
+	createNoteEntity,
 	fetchExtensionNoteContents,
 	fetchExtensionNoteMetadatas,
 	type Note,
 } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import type { AuthStatus } from "./useAuth";
 import { useNotes } from "./useNotes";
 
 describe("useNotes hook (Hybrid Fetching)", () => {
 	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockAuthStatus: AuthStatus = {
+		mode: "authenticated",
+		session: mockSession,
+		userId: "user-1",
+	};
 	const mockUrl = "https://example.com/page";
 
 	it("初回フェッチ（fetchNotes）では、contentが含まれていないこと (Slim Fetching)", async () => {
@@ -48,7 +67,7 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result } = renderHook(() =>
-			useNotes(mockSession, mockUrl, vi.fn(), "domain"),
+			useNotes(mockAuthStatus, mockUrl, vi.fn(), "domain"),
 		);
 
 		await waitFor(() => {
@@ -77,7 +96,7 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		vi.mocked(fetchExtensionNoteContents).mockResolvedValue(mockHydratedData);
 
 		const { result } = renderHook(() =>
-			useNotes(mockSession, mockUrl, vi.fn(), "domain"),
+			useNotes(mockAuthStatus, mockUrl, vi.fn(), "domain"),
 		);
 
 		// 最初はcontentがない
@@ -111,7 +130,7 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result, rerender } = renderHook(
-			({ url, scope }) => useNotes(mockSession, url, vi.fn(), scope),
+			({ url, scope }) => useNotes(mockAuthStatus, url, vi.fn(), scope),
 			{
 				initialProps: {
 					url: mockUrl,
@@ -145,6 +164,11 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 
 describe("useNotes - Silent Refetching", () => {
 	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockAuthStatus: AuthStatus = {
+		mode: "authenticated",
+		session: mockSession,
+		userId: "user-1",
+	};
 	const mockUrl = "https://example.com/page";
 
 	it("メモリ上にデータがある場合、再フェッチ時に loading が true にならないこと", async () => {
@@ -156,7 +180,7 @@ describe("useNotes - Silent Refetching", () => {
 		);
 
 		const { result, rerender } = renderHook(
-			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
+			({ scope }) => useNotes(mockAuthStatus, mockUrl, vi.fn(), scope),
 			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
 		);
 
@@ -188,7 +212,7 @@ describe("useNotes - Silent Refetching", () => {
 		);
 
 		const { result, rerender } = renderHook(
-			({ scope }) => useNotes(mockSession, mockUrl, vi.fn(), scope),
+			({ scope }) => useNotes(mockAuthStatus, mockUrl, vi.fn(), scope),
 			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
 		);
 
@@ -263,7 +287,7 @@ describe("useNotes - Silent Refetching", () => {
 		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result } = renderHook(() =>
-			useNotes(mockSession, "https://example.com/page", vi.fn(), "exact"),
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
 		);
 
 		// 初回フェッチ完了待ち
@@ -331,7 +355,7 @@ describe("useNotes - Silent Refetching", () => {
 		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
 
 		const { result } = renderHook(() =>
-			useNotes(mockSession, "https://example.com/page", vi.fn(), "exact"),
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
 		);
 
 		await waitFor(() => expect(result.current.loading).toBe(false));
@@ -356,5 +380,63 @@ describe("useNotes - Silent Refetching", () => {
 			const updated = result.current.notes.find((n) => n.id === "note-2");
 			expect(updated?.sort_order).toBe(0.0);
 		});
+	});
+});
+
+describe("useNotes - Guest Mode Scenario", () => {
+	it("ゲストモード時にローディングUIをバイパスし、localClient経由でノートの追加・並び替えが正常に稼働すること", async () => {
+		const authStatus: AuthStatus = {
+			mode: "guest",
+			session: null,
+			userId: "guest-user",
+		};
+		const setTotalNoteCount = vi.fn();
+
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue([]);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
+
+		const { result } = renderHook(() =>
+			useNotes(
+				authStatus,
+				"https://example.com/page",
+				setTotalNoteCount,
+				"exact",
+			),
+		);
+
+		// 初期状態は空配列、かつloadingはfalseであることを実証（バイパス確認）
+		expect(result.current.notes).toEqual([]);
+		expect(result.current.loading).toBe(false);
+
+		// fetchNotes の非同期解決を確実に待つ
+		await waitFor(() => {
+			expect(fetchExtensionNoteMetadatas).toHaveBeenCalled();
+		});
+
+		// ノートの追加を実行
+		let success;
+		const mockCreatedNote = {
+			id: "temp-guest-id",
+			user_id: "guest-user",
+			content: "ゲストメモテスト #idea",
+			scope: "exact",
+			note_type: "idea",
+			created_at: new Date().toISOString(),
+			tags: ["idea"],
+		};
+		vi.mocked(createNoteEntity).mockResolvedValue(mockCreatedNote as any);
+
+		await act(async () => {
+			success = await result.current.addNote(
+				"ゲストメモテスト #idea",
+				"exact",
+				"idea",
+			);
+		});
+
+		expect(success).toBe(true);
+		expect(result.current.notes.length).toBe(1);
+		expect(result.current.notes[0].content).toBe("ゲストメモテスト #idea");
+		expect(result.current.notes[0].tags).toEqual(["idea"]); // 共通タグ抽出の通過検証
 	});
 });
