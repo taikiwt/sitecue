@@ -27,12 +27,13 @@ export default function LoginScreen({
 					</div>
 				)}
 
+				{/* 推奨されるソーシャルログインエリア */}
 				<div className="space-y-3">
 					<button
 						type="button"
 						onClick={() => handleSocialLogin("google")}
 						disabled={authLoading}
-						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-base-surface border border-base-border text-action py-2.5 rounded text-sm font-medium hover:bg-base-bg transition-colors disabled:opacity-50"
+						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-base-surface border border-base-border text-action py-2.5 rounded-full text-sm font-medium hover:bg-base-bg transition-colors disabled:opacity-50"
 					>
 						{/* Google Icon (SVG) */}
 						<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -59,7 +60,7 @@ export default function LoginScreen({
 						type="button"
 						onClick={() => handleSocialLogin("github")}
 						disabled={authLoading}
-						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#24292F] text-action-text py-2.5 rounded text-sm font-medium hover:bg-[#24292F]/90 transition-colors disabled:opacity-50"
+						className="cursor-pointer w-full flex items-center justify-center gap-2 bg-[#24292F] text-action-text py-2.5 rounded-full text-sm font-medium hover:bg-[#24292F]/90 transition-colors disabled:opacity-50"
 					>
 						{/* GitHub Icon (SVG Path) */}
 						<svg
@@ -75,11 +76,15 @@ export default function LoginScreen({
 					</button>
 				</div>
 
-				<div className="mt-6 text-center">
+				{/* 🛠️ 境界線と説明文による隔離と、カプセルボタンへの昇格設計 */}
+				<div className="mt-5 pt-4 border-t border-base-border/60 space-y-2.5">
+					<p className="text-[11px] text-center text-muted-foreground leading-normal">
+						Or try it out instantly without an account:
+					</p>
 					<button
 						type="button"
 						onClick={onGuestLogin}
-						className="cursor-pointer text-xs text-muted-foreground hover:text-action underline underline-offset-4 transition-colors font-medium"
+						className="cursor-pointer w-full py-2.5 rounded-full border border-base-border bg-transparent text-muted-foreground hover:text-action hover:bg-base-bg transition-colors text-sm font-medium text-center block"
 					>
 						Continue as Guest (Local Only)
 					</button>

@@ -57,4 +57,14 @@ vi.mock("./supabaseClient", () => ({
 			delete: vi.fn().mockResolvedValue({ error: null }),
 		}),
 	},
+	localClient: {
+		from: vi.fn().mockReturnValue({
+			select: vi.fn().mockReturnThis(),
+			eq: vi.fn().mockReturnThis(),
+			or: vi.fn().mockReturnThis(),
+			maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+			upsert: vi.fn().mockResolvedValue({ error: null }),
+			delete: vi.fn().mockResolvedValue({ error: null }),
+		}),
+	},
 }));
