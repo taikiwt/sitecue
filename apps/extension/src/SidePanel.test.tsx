@@ -263,4 +263,71 @@ describe("SidePanel Component", () => {
 		// デフォルトで表示されている Exact Note のコンテンツがコピーされること
 		expect(writeTextMock).toHaveBeenCalledWith("Exact Note");
 	});
+
+	it("ダイアリーアイコンクリックによるドロワー展開、およびURL変更時もドロワーが維持されるライフサイクルの検証", async () => {
+		const { rerender } = render(<SidePanel />);
+
+		// 1. 最初はドロワーが非表示（translate-x-full）
+		const drawer = screen.getByTitle("Close diary").closest("div.fixed");
+		expect(drawer).toHaveClass("translate-x-full");
+
+		// 2. ダイアリーアイコン (Open diary) をクリックしてドロワーを開く
+		const diaryIcon = screen.getByTitle("Open diary");
+		fireEvent.click(diaryIcon);
+
+		// translate-x-0 になること
+		expect(drawer).toHaveClass("translate-x-0");
+
+		// 3. rerender してURL変更等のライフサイクル再評価時も isDiaryOpen が維持されることを検証
+		rerender(<SidePanel />);
+		expect(drawer).toHaveClass("translate-x-0");
+	});
+
+	it("ドロワー内のEditカプセルボタンの存在、およびBasecampリンクが今月のアーカイブURLになっていることの検証", async () => {
+		render(<SidePanel />);
+
+		// ドロワーを展開
+		const diaryBtn = screen.getByTitle("Open diary");
+		fireEvent.click(diaryBtn);
+
+		// 1. Editボタンがカプセルボタン形式で存在することを確認
+		const editButton = screen.getByTitle("Edit diary");
+		expect(editButton).toBeInTheDocument();
+		expect(editButton).toHaveClass("bg-action");
+
+		// 2. ...Basecampリンクのhref属性が、選択日(今日)の年・月に紐づくアーカイブURLになっているか検証
+		const now = new Date();
+		const expectedYear = now.getFullYear().toString();
+		const expectedMonth = String(now.getMonth() + 1).padStart(2, "0");
+		
+		const basecampLink = screen.getByTitle("View this month on Basecamp");
+		expect(basecampLink).toBeInTheDocument();
+		expect(basecampLink.getAttribute("href")).toBe(
+			`https://app.sitecue.app/notes?view=diaries&year=${expectedYear}&month=${expectedMonth}`
+		);
+	});
+
+	it("編集モードに突入した直後の無変更状態では、Saveボタンがdisabled（不活性）になっていること", async () => {
+		render(<SidePanel />);
+		
+		// ドロワーを展開
+		const diaryBtn = screen.getByTitle("Open diary");
+		fireEvent.click(diaryBtn);
+
+		// 編集モードへ突入
+		const editButton = screen.getByTitle("Edit diary");
+		fireEvent.click(editButton);
+
+		// 初期状態（無変更）のSaveボタンを取得
+		const saveButton = screen.getByTitle("Save diary");
+		expect(saveButton).toBeDisabled(); // 🌟 無変更状態での不活性を厳密にテスト
+
+		// 本文に変更を加える
+		const textarea = screen.getByPlaceholderText(/Write down your thoughts/i);
+		fireEvent.change(textarea, { target: { value: "Something new added!" } });
+
+		// 変更後はSaveボタンが活性化されることを検証
+		expect(saveButton).not.toBeDisabled();
+	});
 });
+

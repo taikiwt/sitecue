@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { AuthStatus } from "../hooks/useAuth";
 import type { Note } from "../hooks/useNotes";
+import Header from "./Header";
 import NoteItem from "./NoteItem";
 
 describe("NoteItem Component", () => {
@@ -61,5 +63,44 @@ describe("NoteItem Component", () => {
 
 		fireEvent.click(pinButton);
 		expect(mockOnTogglePinned).toHaveBeenCalledWith(mockNote);
+	});
+});
+
+describe("Header - Settings Dot Promotion & Gear Removal", () => {
+	it("右上の共通歯車設定ボタンが存在せず、タイトル左側のカラー丸ドットボタンをクリックすると設定エリアがトグルすること", () => {
+		const authStatus: AuthStatus = {
+			mode: "guest",
+			session: null,
+			userId: "guest-user",
+		};
+
+		render(
+			<Header
+				url="https://example.com/page"
+				title="Example Page"
+				domain="example.com"
+				session={null}
+				onLogout={vi.fn()}
+				authStatus={authStatus}
+			/>,
+		);
+
+		// 1. 歯車ボタン (title="Settings" などのボタン) が存在しないこと
+		expect(screen.queryByTitle("Settings")).not.toBeInTheDocument();
+
+		// 2. タイトル左側のカラー丸ドットボタンが存在すること
+		const dotButton = screen.getByTitle("Toggle note settings");
+		expect(dotButton).toBeInTheDocument();
+
+		// 最初は設定エリア (Label 入力欄など) が非表示
+		expect(screen.queryByLabelText(/Label/i)).not.toBeInTheDocument();
+
+		// 3. ドットボタンクリックで設定エリアが表示されること
+		fireEvent.click(dotButton);
+		expect(screen.getByLabelText(/Label/i)).toBeInTheDocument();
+
+		// もう一度クリックで非表示になること
+		fireEvent.click(dotButton);
+		expect(screen.queryByLabelText(/Label/i)).not.toBeInTheDocument();
 	});
 });
