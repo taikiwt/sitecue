@@ -15,11 +15,12 @@ describe("NoteInput Component", () => {
 				totalNoteCount={10}
 				maxFreeNotes={200}
 				onAddNote={mockOnAddNote}
+				onAppendDiary={vi.fn()}
 				onClose={mockOnClose}
 			/>,
 		);
 
-		const input = screen.getByRole("textbox");
+		const input = screen.getByPlaceholderText(/Add a cue to/i);
 		const submitButton = screen.getByRole("button", { name: /Add Note/i });
 
 		// 1. テキストを入力
@@ -48,12 +49,15 @@ describe("NoteInput Component", () => {
 				totalNoteCount={200} // 上限
 				maxFreeNotes={200}
 				onAddNote={vi.fn()}
+				onAppendDiary={vi.fn()}
 				onClose={mockOnClose}
 			/>,
 		);
 
 		// テキストボックスが存在しないことを確認
-		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+		expect(
+			screen.queryByPlaceholderText(/Add a cue to/i),
+		).not.toBeInTheDocument();
 
 		// 警告メッセージが表示されていることを確認
 		expect(screen.getByText(/Note Limit Reached/i)).toBeInTheDocument();
@@ -66,6 +70,7 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 		totalNoteCount: 10,
 		maxFreeNotes: 500,
 		onAddNote: vi.fn().mockResolvedValue(true),
+		onAppendDiary: vi.fn().mockResolvedValue(true),
 		onClose: vi.fn(),
 		textareaRef: {
 			current: null,
@@ -107,5 +112,81 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 		textarea.dispatchEvent(event);
 
 		expect(mockOnAddNote).not.toHaveBeenCalled();
+	});
+});
+
+describe("NoteInput + Diary Integration Split Test", () => {
+	it("ノート入力欄でのCtrl+Enterと、日記入力欄でのCtrl+Enterが個別に正しいハンドラーをトリガーすること", async () => {
+		const mockAddNote = vi.fn().mockResolvedValue(true);
+		const mockAppendDiary = vi.fn().mockResolvedValue(true);
+		const mockClose = vi.fn();
+
+		render(
+			<NoteInput
+				userPlan="free"
+				totalNoteCount={10}
+				maxFreeNotes={500}
+				onAddNote={mockAddNote}
+				onAppendDiary={mockAppendDiary}
+				onClose={mockClose}
+			/>,
+		);
+
+		// 1. ノート用テキストエリアの検証
+		const noteTextarea = screen.getByPlaceholderText(/Add a cue to/i);
+		fireEvent.change(noteTextarea, {
+			target: { value: "Note Content via Test" },
+		});
+		fireEvent.keyDown(noteTextarea, { key: "Enter", ctrlKey: true });
+		expect(mockAddNote).toHaveBeenCalledWith(
+			"Note Content via Test",
+			"exact",
+			"info",
+		);
+		expect(mockAppendDiary).not.toHaveBeenCalled();
+
+		vi.clearAllMocks();
+
+		// 2. 日記用テキストエリアの検証
+		const diaryTextarea = screen.getByPlaceholderText(
+			/Append to today's diary/i,
+		);
+		fireEvent.change(diaryTextarea, {
+			target: { value: "Diary Segment via Test" },
+		});
+		fireEvent.keyDown(diaryTextarea, { key: "Enter", ctrlKey: true });
+		expect(mockAppendDiary).toHaveBeenCalledWith("Diary Segment via Test");
+		expect(mockAddNote).not.toHaveBeenCalled();
+	});
+
+	it("日記入力欄で送信ボタンを押すとonAppendDiaryが呼ばれ、成功時にonCloseが呼ばれること", async () => {
+		const mockAppendDiary = vi.fn().mockResolvedValue(true);
+		const mockClose = vi.fn();
+		render(
+			<NoteInput
+				maxFreeNotes={500}
+				onAddNote={vi.fn()}
+				onAppendDiary={mockAppendDiary}
+				onClose={mockClose}
+				totalNoteCount={10}
+				userPlan="free"
+			/>,
+		);
+
+		const diaryTextarea = screen.getByPlaceholderText(
+			/Append to today's diary/i,
+		);
+		fireEvent.change(diaryTextarea, {
+			target: { value: "Test Submit Button" },
+		});
+
+		// 日記の島の送信ボタン (title="Append to Diary" 等で特定)
+		const diarySubmitBtn = screen.getByTitle("Append to Diary");
+		fireEvent.click(diarySubmitBtn);
+
+		await waitFor(() => {
+			expect(mockAppendDiary).toHaveBeenCalledWith("Test Submit Button");
+			expect(mockClose).toHaveBeenCalled(); // 成功時クローズ
+		});
 	});
 });
