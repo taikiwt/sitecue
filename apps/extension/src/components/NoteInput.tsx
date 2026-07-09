@@ -1,4 +1,4 @@
-import { AlertTriangle, Info, Lightbulb, Send, X } from "lucide-react";
+import { AlertTriangle, CalendarDays, Info, Lightbulb, Send, X } from "lucide-react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { APP_LIMITS } from "../constants/limits";
@@ -9,6 +9,8 @@ interface NoteInputProps {
   userPlan: "free" | "pro" | "guest";
   totalNoteCount: number;
   maxFreeNotes: number;
+  initialScope: NoteScope;
+  initialType: "all" | "info" | "alert" | "idea";
   onAddNote: (
     content: string,
     scope: NoteScope,
@@ -23,13 +25,20 @@ export default function NoteInput({
   userPlan,
   totalNoteCount,
   maxFreeNotes,
+  initialScope,
+  initialType,
   onAddNote,
   onAppendDiary,
   onClose,
   textareaRef,
 }: NoteInputProps) {
-  const [selectedScope, setSelectedScope] = useState<NoteScope>("exact");
-  const [selectedType, setSelectedType] = useState<NoteType>("info");
+  const [activeType, setActiveType] = useState<"note" | "diary">("note");
+  const [selectedScope, setSelectedScope] = useState<NoteScope>(
+    initialScope === "inbox" ? "inbox" : initialScope,
+  );
+  const [selectedType, setSelectedType] = useState<NoteType>(
+    initialType === "all" ? "info" : initialType,
+  );
   const [newNote, setNewNote] = useState("");
   const [diaryText, setDiaryText] = useState("");
   const handleAutoIndent = useAutoIndent();
@@ -58,123 +67,148 @@ export default function NoteInput({
     const content = newNote.trim();
     if (!content || isCharOverLimit) return;
 
-    // 即座に入力欄をクリアしてUXを向上（オプティミスティック更新）
     setNewNote("");
-    // フォーカスを自動維持して連続タイピングフローを保護
     setTimeout(() => textareaRef?.current?.focus(), 10);
 
     const success = await onAddNote(content, selectedScope, selectedType);
     if (!success) {
-      // 失敗時は入力をロールバック
       setNewNote(content);
     }
   };
 
+  // 選択されたタイプに応じたLucideアイコンを決定するヘルパー
+  const renderTypeIcon = () => {
+    if (selectedType === "alert") return <AlertTriangle className="w-4 h-4 text-note-alert" />;
+    if (selectedType === "idea") return <Lightbulb className="w-4 h-4 text-note-idea" />;
+    return <Info className="w-4 h-4 text-note-info" />;
+  };
+
   return (
-    <div className="px-4 py-10 bg-base-surface border border-base-border/60 rounded-2xl shadow-2xl relative transition-all duration-200">
-      {/* 右上の閉じるボタン「×」 */}
+    <div className="bg-base-surface border border-base-border/70 rounded-2xl shadow-2xl p-4 pt-7 relative flex flex-col gap-3 w-full min-w-0 font-sans">
+      {/* 右上の閉じるボタン：被らないように、かつ飛び出しすぎない適切な位置へ絶対配置 */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-1 right-1 p-1 rounded-full text-muted-foreground border border-base-border hover:text-black hover:bg-base-border transition-colors cursor-pointer"
+        className="absolute top-2.5 right-2.5 p-1 rounded-full text-muted-foreground hover:text-base-text hover:bg-base-bg transition-all z-50 cursor-pointer"
         title="Close input"
       >
-        <X className="w-4 h-4" aria-hidden="true" />
+        <X aria-hidden="true" className="w-3.5 h-3.5" />
       </button>
 
-      {/* 1. ノート用フォーム (最初の美しい状態に完全復元) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-xs">
-            <label
-              className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "exact" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
-            >
-              <input
-                type="radio"
-                name="scope"
-                checked={selectedScope === "exact"}
-                onChange={() => setSelectedScope("exact")}
-                className="accent-action focus:ring-action"
-              />
-              <span>Page</span>
-            </label>
-            <label
-              className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "domain" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
-            >
-              <input
-                type="radio"
-                name="scope"
-                checked={selectedScope === "domain"}
-                onChange={() => setSelectedScope("domain")}
-                className="accent-action focus:ring-action"
-              />
-              <span>Domain</span>
-            </label>
-            <label
-              className={`flex items-center gap-1.5 cursor-pointer ${selectedScope === "inbox" ? "text-action hover:text-action-hover" : "text-neutral-800 hover:text-black"}`}
-            >
-              <input
-                type="radio"
-                name="scope"
-                checked={selectedScope === "inbox"}
-                onChange={() => setSelectedScope("inbox")}
-                className="accent-action focus:ring-action"
-              />
-              <span>Inbox</span>
-            </label>
-          </div>
-
-          <div className="flex bg-neutral-100 p-0.5 rounded-full">
-            <button
-              type="button"
-              onClick={() => setSelectedType("info")}
-              className={`cursor-pointer p-1 rounded-full ${selectedType === "info" ? "bg-note-info/80 text-action-text" : "text-muted-foreground hover:text-note-info"}`}
-              title="Info"
-            >
-              <Info className="size-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedType("alert")}
-              className={`cursor-pointer p-1 rounded-full ${selectedType === "alert" ? "bg-note-alert/80 text-action-text" : "text-muted-foreground hover:text-note-alert"}`}
-              title="Alert"
-            >
-              <AlertTriangle className="size-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedType("idea")}
-              className={`cursor-pointer p-1 rounded-full ${selectedType === "idea" ? "bg-note-idea/80 text-action-text" : "text-muted-foreground hover:text-note-idea"}`}
-              title="Idea"
-            >
-              <Lightbulb className="size-4" aria-hidden="true" />
-            </button>
-          </div>
+      {/* --- 🌟 浮かび上がるカプセル型浮き島：Noteブロック --- */}
+      {/* biome-ignore lint/a11y/useSemanticElements: interaction container for layout active status */}
+      <div
+        onClick={() => setActiveType("note")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            setActiveType("note");
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3 border rounded-4xl transition-all duration-200 text-left ${activeType === "note"
+          ? "bg-white border-base-border opacity-100"
+          : "bg-transparent border-transparent opacity-45 hover:opacity-60"
+          }`}
+      >
+        {/* 左側: タイプ切り替えと連動するインラインアイコン */}
+        <div className="shrink-0 size-8 flex items-center justify-center bg-base-surface rounded-full border border-base-border/30 shadow-2xs">
+          {renderTypeIcon()}
         </div>
 
-        {(userPlan === "free" || userPlan === "guest") &&
-          isNearLimit &&
-          !isLimitReached && (
-            <div className="flex items-start gap-2 p-2 mb-2 text-xs text-note-alert bg-note-alert/10 border border-note-alert/20 rounded">
-              <AlertTriangle
-                className="w-4 h-4 shrink-0 mt-0.5"
-                aria-hidden="true"
-              />
-              <p>
-                Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please
-                visit
-                {userPlan === "guest"
-                  ? " Login screen to sign in"
-                  : " Basecamp"}{" "}
-                to free up space or unlock unlimited notes.
-              </p>
+        {/* 中央エリア: [上] タイトル風Select要素、[下] 最大高ガード付き入力エリア */}
+        <div className="flex flex-col min-w-0 w-full gap-0.5">
+          <div className="flex items-center justify-between w-full shrink-0 relative">
+            {/* 枠線のない、タイトルライクな太字極小セレクトコントロール */}
+            <div className="relative flex items-center">
+              <select
+                value={selectedScope}
+                onChange={(e) =>
+                  setSelectedScope(e.target.value as NoteScope)
+                }
+                onClick={(e) => e.stopPropagation()}
+                className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
+              >
+                <option value="exact">Page Note</option>
+                <option value="domain">Domain Note</option>
+                <option value="inbox">Inbox Note</option>
+              </select>
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-[8px]">
+                ▼
+              </div>
             </div>
-          )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex gap-2 items-center relative"
-        >
+            {/* Note Type Selector: カプセル背景。アクティブ時のみインライン表示、または常時表示 */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: click handler to stop event propagation */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: click handler to stop event propagation */}
+            <div
+              className="flex bg-neutral-100 p-0.5 rounded-full border border-neutral-200 shrink-0 scale-85 origin-right"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedType("info");
+                }}
+                className={`cursor-pointer p-1 rounded-full ${selectedType === "info"
+                  ? "bg-note-info/80 text-white"
+                  : "text-neutral-500 hover:text-note-info"
+                  }`}
+                title="Info"
+              >
+                <Info className="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedType("alert");
+                }}
+                className={`cursor-pointer p-1 rounded-full ${selectedType === "alert"
+                  ? "bg-note-alert/80 text-white"
+                  : "text-neutral-500 hover:text-note-alert"
+                  }`}
+                title="Alert"
+              >
+                <AlertTriangle className="size-3.5" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedType("idea");
+                }}
+                className={`cursor-pointer p-1 rounded-full ${selectedType === "idea"
+                  ? "bg-note-idea/80 text-white"
+                  : "text-neutral-500 hover:text-note-idea"
+                  }`}
+                title="Idea"
+              >
+                <Lightbulb className="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+
+          {(userPlan === "free" || userPlan === "guest") &&
+            isNearLimit &&
+            !isLimitReached && (
+              <div className="flex items-start gap-2 p-2 mb-2 text-xs text-note-alert bg-note-alert/10 border border-note-alert/20 rounded">
+                <AlertTriangle
+                  className="w-4 h-4 shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <p>
+                  Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please
+                  visit
+                  {userPlan === "guest"
+                    ? " Login screen to sign in"
+                    : " Basecamp"}{" "}
+                  to free up space or unlock unlimited notes.
+                </p>
+              </div>
+            )}
+
           {(userPlan === "free" || userPlan === "guest") && isLimitReached ? (
             <div className="w-full bg-note-idea/10 border border-note-idea/20 rounded-lg p-3 text-sm text-note-idea flex items-start gap-3">
               <AlertTriangle
@@ -193,78 +227,117 @@ export default function NoteInput({
               </div>
             </div>
           ) : (
-            <>
+            <div className="relative w-full">
               <TextareaAutosize
                 ref={textareaRef}
                 value={newNote}
+                onFocus={() => setActiveType("note")}
                 onChange={(e) => setNewNote(e.target.value)}
-                placeholder={`Add a cue to ${selectedScope === "inbox" ? "Inbox" : selectedScope === "domain" ? "this domain" : "this page"}...`}
-                className="flex-1 resize-none border border-base-border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-action/20 focus:border-action/20 transition-all max-h-40 pr-10 bg-transparent text-base-text"
-                minRows={2}
+                placeholder={`Add a cue to ${selectedScope === "inbox"
+                  ? "Inbox"
+                  : selectedScope === "domain"
+                    ? "this domain"
+                    : "this page"
+                  }...`}
+                className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
+                minRows={1}
                 onKeyDown={(e) => {
-                  if (e.nativeEvent.isComposing) return;
-
+                  if (e.nativeEvent.isComposing) return; // IME Guard
                   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                     e.preventDefault();
-                    handleSubmit(e);
+                    if (activeType === "note" && newNote.trim()) {
+                      handleSubmit(e);
+                    }
                   } else {
                     handleAutoIndent(e);
                   }
                 }}
               />
               {isCharNearLimit && (
-                <div className="absolute right-12 bottom-2 pointer-events-none">
+                <div className="absolute right-0 bottom-0 pointer-events-none pb-1">
                   <span
-                    className={`text-[10px] font-bold ${isCharOverLimit ? "text-note-alert" : "text-note-idea"}`}
+                    className={`text-[9px] font-bold ${isCharOverLimit ? "text-note-alert" : "text-note-idea"
+                      }`}
                   >
                     {charCount.toLocaleString()} /{" "}
                     {APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
                   </span>
                 </div>
               )}
-              <button
-                disabled={!newNote.trim() || isCharOverLimit}
-                type="submit"
-                className="cursor-pointer bg-action text-action-text w-9 h-9 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
-                title="Add Note"
-              >
-                <Send className="w-4 h-4" aria-hidden="true" />
-              </button>
-            </>
+            </div>
           )}
-        </form>
+        </div>
+
+        {/* 右側: カプセル内部に完全にアラインされた送信ボタン（items-center で常に垂直中央ロック） */}
+        <button
+          disabled={
+            activeType !== "note" || !newNote.trim() || isCharOverLimit
+          }
+          type="button"
+          onClick={handleSubmit}
+          className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
+          title="Add Note"
+        >
+          <Send aria-hidden="true" className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* 2. マージンを空けて並列配置する Diary専用島コンテナ */}
-      <div className="mt-4 border-t border-base-border/40 pt-4 space-y-2">
-        <div className="text-[10px] font-bold text-muted-foreground tracking-wider px-1 uppercase">
-          Diary
+      {/* --- 🌟 浮かび上がるカプセル型浮き島: Diaryブロック --- */}
+      {/* biome-ignore lint/a11y/useSemanticElements: interaction container for layout active status */}
+      <div
+        onClick={() => setActiveType("diary")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            setActiveType("diary");
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3 rounded-4xl border transition-all duration-200 text-left ${activeType === "diary"
+          ? "bg-white border-base-border opacity-100"
+          : "bg-transparent border-transparent opacity-45 hover:opacity-60"
+          }`}
+      >
+        {/* 左側: 固定日記アイコン */}
+        <div className="shrink-0 size-8 flex items-center justify-center bg-base-surface rounded-full border border-base-border/30 shadow-2xs text-muted-foreground">
+          <CalendarDays className="w-4 h-4 text-neutral-500" />
         </div>
-        <div className="rounded-xl flex gap-2 items-center relative">
+
+        {/* 中央エリア */}
+        <div className="flex flex-col min-w-0 w-full gap-0.5">
+          <div className="text-xs font-bold text-neutral-800 tracking-wide select-none px-0.5 mb-1">
+            Today's Diary
+          </div>
+          {/* 入力欄: 最大高ガード付き内部スクロール対応 */}
           <TextareaAutosize
             value={diaryText}
+            onFocus={() => setActiveType("diary")}
             onChange={(e) => setDiaryText(e.target.value)}
-            placeholder="Append to today's diary (Ctrl+Enter)..."
-            className="flex-1 resize-none border border-base-border rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-action/20 focus:border-action/20 transition-all max-h-40 bg-transparent text-base-text"
+            placeholder="Append log text..."
+            className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
             minRows={1}
             onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) return;
+              if (e.nativeEvent.isComposing) return; // IME Guard
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
                 e.preventDefault();
-                handleDiarySubmit();
+                if (activeType === "diary" && diaryText.trim()) {
+                  handleDiarySubmit();
+                }
               }
             }}
           />
-          <button
-            type="button"
-            onClick={handleDiarySubmit}
-            disabled={!diaryText.trim()}
-            className="cursor-pointer bg-action text-action-text w-9 h-9 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
-            title="Append to Diary"
-          >
-            <Send className="w-4 h-4" aria-hidden="true" />
-          </button>
         </div>
+
+        {/* 右側: 送信ボタン（items-center で常に垂直中央ロック） */}
+        <button
+          type="button"
+          onClick={handleDiarySubmit}
+          disabled={activeType !== "diary" || !diaryText.trim()}
+          className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
+          title="Append to Diary"
+        >
+          <Send aria-hidden="true" className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

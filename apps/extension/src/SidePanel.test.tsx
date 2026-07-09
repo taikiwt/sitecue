@@ -299,17 +299,17 @@ describe("SidePanel Component", () => {
 		const now = new Date();
 		const expectedYear = now.getFullYear().toString();
 		const expectedMonth = String(now.getMonth() + 1).padStart(2, "0");
-		
+
 		const basecampLink = screen.getByTitle("View this month on Basecamp");
 		expect(basecampLink).toBeInTheDocument();
 		expect(basecampLink.getAttribute("href")).toBe(
-			`https://app.sitecue.app/notes?view=diaries&year=${expectedYear}&month=${expectedMonth}`
+			`https://app.sitecue.app/notes?view=diaries&year=${expectedYear}&month=${expectedMonth}`,
 		);
 	});
 
 	it("編集モードに突入した直後の無変更状態では、Saveボタンがdisabled（不活性）になっていること", async () => {
 		render(<SidePanel />);
-		
+
 		// ドロワーを展開
 		const diaryBtn = screen.getByTitle("Open diary");
 		fireEvent.click(diaryBtn);
@@ -330,4 +330,3 @@ describe("SidePanel Component", () => {
 		expect(saveButton).not.toBeDisabled();
 	});
 });
-
