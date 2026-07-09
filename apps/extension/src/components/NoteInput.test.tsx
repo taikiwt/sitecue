@@ -14,6 +14,8 @@ describe("NoteInput Component", () => {
 				userPlan="free"
 				totalNoteCount={10}
 				maxFreeNotes={200}
+				initialScope="exact"
+				initialType="info"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={vi.fn()}
 				onClose={mockOnClose}
@@ -48,6 +50,8 @@ describe("NoteInput Component", () => {
 				userPlan="free"
 				totalNoteCount={200} // 上限
 				maxFreeNotes={200}
+				initialScope="exact"
+				initialType="info"
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				onClose={mockOnClose}
@@ -69,6 +73,8 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 		userPlan: "free" as const,
 		totalNoteCount: 10,
 		maxFreeNotes: 500,
+		initialScope: "exact" as const,
+		initialType: "info" as const,
 		onAddNote: vi.fn().mockResolvedValue(true),
 		onAppendDiary: vi.fn().mockResolvedValue(true),
 		onClose: vi.fn(),
@@ -85,6 +91,7 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 		fireEvent.change(textarea, { target: { value: "ササッと連続連続メモ" } });
 		expect(textarea).toHaveValue("ササッと連続連続メモ");
 
+		fireEvent.focus(textarea);
 		fireEvent.keyDown(textarea, { key: "Enter", ctrlKey: true });
 
 		await waitFor(() => {
@@ -103,6 +110,7 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 
 		fireEvent.change(textarea, { target: { value: "漢字変換中" } });
 
+		fireEvent.focus(textarea);
 		// nativeEvent.isComposing = true をシミュレート
 		const event = new KeyboardEvent("keydown", { key: "Enter", ctrlKey: true });
 		Object.defineProperty(event, "nativeEvent", {
@@ -126,6 +134,8 @@ describe("NoteInput + Diary Integration Split Test", () => {
 				userPlan="free"
 				totalNoteCount={10}
 				maxFreeNotes={500}
+				initialScope="exact"
+				initialType="info"
 				onAddNote={mockAddNote}
 				onAppendDiary={mockAppendDiary}
 				onClose={mockClose}
@@ -134,6 +144,7 @@ describe("NoteInput + Diary Integration Split Test", () => {
 
 		// 1. ノート用テキストエリアの検証
 		const noteTextarea = screen.getByPlaceholderText(/Add a cue to/i);
+		fireEvent.focus(noteTextarea);
 		fireEvent.change(noteTextarea, {
 			target: { value: "Note Content via Test" },
 		});
@@ -149,8 +160,9 @@ describe("NoteInput + Diary Integration Split Test", () => {
 
 		// 2. 日記用テキストエリアの検証
 		const diaryTextarea = screen.getByPlaceholderText(
-			/Append to today's diary/i,
+			/Append log text/i,
 		);
+		fireEvent.focus(diaryTextarea);
 		fireEvent.change(diaryTextarea, {
 			target: { value: "Diary Segment via Test" },
 		});
@@ -165,6 +177,8 @@ describe("NoteInput + Diary Integration Split Test", () => {
 		render(
 			<NoteInput
 				maxFreeNotes={500}
+				initialScope="exact"
+				initialType="info"
 				onAddNote={vi.fn()}
 				onAppendDiary={mockAppendDiary}
 				onClose={mockClose}
@@ -174,8 +188,9 @@ describe("NoteInput + Diary Integration Split Test", () => {
 		);
 
 		const diaryTextarea = screen.getByPlaceholderText(
-			/Append to today's diary/i,
+			/Append log text/i,
 		);
+		fireEvent.focus(diaryTextarea);
 		fireEvent.change(diaryTextarea, {
 			target: { value: "Test Submit Button" },
 		});
@@ -188,5 +203,84 @@ describe("NoteInput + Diary Integration Split Test", () => {
 			expect(mockAppendDiary).toHaveBeenCalledWith("Test Submit Button");
 			expect(mockClose).toHaveBeenCalled(); // 成功時クローズ
 		});
+	});
+});
+
+describe("NoteInput Component - Integrated 2-Block Sync Test", () => {
+	const defaultProps = {
+		userPlan: "free" as const,
+		totalNoteCount: 10,
+		maxFreeNotes: 500,
+		initialScope: "exact" as const,
+		initialType: "info" as const,
+		onAddNote: vi.fn().mockResolvedValue(true),
+		onAppendDiary: vi.fn().mockResolvedValue(true),
+		onClose: vi.fn(),
+	};
+
+	it("初期レンダリング時、親コンテキストから渡されたScopeとTypeがSelectボタン群に正しく反映されていること", () => {
+		render(
+			<NoteInput {...defaultProps} initialScope="domain" initialType="idea" />,
+		);
+
+		// select要素内にSyncされているか検証
+		const selectEl = screen.getByRole("combobox");
+		expect(selectEl).toBeInTheDocument();
+		expect(selectEl).toHaveValue("domain");
+
+		// Type Selector の Idea ボタンのアクティブ状態の検証
+		const ideaButton = screen.getByTitle("Idea");
+		expect(ideaButton.className).toContain("bg-note-idea");
+	});
+
+	it("Diaryセクションが並列島コンテナとして Today の文脈で独立して存在すること", () => {
+		render(<NoteInput {...defaultProps} />);
+		expect(screen.getByText(/Today's Diary/i)).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText(/Append log text/i),
+		).toBeInTheDocument();
+	});
+});
+
+describe("NoteInput Select UI Component Tests", () => {
+	const mockProps = {
+		userPlan: "free" as const,
+		totalNoteCount: 5,
+		maxFreeNotes: 500,
+		initialScope: "exact" as const,
+		initialType: "info" as const,
+		onAddNote: vi.fn().mockResolvedValue(true),
+		onAppendDiary: vi.fn().mockResolvedValue(true),
+		onClose: vi.fn(),
+	};
+
+	it("Page/Domain/Inboxがネイティブselect要素内にマウントされ、初期値が正しく同期されていること", () => {
+		render(<NoteInput {...mockProps} initialScope="domain" />);
+
+		const selectEl = screen.getByRole("combobox");
+		expect(selectEl).toBeInTheDocument();
+		expect(selectEl).toHaveValue("domain");
+	});
+
+	it("非アクティブ側のSubmitボタンが排他的にdisabledになり、誤送信を防ぐこと", () => {
+		render(<NoteInput {...mockProps} />);
+
+		// デフォルトは Note 側がアクティブなため、Diary 側の送信ボタンは不活性
+		const diarySubmitBtn = screen.getByTitle("Append to Diary");
+		expect(diarySubmitBtn).toBeDisabled();
+
+		// Diary 側のテキストエリアへフォーカスをシミュレートし、テキストを入力
+		const diaryTextarea = screen.getByPlaceholderText(
+			/Append log text/i,
+		);
+		fireEvent.focus(diaryTextarea);
+		fireEvent.change(diaryTextarea, {
+			target: { value: "Diary content text" },
+		});
+
+		// 反転して Note 側の送信ボタンが disabled になること
+		const noteSubmitBtn = screen.getByTitle("Add Note");
+		expect(noteSubmitBtn).toBeDisabled();
+		expect(diarySubmitBtn).not.toBeDisabled();
 	});
 });

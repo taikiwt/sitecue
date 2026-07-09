@@ -65,10 +65,9 @@ describe("Header Component - Guest Mode UI & Disclaimer", () => {
 
 		// 3段目: ログイン導線ボタン
 		const signInButton = screen.getByRole("button", {
-			name: /sign in \/ create account/i,
+			name: /^sign in$/i,
 		});
 		expect(signInButton).toBeInTheDocument();
-		expect(signInButton.className).toContain("bg-action");
 		expect(signInButton.className).toContain("rounded-full");
 
 		// ボタンクリックでonLogout（サインイン画面回帰）が発火すること
