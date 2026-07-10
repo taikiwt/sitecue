@@ -149,7 +149,7 @@ export default function Header({
 	};
 
 	return (
-		<div className="p-4 bg-base-surface border-b border-base-border sticky top-0 z-50 w-full min-w-0">
+		<div className="p-2 bg-base-surface border-b border-base-border sticky top-0 z-50 w-full min-w-0">
 			{/* 📐 完璧に対称性を保護し、カプセル膨張時の窒息を防ぐGridトラック設計 */}
 			<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 w-full">
 				<div className="min-w-0 flex flex-col justify-center">
@@ -164,7 +164,7 @@ export default function Header({
 										undefined
 									: undefined,
 							}}
-							className={`cursor-pointer size-3.5 rounded-full shrink-0 transition-transform active:scale-90 ${settings?.color ? "" : "bg-base-border/80"}`}
+							className={`cursor-pointer size-3 rounded-full shrink-0 transition-transform active:scale-90 ${settings?.color ? "" : "bg-base-border/80"}`}
 							title="Toggle note settings"
 							aria-label="Toggle note settings"
 						/>
