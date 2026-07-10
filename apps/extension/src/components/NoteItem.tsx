@@ -14,6 +14,9 @@ import {
 	Star,
 	Trash2,
 	X,
+  PanelTopOpen,
+  PanelBottomClose,
+  Pencil
 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -254,7 +257,7 @@ export default function NoteItem({
 					{/* 🚀 2段構成 Sticky ヘッダーコンテナ (完全不透明 bg-base-bg/100 化と下部境界線の常時明瞭化 border-b border-base-border/50) */}
 					<div className="sticky top-0 z-10 bg-base-bg transition-colors flex flex-col gap-0">
 						{/* 1段目：メタデータ、タイプ、Pin/Star（固定アクション） */}
-						<div className="flex items-center justify-between w-full p-1">
+						<div className="flex items-center justify-between w-full p-0">
 							{/* 左側：Typeアイコン＋完了/未完了トグル (カプセル) */}
 							<button
 								type="button"
@@ -298,11 +301,11 @@ export default function NoteItem({
 							</button>
 
 							{/* 右側：固定アクション（正円絶対死守ルール適用 size-7） */}
-							<div className="flex items-center gap-1">
+							<div className="flex items-center gap-0.5">
 								<button
 									type="button"
 									onClick={() => onToggleFavorite(note)}
-									className={`cursor-pointer size-7 rounded-full flex items-center justify-center transition-all ${note.is_favorite ? "text-action bg-action/5" : "text-muted-foreground hover:bg-base-surface"}`}
+									className={`cursor-pointer size-6 rounded-full flex items-center justify-center transition-all ${note.is_favorite ? "text-action bg-action/5" : "text-muted-foreground hover:bg-base-surface"}`}
 									title={
 										note.is_favorite
 											? "Remove from favorites"
@@ -316,7 +319,7 @@ export default function NoteItem({
 								<button
 									type="button"
 									onClick={() => onTogglePinned(note)}
-									className={`cursor-pointer size-7 rounded-full flex items-center justify-center transition-all ${note.is_pinned ? "text-action bg-action/5" : "text-muted-foreground hover:bg-base-surface"}`}
+									className={`cursor-pointer size-6 rounded-full flex items-center justify-center transition-all ${note.is_pinned ? "text-action bg-action/5" : "text-muted-foreground hover:bg-base-surface"}`}
 									title={note.is_pinned ? "Unpin note" : "Pin note"}
 								>
 									<Pin
@@ -327,9 +330,9 @@ export default function NoteItem({
 						</div>
 
 						{/* 🚀 2段目：並び替え、中央展開トグル、操作群の grid シンメトリー統合構造 */}
-						<div className="grid grid-cols-[1fr_auto_1fr] items-center w-full p-1 transition-opacity duration-200 border-t border-base-border/20">
+						<div className="grid grid-cols-[1fr_auto_1fr] items-center w-full pt-0.5 pb-2 mt-0.5 transition-opacity duration-200 border-t border-base-border/20">
 							{/* 左側：並び替え操作（justify-startを指定） */}
-							<div className="flex items-center gap-0.5 text-muted-foreground/50 justify-start">
+							<div className="flex items-center gap-0 text-muted-foreground/50 justify-start">
 								{!note.is_pinned ? (
 									<>
 										<button
@@ -339,7 +342,7 @@ export default function NoteItem({
 											className="hover:enabled:cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/50 hover:enabled:text-action hover:enabled:bg-base-surface disabled:opacity-30 transition-colors"
 											title="Move up"
 										>
-											<ChevronUp className="w-3.5 h-3.5" />
+											<ChevronUp className="size-4" />
 										</button>
 										<button
 											type="button"
@@ -348,7 +351,7 @@ export default function NoteItem({
 											className="hover:enabled:cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/50 hover:enabled:text-action hover:enabled:bg-base-surface disabled:opacity-30 transition-colors"
 											title="Move down"
 										>
-											<ChevronDown className="w-3.5 h-3.5" />
+											<ChevronDown className="size-4" />
 										</button>
 									</>
 								) : (
@@ -366,12 +369,12 @@ export default function NoteItem({
 										onClick={() =>
 											onToggleExpansion(note.id, note.is_expanded ?? false)
 										}
-										className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-0.5 rounded-full shadow-xs flex items-center gap-1 transition-colors"
+										className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors"
 									>
 										{note.is_expanded ? (
 											<>
 												<ChevronUp
-													className="w-3 h-3 shrink-0"
+													className="w-3.5 h-3.5 shrink-0"
 													aria-hidden="true"
 												/>
 												<span>Show less</span>
@@ -379,7 +382,7 @@ export default function NoteItem({
 										) : (
 											<>
 												<ChevronDown
-													className="w-3 h-3 shrink-0"
+													className="w-3.5 h-3.5 shrink-0"
 													aria-hidden="true"
 												/>
 												<span>Read more</span>
@@ -390,11 +393,11 @@ export default function NoteItem({
 							</div>
 
 							{/* 右側：共通アクション（justify-endを指定） */}
-							<div className="flex items-center gap-1 text-muted-foreground/50 justify-end">
+							<div className="flex items-center gap-0.5 text-muted-foreground/50 justify-end">
 								<button
 									type="button"
 									onClick={handleCopyNote}
-									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-action hover:bg-base-surface transition-colors"
+									className="cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-action hover:bg-base-surface transition-colors"
 									title="Copy note"
 								>
 									{copiedNoteId === note.id ? (
@@ -406,7 +409,7 @@ export default function NoteItem({
 								<button
 									type="button"
 									onClick={startEditing}
-									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-action hover:bg-base-surface transition-colors"
+									className="cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-action hover:bg-base-surface transition-colors"
 									title="Edit"
 								>
 									<Edit2 className="w-3.5 h-3.5" />
@@ -414,7 +417,7 @@ export default function NoteItem({
 								<button
 									type="button"
 									onClick={() => onDelete(note.id)}
-									className="cursor-pointer size-7 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-note-alert hover:bg-note-alert/10 transition-colors"
+									className="cursor-pointer size-6 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-note-alert hover:bg-note-alert/10 transition-colors"
 									title="Delete"
 								>
 									<Trash2 className="w-3.5 h-3.5" />
@@ -424,7 +427,7 @@ export default function NoteItem({
 					</div>
 
 					{/* 本文エリア (ヘッダー境界線の常時固定化に伴い、mt-3 に微調整して美しい空気感を確保) */}
-					<div className="mt-2 flex-1 min-w-0">
+					<div className="mt-0 flex-1 min-w-0">
 						<div
 							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} w-full`}
 						>

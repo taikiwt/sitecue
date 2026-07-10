@@ -113,7 +113,7 @@ export default function DiaryView({
                 setSelectedDiaryDate(dateStr);
                 setIsEditingDiary(false);
               }}
-              className={`cursor-pointer px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${selectedDiaryDate === dateStr
+              className={`cursor-pointer px-3.5 py-2 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${selectedDiaryDate === dateStr
                   ? "bg-action text-action-text"
                   : "bg-base-bg text-muted-foreground hover:bg-base-border/40"
                 }`}
@@ -194,7 +194,7 @@ export default function DiaryView({
                 {diaryData.topics.map((topic: string) => (
                   <div
                     key={topic}
-                    className="w-full text-xs font-semibold text-neutral-700 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-1.5 text-left"
+                    className="w-full text-xs bg-base-surface border-base-border rounded-4xl px-3 py-2 text-left"
                   >
                     {topic}
                   </div>
