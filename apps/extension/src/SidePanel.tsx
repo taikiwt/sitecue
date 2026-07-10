@@ -636,7 +636,7 @@ function NotesUI({
 				}`}
 			>
 				{/* 1. 最上部ヘッダー：完全不動固定マウント */}
-				<div className="flex items-center justify-between px-4 py-3 border-b border-base-border/40 bg-base-bg shrink-0">
+				<div className="flex items-center justify-between px-4 py-3 border-b border-base-border/40 shrink-0">
 					<div className="flex items-center gap-4">
 						<button
 							type="button"

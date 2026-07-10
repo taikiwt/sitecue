@@ -59,11 +59,11 @@ export default function FilterBar({
 	return (
 		<div className="bg-base-surface border-b border-base-border px-3 py-2 flex flex-col gap-2.5 z-20 w-full min-w-0">
 			{/* Scope Tabs: カプセル背景の中に綺麗に整列 */}
-			<div className="grid grid-cols-3 gap-1 bg-base-bg p-1 rounded-full border border-base-border/50">
+			<div className="grid grid-cols-3 gap-1 bg-base-bg p-0 rounded-full border border-base-border/50">
 				<button
 					type="button"
 					onClick={() => setViewScope("exact")}
-					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
+					className={`cursor-pointer py-2 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "exact"
 							? "bg-action text-action-text shadow-sm"
 							: "text-muted-foreground hover:bg-base-surface"
@@ -74,7 +74,7 @@ export default function FilterBar({
 				<button
 					type="button"
 					onClick={() => setViewScope("domain")}
-					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
+					className={`cursor-pointer py-2 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "domain"
 							? "bg-action text-action-text shadow-sm"
 							: "text-muted-foreground hover:bg-base-surface"
@@ -85,7 +85,7 @@ export default function FilterBar({
 				<button
 					type="button"
 					onClick={() => setViewScope("inbox")}
-					className={`cursor-pointer py-1.5 text-xs font-bold rounded-full transition-all text-center ${
+					className={`cursor-pointer py-2 text-xs font-bold rounded-full transition-all text-center ${
 						viewScope === "inbox"
 							? "bg-action text-action-text shadow-sm"
 							: "text-muted-foreground hover:bg-base-surface"

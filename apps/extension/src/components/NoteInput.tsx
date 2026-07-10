@@ -89,7 +89,7 @@ export default function NoteInput({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-2.5 right-2.5 p-1 rounded-full text-muted-foreground hover:text-base-text hover:bg-base-bg transition-all z-50 cursor-pointer"
+        className="absolute top-1 right-1 p-1.5 rounded-full text-muted-foreground hover:text-base-text hover:bg-base-border transition-all z-50 cursor-pointer"
         title="Close input"
       >
         <X aria-hidden="true" className="w-3.5 h-3.5" />
@@ -106,7 +106,7 @@ export default function NoteInput({
         }}
         role="button"
         tabIndex={0}
-        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3 border rounded-4xl transition-all duration-200 text-left ${activeType === "note"
+        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-2 border rounded-4xl transition-all duration-200 text-left ${activeType === "note"
           ? "bg-white border-base-border opacity-100"
           : "bg-transparent border-transparent opacity-45 hover:opacity-60"
           }`}
@@ -127,7 +127,7 @@ export default function NoteInput({
                   setSelectedScope(e.target.value as NoteScope)
                 }
                 onClick={(e) => e.stopPropagation()}
-                className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
+                className="cursor-pointer appearance-none bg-transparent pr-3 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
               >
                 <option value="exact">Page Note</option>
                 <option value="domain">Domain Note</option>
@@ -142,7 +142,7 @@ export default function NoteInput({
             {/* biome-ignore lint/a11y/useKeyWithClickEvents: click handler to stop event propagation */}
             {/* biome-ignore lint/a11y/noStaticElementInteractions: click handler to stop event propagation */}
             <div
-              className="flex bg-neutral-100 p-0.5 rounded-full border border-neutral-200 shrink-0 scale-85 origin-right"
+              className="flex p-1 rounded-full bg-base-surface border-base-border shrink-0 scale-85 origin-right"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -151,13 +151,13 @@ export default function NoteInput({
                   e.stopPropagation();
                   setSelectedType("info");
                 }}
-                className={`cursor-pointer p-1 rounded-full ${selectedType === "info"
+                className={`cursor-pointer p-0.5 rounded-full ${selectedType === "info"
                   ? "bg-note-info/80 text-white"
-                  : "text-neutral-500 hover:text-note-info"
+                  : "text-muted-foreground hover:text-note-info"
                   }`}
                 title="Info"
               >
-                <Info className="size-3.5" aria-hidden="true" />
+                <Info className="size-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -165,13 +165,13 @@ export default function NoteInput({
                   e.stopPropagation();
                   setSelectedType("alert");
                 }}
-                className={`cursor-pointer p-1 rounded-full ${selectedType === "alert"
+                className={`cursor-pointer p-0.5 ml-0.5 rounded-full ${selectedType === "alert"
                   ? "bg-note-alert/80 text-white"
-                  : "text-neutral-500 hover:text-note-alert"
+                  : "text-muted-foreground hover:text-note-alert"
                   }`}
                 title="Alert"
               >
-                <AlertTriangle className="size-3.5" aria-hidden="true" />
+                <AlertTriangle className="size-4" aria-hidden="true" />
               </button>
               <button
                 type="button"
@@ -179,13 +179,13 @@ export default function NoteInput({
                   e.stopPropagation();
                   setSelectedType("idea");
                 }}
-                className={`cursor-pointer p-1 rounded-full ${selectedType === "idea"
+                className={`cursor-pointer p-0.5 ml-0.5 rounded-full ${selectedType === "idea"
                   ? "bg-note-idea/80 text-white"
-                  : "text-neutral-500 hover:text-note-idea"
+                  : "text-muted-foreground hover:text-note-idea"
                   }`}
                 title="Idea"
               >
-                <Lightbulb className="size-3.5" aria-hidden="true" />
+                <Lightbulb className="size-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -293,7 +293,7 @@ export default function NoteInput({
         }}
         role="button"
         tabIndex={0}
-        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-3 rounded-4xl border transition-all duration-200 text-left ${activeType === "diary"
+        className={`grid grid-cols-[auto_1fr_auto] items-center gap-3 p-2 rounded-4xl border transition-all duration-200 text-left ${activeType === "diary"
           ? "bg-white border-base-border opacity-100"
           : "bg-transparent border-transparent opacity-45 hover:opacity-60"
           }`}
