@@ -13,10 +13,6 @@ import {
 	RotateCcw,
 	Star,
 	Trash2,
-	X,
-  PanelTopOpen,
-  PanelBottomClose,
-  Pencil
 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -77,6 +73,12 @@ export default function NoteItem({
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const [isSwapping, setIsSwapping] = useState(false);
 	const handleAutoIndent = useAutoIndent();
+
+	// 変更検知（無変更保存ガード用防壁）
+	const isUnchanged =
+		editContent === note.content &&
+		editScope === note.scope &&
+		editType === (note.note_type || "info");
 
 	const contentRef = useRef<HTMLDivElement>(null);
 
@@ -152,110 +154,124 @@ export default function NoteItem({
 			style={{ contentVisibility: "auto" }}
 		>
 			{isEditing ? (
-				<div className="space-y-2">
-					<div className="flex items-center justify-between mb-2">
-						<div className="flex items-center gap-4 text-xs">
-							<label className="flex items-center gap-1.5 cursor-pointer text-action hover:text-action-hover">
-								<input
-									type="radio"
-									name={`scope-${note.id}`}
-									checked={editScope === "exact"}
-									onChange={() => setEditScope("exact")}
-									className="accent-action focus:ring-action"
-								/>
-								<span>Page</span>
-							</label>
-							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
-								<input
-									type="radio"
-									name={`scope-${note.id}`}
-									checked={editScope === "domain"}
-									onChange={() => setEditScope("domain")}
-									className="accent-action focus:ring-action"
-								/>
-								<span>Domain</span>
-							</label>
-							<label className="flex items-center gap-1.5 cursor-pointer text-neutral-800 hover:text-black">
-								<input
-									type="radio"
-									name={`scope-${note.id}`}
-									checked={editScope === "inbox"}
-									onChange={() => setEditScope("inbox")}
-									className="accent-action focus:ring-action"
-								/>
-								<span>Inbox</span>
-							</label>
+				<div className="space-y-3 flex flex-col flex-1 min-w-0 relative animate-fadeIn">
+					{/* 🚀 2段構成 Sticky 編集ヘッダーコンテナ */}
+					<div className="sticky top-0 z-10 bg-base-bg py-1 mb-1 flex flex-col gap-1 shrink-0">
+						{/* 1段目：決定アクション（右端集約・テキストカプセル化・DiaryViewリスペクト） */}
+						<div className="flex items-center justify-end w-full">
+							{/* 左側：不動ロック配置のコンテキストラベル */}
+							{/*<span className="text-xs text-muted-foreground tracking-wide select-none pl-0.5">
+								Edit Note
+							</span>*/}
+
+							{/* 右側：コンパクトに集約された決定ボタングループ */}
+							<div className="flex items-center gap-1.5">
+								<button
+									type="button"
+									onClick={cancelEditing}
+									className="cursor-pointer px-2.5 py-1 rounded-full bg-base-bg text-muted-foreground font-bold text-xs hover:bg-base-border/40 transition-colors shrink-0"
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									onClick={handleUpdate}
+									disabled={updating || isUnchanged}
+									className="cursor-pointer px-3 py-1 rounded-full bg-action text-action-text font-bold text-xs hover:bg-action-hover disabled:opacity-20 disabled:cursor-not-allowed transition-colors shrink-0 shadow-2xs flex items-center gap-1"
+								>
+									{updating && (
+										<Loader2 className="w-3 h-3 animate-spin shrink-0" />
+									)}
+									<span>Save</span>
+								</button>
+							</div>
 						</div>
-						<div className="flex bg-base-surface p-1 rounded-full border border-base-border/50 w-fit">
-							<button
-								type="button"
-								onClick={() => setEditType("info")}
-								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "info" ? "bg-note-info text-action-text shadow-sm" : "text-muted-foreground hover:text-note-info"}`}
-								title="Info"
-							>
-								<Info className="w-3.5 h-3.5" />
-							</button>
-							<button
-								type="button"
-								onClick={() => setEditType("alert")}
-								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "alert" ? "bg-note-alert text-action-text shadow-sm" : "text-muted-foreground hover:text-note-alert"}`}
-								title="Alert"
-							>
-								<AlertTriangle className="w-3.5 h-3.5" />
-							</button>
-							<button
-								type="button"
-								onClick={() => setEditType("idea")}
-								className={`cursor-pointer flex items-center justify-center rounded-full size-7 transition-colors ${editType === "idea" ? "bg-note-idea text-action-text shadow-sm" : "text-muted-foreground hover:text-note-idea"}`}
-								title="Idea"
-							>
-								<Lightbulb className="w-3.5 h-3.5" />
-							</button>
+
+						{/* 2段目：属性変更（NoteInput.tsx の完全ミラーリング） */}
+						<div className="flex items-center justify-between w-full pt-2 border-t border-base-border/30">
+							{/* 左側：ScopeセレクトUI（枠線なし・太字ネイティブセレクト + ▼矢印） */}
+							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
+								<select
+									value={editScope}
+									onChange={(e) => setEditScope(e.target.value as NoteScope)}
+									className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
+								>
+									<option value="exact">Page Note</option>
+									<option value="domain">Domain Note</option>
+									<option value="inbox">Inbox Note</option>
+								</select>
+								<div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-[10px] select-none">
+									▼
+								</div>
+							</div>
+
+							{/* 右側：Typeインラインカプセル（NoteInputと完全対称） */}
+							<div className="flex p-1 rounded-full bg-base-surface border border-base-border/50 shrink-0 scale-85 origin-right">
+								<button
+									type="button"
+									onClick={() => setEditType("info")}
+									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ${
+										editType === "info"
+											? "bg-note-info text-action-text shadow-2xs"
+											: "text-muted-foreground hover:text-note-info"
+									}`}
+									title="Info"
+								>
+									<Info className="size-4" />
+								</button>
+								<button
+									type="button"
+									onClick={() => setEditType("alert")}
+									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ml-0.5 ${
+										editType === "alert"
+											? "bg-note-alert text-action-text shadow-2xs"
+											: "text-muted-foreground hover:text-note-alert"
+									}`}
+									title="Alert"
+								>
+									<AlertTriangle className="size-4" />
+								</button>
+								<button
+									type="button"
+									onClick={() => setEditType("idea")}
+									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ml-0.5 ${
+										editType === "idea"
+											? "bg-note-idea text-action-text shadow-2xs"
+											: "text-muted-foreground hover:text-note-idea"
+									}`}
+									title="Idea"
+								>
+									<Lightbulb className="size-4" />
+								</button>
+							</div>
 						</div>
 					</div>
-					<TextareaAutosize
-						value={editContent}
-						onChange={(e) => setEditContent(e.target.value)}
-						className="w-full border border-base-border rounded p-2 text-sm focus:outline-none focus:ring-2 focus:ring-action/5 resize-none bg-base-bg"
-						minRows={3}
-						autoFocus
-						onKeyDown={(e) => {
-							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-								e.preventDefault();
-								handleUpdate();
-							} else {
-								handleAutoIndent(e);
-							}
-						}}
-					/>
-					<div className="flex justify-end gap-2">
-						<button
-							type="button"
-							onClick={cancelEditing}
-							className="cursor-pointer flex items-center justify-center rounded-full size-7 text-muted-foreground hover:bg-base-surface transition-colors"
-							title="Cancel"
-						>
-							<X className="w-4 h-4" />
-						</button>
-						<button
-							type="button"
-							onClick={handleUpdate}
-							disabled={updating}
-							className="cursor-pointer flex items-center justify-center rounded-full size-7 bg-action text-action-text hover:bg-action-hover disabled:opacity-50 transition-colors"
-							title="Save"
-						>
-							{updating ? (
-								<Loader2 className="w-4 h-4 animate-spin" />
-							) : (
-								<Check className="w-4 h-4" />
-							)}
-						</button>
+
+					{/* 🚀 高さ制限完全パージ型・流動伸長エディタエリア（stickyヘッダーのポテンシャルをフル解放） */}
+					<div className="flex-1 min-w-0 w-full px-1">
+						<TextareaAutosize
+							value={editContent}
+							onChange={(e) => setEditContent(e.target.value)}
+							className="w-full border border-base-border rounded-xl p-2.5 text-sm focus:outline-none resize-none bg-base-bg text-neutral-900"
+							autoFocus
+							onKeyDown={(e) => {
+								if (e.nativeEvent.isComposing) return; // IME Guard
+								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+									e.preventDefault();
+									if (editContent.trim() && !isUnchanged) {
+										handleUpdate();
+									}
+								} else {
+									handleAutoIndent(e);
+								}
+							}}
+						/>
 					</div>
 				</div>
 			) : (
 				<div className="flex flex-col flex-1">
 					{/* 🚀 2段構成 Sticky ヘッダーコンテナ (完全不透明 bg-base-bg/100 化と下部境界線の常時明瞭化 border-b border-base-border/50) */}
-					<div className="sticky top-0 z-10 bg-base-bg transition-colors flex flex-col gap-0">
+					<div className="sticky top-0 z-10 pt-1 bg-base-bg transition-colors flex flex-col gap-0">
 						{/* 1段目：メタデータ、タイプ、Pin/Star（固定アクション） */}
 						<div className="flex items-center justify-between w-full p-0">
 							{/* 左側：Typeアイコン＋完了/未完了トグル (カプセル) */}
@@ -426,7 +442,7 @@ export default function NoteItem({
 						</div>
 					</div>
 
-					{/* 本文エリア (ヘッダー境界線の常時固定化に伴い、mt-3 に微調整して美しい空気感を確保) */}
+					{/* 本文エリア */}
 					<div className="mt-0 flex-1 min-w-0">
 						<div
 							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} w-full`}

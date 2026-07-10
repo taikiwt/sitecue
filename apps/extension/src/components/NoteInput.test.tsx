@@ -159,9 +159,7 @@ describe("NoteInput + Diary Integration Split Test", () => {
 		vi.clearAllMocks();
 
 		// 2. 日記用テキストエリアの検証
-		const diaryTextarea = screen.getByPlaceholderText(
-			/Append log text/i,
-		);
+		const diaryTextarea = screen.getByPlaceholderText(/Append log text/i);
 		fireEvent.focus(diaryTextarea);
 		fireEvent.change(diaryTextarea, {
 			target: { value: "Diary Segment via Test" },
@@ -187,9 +185,7 @@ describe("NoteInput + Diary Integration Split Test", () => {
 			/>,
 		);
 
-		const diaryTextarea = screen.getByPlaceholderText(
-			/Append log text/i,
-		);
+		const diaryTextarea = screen.getByPlaceholderText(/Append log text/i);
 		fireEvent.focus(diaryTextarea);
 		fireEvent.change(diaryTextarea, {
 			target: { value: "Test Submit Button" },
@@ -236,9 +232,7 @@ describe("NoteInput Component - Integrated 2-Block Sync Test", () => {
 	it("Diaryセクションが並列島コンテナとして Today の文脈で独立して存在すること", () => {
 		render(<NoteInput {...defaultProps} />);
 		expect(screen.getByText(/Today's Diary/i)).toBeInTheDocument();
-		expect(
-			screen.getByPlaceholderText(/Append log text/i),
-		).toBeInTheDocument();
+		expect(screen.getByPlaceholderText(/Append log text/i)).toBeInTheDocument();
 	});
 });
 
@@ -270,9 +264,7 @@ describe("NoteInput Select UI Component Tests", () => {
 		expect(diarySubmitBtn).toBeDisabled();
 
 		// Diary 側のテキストエリアへフォーカスをシミュレートし、テキストを入力
-		const diaryTextarea = screen.getByPlaceholderText(
-			/Append log text/i,
-		);
+		const diaryTextarea = screen.getByPlaceholderText(/Append log text/i);
 		fireEvent.focus(diaryTextarea);
 		fireEvent.change(diaryTextarea, {
 			target: { value: "Diary content text" },

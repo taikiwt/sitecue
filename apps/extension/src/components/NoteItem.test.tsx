@@ -64,6 +64,64 @@ describe("NoteItem Component", () => {
 		fireEvent.click(pinButton);
 		expect(mockOnTogglePinned).toHaveBeenCalledWith(mockNote);
 	});
+
+	it("編集モード移行時に2段構成Stickyヘッダー（セレクトUI、カプセルUI）が正しく描画され、無変更ガードが機能すること", async () => {
+		const mockOnUpdate = vi.fn().mockResolvedValue(true);
+
+		render(
+			<NoteItem
+				note={mockNote}
+				currentFullUrl="https://example.com/page"
+				onUpdate={mockOnUpdate}
+				onDelete={vi.fn()}
+				onToggleResolved={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleExpansion={vi.fn()}
+			/>,
+		);
+
+		// 編集モードを起動
+		const editButton = screen.getByTitle("Edit");
+		fireEvent.click(editButton);
+
+		// 1. 決定テキストアクション、セレクトUI、コンテキストの存在表明
+		expect(screen.getByText("Edit Note")).toBeInTheDocument();
+		const cancelButton = screen.getByRole("button", { name: /Cancel/i });
+		const saveButton = screen.getByRole("button", { name: /Save/i });
+		expect(cancelButton).toBeInTheDocument();
+		expect(saveButton).toBeInTheDocument();
+
+		const scopeSelect = screen.getByRole("combobox");
+		expect(scopeSelect).toBeInTheDocument();
+		expect(scopeSelect).toHaveValue("exact");
+
+		// 初期状態は内容が「無変更」であるため、Saveボタンがdisabledになっていることを検証
+		expect(saveButton).toBeDisabled();
+
+		// 2. スコープの変更インタラクション検証
+		fireEvent.change(scopeSelect, { target: { value: "domain" } });
+		// 変更されたためガードが解除され、有効化されることを検証
+		expect(saveButton).not.toBeDisabled();
+
+		// 3. タイプカプセルのトグル検証（IdeaからAlertへ切り替え）
+		const alertTypeButton = screen.getByTitle("Alert");
+		fireEvent.click(alertTypeButton);
+
+		// 4. テキスト変更による送信検証
+		const textarea = screen.getByRole("textbox");
+		fireEvent.change(textarea, {
+			target: { value: "Updated content text #test" },
+		});
+
+		fireEvent.click(saveButton);
+		expect(mockOnUpdate).toHaveBeenCalledWith(
+			"note-999",
+			"Updated content text #test",
+			"alert",
+			"domain",
+		);
+	});
 });
 
 describe("Header - Settings Dot Promotion & Gear Removal", () => {
