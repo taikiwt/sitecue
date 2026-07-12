@@ -1,9 +1,45 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthStatus } from "../hooks/useAuth";
 import type { Note } from "../hooks/useNotes";
 import Header from "./Header";
 import NoteItem from "./NoteItem";
+
+// 親コンポーネント(NoteList)の編集ステート管理を模倣するラッパー
+const NoteItemTestWrapper = ({
+	note,
+	onUpdate = vi.fn().mockResolvedValue(true),
+	onDelete = vi.fn().mockResolvedValue(true),
+	onToggleResolved = vi.fn().mockResolvedValue(true),
+	onToggleFavorite = vi.fn().mockResolvedValue(true),
+	onTogglePinned = vi.fn().mockResolvedValue(true),
+	onToggleExpansion = vi.fn().mockResolvedValue(true),
+	currentFullUrl = "https://example.com/page",
+	isFavoriteList = false,
+	isPreview = false,
+}: any) => {
+	const [isEditing, setIsEditing] = useState(false);
+	const [_isEditDirty, setIsEditDirty] = useState(false);
+
+	return (
+		<NoteItem
+			note={note}
+			currentFullUrl={currentFullUrl}
+			isFavoriteList={isFavoriteList}
+			isEditing={isEditing}
+			onRequestEdit={(id) => setIsEditing(!!id)}
+			onSetIsEditDirty={setIsEditDirty}
+			onUpdate={onUpdate}
+			onDelete={onDelete}
+			onToggleResolved={onToggleResolved}
+			onToggleFavorite={onToggleFavorite}
+			onTogglePinned={onTogglePinned}
+			onToggleExpansion={onToggleExpansion}
+			isPreview={isPreview}
+		/>
+	);
+};
 
 describe("NoteItem Component", () => {
 	const mockNote: Note = {
@@ -29,15 +65,11 @@ describe("NoteItem Component", () => {
 		const mockOnTogglePinned = vi.fn().mockResolvedValue(true);
 
 		render(
-			<NoteItem
+			<NoteItemTestWrapper
 				note={mockNote}
-				currentFullUrl="https://example.com/page"
-				onUpdate={vi.fn()}
 				onDelete={mockOnDelete}
-				onToggleResolved={vi.fn()}
 				onToggleFavorite={mockOnToggleFavorite}
 				onTogglePinned={mockOnTogglePinned}
-				onToggleExpansion={vi.fn()}
 			/>,
 		);
 
@@ -68,25 +100,13 @@ describe("NoteItem Component", () => {
 	it("編集モード移行時に2段構成Stickyヘッダー（セレクトUI、カプセルUI）が正しく描画され、無変更ガードが機能すること", async () => {
 		const mockOnUpdate = vi.fn().mockResolvedValue(true);
 
-		render(
-			<NoteItem
-				note={mockNote}
-				currentFullUrl="https://example.com/page"
-				onUpdate={mockOnUpdate}
-				onDelete={vi.fn()}
-				onToggleResolved={vi.fn()}
-				onToggleFavorite={vi.fn()}
-				onTogglePinned={vi.fn()}
-				onToggleExpansion={vi.fn()}
-			/>,
-		);
+		render(<NoteItemTestWrapper note={mockNote} onUpdate={mockOnUpdate} />);
 
 		// 編集モードを起動
 		const editButton = screen.getByTitle("Edit");
 		fireEvent.click(editButton);
 
 		// 1. 決定テキストアクション、セレクトUI、コンテキストの存在表明
-		expect(screen.getByText("Edit Note")).toBeInTheDocument();
 		const cancelButton = screen.getByRole("button", { name: /Cancel/i });
 		const saveButton = screen.getByRole("button", { name: /Save/i });
 		expect(cancelButton).toBeInTheDocument();
@@ -121,6 +141,15 @@ describe("NoteItem Component", () => {
 			"alert",
 			"domain",
 		);
+	});
+
+	it("isPreviewがtrueの場合、GripVerticalハンドルやアクションボタン（Copy, Edit, Delete）が非表示になること", () => {
+		render(<NoteItemTestWrapper note={mockNote} isPreview={true} />);
+
+		expect(screen.queryByTitle("Drag to reorder")).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Copy note")).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Edit")).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Delete")).not.toBeInTheDocument();
 	});
 });
 

@@ -280,9 +280,7 @@ describe("useNotes - Silent Refetching", () => {
 		});
 	});
 
-	it("updateNoteOrder実行時、別スコープや別URLのノートが混在していても、同一コンテキストのノートのみを隔離して正確に順序計算されること", async () => {
-		// 表示コンテキストが「example.com (exactスコープ)」のノート2つと、
-		// 画面外の別コンテキスト「another.com (domainスコープ)」のノートが混在している状態を再現
+	it("updateNoteOrder実行時、指定された順序で正確に更新され楽観的UIが反映されること", async () => {
 		const mockNotes = [
 			{
 				id: "note-target",
@@ -298,7 +296,6 @@ describe("useNotes - Silent Refetching", () => {
 				sort_order: 1.0,
 				created_at: "2026-01-01T00:00:00.000Z",
 			},
-			// 💥これが画面外の隠しノート。sort_orderが間に挟まっているが、スコープが違うので隔離・無視されなければならない
 			{
 				id: "note-hidden",
 				url_pattern: "another.com",
@@ -321,18 +318,11 @@ describe("useNotes - Silent Refetching", () => {
 		await waitFor(() => expect(result.current.loading).toBe(false));
 		expect(result.current.notes.length).toBe(3);
 
-		// 仕様追従: 表示コンテキストに合致するもののみを抽出して渡す
-		const visibleNotes = result.current.notes.filter(
-			(n) =>
-				n.scope === "exact" && n.url_pattern === "https://example.com/page",
-		);
-
 		let success = false;
 		await act(async () => {
 			success = await result.current.updateNoteOrder(
 				"note-target",
-				"up",
-				visibleNotes,
+				0.0,
 			);
 		});
 		expect(success).toBe(true);
@@ -346,8 +336,7 @@ describe("useNotes - Silent Refetching", () => {
 		});
 	});
 
-	it("検索やタグ等のフィルターで絞り込まれた状態でも、実際に画面に表示されているノート配列を基準に正確にごぼう抜き順序計算が行われること", async () => {
-		// 表示コンテキストは同一だが、内容フィルターによって1つ（note-hidden）が非表示になる状況を再現
+	it("フィルター状態で移動操作した際も、指定された順序に正しく更新されること", async () => {
 		const mockNotes = [
 			{
 				id: "note-1",
@@ -357,7 +346,6 @@ describe("useNotes - Silent Refetching", () => {
 				content: "りんごのメモ #fruit",
 				created_at: "2026-01-01T00:00:00.000Z",
 			},
-			// 💥これが検索ワード「みかん」によって画面上から除外（非表示）される隠しノート
 			{
 				id: "note-hidden",
 				url_pattern: "https://example.com/page",
@@ -387,22 +375,16 @@ describe("useNotes - Silent Refetching", () => {
 
 		await waitFor(() => expect(result.current.loading).toBe(false));
 
-		// 画面上の絞り込み結果（note-hiddenが除外された、実際に見えている状態の配列）を模倣
-		const visibleNotes = [result.current.notes[0], result.current.notes[2]];
-
-		// 画面上での隣（note-1: 1.0）を追い越すため、「上（up）」へ移動させる
-		// 画面外の note-hidden (1.5) を適切にスキップしていれば、1.0 - 1.0 = 0.0 が算出される
 		let success = false;
 		await act(async () => {
 			success = await result.current.updateNoteOrder(
 				"note-2",
-				"up",
-				visibleNotes,
+				0.0,
 			);
 		});
 		expect(success).toBe(true);
 
-		// 楽観的UI更新結果が 0.0（note-1の前に出た状態）になっているかをアサーション
+		// 楽観的UI更新結果が 0.0になっているかをアサーション
 		await waitFor(() => {
 			const updated = result.current.notes.find((n) => n.id === "note-2");
 			expect(updated?.sort_order).toBe(0.0);
