@@ -331,53 +331,29 @@ export function useNotes(
 
 	const updateNoteOrder = async (
 		id: string,
-		direction: "up" | "down",
-		currentVisibleNotes: Note[],
+		newOrder: number,
 	) => {
 		// 二重防壁ロック: すでに処理中なら即座にガードブロック
 		if (processingNoteIds.has(id)) return false;
 
-		const targetNote = notes.find((n) => n.id === id);
-		if (!targetNote) return false;
-
-		// ソフトウェアロック of 有効化
+		// ソフトウェアロックの有効化
 		setProcessingNoteIds((prev) => {
 			const next = new Set(prev);
 			next.add(id);
 			return next;
 		});
 
-		// 画面上に実際に見えているノート配列（フィルター適用後）から、同じ表示グループ（Favorite / Pinned / Normal）を抽出
-		const filtered = currentVisibleNotes.filter((n) => {
-			if (targetNote.is_favorite) return n.is_favorite;
-			return !n.is_favorite && n.is_pinned === targetNote.is_pinned;
-		});
-
-		// 一貫性あるソート関数を適用
-		const group = [...filtered].sort(sortNotesConsistent);
-
-		// 純粋関数により最適なオーダー値を一意に取得（画面外のノートはOFFSETガードですり抜ける）
-		const newSortOrder = calculateOrderForDirection(group, id, direction);
-		if (newSortOrder === null) {
-			setProcessingNoteIds((prev) => {
-				const next = new Set(prev);
-				next.delete(id);
-				return next;
-			});
-			return false;
-		}
-
 		// 0msレスポンスのインメモリ楽観的UI更新
 		setNotes((prevNotes) => {
 			const newNotes = prevNotes.map((n) =>
-				n.id === id ? { ...n, sort_order: newSortOrder } : n,
+				n.id === id ? { ...n, sort_order: newOrder } : n,
 			);
 			return newNotes.sort(sortNotesConsistent);
 		});
 
 		try {
 			await updateNoteEntity(client as unknown as typeof supabase, id, {
-				sort_order: newSortOrder,
+				sort_order: newOrder,
 			});
 			return true;
 		} catch (error) {

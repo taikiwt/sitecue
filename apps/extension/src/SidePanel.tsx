@@ -580,8 +580,8 @@ function NotesUI({
 						onToggleResolved={toggleResolved}
 						onToggleFavorite={toggleFavorite}
 						onTogglePinned={togglePinned}
-						onUpdateNoteOrder={(id, direction) =>
-							updateNoteOrder(id, direction, finalFilteredNotes)
+						onUpdateNoteOrder={(id, newOrder) =>
+							updateNoteOrder(id, newOrder as number)
 						}
 						onToggleExpansion={toggleNoteExpansion}
 					/>
