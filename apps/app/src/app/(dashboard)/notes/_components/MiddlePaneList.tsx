@@ -228,7 +228,7 @@ export function MiddlePaneList(props: Props) {
 
 	const copyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-	const { mutate: updateNote } = useUpdateNote();
+	const { mutateAsync: updateNote } = useUpdateNote();
 
 	const handleTodoToggle = (
 		e: React.MouseEvent,
@@ -237,7 +237,7 @@ export function MiddlePaneList(props: Props) {
 	) => {
 		e.preventDefault();
 		e.stopPropagation();
-		updateNote({ id: noteId, updates: { is_resolved: !currentResolved } });
+		void updateNote({ id: noteId, updates: { is_resolved: !currentResolved } });
 	};
 
 	useEffect(() => {
@@ -371,10 +371,13 @@ export function MiddlePaneList(props: Props) {
 		(currentDomain && currentDomain !== "inbox") ||
 		(currentView === "diaries" && (currentYear || currentMonth));
 
+	const [isSorting, setIsSorting] = useState(false);
+
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
-		if (!over || active.id === over.id) return;
+		if (!over || isSorting) return;
 
+		// 1. 全件配列（localItems）における正確な物理インデックスを素直に特定
 		const oldIndex = localItems.findIndex(
 			(item) => "id" in item && item.id === active.id,
 		);
@@ -382,31 +385,71 @@ export function MiddlePaneList(props: Props) {
 			(item) => "id" in item && item.id === over.id,
 		);
 
+		if (oldIndex === -1 || newIndex === -1) return;
+		if (oldIndex === newIndex) return;
+
+		// 2. 💡 余計なソートや表示空間の仮想計算を全廃棄し、全件配列に対して直接生の arrayMove を適用
+		// これにより画面上の見た目の動きと全件データ構造が 100% 完全同期する
 		const updatedItems = arrayMove(localItems, oldIndex, newIndex);
-		setLocalItems(updatedItems);
+
+		// 移動完了した要素の新しい物理インデックスを特定
+		const movedIndex = updatedItems.findIndex(
+			(item) => "id" in item && item.id === active.id,
+		);
+
+		if (movedIndex === -1) return;
 
 		let newOrder: number;
+		const OFFSET = 0.0001;
+		const EPSILON = 1e-9;
 
-		if (newIndex === 0) {
-			newOrder = (updatedItems[1] as Note).sort_order - 1;
-		} else if (newIndex === updatedItems.length - 1) {
-			newOrder = (updatedItems[newIndex - 1] as Note).sort_order + 1;
+		if (movedIndex === 0) {
+			// 配列の先頭に移動した場合
+			const nextOrder = (updatedItems[1] as Note)?.sort_order ?? 0;
+			newOrder = nextOrder - 1.0;
+		} else if (movedIndex === updatedItems.length - 1) {
+			// 配列の末尾に移動した場合
+			const prevOrder = (updatedItems[movedIndex - 1] as Note)?.sort_order ?? 0;
+			newOrder = prevOrder + 1.0;
 		} else {
-			const prevOrder = (updatedItems[newIndex - 1] as Note).sort_order;
-			const nextOrder = (updatedItems[newIndex + 1] as Note).sort_order;
-			newOrder = (prevOrder + nextOrder) / 2;
+			// 中間に挟まる場合、移動後の物理的な「すぐ上」と「すぐ下」の要素から正確に sort_order を抽出
+			const prevOrder = (updatedItems[movedIndex - 1] as Note)?.sort_order ?? 0;
+			const nextOrder = (updatedItems[movedIndex + 1] as Note)?.sort_order ?? 0;
+
+			// 同値衝突時の方向性防壁ロジック
+			if (Math.abs(prevOrder - nextOrder) < EPSILON) {
+				if (oldIndex > newIndex) {
+					// 下から上へ引き揚げた時 ➔ 直後の要素のさらに上（小さな値へ）
+					newOrder = nextOrder - OFFSET;
+				} else {
+					// 上から下へ引きずり下ろした時 ➔ 直前の要素의 さらに下（大きな値へ）
+					newOrder = prevOrder + OFFSET;
+				}
+			} else {
+				newOrder = (prevOrder + nextOrder) / 2.0;
+			}
 		}
 
-		const { error } = await supabase
-			.from("sitecue_notes")
-			.update({ sort_order: newOrder })
-			.eq("id", active.id);
+		// 3. 楽観的UI更新: 移動した要素の sort_order のみをピンポイントで書き換え、そのまま状態を確定
+		const targetItem = updatedItems[movedIndex];
+		if (targetItem && "sort_order" in targetItem) {
+			(targetItem as Note).sort_order = newOrder;
+		}
+		setLocalItems(updatedItems);
 
-		if (error) {
-			console.error("Failed to update sort order:", error);
-			setLocalItems(items);
-		} else {
+		// 4. ソフトウェアロックの有効化と通信 of 直列解決
+		setIsSorting(true);
+		try {
+			await updateNote({
+				id: active.id as string,
+				updates: { sort_order: newOrder },
+			});
 			router.refresh();
+		} catch (error) {
+			console.error("Failed to update note order:", error);
+			setLocalItems(items); // ロールバック
+		} finally {
+			setIsSorting(false);
 		}
 	};
 
