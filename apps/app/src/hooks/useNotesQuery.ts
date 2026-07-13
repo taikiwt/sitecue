@@ -72,28 +72,47 @@ export function useUpdateNote() {
 				is_pinned?: boolean;
 				is_favorite?: boolean;
 				is_expanded?: boolean;
+				sort_order?: number;
 			};
 		}) => {
 			const supabase = createClient();
 			return await updateNoteEntity(supabase, id, updates);
 		},
 		onSuccess: (updatedNote) => {
+			// 💡 1. サーバーおよびデータベースと100%一貫した並び順を保証するソート関数を定義
+			const sortNotes = (notes: Note[]) => {
+				return [...notes].sort((a, b) => {
+					// 規約1: is_pinned 降順 (ピン留めが上)
+					if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+					// 規約2: sort_order 昇順 (数値が小さい順)
+					if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+					// 規約3: created_at 降順 (作成日時が新しい順)
+					return (
+						new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+					);
+				});
+			};
+
 			// プレフィックス一致でキャッシュを一括分配・更新する規約を順守
 			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
 				{ queryKey: NOTES_QUERY_KEY },
 				(old) => {
 					if (!old) return old;
 					if (Array.isArray(old)) {
-						return old.map((note) =>
+						const updated = old.map((note) =>
 							note.id === updatedNote.id ? updatedNote : note,
 						);
+						// 💡 2. 単純なmapによる数値置換だけでなく、配列全体の並び順をソートしてキャッシュを要塞化する
+						return sortNotes(updated);
 					}
 					if ("notes" in old) {
+						const updated = old.notes.map((note) =>
+							note.id === updatedNote.id ? updatedNote : note,
+						);
 						return {
 							...old,
-							notes: old.notes.map((note) =>
-								note.id === updatedNote.id ? updatedNote : note,
-							),
+							// 💡 3. 検索結果オブジェクト内の配列に対しても同様にソートを適用して透過的に分配する
+							notes: sortNotes(updated),
 						};
 					}
 					return old;

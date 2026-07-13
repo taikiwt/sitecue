@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { groupNotes } from "@/store/useNotesStore";
@@ -30,9 +30,25 @@ vi.mock("next/navigation", () => ({
 	useSearchParams: () => searchParamsMock(),
 }));
 
-// Mock useUpdateNote
+// Mock useUpdateNote safely using a mock-prefixed bridge to bypass hoisting errors
+const mockMutate: any = (...args: any[]) => mockMutate.impl(...args);
+mockMutate.impl = () => {};
+
 vi.mock("@/hooks/useNotesQuery", () => ({
-	useUpdateNote: () => ({ mutate: vi.fn() }),
+	useUpdateNote: () => ({ mutate: mockMutate, mutateAsync: mockMutate }),
+}));
+
+// Mock DndContext safely using a mock-prefixed bridge
+const mockLastOnDragEndContainer: any = { current: null };
+vi.mock("@dnd-kit/core", () => ({
+	closestCenter: vi.fn(),
+	PointerSensor: vi.fn(),
+	useSensor: vi.fn(),
+	useSensors: vi.fn(),
+	DndContext: (props: any) => {
+		mockLastOnDragEndContainer.current = props.onDragEnd;
+		return props.children;
+	},
 }));
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
@@ -784,5 +800,163 @@ describe("MiddlePaneList Back Button", () => {
 
 		// 安全装置が作動し、入力値が自動リセットされていることを検証
 		expect(searchInput.value).toBe("");
+	});
+});
+
+describe("MiddlePaneList D&D Fractional Indexing", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+		mockMutate.impl = () => {};
+	});
+
+	it("要素順序が物理的に移動した際、正しい順序値が算出されミューテーションが発火すること", async () => {
+		const mutateMock = vi.fn();
+		mockMutate.impl = mutateMock;
+
+		render(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(mockLastOnDragEndContainer.current).toBeDefined();
+
+		// note-1 を note-2 の後ろ（末尾）にドラッグ
+		await act(async () => {
+			await mockLastOnDragEndContainer.current({
+				active: { id: "note-1" },
+				over: { id: "note-2" },
+			});
+		});
+
+		// note-2 (sort_order: 1) の後ろなので、newOrder = 1 + 1 = 2
+		expect(mutateMock).toHaveBeenCalledWith({
+			id: "note-1",
+			updates: { sort_order: 2.0 },
+		});
+	});
+
+	it("移動前後でインデックスが変わらない（リアルタイムスライドでの見かけ上の同一要素ドロップ）場合、処理をスキップすること", async () => {
+		const mutateMock = vi.fn();
+		mockMutate.impl = mutateMock;
+
+		render(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		await act(async () => {
+			await mockLastOnDragEndContainer.current({
+				active: { id: "note-1" },
+				over: { id: "note-1" },
+			});
+		});
+
+		expect(mutateMock).not.toHaveBeenCalled();
+	});
+
+	it("超精密 Fractional Indexing 同値衝突防御（防壁ロジック）で、下から上への引き揚げ時に正しい順序値になること", async () => {
+		const mutateMock = vi.fn();
+		mockMutate.impl = mutateMock;
+
+		const itemsWithSameOrder: Note[] = [
+			{ ...mockItems[0], id: "note-a", sort_order: 1.0 },
+			{ ...mockItems[1], id: "note-b", sort_order: 1.0 },
+			{ ...mockItems[1], id: "note-c", sort_order: 1.0 },
+		];
+
+		render(
+			<MiddlePaneList
+				items={itemsWithSameOrder}
+				groupedNotes={{
+					inbox: itemsWithSameOrder,
+					drafts: [],
+					domains: {},
+				}}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// note-c (index 2, order 1.0) を note-b (index 1) に移動
+		// updatedItems: [note-a, note-c, note-b]
+		// finalIndex = 1
+		// prevOrder (note-a) = 1.0, nextOrder (note-b) = 1.0
+		// Math.abs(prevOrder - nextOrder) < EPSILON は true
+		// initialIndex (2) > finalIndex (1) は true (下から上)
+		// newOrder = nextOrder - OFFSET = 1.0 - 0.0001 = 0.9999
+		await act(async () => {
+			await mockLastOnDragEndContainer.current({
+				active: { id: "note-c" },
+				over: { id: "note-b" },
+			});
+		});
+
+		expect(mutateMock).toHaveBeenCalledWith({
+			id: "note-c",
+			updates: { sort_order: 0.9999 },
+		});
+	});
+
+	it("超精密 Fractional Indexing 同値衝突防御（防壁ロジック）で、上から下への引き降ろし時に正しい順序値になること", async () => {
+		const mutateMock = vi.fn();
+		mockMutate.impl = mutateMock;
+
+		const itemsWithSameOrder: Note[] = [
+			{ ...mockItems[0], id: "note-a", sort_order: 1.0 },
+			{ ...mockItems[1], id: "note-b", sort_order: 1.0 },
+			{ ...mockItems[1], id: "note-c", sort_order: 1.0 },
+		];
+
+		render(
+			<MiddlePaneList
+				items={itemsWithSameOrder}
+				groupedNotes={{
+					inbox: itemsWithSameOrder,
+					drafts: [],
+					domains: {},
+				}}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// note-a (index 0) を note-b (index 1) に移動
+		// updatedItems: [note-b, note-a, note-c]
+		// finalIndex = 1
+		// prevOrder (note-b) = 1.0, nextOrder (note-c) = 1.0
+		// initialIndex (0) < finalIndex (1) は true (上から下)
+		// newOrder = prevOrder + OFFSET = 1.0 + 0.0001 = 1.0001
+		await act(async () => {
+			await mockLastOnDragEndContainer.current({
+				active: { id: "note-a" },
+				over: { id: "note-b" },
+			});
+		});
+
+		expect(mutateMock).toHaveBeenCalledWith({
+			id: "note-a",
+			updates: { sort_order: 1.0001 },
+		});
 	});
 });
