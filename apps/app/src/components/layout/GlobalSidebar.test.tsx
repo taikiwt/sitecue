@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
 import { useNotesStore } from "@/store/useNotesStore";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 // Mock next/navigation
@@ -89,16 +90,9 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		expect(notesLink?.className).toContain("bg-base-bg text-action scale-105");
 	});
 
-	it("should call router.push with globalNew=note when Logo button is clicked", () => {
-		const mockPush = vi.fn();
-		vi.mocked(useRouter).mockReturnValue({
-			push: mockPush,
-			replace: vi.fn(),
-			prefetch: vi.fn(),
-			back: vi.fn(),
-			forward: vi.fn(),
-			refresh: vi.fn(),
-		} as unknown as ReturnType<typeof useRouter>);
+	it("should open global new modal in gate mode when Logo button is clicked", () => {
+		useLayoutStore.getState().closeGlobalNewModal();
+
 		vi.mocked(usePathname).mockReturnValue("/notes");
 		vi.mocked(useSearchParams).mockReturnValue(
 			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,
@@ -127,7 +121,8 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 		const newNoteBtn = screen.getByTitle("New Note");
 		fireEvent.click(newNoteBtn);
 
-		expect(mockPush).toHaveBeenCalledWith("/notes?globalNew=note");
+		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(true);
+		expect(useLayoutStore.getState().globalNewModal.mode).toBe("gate");
 	});
 
 	it("should invalidate notes and drafts queries when pathname is present", () => {

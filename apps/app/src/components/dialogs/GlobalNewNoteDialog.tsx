@@ -5,7 +5,7 @@ import type {
 	Note,
 	ViewScope as NoteScope,
 } from "@sitecue/shared";
-import { ArrowLeft, CalendarDays, Inbox, PenTool } from "lucide-react";
+import { CalendarDays, Inbox, PenTool } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -19,22 +19,28 @@ import { useAppendDiary } from "@/hooks/useDiariesQuery";
 import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/store/useEditorStore";
+import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 
 export function GlobalNewNoteDialog() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
-	const globalNewParam = searchParams.get("globalNew");
-	const intentParam = searchParams.get("intent");
 
-	const isOpen = globalNewParam === "note" || globalNewParam === "diary";
+	const { globalNewModal, openGlobalNewModal, closeGlobalNewModal } =
+		useLayoutStore();
+	const isOpen = globalNewModal.isOpen;
+	const mode = globalNewModal.mode;
 
-	// インメモリStateによるモード制御（ゲート、ノートフォーム、日記フォーム）
-	const [mode, setMode] = useState<"gate" | "note" | "diary">("gate");
+	const setMode = (targetMode: "gate" | "note" | "diary") => {
+		useLayoutStore.setState((state) => ({
+			globalNewModal: { ...state.globalNewModal, mode: targetMode },
+		}));
+	};
+
 	const [content, setContent] = useState("");
 	const [urlPattern, setUrlPattern] = useState("");
 	const [scope, setScope] = useState<NoteScope>("inbox");
-	const [isSaving, setIsSaving] = useState(false);
+	const [_isSaving, _setIsSaving] = useState(false);
 	const [noteType, setNoteType] = useState<Note["note_type"]>("info");
 
 	const createNoteMutation = useCreateNote();
@@ -46,17 +52,20 @@ export function GlobalNewNoteDialog() {
 	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
 	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
 
-	// クエリパラメータに基づく初期モード（ダイレクト・ワープ）のパッシブ同期
+	// 外部からのディープリンク流入時の一度きりのパッシブ同期安全装置
 	useEffect(() => {
-		if (isOpen) {
-			setContent("");
+		const globalNewParam = searchParams.get("globalNew");
+		const intentParam = searchParams.get("intent");
+
+		if ((globalNewParam === "note" || globalNewParam === "diary") && !isOpen) {
+			let targetMode: "gate" | "note" | "diary" = "gate";
 			if (globalNewParam === "diary" || intentParam === "diary") {
-				setMode("diary");
+				targetMode = "diary";
 			} else if (intentParam === "note") {
-				setMode("note");
-			} else {
-				setMode("gate"); // パラメータがない場合は第一形態（ゲート）
+				targetMode = "note";
 			}
+
+			openGlobalNewModal(targetMode);
 
 			let currentExact = searchParams.get("exact");
 			let currentDomain = searchParams.get("domain");
@@ -73,22 +82,31 @@ export function GlobalNewNoteDialog() {
 				setUrlPattern("");
 				setScope("inbox");
 			}
-		}
-	}, [isOpen, globalNewParam, intentParam, searchParams]);
 
-	// Reset state when modal opens
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("globalNew");
+			params.delete("intent");
+			const cleanQuery = params.toString();
+			router.replace(
+				`${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}`,
+			);
+		}
+	}, [searchParams, router, openGlobalNewModal, isOpen]);
+
+	// 起動時の入力クリア・状態リセット（❌歴史ダミープッシュは完全パージ）
 	useEffect(() => {
 		if (isOpen) {
+			setContent("");
 			setNoteType("info");
 		}
 	}, [isOpen]);
 
+	// ❌ window.addEventListener("popstate") によるトリッキーなガード処理は丸ごと削除（パージ）
+
 	const isUrlRequired = scope === "exact" || scope === "domain";
 	const isUrlInvalid = isUrlRequired && !urlPattern.trim();
 	const isSaveDisabled =
-		isSaving ||
-		!content.trim() ||
-		(mode === "note" && (isOverLimit || isUrlInvalid));
+		!content.trim() || (mode === "note" && (isOverLimit || isUrlInvalid));
 
 	const handleOpenChange = (open: boolean) => {
 		if (!open) {
@@ -97,43 +115,45 @@ export function GlobalNewNoteDialog() {
 	};
 
 	const handleCancel = () => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.delete("globalNew");
-		params.delete("intent");
-		router.replace(`${window.location.pathname}?${params.toString()}`);
+		// ⚡ただインメモリのクローズフラグをキックするだけ（0ms駆動・チラつき全面根減）
+		closeGlobalNewModal();
 	};
 
 	const handleSave = async () => {
 		if (isSaveDisabled) return;
 
-		setIsSaving(true);
+		const capturedContent = content.trim();
+		const capturedScope = scope;
+		const capturedNoteType = noteType;
+		const capturedUrlPattern = urlPattern.trim();
+		const currentMode = mode;
+
+		// ⚡0msクローズ（履歴スタックへの干渉を排除）
+		closeGlobalNewModal();
+
 		try {
-			if (mode === "diary") {
+			if (currentMode === "diary") {
 				const d = new Date();
 				const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 				await appendDiaryMutation.mutateAsync({
 					date: todayStr,
-					text: content.trim(),
+					text: capturedContent,
 				});
-				toast.success("Diary log appended.");
-				handleCancel();
-				setIsSaving(false);
+				toast.success("Logged");
 				return;
 			}
 
 			const input: CreateNoteInput = {
-				content: content.trim(),
-				scope: scope,
-				note_type: noteType,
-				currentUrl: urlPattern.trim() || "inbox",
+				content: capturedContent,
+				scope: capturedScope,
+				note_type: capturedNoteType,
+				currentUrl: capturedUrlPattern || "inbox",
 			};
 
 			await createNoteMutation.mutateAsync(input);
-
-			toast.success("Note saved successfully.");
-			handleCancel();
+			toast.success("Saved");
 		} catch (err: unknown) {
-			console.error("Failed to save note:", err);
+			console.error("Failed to save via background pipeline:", err);
 			const errorMessage =
 				err instanceof Error
 					? err.message.toLowerCase()
@@ -142,13 +162,12 @@ export function GlobalNewNoteDialog() {
 						: String(err).toLowerCase();
 
 			if (errorMessage.includes("limit reached")) {
-				handleCancel();
 				openPaywall("notes");
 			} else {
-				toast.error("Failed to save the note.");
+				toast.error(
+					`Failed to save. Retain: "${capturedContent.slice(0, 20)}..."`,
+				);
 			}
-		} finally {
-			setIsSaving(false);
 		}
 	};
 
@@ -166,7 +185,7 @@ export function GlobalNewNoteDialog() {
 		<Dialog open={isOpen} onOpenChange={handleOpenChange}>
 			<DialogContent
 				className={cn(
-					"bg-base-surface duration-300 ease-in-out transition-all flex flex-col max-h-[85vh] overflow-hidden p-0",
+					"bg-base-surface flex flex-col max-h-[85vh] overflow-hidden p-0",
 					mode === "gate" ? "sm:max-w-md" : "sm:max-w-2xl",
 				)}
 			>
@@ -235,15 +254,6 @@ export function GlobalNewNoteDialog() {
 				{mode === "diary" && (
 					<div className="flex flex-col flex-1 p-6 space-y-4">
 						<div className="flex items-center gap-2">
-							{!intentParam && globalNewParam !== "diary" && (
-								<button
-									type="button"
-									onClick={() => setMode("gate")}
-									className="p-1 text-gray-400 hover:text-action cursor-pointer"
-								>
-									<ArrowLeft className="w-4 h-4" />
-								</button>
-							)}
 							<span className="text-xs font-mono font-bold uppercase text-neutral-400">
 								Daily Diary Mode
 							</span>
@@ -254,7 +264,6 @@ export function GlobalNewNoteDialog() {
 							onChange={(e) => setContent(e.target.value)}
 							placeholder="Write down your thoughts for today... (No title required)"
 							className="w-full flex-1 min-h-[320px] p-4 text-base bg-base-bg text-action border border-base-border rounded-xl focus:outline-none focus:ring-1 focus:ring-action resize-none font-sans"
-							disabled={isSaving}
 							onKeyDown={(e) => {
 								if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
 									e.preventDefault();
@@ -272,22 +281,17 @@ export function GlobalNewNoteDialog() {
 								Edit in Diary Studio
 							</Button>
 							<div className="flex gap-2">
-								<Button
-									disabled={isSaving}
-									onClick={handleCancel}
-									type="button"
-									variant="ghost"
-								>
+								<Button onClick={handleCancel} type="button" variant="ghost">
 									Cancel
 								</Button>
 								<Button
 									className="min-w-[100px]"
-									disabled={!content.trim() || isSaving}
+									disabled={!content.trim()}
 									onClick={handleSave}
 									type="button"
 									variant="default"
 								>
-									{isSaving ? "Saving..." : "Save Diary"}
+									Save Diary
 								</Button>
 							</div>
 						</div>
@@ -298,15 +302,6 @@ export function GlobalNewNoteDialog() {
 					<>
 						<div className="p-6 space-y-6 flex-1 overflow-y-auto">
 							<div className="flex items-center gap-2">
-								{!intentParam && globalNewParam !== "diary" && (
-									<button
-										type="button"
-										onClick={() => setMode("gate")}
-										className="p-1 text-gray-400 hover:text-action cursor-pointer"
-									>
-										<ArrowLeft className="w-4 h-4" />
-									</button>
-								)}
 								<span className="text-xs font-mono font-bold uppercase text-neutral-400">
 									Quick Note Mode
 								</span>
@@ -325,7 +320,6 @@ export function GlobalNewNoteDialog() {
 												variant={scope === s ? "default" : "secondary"}
 												size="sm"
 												onClick={() => setScope(s)}
-												disabled={isSaving}
 												className="capitalize cursor-pointer"
 											>
 												{s === "exact" ? "Page" : s}
@@ -344,10 +338,9 @@ export function GlobalNewNoteDialog() {
 										</Label>
 										<Input
 											id="global-url"
-											placeholder="example.com/page"
+											placeholder="[example.com/page](https://example.com/page)"
 											value={urlPattern}
 											onChange={(e) => setUrlPattern(e.target.value)}
-											disabled={isSaving}
 											className="h-9 w-full"
 										/>
 									</div>
@@ -405,18 +398,12 @@ export function GlobalNewNoteDialog() {
 								type="button"
 								variant="outline"
 								onClick={handlePromoteToStudio}
-								disabled={isSaving}
 								className="mr-auto"
 							>
 								Edit in Studio
 							</Button>
 							<div className="flex gap-2">
-								<Button
-									type="button"
-									variant="ghost"
-									onClick={handleCancel}
-									disabled={isSaving}
-								>
+								<Button type="button" variant="ghost" onClick={handleCancel}>
 									Cancel
 								</Button>
 								<Button
@@ -426,7 +413,7 @@ export function GlobalNewNoteDialog() {
 									disabled={isSaveDisabled}
 									className="min-w-[100px]"
 								>
-									{isSaving ? "Saving..." : "Save Note"}
+									Save Note
 								</Button>
 							</div>
 						</div>

@@ -3,6 +3,7 @@ import { Activity, CalendarDays, Layers } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
+import { AppendDiaryButton } from "./_components/AppendDiaryButton";
 import { ContributionTimeline } from "./_components/ContributionTimeline";
 import { DomainDashboardCard } from "./_components/DomainDashboardCard";
 import { RadialActivityChart } from "./_components/RadialActivityChart";
@@ -95,13 +96,8 @@ async function TodayRecapCard() {
 					</div>
 				</CustomLink>
 
-				{/* 2. 「+ append to today's diary」テキストリンク（CustomLink に置換） */}
-				<CustomLink
-					className="text-[11px] text-neutral-400 hover:text-action font-mono tracking-wide uppercase transition-colors underline decoration-dotted underline-offset-4"
-					href="?globalNew=note&intent=diary"
-				>
-					+ append to today's diary
-				</CustomLink>
+				{/* 2. 「+ append to today's diary」テキストリンク（Zustandキックのクライアントボタン） */}
+				<AppendDiaryButton />
 
 				{/* 修正ポイント3: 勝手に削除された元の実績表示文言（new entries today）を完全に復活 */}
 				<div className="flex flex-col justify-center items-center text-center mt-2">
