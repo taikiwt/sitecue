@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button"; // 👈 追加
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { useLayoutStore } from "@/store/useLayoutStore";
 
 interface GlobalSidebarProps {
 	onSearchOpen: () => void;
@@ -19,6 +20,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const queryClient = useQueryClient();
+	const { openGlobalNewModal } = useLayoutStore();
 
 	useEffect(() => {
 		if (pathname) {
@@ -53,12 +55,10 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 					variant="ghost"
 					size="icon"
 					onClick={() => {
-						const params = new URLSearchParams(searchParams.toString());
-						params.set("globalNew", "note");
-						router.push(`${pathname}?${params.toString()}`);
+						openGlobalNewModal("gate");
 						onClose?.();
 					}}
-					className="size-10 p-0 transition-transform active:scale-95"
+					className="size-10 p-0 transition-transform active:scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-transparent focus-visible:shadow-none focus-visible:border-transparent"
 					title="New Note"
 				>
 					<Image

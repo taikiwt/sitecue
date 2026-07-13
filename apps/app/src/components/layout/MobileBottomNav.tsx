@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { cn } from "@/lib/utils"; // 👈 💡 この1行を手打ちで追加してください！
+import { useLayoutStore } from "@/store/useLayoutStore";
 
 // --- 以下、既存のコードのまま ---
 
@@ -17,6 +18,7 @@ interface MobileBottomNavProps {
 function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
+	const { openGlobalNewModal } = useLayoutStore();
 
 	const isDetailOpen = !!(
 		searchParams.get("noteId") || searchParams.get("draftId")
@@ -74,13 +76,9 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 							variant="ghost"
 							size="icon"
 							onClick={() => {
-								const params = new URLSearchParams(searchParams.toString());
-								params.set("globalNew", "note");
-								const newUrl = `${pathname}?${params.toString()}`;
-								window.history.pushState(null, "", newUrl);
-								window.dispatchEvent(new PopStateEvent("popstate"));
+								openGlobalNewModal("gate");
 							}}
-							className="size-12 border-none p-0.5 transition-transform active:scale-95"
+							className="size-12 border-none p-0.5 transition-transform active:scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-transparent focus-visible:shadow-none focus-visible:border-transparent"
 							aria-label="New Note"
 						>
 							<Image
