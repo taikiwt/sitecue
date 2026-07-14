@@ -15,8 +15,9 @@ import {
 	Star,
 	Trash2,
 	X,
+	Pencil
 } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAutoIndent } from "../hooks/useAutoIndent";
@@ -72,6 +73,24 @@ export default function NoteItem({
 	const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const handleAutoIndent = useAutoIndent();
+
+	const cardRef = useRef<HTMLDivElement | null>(null);
+	const prevExpandedRef = useRef(note.is_expanded);
+
+	useEffect(() => {
+		if (prevExpandedRef.current && !note.is_expanded) {
+			if (
+				cardRef.current &&
+				typeof cardRef.current.scrollIntoView === "function"
+			) {
+				cardRef.current.scrollIntoView({
+					behavior: "smooth",
+					block: "nearest",
+				});
+			}
+		}
+		prevExpandedRef.current = note.is_expanded;
+	}, [note.is_expanded]);
 
 	const {
 		attributes,
@@ -154,17 +173,24 @@ export default function NoteItem({
 
 	return (
 		<div
-			ref={setNodeRef}
+			ref={(node) => {
+				setNodeRef(node);
+				cardRef.current = node;
+			}}
 			style={{ ...style, contentVisibility: "auto" }}
 			className={`bg-base-bg p-2 rounded-xl border border-base-border transition-all group relative flex flex-col ${resolvedClasses}`}
 		>
 			{isEditing ? (
 				<div className="space-y-3 flex flex-col flex-1 min-w-0 relative animate-fadeIn">
-					{/* 🚀 2段構成 Sticky 編集ヘッダーコンテナ */}
-					<div className="sticky top-0 z-10 bg-base-bg py-1 mb-1 flex flex-col gap-1 shrink-0">
-						{/* 1段目：決定アクション（右端集約・テキストカプセル化・DiaryViewリスペクト） */}
-						<div className="flex items-center justify-end w-full">
-							{/* 右側：コンパクトに集約された決定ボタングループ */}
+					{/* 🚀 編集モード時のStickyヘッダーにも等しく同じ境界線を底辺に付与し、一貫性を担保 */}
+					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20">
+						{/* 1段目：決定アクション（閲覧時の1段ヘッダーとmin-h-[40px]で等高化、CLSを物理的にゼロにする） */}
+						<div className="flex items-center justify-between w-full min-h-[40px] py-1">
+							{/* 左側：編集中の識別文字（Muted表示で視線移動を邪魔しない） */}
+							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none">
+								Editing note...
+							</div>
+							{/* 右側：コンパクトに集約された決定ボタン */}
 							<div className="flex items-center gap-1.5">
 								<Button
 									variant="ghost"
@@ -192,9 +218,9 @@ export default function NoteItem({
 							</div>
 						</div>
 
-						{/* 2段目：属性変更（NoteInput.tsx の完全ミラーリング） */}
-						<div className="flex items-center justify-between w-full pt-2 border-t border-base-border/30">
-							{/* 左側：ScopeセレクトUI（枠線なし・太字ネイティブセレクト + ▼矢印） */}
+						{/* 2段目：属性変更（TanStack Queryの整合を壊さない、NoteInput.tsxの完全ミラーリング構造） */}
+						<div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-base-border/30">
+							{/* 左側：ScopeセレクトUI */}
 							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
 								<select
 									value={editScope}
@@ -281,7 +307,7 @@ export default function NoteItem({
 						</div>
 					</div>
 
-					{/* 🚀 高さ制限完全パージ型・流動伸長エディタエリア（stickyヘッダーのポテンシャルをフル解放） */}
+					{/* 伸長エディタエリア */}
 					<div className="flex-1 min-w-0 w-full px-1">
 						<TextareaAutosize
 							value={editContent}
@@ -312,12 +338,12 @@ export default function NoteItem({
 				</div>
 			) : (
 				<div className="flex flex-col flex-1">
-					{/* 🚀 2段構成 Sticky ヘッダーコンテナ */}
-					<div className="sticky top-0 z-10 pt-1 bg-base-bg transition-colors flex flex-col gap-0">
-						{/* 1段目：メタデータ、タイプ、Pin/Star（固定アクション） */}
-						<div className="flex items-center justify-between w-full p-0">
-							{/* 左側：Grip + Typeアイコン＋完了/未完了トグル (カプセル) */}
-							<div className="flex items-center gap-1.5">
+					{/* 🚀 Stickyヘッダーコンテナそのものに境界線を統一し、切り替え時の下線モヤモヤを物理的に排除 */}
+					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 select-none border-b border-base-border/20">
+						{/* 🚀 閲覧時：境界線なしのスリム1段ヘッダー（外側Stickyコンテナがborder-bを持つためチラつきゼロ） */}
+						<div className="flex items-center justify-between w-full min-h-[40px] py-1 transition-colors">
+							{/* 左側：Grip + Type（完了/未完了トグル）バッジ */}
+							<div className="flex items-center gap-1.5 shrink-0">
 								{!isPreview && (
 									<div
 										{...attributes}
@@ -332,7 +358,7 @@ export default function NoteItem({
 								<button
 									type="button"
 									onClick={() => onToggleResolved(note.id, note.is_resolved)}
-									className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80`}
+									className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80 shrink-0`}
 									title={
 										note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
 									}
@@ -371,83 +397,30 @@ export default function NoteItem({
 								</button>
 							</div>
 
-							{/* 右側：固定アクション */}
-							<div className="flex items-center gap-0.5">
-								<Button
-									variant="ghost"
-									size="xs"
-									className={`size-6 p-0 rounded-full ${note.is_favorite ? "text-action bg-action/5" : ""}`}
-									icon={
-										<Star
-											className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-current" : ""}`}
-										/>
-									}
-									onClick={() => onToggleFavorite(note)}
-									title={
-										note.is_favorite
-											? "Remove from favorites"
-											: "Add to favorites"
-									}
-								/>
-								<Button
-									variant="ghost"
-									size="xs"
-									className={`size-6 p-0 rounded-full ${note.is_pinned ? "text-action bg-action/5" : ""}`}
-									icon={
-										<Pin
-											className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-current text-action" : ""}`}
-										/>
-									}
-									onClick={() => onTogglePinned(note)}
-									title={note.is_pinned ? "Unpin note" : "Pin note"}
-								/>
-							</div>
-						</div>
-
-						{/* 🚀 2段目：操作群の grid 統合構造 */}
-						<div className="grid grid-cols-[1fr_auto_1fr] items-center w-full pt-0.5 pb-2 mt-0.5 transition-opacity duration-200 border-t border-base-border/20">
-							{/* 左側：Pinnedバッジのみ */}
-							<div className="flex items-center justify-start">
-								{note.is_pinned && (
-									<span className="text-[10px] text-muted-foreground/60 font-medium pl-1">
-										Pinned
-									</span>
-								)}
-							</div>
-
-							{/* 🚀 中央：動的矢印アイコン付き「Read more / Show less」カプセルボタン */}
-							<div className="flex justify-center">
-								{isOverflowing && (
-									<button
-										type="button"
-										onClick={() =>
-											onToggleExpansion(note.id, note.is_expanded ?? false)
-										}
-										className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors"
-									>
-										{note.is_expanded ? (
-											<>
-												<ChevronDown className="w-3.5 h-3.5 shrink-0 rotate-180" />
-												<span>Show less</span>
-											</>
-										) : (
-											<>
-												<ChevronDown className="w-3.5 h-3.5 shrink-0" />
-												<span>Read more</span>
-											</>
-										)}
-									</button>
-								)}
-							</div>
-
-							{/* 右側：共通アクション */}
-							<div className="flex items-center gap-0.5 text-muted-foreground/50 justify-end">
+							{/* 右側：操作ボタン群（薄めグレー、Editは少し微濃色） ＋ メタ状態トグル（マージンで小さく独立配置） */}
+							<div className="flex items-center gap-2 ml-auto shrink-0">
 								{!isPreview && (
-									<>
-										<Button
+									<div className="flex items-center gap-0.5 pr-1.5 border-r border-base-border/30">
+										{/*<Button
 											variant="ghost"
 											size="xs"
-											className="size-6 p-0 rounded-full"
+											className="size-7 p-0 rounded-full text-neutral-800 hover:text-action hover:bg-base-surface"
+											icon={<Edit2 className="w-3.5 h-3.5" />}
+											onClick={startEditing}
+											title="Edit"
+										/>*/}
+										<Button
+											variant="ghost"
+											size="sm"
+											className="size-7 p-0 rounded-full text-muted-foreground/60"
+											icon={<Pencil className="size-4" />}
+											onClick={startEditing}
+											title="Edit"
+										/>
+										<Button
+											variant="ghost"
+											size="sm"
+											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
 											icon={
 												copiedNoteId === note.id ? (
 													<Check className="w-3.5 h-3.5 text-note-info" />
@@ -459,31 +432,70 @@ export default function NoteItem({
 											title="Copy note"
 										/>
 										<Button
-											variant="ghost"
-											size="xs"
-											className="size-6 p-0 rounded-full"
-											icon={<Edit2 className="w-3.5 h-3.5" />}
-											onClick={startEditing}
-											title="Edit"
-										/>
-										<Button
-											variant="destructive"
-											size="xs"
-											className="size-6 p-0 rounded-full"
+											variant="destructive2"
+											size="sm"
+											className="size-7 p-0 rounded-full text-muted-foreground/60"
 											icon={<Trash2 className="w-3.5 h-3.5" />}
 											onClick={() => onDelete(note.id)}
 											title="Delete"
 										/>
-									</>
+									</div>
 								)}
+
+								<div className="flex items-center gap-1 pl-0.5">
+									<Button
+										variant="ghost"
+										size="xs"
+										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_favorite ? "text-action bg-action/5" : "text-muted-foreground/50"}`}
+										icon={
+											<Star
+												className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-current" : ""}`}
+											/>
+										}
+										onClick={() => onToggleFavorite(note)}
+										title={
+											note.is_favorite
+												? "Remove from favorites"
+												: "Add to favorites"
+										}
+									/>
+									<Button
+										variant="ghost"
+										size="xs"
+										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_pinned ? "text-action bg-action/5" : "text-muted-foreground/50"}`}
+										icon={
+											<Pin
+												className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-current text-action" : ""}`}
+											/>
+										}
+										onClick={() => onTogglePinned(note)}
+										title={note.is_pinned ? "Unpin note" : "Pin note"}
+									/>
+								</div>
 							</div>
 						</div>
+
+						{/* 🚀 展開時（Expanded）のぶら下がり：ヘッダーの下部から少しスペースを空けて絶対配置 */}
+						{isOverflowing && note.is_expanded && (
+							<div className="absolute top-[44px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+								<button
+									type="button"
+									onClick={() =>
+										onToggleExpansion(note.id, note.is_expanded ?? false)
+									}
+									className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action hover:bg-base-surface/80 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-base-border/50 bg-base-bg/90 shadow-sm"
+								>
+									<ChevronDown className="w-3.5 h-3.5 shrink-0 rotate-180" />
+									<span>Show less</span>
+								</button>
+							</div>
+						)}
 					</div>
 
 					{/* 本文エリア */}
-					<div className="mt-0 flex-1 min-w-0">
+					<div className="mt-2 flex-1 min-w-0">
 						<div
-							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden" : ""} w-full`}
+							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden pb-8" : ""} w-full`}
 						>
 							<div
 								ref={contentRef}
@@ -492,7 +504,23 @@ export default function NoteItem({
 								<MarkdownRenderer content={note.content} />
 							</div>
 							{isCollapsed && (
-								<div className="absolute bottom-0 left-0 w-full h-12 bg-linear-to-t from-base-bg to-transparent pointer-events-none" />
+								<>
+									{/* フェードアウトグラデーション */}
+									<div className="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
+									{/* 省略表示時（Collapsed）は本文エリアの最下部中央に優雅に配置 */}
+									<div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20">
+										<button
+											type="button"
+											onClick={() =>
+												onToggleExpansion(note.id, note.is_expanded ?? false)
+											}
+											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
+										>
+											<ChevronDown className="w-3.5 h-3.5 shrink-0" />
+											<span>Read more</span>
+										</button>
+									</div>
+								</>
 							)}
 						</div>
 					</div>

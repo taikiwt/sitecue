@@ -6,7 +6,6 @@ import type { Note } from "../hooks/useNotes";
 import Header from "./Header";
 import NoteItem from "./NoteItem";
 
-// 親コンポーネント(NoteList)の編集ステート管理を模倣するラッパー
 const NoteItemTestWrapper = ({
 	note,
 	onUpdate = vi.fn().mockResolvedValue(true),
@@ -59,7 +58,7 @@ describe("NoteItem Component", () => {
 		tags: ["idea"],
 	} as unknown as Note;
 
-	it("Stickyヘッダー内に集約されたアクションボタン（Copy, Edit, Delete）やPin/Starボタンが正しく配置され機能すること", async () => {
+	it("1段に統合されたヘッダー内にアクションボタン（Copy, Edit, Delete）やPin/Starボタンが正しく配置され機能すること", async () => {
 		const mockOnDelete = vi.fn().mockResolvedValue(true);
 		const mockOnToggleFavorite = vi.fn().mockResolvedValue(true);
 		const mockOnTogglePinned = vi.fn().mockResolvedValue(true);
@@ -73,7 +72,7 @@ describe("NoteItem Component", () => {
 			/>,
 		);
 
-		// 2段構成ヘッダー内の各ボタンの存在表明
+		// 1段ヘッダー内の各ボタンの存在表明
 		const copyButton = screen.getByTitle("Copy note");
 		const editButton = screen.getByTitle("Edit");
 		const deleteButton = screen.getByTitle("Delete");
@@ -86,6 +85,9 @@ describe("NoteItem Component", () => {
 		expect(favoriteButton).toBeInTheDocument();
 		expect(pinButton).toBeInTheDocument();
 
+		// Pinned テキストは1段化に伴い撤去されているため、存在しないことを確認
+		expect(screen.queryByText("Pinned")).not.toBeInTheDocument();
+
 		// ユーザー操作の振る舞い検証
 		fireEvent.click(deleteButton);
 		expect(mockOnDelete).toHaveBeenCalledWith("note-999");
@@ -97,7 +99,7 @@ describe("NoteItem Component", () => {
 		expect(mockOnTogglePinned).toHaveBeenCalledWith(mockNote);
 	});
 
-	it("編集モード移行時に2段構成Stickyヘッダー（セレクトUI、カプセルUI）が正しく描画され、無変更ガードが機能すること", async () => {
+	it("編集モード移行時に2段構成Sticky編集ヘッダー（決定アクション、セレクトUI、属性セレクター）が正しく描画され、無変更ガードが機能すること", async () => {
 		const mockOnUpdate = vi.fn().mockResolvedValue(true);
 
 		render(<NoteItemTestWrapper note={mockNote} onUpdate={mockOnUpdate} />);
@@ -106,11 +108,14 @@ describe("NoteItem Component", () => {
 		const editButton = screen.getByTitle("Edit");
 		fireEvent.click(editButton);
 
-		// 1. 決定テキストアクション、セレクトUI、コンテキストの存在表明
+		// 1段目決定テキストアクション、2段目セレクトUI、コンテキストの存在表明
 		const cancelButton = screen.getByRole("button", { name: /Cancel/i });
 		const saveButton = screen.getByRole("button", { name: /Save/i });
 		expect(cancelButton).toBeInTheDocument();
 		expect(saveButton).toBeInTheDocument();
+
+		// 編集中のインジケーターテキスト確認
+		expect(screen.getByText("Editing note...")).toBeInTheDocument();
 
 		const scopeSelect = screen.getByRole("combobox");
 		expect(scopeSelect).toBeInTheDocument();
@@ -119,16 +124,16 @@ describe("NoteItem Component", () => {
 		// 初期状態は内容が「無変更」であるため、Saveボタンがdisabledになっていることを検証
 		expect(saveButton).toBeDisabled();
 
-		// 2. スコープの変更インタラクション検証
+		// スコープの変更インタラクション検証
 		fireEvent.change(scopeSelect, { target: { value: "domain" } });
 		// 変更されたためガードが解除され、有効化されることを検証
 		expect(saveButton).not.toBeDisabled();
 
-		// 3. タイプカプセルのトグル検証（IdeaからAlertへ切り替え）
+		// タイプカプセルのトグル検証（IdeaからAlertへ切り替え）
 		const alertTypeButton = screen.getByTitle("Alert");
 		fireEvent.click(alertTypeButton);
 
-		// 4. テキスト変更による送信検証
+		// テキスト変更による送信検証
 		const textarea = screen.getByRole("textbox");
 		fireEvent.change(textarea, {
 			target: { value: "Updated content text #test" },
@@ -172,21 +177,15 @@ describe("Header - Settings Dot Promotion & Gear Removal", () => {
 			/>,
 		);
 
-		// 1. 歯車ボタン (title="Settings" などのボタン) が存在しないこと
 		expect(screen.queryByTitle("Settings")).not.toBeInTheDocument();
 
-		// 2. タイトル左側のカラー丸ドットボタンが存在すること
 		const dotButton = screen.getByTitle("Toggle note settings");
 		expect(dotButton).toBeInTheDocument();
-
-		// 最初は設定エリア (Label 入力欄など) が非表示
 		expect(screen.queryByLabelText(/Label/i)).not.toBeInTheDocument();
 
-		// 3. ドットボタンクリックで設定エリアが表示されること
 		fireEvent.click(dotButton);
 		expect(screen.getByLabelText(/Label/i)).toBeInTheDocument();
 
-		// もう一度クリックで非表示になること
 		fireEvent.click(dotButton);
 		expect(screen.queryByLabelText(/Label/i)).not.toBeInTheDocument();
 	});
