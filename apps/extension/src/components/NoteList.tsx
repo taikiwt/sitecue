@@ -1,17 +1,17 @@
 import {
 	DndContext,
+	type DragEndEvent,
+	type DragOverEvent,
+	DragOverlay,
+	type DragStartEvent,
 	PointerSensor,
 	useSensor,
 	useSensors,
-	type DragEndEvent,
-	type DragStartEvent,
-	type DragOverEvent,
-	DragOverlay,
 } from "@dnd-kit/core";
 import {
+	arrayMove,
 	SortableContext,
 	verticalListSortingStrategy,
-	arrayMove,
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
 import { useState } from "react";
@@ -36,10 +36,7 @@ interface NoteListProps {
 	) => Promise<boolean>;
 	onToggleFavorite: (note: Note) => Promise<boolean>;
 	onTogglePinned: (note: Note) => Promise<boolean>;
-	onUpdateNoteOrder: (
-		id: string,
-		newOrder: number,
-	) => Promise<boolean>;
+	onUpdateNoteOrder: (id: string, newOrder: number) => Promise<boolean>;
 	onToggleExpansion: (id: string, current: boolean) => Promise<boolean>;
 }
 
@@ -55,17 +52,26 @@ export default function NoteList({
 	onUpdateNoteOrder,
 	onToggleExpansion,
 }: NoteListProps) {
-	const [isSorting, setIsSorting] = useState(false);
+	const [_isSorting, setIsSorting] = useState(false);
 	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 	const [isEditDirty, setIsEditDirty] = useState(false);
 	const [activeDragNote, setActiveDragNote] = useState<Note | null>(null);
 
-	const [activeFavoriteNotes, setActiveFavoriteNotes] = useState<Note[] | null>(null);
-	const [activePinnedNotes, setActivePinnedNotes] = useState<Note[] | null>(null);
-	const [activeNormalNotes, setActiveNormalNotes] = useState<Note[] | null>(null);
+	const [activeFavoriteNotes, setActiveFavoriteNotes] = useState<Note[] | null>(
+		null,
+	);
+	const [activePinnedNotes, setActivePinnedNotes] = useState<Note[] | null>(
+		null,
+	);
+	const [activeNormalNotes, setActiveNormalNotes] = useState<Note[] | null>(
+		null,
+	);
 
-	const handleDragStart = (event: DragStartEvent, group: "favorites" | "pinned" | "normal") => {
+	const handleDragStart = (
+		event: DragStartEvent,
+		group: "favorites" | "pinned" | "normal",
+	) => {
 		const note = notes.find((n) => n.id === event.active.id);
 		if (note) setActiveDragNote(note);
 
@@ -76,7 +82,8 @@ export default function NoteList({
 					.sort(
 						(a, b) =>
 							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+							new Date(a.created_at).getTime() -
+								new Date(b.created_at).getTime(),
 					),
 			);
 		}
@@ -87,7 +94,8 @@ export default function NoteList({
 					.sort(
 						(a, b) =>
 							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+							new Date(a.created_at).getTime() -
+								new Date(b.created_at).getTime(),
 					),
 			);
 		}
@@ -98,38 +106,48 @@ export default function NoteList({
 					.sort(
 						(a, b) =>
 							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+							new Date(a.created_at).getTime() -
+								new Date(b.created_at).getTime(),
 					),
 			);
 		}
 	};
 
-	const createDragOverHandler = (group: "favorites" | "pinned" | "normal") => (event: DragOverEvent) => {
-		const { active, over } = event;
-		if (!over || active.id === over.id) return;
+	const createDragOverHandler =
+		(group: "favorites" | "pinned" | "normal") => (event: DragOverEvent) => {
+			const { active, over } = event;
+			if (!over || active.id === over.id) return;
 
-		if (group === "favorites" && activeFavoriteNotes) {
-			const oldIndex = activeFavoriteNotes.findIndex((n) => n.id === active.id);
-			const newIndex = activeFavoriteNotes.findIndex((n) => n.id === over.id);
-			if (oldIndex !== -1 && newIndex !== -1) {
-				setActiveFavoriteNotes(arrayMove(activeFavoriteNotes, oldIndex, newIndex));
+			if (group === "favorites" && activeFavoriteNotes) {
+				const oldIndex = activeFavoriteNotes.findIndex(
+					(n) => n.id === active.id,
+				);
+				const newIndex = activeFavoriteNotes.findIndex((n) => n.id === over.id);
+				if (oldIndex !== -1 && newIndex !== -1) {
+					setActiveFavoriteNotes(
+						arrayMove(activeFavoriteNotes, oldIndex, newIndex),
+					);
+				}
 			}
-		}
-		if (group === "pinned" && activePinnedNotes) {
-			const oldIndex = activePinnedNotes.findIndex((n) => n.id === active.id);
-			const newIndex = activePinnedNotes.findIndex((n) => n.id === over.id);
-			if (oldIndex !== -1 && newIndex !== -1) {
-				setActivePinnedNotes(arrayMove(activePinnedNotes, oldIndex, newIndex));
+			if (group === "pinned" && activePinnedNotes) {
+				const oldIndex = activePinnedNotes.findIndex((n) => n.id === active.id);
+				const newIndex = activePinnedNotes.findIndex((n) => n.id === over.id);
+				if (oldIndex !== -1 && newIndex !== -1) {
+					setActivePinnedNotes(
+						arrayMove(activePinnedNotes, oldIndex, newIndex),
+					);
+				}
 			}
-		}
-		if (group === "normal" && activeNormalNotes) {
-			const oldIndex = activeNormalNotes.findIndex((n) => n.id === active.id);
-			const newIndex = activeNormalNotes.findIndex((n) => n.id === over.id);
-			if (oldIndex !== -1 && newIndex !== -1) {
-				setActiveNormalNotes(arrayMove(activeNormalNotes, oldIndex, newIndex));
+			if (group === "normal" && activeNormalNotes) {
+				const oldIndex = activeNormalNotes.findIndex((n) => n.id === active.id);
+				const newIndex = activeNormalNotes.findIndex((n) => n.id === over.id);
+				if (oldIndex !== -1 && newIndex !== -1) {
+					setActiveNormalNotes(
+						arrayMove(activeNormalNotes, oldIndex, newIndex),
+					);
+				}
 			}
-		}
-	};
+		};
 
 	const handleDragCancel = () => {
 		setActiveDragNote(null);
@@ -142,29 +160,35 @@ export default function NoteList({
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 	);
 
-	const favoriteNotes = activeFavoriteNotes ?? notes
-		.filter((n) => n.is_favorite)
-		.sort(
-			(a, b) =>
-				(a.sort_order || 0) - (b.sort_order || 0) ||
-				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-		);
+	const favoriteNotes =
+		activeFavoriteNotes ??
+		notes
+			.filter((n) => n.is_favorite)
+			.sort(
+				(a, b) =>
+					(a.sort_order || 0) - (b.sort_order || 0) ||
+					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+			);
 
-	const pinnedNotes = activePinnedNotes ?? notes
-		.filter((n) => !n.is_favorite && n.is_pinned)
-		.sort(
-			(a, b) =>
-				(a.sort_order || 0) - (b.sort_order || 0) ||
-				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-		);
+	const pinnedNotes =
+		activePinnedNotes ??
+		notes
+			.filter((n) => !n.is_favorite && n.is_pinned)
+			.sort(
+				(a, b) =>
+					(a.sort_order || 0) - (b.sort_order || 0) ||
+					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+			);
 
-	const normalNotes = activeNormalNotes ?? notes
-		.filter((n) => !n.is_favorite && !n.is_pinned)
-		.sort(
-			(a, b) =>
-				(a.sort_order || 0) - (b.sort_order || 0) ||
-				new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-		);
+	const normalNotes =
+		activeNormalNotes ??
+		notes
+			.filter((n) => !n.is_favorite && !n.is_pinned)
+			.sort(
+				(a, b) =>
+					(a.sort_order || 0) - (b.sort_order || 0) ||
+					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+			);
 
 	const handleRequestEdit = (id: string) => {
 		if (editingNoteId && editingNoteId !== id && isEditDirty) {
@@ -196,7 +220,8 @@ export default function NoteList({
 							.sort(
 								(a, b) =>
 									(a.sort_order || 0) - (b.sort_order || 0) ||
-									new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+									new Date(a.created_at).getTime() -
+										new Date(b.created_at).getTime(),
 							)
 					: group === "pinned"
 						? notes
@@ -204,14 +229,16 @@ export default function NoteList({
 								.sort(
 									(a, b) =>
 										(a.sort_order || 0) - (b.sort_order || 0) ||
-										new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+										new Date(a.created_at).getTime() -
+											new Date(b.created_at).getTime(),
 								)
 						: notes
 								.filter((n) => !n.is_favorite && !n.is_pinned)
 								.sort(
 									(a, b) =>
 										(a.sort_order || 0) - (b.sort_order || 0) ||
-										new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+										new Date(a.created_at).getTime() -
+											new Date(b.created_at).getTime(),
 								);
 			};
 
@@ -297,7 +324,11 @@ export default function NoteList({
 		);
 	}
 
-	if (favoriteNotes.length === 0 && pinnedNotes.length === 0 && normalNotes.length === 0) {
+	if (
+		favoriteNotes.length === 0 &&
+		pinnedNotes.length === 0 &&
+		normalNotes.length === 0
+	) {
 		return (
 			<div className="flex flex-col items-center justify-center py-10 text-center">
 				<div className="bg-base-bg p-4 rounded-full mb-4">

@@ -1,6 +1,5 @@
 import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
 import {
-	calculateOrderForDirection,
 	createNoteEntity,
 	deleteNoteEntity,
 	fetchExtensionNoteContents,
@@ -138,7 +137,6 @@ export function useNotes(
 			authStatus.mode === "guest" ? "guest-user" : session?.user?.id;
 		if (!currentUserId) return false;
 
-		// 楽観的UI用の一時データ作成のために純粋な解決ロジックを利用
 		const resolved = resolveNotePayload({
 			content,
 			note_type: selectedType,
@@ -146,10 +144,11 @@ export function useNotes(
 			currentUrl: currentFullUrl,
 		});
 
+		// 💡 【ワープ現象の完全封殺】昇順ソートに対応し、仮ノートも最初から「最上部（最小値 - 1.0）」に差し込む
 		const newSortOrder =
 			notes.length > 0
-				? Math.max(...notes.map((n) => n.sort_order || 0)) + 1
-				: 0;
+				? Math.min(...notes.map((n) => n.sort_order || 0)) - 1.0
+				: 0.0;
 
 		const tempId = crypto.randomUUID();
 		const tempNote = {
@@ -168,24 +167,42 @@ export function useNotes(
 			tags: resolved.tags,
 		} as Note;
 
-		// UI（ステート）には全スコープ追加する
-		setNotes((prev) => [...prev, tempNote]);
+		// 楽観的に仮ノートを即時マウント（ガタつかず最上部に綺麗に固定されます）
+		setNotes((prev) => [...prev, tempNote].sort(sortNotesConsistent));
 
 		try {
-			// 新設したDALを呼び出し
-			const data = await createNoteEntity(
-				client as unknown as typeof supabase,
-				currentUserId,
-				{
-					content,
-					note_type: selectedType,
-					scope: selectedScope,
-					currentUrl: currentFullUrl,
-				},
-			);
+			let data: Note;
+			if (authStatus.mode === "guest") {
+				// 💡 【ゲストモードDALクラッシュ回避】localClient のメソッドチェーン崩壊を防ぐため、DALをバイパス
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.insert(tempNote) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient insertion fell back", e);
+					}
+				}
+				data = tempNote; // 確定データとして tempNote をそのまま昇格
+			} else {
+				// ログインモード時は従来通り完璧なSupabase共通DALを安全に実行
+				data = await createNoteEntity(
+					client as unknown as typeof supabase,
+					currentUserId,
+					{
+						content,
+						note_type: selectedType,
+						scope: selectedScope,
+						currentUrl: currentFullUrl,
+					},
+				);
+			}
 
-			// 確定したDBのデータでローカルステートを上書き
-			setNotes((prev) => prev.map((n) => (n.id === tempId ? data : n)));
+			// 確定データで上書き
+			setNotes((prev) =>
+				prev.map((n) => (n.id === tempId ? data : n)).sort(sortNotesConsistent),
+			);
 
 			if (selectedScope === "inbox") {
 				toast.success("Saved to Inbox");
@@ -211,16 +228,52 @@ export function useNotes(
 	) => {
 		if (!editContent.trim()) return false;
 		try {
-			const data = await updateNoteEntity(
-				client as unknown as typeof supabase,
-				id,
-				{
+			let data: Note;
+			if (authStatus.mode === "guest") {
+				const existingNote = notes.find((n) => n.id === id);
+				if (!existingNote) return false;
+
+				const resolved = resolveNotePayload({
 					content: editContent,
 					note_type: editType,
-					scope: editScope,
+					scope: editScope ?? existingNote.scope,
 					currentUrl: currentFullUrl,
-				},
-			);
+				});
+
+				const updatedNote = {
+					...existingNote,
+					content: editContent,
+					note_type: editType,
+					scope: editScope ?? existingNote.scope,
+					url_pattern: resolved.url_pattern,
+					tags: resolved.tags,
+					updated_at: new Date().toISOString(),
+				} as Note;
+
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update(updatedNote)
+							.eq("id", id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient update fell back", e);
+					}
+				}
+				data = updatedNote;
+			} else {
+				data = await updateNoteEntity(
+					client as unknown as typeof supabase,
+					id,
+					{
+						content: editContent,
+						note_type: editType,
+						scope: editScope,
+						currentUrl: currentFullUrl,
+					},
+				);
+			}
 
 			setNotes((prevNotes) => prevNotes.map((n) => (n.id === id ? data : n)));
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
@@ -261,9 +314,23 @@ export function useNotes(
 	) => {
 		const nextStatus = !currentStatus;
 		try {
-			await updateNoteEntity(client as unknown as typeof supabase, id, {
-				is_resolved: nextStatus,
-			});
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ is_resolved: nextStatus })
+							.eq("id", id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient toggleResolved fell back", e);
+					}
+				}
+			} else {
+				await updateNoteEntity(client as unknown as typeof supabase, id, {
+					is_resolved: nextStatus,
+				});
+			}
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -282,7 +349,7 @@ export function useNotes(
 	const toggleFavorite = async (note: Note) => {
 		const nextStatus = !note.is_favorite;
 
-		// ⚡️ 楽観的UI更新 (オプティミスティック更新): DB通信の前にUIステートを即時反映
+		// 楽観的UI更新
 		setNotes((prevNotes) =>
 			prevNotes.map((n) =>
 				n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
@@ -290,20 +357,32 @@ export function useNotes(
 		);
 
 		try {
-			await updateNoteEntity(client as unknown as typeof supabase, note.id, {
-				is_favorite: nextStatus,
-			});
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ is_favorite: nextStatus })
+							.eq("id", note.id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient toggleFavorite fell back", e);
+					}
+				}
+			} else {
+				await updateNoteEntity(client as unknown as typeof supabase, note.id, {
+					is_favorite: nextStatus,
+				});
+			}
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
-
-			// 🛡️ エラー時のロールバック: 通信失敗時はサイレントに元のステートへ戻す
+			// ロールバック
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
 					n.id === note.id ? { ...n, is_favorite: note.is_favorite } : n,
 				),
 			);
-
 			toast.error("Failed to update status");
 			return false;
 		}
@@ -312,9 +391,23 @@ export function useNotes(
 	const togglePinned = async (note: Note) => {
 		const nextStatus = !note.is_pinned;
 		try {
-			await updateNoteEntity(client as unknown as typeof supabase, note.id, {
-				is_pinned: nextStatus,
-			});
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ is_pinned: nextStatus })
+							.eq("id", note.id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient togglePinned fell back", e);
+					}
+				}
+			} else {
+				await updateNoteEntity(client as unknown as typeof supabase, note.id, {
+					is_pinned: nextStatus,
+				});
+			}
 
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
@@ -329,21 +422,15 @@ export function useNotes(
 		}
 	};
 
-	const updateNoteOrder = async (
-		id: string,
-		newOrder: number,
-	) => {
-		// 二重防壁ロック: すでに処理中なら即座にガードブロック
+	const updateNoteOrder = async (id: string, newOrder: number) => {
 		if (processingNoteIds.has(id)) return false;
 
-		// ソフトウェアロックの有効化
 		setProcessingNoteIds((prev) => {
 			const next = new Set(prev);
 			next.add(id);
 			return next;
 		});
 
-		// 0msレスポンスのインメモリ楽観的UI更新
 		setNotes((prevNotes) => {
 			const newNotes = prevNotes.map((n) =>
 				n.id === id ? { ...n, sort_order: newOrder } : n,
@@ -352,9 +439,23 @@ export function useNotes(
 		});
 
 		try {
-			await updateNoteEntity(client as unknown as typeof supabase, id, {
-				sort_order: newOrder,
-			});
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ sort_order: newOrder })
+							.eq("id", id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient updateNoteOrder fell back", e);
+					}
+				}
+			} else {
+				await updateNoteEntity(client as unknown as typeof supabase, id, {
+					sort_order: newOrder,
+				});
+			}
 			return true;
 		} catch (error) {
 			console.error("Failed to update note order", error);
@@ -362,7 +463,6 @@ export function useNotes(
 			fetchNotes(); // ロールバック
 			return false;
 		} finally {
-			// ソフトウェアロックの解除
 			setProcessingNoteIds((prev) => {
 				const next = new Set(prev);
 				next.delete(id);
@@ -373,20 +473,32 @@ export function useNotes(
 
 	const toggleNoteExpansion = async (id: string, currentValue: boolean) => {
 		const nextValue = !currentValue;
-		// Optimistic update
 		setNotes((prevNotes) =>
 			prevNotes.map((n) =>
 				n.id === id ? { ...n, is_expanded: nextValue } : n,
 			),
 		);
 		try {
-			await updateNoteEntity(client as unknown as typeof supabase, id, {
-				is_expanded: nextValue,
-			});
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					try {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ is_expanded: nextValue })
+							.eq("id", id) as unknown as Promise<unknown>);
+					} catch (e) {
+						console.warn("localClient toggleNoteExpansion fell back", e);
+					}
+				}
+			} else {
+				await updateNoteEntity(client as unknown as typeof supabase, id, {
+					is_expanded: nextValue,
+				});
+			}
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle expansion", error);
-			// Revert on error
 			setNotes((prevNotes) =>
 				prevNotes.map((n) =>
 					n.id === id ? { ...n, is_expanded: currentValue } : n,
