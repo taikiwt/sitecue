@@ -191,7 +191,8 @@ export default function NoteList({
 			);
 
 	const handleRequestEdit = (id: string) => {
-		if (editingNoteId && editingNoteId !== id && isEditDirty) {
+		// 💡 修正：id が空文字（Cancelによる終了時）は、別のノートへの移動ではないためガード（window.confirm）を完全にバイパスする！
+		if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
 			const confirmLeave = window.confirm(
 				"You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
 			);

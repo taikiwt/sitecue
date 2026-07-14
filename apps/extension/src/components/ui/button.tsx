@@ -16,6 +16,7 @@ export const buttonVariants = cva(
 					"border border-base-border bg-base-bg text-action hover:bg-base-surface",
 				ghost: "text-muted-foreground hover:text-action hover:bg-base-surface",
 				destructive: "bg-note-alert/10 text-note-alert hover:bg-note-alert/20",
+				destructive2: "hover:text-note-alert hover:bg-note-alert/10",
 			},
 			size: {
 				xs: "h-6 gap-1 px-2 text-xs rounded-full [&_svg]:size-3",
