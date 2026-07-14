@@ -1,5 +1,5 @@
-import { getScopeUrls } from "@sitecue/shared";
 import { useSortable } from "@dnd-kit/sortable";
+import { getScopeUrls } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	Check,
@@ -73,9 +73,18 @@ export default function NoteItem({
 	const [isOverflowing, setIsOverflowing] = useState(false);
 	const handleAutoIndent = useAutoIndent();
 
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: note.id });
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: note.id });
 	const style = {
-		transform: transform ? `translate3d(${transform.x}, ${transform.y}, 0)` : undefined,
+		transform: transform
+			? `translate3d(${transform.x}, ${transform.y}, 0)`
+			: undefined,
 		transition,
 		opacity: isDragging ? 0 : undefined,
 	};

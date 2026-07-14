@@ -320,10 +320,7 @@ describe("useNotes - Silent Refetching", () => {
 
 		let success = false;
 		await act(async () => {
-			success = await result.current.updateNoteOrder(
-				"note-target",
-				0.0,
-			);
+			success = await result.current.updateNoteOrder("note-target", 0.0);
 		});
 		expect(success).toBe(true);
 
@@ -377,10 +374,7 @@ describe("useNotes - Silent Refetching", () => {
 
 		let success = false;
 		await act(async () => {
-			success = await result.current.updateNoteOrder(
-				"note-2",
-				0.0,
-			);
+			success = await result.current.updateNoteOrder("note-2", 0.0);
 		});
 		expect(success).toBe(true);
 
