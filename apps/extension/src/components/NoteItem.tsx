@@ -29,7 +29,7 @@ const COLLAPSE_THRESHOLD = 160;
 // 💡 完了アニメーションの時間をここで一括管理します（ミリ秒単位）
 // 2つの合計値はNoteList.tsx側のsetTimeoutと合わせる必要がある
 const ANIM_STAGE1_DELAY = 300; // 前半：チェックマークだけを表示してカード形状を維持する時間
-const ANIM_STAGE2_DURATION = 400; // 後半：カードが物理的に縮んでスライドして消える時間
+const ANIM_STAGE2_DURATION = 200; // 後半：カードが物理的に縮んでスライドして消える時間
 
 interface NoteItemProps {
 	note: Note;
@@ -231,7 +231,11 @@ export default function NoteItem({
 			: "border-base-border";
 	// 0ms時点で opacity-0 や scale-95 が入った瞬間にアニメーションが暴発するのを防ぎ、インライン style で秒数を個別管理します。
 	const resolvingClasses = isResolving
-		? ` opacity-0 translate-x-full py-0 my-0 border-y-0 pointer-events-none ${isCollapsePhase ? "overflow-hidden" : "overflow-visible"}`
+		? ` opacity-0 translate-x-full pointer-events-none ${
+				isCollapsePhase
+					? "overflow-hidden py-0 my-0 border-y-0"
+					: "overflow-visible"
+			}`
 		: " opacity-100 translate-x-0";
 
 	return (
@@ -251,10 +255,13 @@ export default function NoteItem({
 				//   - opacity / transform / padding / border / margin: 0msのOnClickの瞬間から 200ms のディレイを厳格に挟んで、後半の400msで綺麗にフェードアウトする。
 				// 通常時はディレイや余韻のないサクサクとした快適な手触りを維持。
 				transition: isResolving
-					? `max-height ${ANIM_STAGE2_DURATION}ms ease-in-out 0ms, ` +
-						`opacity ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms, ` +
-						`transform ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms, ` +
-						`translate ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms`
+					? `max-height ${ANIM_STAGE2_DURATION}ms ease-in 0ms, ` +
+						`opacity ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms, ` +
+						`transform ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms, ` +
+						`translate ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms, ` +
+						`padding ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms, ` +
+						`border-color ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms, ` +
+						`margin ${ANIM_STAGE2_DURATION}ms ease-in ${ANIM_STAGE1_DELAY}ms`
 					: "border-color 200ms ease-in-out, box-shadow 200ms ease-in-out, transform 200ms ease-in-out, translate 200ms ease-in-out",
 			}}
 			// 💡 className から一括指定の transition-all を完全削除！

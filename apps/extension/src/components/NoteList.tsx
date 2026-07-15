@@ -372,7 +372,7 @@ export default function NoteList({
 					return next;
 				});
 			}
-		}, 700);
+		}, 500);
 
 		return true;
 	};
