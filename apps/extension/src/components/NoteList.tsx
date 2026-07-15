@@ -38,6 +38,7 @@ interface NoteListProps {
 	onTogglePinned: (note: Note) => Promise<boolean>;
 	onUpdateNoteOrder: (id: string, newOrder: number) => Promise<boolean>;
 	onToggleExpansion: (id: string, current: boolean) => Promise<boolean>;
+	showResolved?: boolean;
 }
 
 export default function NoteList({
@@ -51,12 +52,18 @@ export default function NoteList({
 	onTogglePinned,
 	onUpdateNoteOrder,
 	onToggleExpansion,
+	showResolved = false,
 }: NoteListProps) {
 	const [_isSorting, setIsSorting] = useState(false);
 	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 	const [isEditDirty, setIsEditDirty] = useState(false);
 	const [activeDragNote, setActiveDragNote] = useState<Note | null>(null);
+
+	const [resolvingNoteIds, setResolvingNoteIds] = useState<Set<string>>(
+		new Set(),
+	);
+	// ------------------------------------------
 
 	const [activeFavoriteNotes, setActiveFavoriteNotes] = useState<Note[] | null>(
 		null,
@@ -191,7 +198,6 @@ export default function NoteList({
 			);
 
 	const handleRequestEdit = (id: string) => {
-		// 💡 修正：id が空文字（Cancelによる終了時）は、別のノートへの移動ではないためガード（window.confirm）を完全にバイパスする！
 		if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
 			const confirmLeave = window.confirm(
 				"You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
@@ -207,13 +213,11 @@ export default function NoteList({
 		async (event: DragEndEvent) => {
 			const { active, over } = event;
 
-			// 1. 判定対象とする「すでに移動済みの最新ローカル配列」を決定
 			let finalList: Note[] | null = null;
 			if (group === "favorites") finalList = activeFavoriteNotes;
 			if (group === "pinned") finalList = activePinnedNotes;
 			if (group === "normal") finalList = activeNormalNotes;
 
-			// 2. Props由来の「ドラッグ開始前の初期配列」を取得するヘルパー
 			const getInitialList = () => {
 				return group === "favorites"
 					? notes
@@ -246,13 +250,11 @@ export default function NoteList({
 			const initialList = getInitialList();
 			if (!finalList) finalList = initialList;
 
-			// 💡 overがない場合はキャンセルして即時終了
 			if (!over) {
 				handleDragCancel();
 				return;
 			}
 
-			// 3. 初期配列内の位置と、入れ替え完了後のローカル配列内の「最終位置」をそれぞれ特定
 			const initialIndex = initialList.findIndex((n) => n.id === active.id);
 			const finalIndex = finalList.findIndex((n) => n.id === active.id);
 
@@ -261,9 +263,6 @@ export default function NoteList({
 				return;
 			}
 
-			// 💡 【大修正：真犯人の駆除】
-			// active.id === over.id で判定すると、リアルタイムスライドによりoverが常に自分自身になってしまい、保存処理が蒸発する。
-			// そのため、「初期のインデックスと最終的なインデックスが同じかどうか」で真の移動有無を判定する！
 			if (initialIndex === finalIndex) {
 				handleDragCancel();
 				return;
@@ -273,7 +272,6 @@ export default function NoteList({
 			const OFFSET = 0.0001;
 			const EPSILON = 1e-9;
 
-			// 4. 新しい絶対位置から Fractional Indexing を超精密に計算
 			if (finalIndex === 0) {
 				const nextOrder = finalList[1]?.sort_order ?? 0;
 				newOrder = nextOrder - 1.0;
@@ -285,12 +283,9 @@ export default function NoteList({
 				const nextOrder = finalList[finalIndex + 1]?.sort_order ?? 0;
 
 				if (Math.abs(prevOrder - nextOrder) < EPSILON) {
-					// 同値衝突時の防壁ロジック（initialIndex と finalIndex の高低差から移動方向を正確に判定）
 					if (initialIndex > finalIndex) {
-						// 下から上へ引き揚げた時 ➔ 追い越した直後の要素のさらに上（小さな値へ）
 						newOrder = nextOrder - OFFSET;
 					} else {
-						// 上から下へ引きずり下ろした時 ➔ 追い越した直前の要素のさらに下（大きな値へ）
 						newOrder = prevOrder + OFFSET;
 					}
 				} else {
@@ -300,13 +295,11 @@ export default function NoteList({
 
 			setIsSorting(true);
 			try {
-				// バックエンドへの単一更新を貫通させる
 				await onUpdateNoteOrder(active.id as string, newOrder);
 			} catch (error) {
 				console.error("Failed to update note order:", error);
 			} finally {
 				setIsSorting(false);
-				// 後処理とローカルStateのリセットを一元実行
 				handleDragCancel();
 			}
 		};
@@ -345,7 +338,47 @@ export default function NoteList({
 		);
 	}
 
+	const handleToggleResolved = async (
+		id: string,
+		currentStatus: boolean | undefined,
+	) => {
+		const willBeResolved = !currentStatus;
+
+		// 🛡️ 多重クリック防止（二重ソフトウェアロック）
+		if (resolvingNoteIds.has(id)) return false;
+
+		// 🛡️【完了ONモードまたは未解決化時は即時更新】
+		if (showResolved || !willBeResolved) {
+			return await onToggleResolved(id, currentStatus);
+		}
+
+		// 🛡️【完了OFFモード時はシーケンシャル制御】
+		setResolvingNoteIds((prev) => {
+			const next = new Set(prev);
+			next.add(id);
+			return next;
+		});
+
+		setTimeout(async () => {
+			try {
+				await onToggleResolved(id, currentStatus);
+			} catch (error) {
+				console.error("Failed to toggle resolved status:", error);
+			} finally {
+				setResolvingNoteIds((current) => {
+					if (!current.has(id)) return current;
+					const next = new Set(current);
+					next.delete(id);
+					return next;
+				});
+			}
+		}, 700);
+
+		return true;
+	};
+
 	const renderItem = (note: Note, isFavorite: boolean) => {
+		const isResolving = resolvingNoteIds.has(note.id);
 		return (
 			<NoteItem
 				key={note.id}
@@ -357,10 +390,11 @@ export default function NoteList({
 				onSetIsEditDirty={setIsEditDirty}
 				onUpdate={onUpdate}
 				onDelete={onDelete}
-				onToggleResolved={onToggleResolved}
+				onToggleResolved={handleToggleResolved}
 				onToggleFavorite={onToggleFavorite}
 				onTogglePinned={onTogglePinned}
 				onToggleExpansion={onToggleExpansion}
+				isResolving={isResolving}
 			/>
 		);
 	};

@@ -12,6 +12,8 @@
   --color-note-idea: #ff8104;
   --color-muted: #f3f4f6;
   --color-muted-foreground: #9ca3af;
+  --color-success: oklch(0.7881 0.1322 183.75);
+  --color-success-foreground: oklch(0.985 0 0);
 }
 
 @utility scrollbar-hide {

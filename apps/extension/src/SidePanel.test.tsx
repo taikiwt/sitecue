@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import SidePanel from "./SidePanel";
 
@@ -169,80 +169,108 @@ describe("SidePanel Component", () => {
 	});
 
 	it("タブ（viewScope）の切り替えで表示されるノートがフィルタリングされ、他ドメインのノートが隔離されること", async () => {
-		render(<SidePanel />);
+		vi.useFakeTimers();
+		try {
+			render(<SidePanel />);
 
-		// 1. 最初は Page (exact) タブが選択されているはず
-		expect(screen.getByText("Exact Note")).toBeInTheDocument();
-		expect(screen.queryByText("Domain Note")).not.toBeInTheDocument();
-		expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
+			// 1. 最初は Page (exact) タブが選択されているはず
+			expect(screen.getByText("Exact Note")).toBeInTheDocument();
+			expect(screen.queryByText("Domain Note")).not.toBeInTheDocument();
+			expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
 
-		// 他ドメインの通常ノート (Note 4) は表示されないこと
-		expect(screen.queryByText("Other Page Note")).not.toBeInTheDocument();
+			// 他ドメインの通常ノート (Note 4) は表示されないこと
+			expect(screen.queryByText("Other Page Note")).not.toBeInTheDocument();
 
-		// お気に入りであれば、他ドメインのノート (Note 5) も表示される
-		const favoritesButton = screen.getByText(/FAVORITES/);
-		fireEvent.click(favoritesButton);
-		expect(screen.getByText("Favorite Note (Other Scope)")).toBeInTheDocument();
+			// お気に入りであれば、他ドメインのノート (Note 5) も表示される
+			const favoritesButton = screen.getByText(/FAVORITES/);
+			fireEvent.click(favoritesButton);
+			expect(
+				screen.getByText("Favorite Note (Other Scope)"),
+			).toBeInTheDocument();
 
-		// 2. Domain タブに切り替え
-		const domainTab = screen.getByRole("button", { name: /Domain/ });
-		fireEvent.click(domainTab);
+			// 2. Domain タブに切り替え
+			const domainTab = screen.getByRole("button", { name: /Domain/ });
+			fireEvent.click(domainTab);
 
-		expect(screen.queryByText("Exact Note")).not.toBeInTheDocument();
-		expect(screen.getByText("Domain Note")).toBeInTheDocument();
-		expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
-		// お気に入りであれば、他ドメイン・他スコープであっても表示される（グローバルお気に入り）
-		expect(screen.getByText("Favorite Note (Other Scope)")).toBeInTheDocument();
+			act(() => {
+				vi.advanceTimersByTime(600);
+			});
 
-		// 3. Inbox タブに切り替え
-		const inboxTab = screen.getByRole("button", { name: /Inbox/ });
-		fireEvent.click(inboxTab);
+			expect(screen.queryByText("Exact Note")).not.toBeInTheDocument();
+			expect(screen.getByText("Domain Note")).toBeInTheDocument();
+			expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
+			// お気に入りであれば、他ドメイン・他スコープであっても表示される（グローバルお気に入り）
+			expect(
+				screen.getByText("Favorite Note (Other Scope)"),
+			).toBeInTheDocument();
 
-		expect(screen.queryByText("Exact Note")).not.toBeInTheDocument();
-		expect(screen.queryByText("Domain Note")).not.toBeInTheDocument();
-		expect(screen.getByText("Inbox Note")).toBeInTheDocument();
-		// ただし Inbox タブでは、Page/Domain スコープのお気に入りは表示されない（隔離）
-		expect(
-			screen.queryByText("Favorite Note (Other Scope)"),
-		).not.toBeInTheDocument();
+			// 3. Inbox タブに切り替え
+			const inboxTab = screen.getByRole("button", { name: /Inbox/ });
+			fireEvent.click(inboxTab);
+
+			act(() => {
+				vi.advanceTimersByTime(600);
+			});
+
+			expect(screen.queryByText("Exact Note")).not.toBeInTheDocument();
+			expect(screen.queryByText("Domain Note")).not.toBeInTheDocument();
+			expect(screen.getByText("Inbox Note")).toBeInTheDocument();
+			// ただし Inbox タブでは、Page/Domain スコープのお気に入りは表示されない（隔離）
+			expect(
+				screen.queryByText("Favorite Note (Other Scope)"),
+			).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("他ドメインのお気に入りノートを解除したとき、即座に画面から消えること", async () => {
-		// すでに vi.mock でモック化されている useNotes を取得
-		const { useNotes } = await import("./hooks/useNotes");
-		const mockUseNotes = vi.mocked(useNotes);
+		vi.useFakeTimers();
+		try {
+			// すでに vi.mock でモック化されている useNotes を取得
+			const { useNotes } = await import("./hooks/useNotes");
+			const mockUseNotes = vi.mocked(useNotes);
 
-		const { rerender } = render(<SidePanel />);
+			const { rerender } = render(<SidePanel />);
 
-		// お気に入りセクションを開く
-		const favoritesButton = screen.getByText(/FAVORITES/);
-		fireEvent.click(favoritesButton);
-		expect(screen.getByText("Favorite Note (Other Scope)")).toBeInTheDocument();
+			// お気に入りセクションを開く
+			const favoritesButton = screen.getByText(/FAVORITES/);
+			fireEvent.click(favoritesButton);
+			expect(
+				screen.getByText("Favorite Note (Other Scope)"),
+			).toBeInTheDocument();
 
-		// モックの返り値を「お気に入り解除後」の状態に更新
-		const updatedNotes = mockNotes.map((n) =>
-			n.id === "5" ? { ...n, is_favorite: false } : n,
-		);
+			// モックの返り値を「お気に入り解除後」の状態に更新
+			const updatedNotes = mockNotes.map((n) =>
+				n.id === "5" ? { ...n, is_favorite: false } : n,
+			);
 
-		mockUseNotes.mockReturnValue({
-			notes: updatedNotes,
-			loading: false,
-			addNote: vi.fn(),
-			updateNote: vi.fn(),
-			deleteNote: vi.fn(),
-			toggleResolved: vi.fn(),
-			toggleFavorite: vi.fn(),
-			togglePinned: vi.fn(),
-			updateNoteOrder: vi.fn(),
-			toggleNoteExpansion: vi.fn(),
-		} as unknown as ReturnType<typeof useNotes>);
+			mockUseNotes.mockReturnValue({
+				notes: updatedNotes,
+				loading: false,
+				addNote: vi.fn(),
+				updateNote: vi.fn(),
+				deleteNote: vi.fn(),
+				toggleResolved: vi.fn(),
+				toggleFavorite: vi.fn(),
+				togglePinned: vi.fn(),
+				updateNoteOrder: vi.fn(),
+				toggleNoteExpansion: vi.fn(),
+			} as unknown as ReturnType<typeof useNotes>);
 
-		rerender(<SidePanel />);
+			rerender(<SidePanel />);
 
-		// お気に入りを解除した他ドメインのノートは、現在の Page タブから消えるはず
-		expect(
-			screen.queryByText("Favorite Note (Other Scope)"),
-		).not.toBeInTheDocument();
+			act(() => {
+				vi.advanceTimersByTime(600);
+			});
+
+			// お気に入りを解除した他ドメインのノートは、現在の Page タブから消えるはず
+			expect(
+				screen.queryByText("Favorite Note (Other Scope)"),
+			).not.toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 
 	it("コピーボタンをクリックしてメニューからTextコピーができること", async () => {
