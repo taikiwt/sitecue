@@ -5,17 +5,16 @@ import {
 	Check,
 	ChevronDown,
 	Copy,
-	Edit2,
 	GripVertical,
 	Info,
 	Lightbulb,
 	Loader2,
+	Pencil,
 	Pin,
 	RotateCcw,
 	Star,
 	Trash2,
 	X,
-	Pencil
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -26,6 +25,11 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import { Button } from "./ui/button";
 
 const COLLAPSE_THRESHOLD = 160;
+
+// 💡 完了アニメーションの時間をここで一括管理します（ミリ秒単位）
+// 2つの合計値はNoteList.tsx側のsetTimeoutと合わせる必要がある
+const ANIM_STAGE1_DELAY = 300; // 前半：チェックマークだけを表示してカード形状を維持する時間
+const ANIM_STAGE2_DURATION = 400; // 後半：カードが物理的に縮んでスライドして消える時間
 
 interface NoteItemProps {
 	note: Note;
@@ -49,6 +53,7 @@ interface NoteItemProps {
 	onRequestEdit: (id: string) => void;
 	onSetIsEditDirty: (dirty: boolean) => void;
 	isPreview?: boolean;
+	isResolving?: boolean;
 }
 
 export default function NoteItem({
@@ -65,6 +70,7 @@ export default function NoteItem({
 	onRequestEdit,
 	onSetIsEditDirty,
 	isPreview = false,
+	isResolving = false,
 }: NoteItemProps) {
 	const [editContent, setEditContent] = useState("");
 	const [editType, setEditType] = useState<NoteType>("info");
@@ -91,6 +97,52 @@ export default function NoteItem({
 		}
 		prevExpandedRef.current = note.is_expanded;
 	}, [note.is_expanded]);
+
+	// 編集終了（Save / Cancel）を検知して最上部へ自動スクロール
+	const prevEditingRef = useRef(isEditing);
+
+	useEffect(() => {
+		if (prevEditingRef.current && !isEditing) {
+			if (
+				cardRef.current &&
+				typeof cardRef.current.scrollIntoView === "function"
+			) {
+				cardRef.current.scrollIntoView({
+					behavior: "smooth",
+					block: "nearest",
+				});
+			}
+		}
+		prevEditingRef.current = isEditing;
+	}, [isEditing]);
+
+	// 長文見切れを絶対回避しつつ、100%滑らかに縮小させる scrollHeight ハック
+	const [animatingHeight, setAnimatingHeight] = useState<number | null>(null);
+	// 前半200ms（巨大チェックマーク露出中）と、後半400ms（崩落中）の物理フェーズをインメモリ追跡
+	const [isCollapsePhase, setIsCollapsePhase] = useState(false);
+
+	useEffect(() => {
+		if (isResolving && cardRef.current) {
+			// 1. まず実寸高さを測定して固定（クリッピングを完全に防止）
+			const fullHeight = cardRef.current.scrollHeight;
+			setAnimatingHeight(fullHeight);
+			setIsCollapsePhase(false);
+
+			// 2. 🔥【200msタイムライン直列同期の掟】
+			// 200msの間は高さを100%維持し、中央の巨大チェックマークのフェードイン＆バウンスのビューポートを死守！
+			// 200ms経過した瞬間に、collapseフェーズ（物理取り潰し）へ移行させる。
+			const delayTimer = setTimeout(() => {
+				setAnimatingHeight(0);
+				setIsCollapsePhase(true);
+			}, ANIM_STAGE1_DELAY);
+
+			return () => {
+				clearTimeout(delayTimer);
+			};
+		}
+		setAnimatingHeight(null);
+		setIsCollapsePhase(false);
+	}, [isResolving]);
 
 	const {
 		attributes,
@@ -171,26 +223,57 @@ export default function NoteItem({
 	const resolvedClasses = note.is_resolved ? "opacity-60 grayscale-[0.5]" : "";
 	const isCollapsed = isOverflowing && !note.is_expanded;
 
+	// アニメーション中の競合排除用クラス出し分け
+	const paddingClass = isResolving && isCollapsePhase ? "p-0" : "p-2";
+	const borderClass =
+		isResolving && isCollapsePhase
+			? "border-transparent"
+			: "border-base-border";
+	// 0ms時点で opacity-0 や scale-95 が入った瞬間にアニメーションが暴発するのを防ぎ、インライン style で秒数を個別管理します。
+	const resolvingClasses = isResolving
+		? ` opacity-0 translate-x-full py-0 my-0 border-y-0 pointer-events-none ${isCollapsePhase ? "overflow-hidden" : "overflow-visible"}`
+		: " opacity-100 translate-x-0";
+
 	return (
 		<div
 			ref={(node) => {
 				setNodeRef(node);
 				cardRef.current = node;
 			}}
-			style={{ ...style, contentVisibility: "auto" }}
-			className={`bg-base-bg p-2 rounded-xl border border-base-border transition-all group relative flex flex-col ${resolvedClasses}`}
+			style={{
+				...style,
+				contentVisibility: "auto",
+				maxHeight:
+					animatingHeight !== null ? `${animatingHeight}px` : undefined,
+				// 💡【タイムライン個別調律のベストプラクティス】
+				// アニメーション時（isResolving === true）のみ、詳細度を上書きしてブラウザに時間差を直接命じる：
+				//   - max-height: 200msのタイマーで animatingHeight = 0px になった瞬間から、ディレイなし（0ms遅延）で400msかけて縮む。
+				//   - opacity / transform / padding / border / margin: 0msのOnClickの瞬間から 200ms のディレイを厳格に挟んで、後半の400msで綺麗にフェードアウトする。
+				// 通常時はディレイや余韻のないサクサクとした快適な手触りを維持。
+				transition: isResolving
+					? `max-height ${ANIM_STAGE2_DURATION}ms ease-in-out 0ms, ` +
+						`opacity ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms, ` +
+						`transform ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms, ` +
+						`translate ${ANIM_STAGE2_DURATION}ms ease-in-out ${ANIM_STAGE1_DELAY}ms`
+					: "border-color 200ms ease-in-out, box-shadow 200ms ease-in-out, transform 200ms ease-in-out, translate 200ms ease-in-out",
+			}}
+			// 💡 className から一括指定の transition-all を完全削除！
+			className={`bg-base-bg rounded-xl border group relative flex flex-col ${paddingClass} ${borderClass} ${resolvedClasses} ${resolvingClasses}`}
 		>
+			{/* カード全体を覆う多重防止グレーアウト＆中央チェックマークオーバーレイ */}
+			{isResolving && (
+				<div className="absolute inset-0 flex items-center justify-center bg-base-bg/85 rounded-xl z-30 animate-fadeIn pointer-events-none">
+					{/* 💡 text-note-info から text-muted-foreground に変更し、translate-y-3 を追加して重心を真ん中へ下げる */}
+					<Check aria-hidden="true" className="text-success size-10" />
+				</div>
+			)}
 			{isEditing ? (
 				<div className="space-y-3 flex flex-col flex-1 min-w-0 relative animate-fadeIn">
-					{/* 🚀 編集モード時のStickyヘッダーにも等しく同じ境界線を底辺に付与し、一貫性を担保 */}
 					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20">
-						{/* 1段目：決定アクション（閲覧時の1段ヘッダーとmin-h-[40px]で等高化、CLSを物理的にゼロにする） */}
 						<div className="flex items-center justify-between w-full min-h-[40px] py-1">
-							{/* 左側：編集中の識別文字（Muted表示で視線移動を邪魔しない） */}
 							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none">
 								Editing note...
 							</div>
-							{/* 右側：コンパクトに集約された決定ボタン */}
 							<div className="flex items-center gap-1.5">
 								<Button
 									variant="ghost"
@@ -218,9 +301,7 @@ export default function NoteItem({
 							</div>
 						</div>
 
-						{/* 2段目：属性変更（TanStack Queryの整合を壊さない、NoteInput.tsxの完全ミラーリング構造） */}
 						<div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-base-border/30">
-							{/* 左側：ScopeセレクトUI */}
 							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
 								<select
 									value={editScope}
@@ -244,7 +325,6 @@ export default function NoteItem({
 								</div>
 							</div>
 
-							{/* 右側：Typeインラインカプセル（NoteInputと完全対称） */}
 							<div className="flex p-1 rounded-full bg-base-surface border border-base-border/50 shrink-0 scale-85 origin-right">
 								<button
 									type="button"
@@ -307,7 +387,6 @@ export default function NoteItem({
 						</div>
 					</div>
 
-					{/* 伸長エディタエリア */}
 					<div className="flex-1 min-w-0 w-full px-1">
 						<TextareaAutosize
 							value={editContent}
@@ -323,7 +402,7 @@ export default function NoteItem({
 							className="w-full border border-base-border rounded-xl p-2.5 text-sm focus:outline-none resize-none bg-base-bg text-neutral-900"
 							autoFocus
 							onKeyDown={(e) => {
-								if (e.nativeEvent.isComposing) return; // IME Guard
+								if (e.nativeEvent.isComposing) return;
 								if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 									e.preventDefault();
 									if (editContent.trim() && !isUnchanged) {
@@ -338,11 +417,8 @@ export default function NoteItem({
 				</div>
 			) : (
 				<div className="flex flex-col flex-1">
-					{/* 🚀 Stickyヘッダーコンテナそのものに境界線を統一し、切り替え時の下線モヤモヤを物理的に排除 */}
 					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 select-none border-b border-base-border/20">
-						{/* 🚀 閲覧時：境界線なしのスリム1段ヘッダー（外側Stickyコンテナがborder-bを持つためチラつきゼロ） */}
 						<div className="flex items-center justify-between w-full min-h-[40px] py-1 transition-colors">
-							{/* 左側：Grip + Type（完了/未完了トグル）バッジ */}
 							<div className="flex items-center gap-1.5 shrink-0">
 								{!isPreview && (
 									<div
@@ -363,7 +439,6 @@ export default function NoteItem({
 										note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
 									}
 								>
-									{/* アイコン部分 (通常時とホバー時で透過度を切り替え) */}
 									<div className="relative w-3.5 h-3.5 shrink-0">
 										<div className="absolute inset-0 transition-opacity group-hover/icon:opacity-0">
 											{note.note_type === "alert" && (
@@ -379,7 +454,7 @@ export default function NoteItem({
 												<Info className="w-3.5 h-3.5" aria-hidden="true" />
 											)}
 										</div>
-										<div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/icon:opacity-100">
+										<div className="absolute inset-0 flex items-center justify-center opacity-0 transition-transform duration-200 group-hover/icon:opacity-100 group-hover/icon:scale-125">
 											{note.is_resolved ? (
 												<RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
 											) : (
@@ -388,7 +463,6 @@ export default function NoteItem({
 										</div>
 									</div>
 
-									{/* テキスト部分 */}
 									<span
 										className={`text-[11px] font-bold tracking-wide uppercase ${note.is_resolved ? "line-through opacity-70" : ""}`}
 									>
@@ -397,18 +471,9 @@ export default function NoteItem({
 								</button>
 							</div>
 
-							{/* 右側：操作ボタン群（薄めグレー、Editは少し微濃色） ＋ メタ状態トグル（マージンで小さく独立配置） */}
 							<div className="flex items-center gap-2 ml-auto shrink-0">
 								{!isPreview && (
 									<div className="flex items-center gap-0.5 pr-1.5 border-r border-base-border/30">
-										{/*<Button
-											variant="ghost"
-											size="xs"
-											className="size-7 p-0 rounded-full text-neutral-800 hover:text-action hover:bg-base-surface"
-											icon={<Edit2 className="w-3.5 h-3.5" />}
-											onClick={startEditing}
-											title="Edit"
-										/>*/}
 										<Button
 											variant="ghost"
 											size="sm"
@@ -475,7 +540,6 @@ export default function NoteItem({
 							</div>
 						</div>
 
-						{/* 🚀 展開時（Expanded）のぶら下がり：ヘッダーの下部から少しスペースを空けて絶対配置 */}
 						{isOverflowing && note.is_expanded && (
 							<div className="absolute top-[44px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
 								<button
@@ -492,7 +556,6 @@ export default function NoteItem({
 						)}
 					</div>
 
-					{/* 本文エリア */}
 					<div className="mt-2 flex-1 min-w-0">
 						<div
 							className={`relative ${isCollapsed ? "max-h-40 overflow-hidden pb-8" : ""} w-full`}
@@ -505,9 +568,7 @@ export default function NoteItem({
 							</div>
 							{isCollapsed && (
 								<>
-									{/* フェードアウトグラデーション */}
 									<div className="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
-									{/* 省略表示時（Collapsed）は本文エリアの最下部中央に優雅に配置 */}
 									<div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20">
 										<button
 											type="button"
@@ -525,7 +586,6 @@ export default function NoteItem({
 						</div>
 					</div>
 
-					{/* Favoriteリスト時のみのメタデータ */}
 					{isFavoriteList && note.scope !== "inbox" && (
 						<div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-1">
 							<span

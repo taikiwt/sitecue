@@ -178,7 +178,8 @@
     --sidebar-ring: oklch(0.708 0 0);
 
     /* Success: 穏やかな緑色 */
-    --success: oklch(0.627 0.194 149.214);
+    /*--success: oklch(0.627 0.194 149.214);*/
+    --success: oklch(0.7881 0.1322 183.75);
     --success-foreground: oklch(0.985 0 0);
     /* 背景が緑なので文字は白系 */
 

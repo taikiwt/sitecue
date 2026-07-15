@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Note } from "../hooks/useNotes";
 import NoteList from "./NoteList";
 
@@ -86,7 +86,7 @@ describe("NoteList D&D and Editor Guard Integration", () => {
 		render(
 			<QueryClientProvider client={queryClient}>
 				<NoteList
-					notes={mockNotes as any}
+					notes={mockNotes as unknown as Note[]}
 					loading={false}
 					currentFullUrl="https://example.com"
 					onUpdate={vi.fn()}
@@ -114,5 +114,68 @@ describe("NoteList D&D and Editor Guard Integration", () => {
 		// window.confirm が呼ばれてガードが機能していることを検証
 		expect(windowConfirmSpy).toHaveBeenCalled();
 		window.confirm = originalConfirm;
+	});
+});
+
+describe("NoteList - 完了シーケンシャルアニメーション", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("完了トグル（未完了➔完了）時、即座にDB更新を呼ばず、600msのアニメーション完了後にDB更新を呼び出すこと", async () => {
+		const mockOnToggleResolved = vi.fn().mockResolvedValue(true);
+		const testNotes = [
+			{
+				id: "note-1",
+				content: "テストノート",
+				note_type: "info" as const,
+				scope: "exact" as const,
+				is_resolved: false,
+				is_favorite: false,
+				is_pinned: false,
+				is_expanded: false,
+				sort_order: 1,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				user_id: "user-1",
+				url_pattern: "example.com",
+				draft_id: null,
+				tags: [],
+			},
+		];
+
+		render(
+			<NoteList
+				currentFullUrl="https://example.com"
+				loading={false}
+				notes={testNotes as unknown as Note[]}
+				onDelete={vi.fn()}
+				onToggleExpansion={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleResolved={mockOnToggleResolved}
+				onUpdate={vi.fn()}
+				onUpdateNoteOrder={vi.fn()}
+				showResolved={false}
+			/>,
+		);
+
+		const resolveButton = screen.getByTitle("Mark as resolved");
+		fireEvent.click(resolveButton);
+
+		// ボタンを押した瞬間（0ms）は、アニメーション中であるためDB更新関数はまだ呼ばれていないことを確認
+		expect(mockOnToggleResolved).not.toHaveBeenCalled();
+
+		// タイマーを600ms進める
+		act(() => {
+			vi.advanceTimersByTime(600);
+		});
+
+		// 600ms経過してカードが縮みきった後に、初めてDB更新関数が呼ばれたことを検証
+		expect(mockOnToggleResolved).toHaveBeenCalledWith("note-1", false);
 	});
 });

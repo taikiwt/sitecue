@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { useState } from "react";
+import { type ComponentProps, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { AuthStatus } from "../hooks/useAuth";
 import type { Note } from "../hooks/useNotes";
@@ -17,7 +17,7 @@ const NoteItemTestWrapper = ({
 	currentFullUrl = "https://example.com/page",
 	isFavoriteList = false,
 	isPreview = false,
-}: any) => {
+}: Partial<ComponentProps<typeof NoteItem>> & { note: Note }) => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [_isEditDirty, setIsEditDirty] = useState(false);
 

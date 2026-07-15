@@ -584,6 +584,7 @@ function NotesUI({
 							updateNoteOrder(id, newOrder as number)
 						}
 						onToggleExpansion={toggleNoteExpansion}
+						showResolved={showResolved}
 					/>
 				)}
 			</div>
