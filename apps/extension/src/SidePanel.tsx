@@ -222,9 +222,88 @@ function NotesUI({
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["diary"] });
-			setIsEditingDiary(false);
 		},
 	});
+
+	// 1. ミリ秒レベルの一時保存
+	useEffect(() => {
+		if (!isEditingDiary) return;
+		const key = `diary-temp-${selectedDiaryDate}`;
+		chrome.storage.local.set({
+			[key]: {
+				content: editDiaryContent,
+				topics: editDiaryTopics,
+				lastSavedAt: Date.now(),
+			},
+		});
+	}, [editDiaryContent, editDiaryTopics, isEditingDiary, selectedDiaryDate]);
+
+	// 2. 「3秒」デバウンスでのサイレントクラウド本保存
+	useEffect(() => {
+		if (!isEditingDiary) return;
+
+		const timer = setTimeout(async () => {
+			const isContentUnchanged =
+				editDiaryContent === (diaryData?.content ?? "");
+			const isTopicsUnchanged =
+				JSON.stringify(editDiaryTopics) ===
+				JSON.stringify(diaryData?.topics ?? []);
+			if (isContentUnchanged && isTopicsUnchanged) return;
+
+			try {
+				await updateDiaryMutation.mutateAsync({
+					text: editDiaryContent,
+					topics: editDiaryTopics,
+				});
+				// 本保存が成功したら一時バッファを削除
+				await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+			} catch (_err) {
+				// ネットワークオフライン等の場合は一時バッファにデータを保持し続ける
+			}
+		}, 3000);
+
+		return () => clearTimeout(timer);
+	}, [
+		editDiaryContent,
+		editDiaryTopics,
+		isEditingDiary,
+		diaryData,
+		selectedDiaryDate,
+		updateDiaryMutation.mutateAsync,
+	]);
+
+	// 3. 起動時・日付変更時の自動復元・同期マージ
+	useEffect(() => {
+		const checkAndRestore = async () => {
+			const key = `diary-temp-${selectedDiaryDate}`;
+			const result = await chrome.storage.local.get(key);
+			const temp = result[key] as
+				| { content: string; topics: string[]; lastSavedAt: number }
+				| undefined;
+			if (temp) {
+				// 一時バッファを発見した場合、即メモリにロード（In-Memory First）
+				setEditDiaryContent(temp.content);
+				setEditDiaryTopics(temp.topics);
+				setIsEditingDiary(true);
+
+				// バックグラウンドでサイレント同期
+				try {
+					await updateDiaryMutation.mutateAsync({
+						text: temp.content,
+						topics: temp.topics,
+					});
+					await chrome.storage.local.remove(key);
+					setIsEditingDiary(false); // 同期完了したら閲覧モードへ
+					queryClient.invalidateQueries({
+						queryKey: ["diary", selectedDiaryDate],
+					});
+				} catch (_err) {
+					// 同期に失敗した場合は一時バッファを維持したまま編集状態にする
+				}
+			}
+		};
+		checkAndRestore();
+	}, [selectedDiaryDate, updateDiaryMutation.mutateAsync, queryClient]);
 
 	const handleAppendDiary = async (content: string) => {
 		try {
@@ -236,15 +315,25 @@ function NotesUI({
 	};
 
 	const handleSaveDiaryEdit = async () => {
-		if (updateDiaryMutation.isPending) return;
+		const isContentUnchanged = editDiaryContent === (diaryData?.content ?? "");
+		const isTopicsUnchanged =
+			JSON.stringify(editDiaryTopics) ===
+			JSON.stringify(diaryData?.topics ?? []);
+		if (isContentUnchanged && isTopicsUnchanged) {
+			setIsEditingDiary(false);
+			return;
+		}
 		try {
 			await updateDiaryMutation.mutateAsync({
 				text: editDiaryContent,
 				topics: editDiaryTopics,
 			});
-			toast.success("Diary updated");
-		} catch {
-			toast.error("Failed to update diary");
+			await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+			setIsEditingDiary(false);
+			toast.success("Diary synced");
+		} catch (_err) {
+			toast.error("Cloud sync failed. Kept in local buffer.");
+			setIsEditingDiary(false); // 見た目上は復帰させるがバッファは維持する
 		}
 	};
 
@@ -259,11 +348,6 @@ function NotesUI({
 		JSON.stringify(editDiaryTopics) === JSON.stringify(diaryData?.topics ?? []);
 	const hasDiaryChanges =
 		isEditingDiary && (!isContentUnchanged || !isTopicsUnchanged);
-
-	const isSaveDisabled =
-		!isEditingDiary ||
-		(isContentUnchanged && isTopicsUnchanged) ||
-		updateDiaryMutation.isPending;
 
 	const checkLeaveGuard = (): boolean => {
 		if (hasDiaryChanges) {
@@ -666,7 +750,6 @@ function NotesUI({
 						editDiaryTopics={editDiaryTopics}
 						setEditDiaryTopics={setEditDiaryTopics}
 						basecampArchiveUrl={basecampArchiveUrl}
-						isSaveDisabled={isSaveDisabled}
 						updateDiaryMutationPending={updateDiaryMutation.isPending}
 						handleSaveDiaryEdit={handleSaveDiaryEdit}
 						handleStartEdit={handleStartEdit}
