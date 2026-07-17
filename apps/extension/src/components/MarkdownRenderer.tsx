@@ -161,7 +161,7 @@ export default function MarkdownRenderer({
 							return (
 								<code
 									{...rest}
-									className="px-1.5 py-0.5 bg-base-surface text-action rounded font-mono text-xs"
+									className="px-1.5 py-0.5 bg-base-surface text-action rounded font-['Hack'] monospace text-xs"
 								>
 									{children}
 								</code>
@@ -190,7 +190,7 @@ export default function MarkdownRenderer({
 										)}
 									</button>
 								</div>
-								<div className="rounded-lg overflow-hidden text-xs font-mono leading-relaxed relative">
+								<div className="rounded-lg overflow-hidden text-xs font-['Hack'] monospace leading-relaxed relative">
 									<SyntaxHighlighter
 										{...rest}
 										style={oneLight}
@@ -199,6 +199,7 @@ export default function MarkdownRenderer({
 										customStyle={{
 											margin: 0,
 											padding: "0.75rem",
+											fontFamily: "var(--font-hack, 'Hack', monospace)",
 											// backgroundColor: "#1e1e1e", // Match vscDarkPlus bg
 										}}
 										codeTagProps={{

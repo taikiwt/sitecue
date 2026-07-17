@@ -22,7 +22,6 @@ import NoteList from "./components/NoteList";
 import QuickLinks from "./components/QuickLinks";
 import type { AuthStatus } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
-import { useAutoIndent } from "./hooks/useAutoIndent";
 import { useCurrentTab } from "./hooks/useCurrentTab";
 import type { NoteScope, NoteType } from "./hooks/useNotes";
 import { useNotes } from "./hooks/useNotes";
@@ -89,7 +88,6 @@ function NotesUI({
 	authStatus: AuthStatus;
 	onLogout: () => void;
 }) {
-	const handleAutoIndent = useAutoIndent();
 	const session =
 		authStatus.mode === "authenticated" ? authStatus.session : null;
 	const { currentFullUrl, url, title } = useCurrentTab();
@@ -753,7 +751,6 @@ function NotesUI({
 						updateDiaryMutationPending={updateDiaryMutation.isPending}
 						handleSaveDiaryEdit={handleSaveDiaryEdit}
 						handleStartEdit={handleStartEdit}
-						handleAutoIndent={handleAutoIndent}
 					/>
 				</div>
 			</div>

@@ -19,7 +19,7 @@ import {
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
-import { useAutoIndent } from "../hooks/useAutoIndent";
+import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { Button } from "./ui/button";
@@ -78,7 +78,7 @@ export default function NoteItem({
 	const [updating, setUpdating] = useState(false);
 	const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
 	const [isOverflowing, setIsOverflowing] = useState(false);
-	const handleAutoIndent = useAutoIndent();
+	const { onKeyDown, onPaste } = useMarkdownAssist();
 
 	const cardRef = useRef<HTMLDivElement | null>(null);
 	const prevExpandedRef = useRef(note.is_expanded);
@@ -406,7 +406,7 @@ export default function NoteItem({
 										editType !== (note.note_type || "info"),
 								);
 							}}
-							className="w-full border border-base-border rounded-xl p-2.5 text-sm focus:outline-none resize-none bg-base-bg text-neutral-900"
+							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-900 font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
 							autoFocus
 							onKeyDown={(e) => {
 								if (e.nativeEvent.isComposing) return;
@@ -416,9 +416,10 @@ export default function NoteItem({
 										handleUpdate();
 									}
 								} else {
-									handleAutoIndent(e);
+									onKeyDown(e);
 								}
 							}}
+							onPaste={onPaste}
 						/>
 					</div>
 				</div>

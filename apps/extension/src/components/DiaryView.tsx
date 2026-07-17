@@ -1,6 +1,7 @@
 import { Loader2, X } from "lucide-react";
 import { useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import MarkdownRenderer from "./MarkdownRenderer";
 
 interface DiaryViewProps {
@@ -18,7 +19,6 @@ interface DiaryViewProps {
 	updateDiaryMutationPending: boolean;
 	handleSaveDiaryEdit: () => Promise<void>;
 	handleStartEdit: () => void;
-	handleAutoIndent: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 export default function DiaryView({
@@ -36,7 +36,6 @@ export default function DiaryView({
 	updateDiaryMutationPending,
 	handleSaveDiaryEdit,
 	handleStartEdit,
-	handleAutoIndent,
 }: DiaryViewProps) {
 	const [newTopic, setNewTopic] = useState("");
 	const [editingTopicIndex, setEditingTopicIndex] = useState<number | null>(
@@ -44,6 +43,7 @@ export default function DiaryView({
 	);
 	const [editingTopicText, setEditingTopicText] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const { onKeyDown, onPaste } = useMarkdownAssist();
 
 	// マウス押し下げ時の座標
 	const startCoords = useRef({ x: 0, y: 0 });
@@ -186,7 +186,7 @@ export default function DiaryView({
 				{/* スクロール隔離インナーコンテナ：余白を p-6 に広げる */}
 				<div
 					onMouseUp={isEditingDiary ? handleOuterMouseUp : undefined}
-					className="flex-1 overflow-y-auto p-6 flex flex-col min-h-0 [overflow-wrap:anywhere] break-words"
+					className="flex-1 overflow-y-auto p-5 flex flex-col min-h-0 [overflow-wrap:anywhere] break-words"
 					role="document"
 				>
 					{isEditingDiary ? (
@@ -278,11 +278,9 @@ export default function DiaryView({
 								value={editDiaryContent}
 								onChange={(e) => setEditDiaryContent(e.target.value)}
 								placeholder="Write down your thoughts... (Markdown supported)"
-								className="w-full flex-1 resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 min-h-[200px]"
-								onKeyDown={(e) => {
-									if (e.nativeEvent.isComposing) return;
-									handleAutoIndent(e);
-								}}
+								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-900 min-h-[200px] font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
+								onKeyDown={onKeyDown}
+								onPaste={onPaste}
 							/>
 						</div>
 					) : (
