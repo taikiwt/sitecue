@@ -6,3 +6,5 @@ export * from "./utils/notes";
 export * from "./utils/ordering";
 export * from "./utils/tags";
 export * from "./utils/url";
+export * from "./utils/limits";
+

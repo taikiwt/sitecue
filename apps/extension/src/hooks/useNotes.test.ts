@@ -61,9 +61,11 @@ import {
 	fetchExtensionNoteContents,
 	fetchExtensionNoteMetadatas,
 	type Note,
+	updateNoteEntity,
 } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import toast from "react-hot-toast";
 import type { AuthStatus } from "./useAuth";
 import { useNotes } from "./useNotes";
 
@@ -449,5 +451,68 @@ describe("useNotes - Guest Mode Scenario", () => {
 		expect(result.current.notes.length).toBe(1);
 		expect(result.current.notes[0].content).toBe("ゲストメモテスト #idea");
 		expect(result.current.notes[0].tags).toEqual(["idea"]); // 共通タグ抽出の通過検証
+	});
+});
+
+describe("useNotes - Length limit and error mapping", () => {
+	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockAuthStatus: AuthStatus = {
+		mode: "authenticated",
+		session: mockSession,
+		userId: "user-1",
+	};
+
+	it("updateNoteでDBがチェック制約違反（文字数超過等）を返した際、適切なエラーメッセージをtoastすること", async () => {
+		const mockToastError = vi.spyOn(toast, "error");
+		vi.mocked(updateNoteEntity).mockRejectedValue(
+			new Error("sitecue_notes_content_len_check constraint violation"),
+		);
+
+		const { result } = renderHook(() =>
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
+		);
+
+		let success = true;
+		await act(async () => {
+			success = await result.current.updateNote("note-1", "A content", "info");
+		});
+
+		expect(success).toBe(false);
+		expect(mockToastError).toHaveBeenCalledWith(
+			"Failed to save: Content exceeds the 10,000 character limit.",
+		);
+	});
+
+	it("addNoteの成功時に、inboxノートであってもtoast.successが呼び出されないこと", async () => {
+		const mockToastSuccess = vi.spyOn(toast, "success");
+
+		const mockCreatedNote = {
+			id: "temp-inbox-id",
+			user_id: "user-1",
+			url_pattern: "inbox",
+			content: "インボックスノート",
+			scope: "inbox",
+			note_type: "info",
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+			is_expanded: false,
+			is_favorite: false,
+			is_pinned: false,
+			is_resolved: false,
+			tags: [],
+		};
+		vi.mocked(createNoteEntity).mockResolvedValue(
+			mockCreatedNote as unknown as Note,
+		);
+
+		const { result } = renderHook(() =>
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "inbox"),
+		);
+
+		await act(async () => {
+			await result.current.addNote("インボックスノート", "inbox", "info");
+		});
+
+		expect(mockToastSuccess).not.toHaveBeenCalled();
 	});
 });
