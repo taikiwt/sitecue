@@ -204,12 +204,10 @@ export function useNotes(
 				prev.map((n) => (n.id === tempId ? data : n)).sort(sortNotesConsistent),
 			);
 
-			if (selectedScope === "inbox") {
-				toast.success("Saved to Inbox");
-			} else {
+			if (selectedScope !== "inbox") {
 				setTotalNoteCount((prev) => prev + 1);
-				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			}
+			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 
 			return true;
 		} catch (error) {
@@ -278,9 +276,22 @@ export function useNotes(
 			setNotes((prevNotes) => prevNotes.map((n) => (n.id === id ? data : n)));
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			return true;
-		} catch (error) {
+		} catch (error: unknown) {
 			console.error("Failed to update note", error);
-			toast.error("Failed to update note");
+
+			let errorMsg = "Failed to update note";
+			if (typeof error === "object" && error !== null && "message" in error) {
+				const msg = String((error as { message: unknown }).message);
+				if (
+					msg.includes("sitecue_notes_content_len_check") ||
+					msg.includes("length") ||
+					msg.includes("limit")
+				) {
+					errorMsg =
+						"Failed to save: Content exceeds the 10,000 character limit.";
+				}
+			}
+			toast.error(errorMsg);
 			return false;
 		}
 	};

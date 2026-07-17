@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DiaryView from "./DiaryView";
 
@@ -106,5 +106,39 @@ describe("DiaryView Auto-save and Drag-safe Padding Focus Interactive Tests", ()
 			"Existing Topic",
 			"New Unique Topic",
 		]);
+	});
+
+	it("isDiaryLoadingがfalseに切り替わっても、200ms経過するまではスケルトン盾が維持されること", () => {
+		vi.useFakeTimers();
+
+		// 1. まずローディング中（true）の状態でマウント
+		const { rerender } = render(
+			<DiaryView {...mockProps} isDiaryLoading={true} />,
+		);
+
+		expect(screen.getByTestId("diary-skeleton")).toBeInTheDocument();
+
+		// 2. 親が高速にデータをロード完了し、isDiaryLoading={false} を流し込む
+		rerender(<DiaryView {...mockProps} isDiaryLoading={false} />);
+
+		// 【検証】0ms時点では、UI上の遅延フラグによってスケルトンがまだ居座っていること
+		expect(screen.getByTestId("diary-skeleton")).toBeInTheDocument();
+
+		// 3. タイマーを150ms進める（まだ200msに満たない）
+		act(() => {
+			vi.advanceTimersByTime(150);
+		});
+		expect(screen.getByTestId("diary-skeleton")).toBeInTheDocument();
+
+		// 4. 残り50ms進めて合計200msに到達させる
+		act(() => {
+			vi.advanceTimersByTime(50);
+		});
+
+		// 【検証】200ms経過した瞬間に、盾が外れて実データ（Initial Diary Content）が出現すること
+		expect(screen.queryByTestId("diary-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByText("Initial Diary Content")).toBeInTheDocument();
+
+		vi.useRealTimers();
 	});
 });

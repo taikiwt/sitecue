@@ -1,8 +1,10 @@
 import { Loader2, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import MarkdownRenderer from "./MarkdownRenderer";
+
+const SKELETON_HOLD_DURATION = 200; // 最低表示維持時間（200ms）
 
 interface DiaryViewProps {
 	selectedDiaryDate: string;
@@ -44,6 +46,23 @@ export default function DiaryView({
 	const [editingTopicText, setEditingTopicText] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const { onKeyDown, onPaste } = useMarkdownAssist();
+
+	// 💡 フリッカーを防止するためのインメモリ遅延フラグを配備
+	const [stableLoading, setStableLoading] = useState(isDiaryLoading);
+
+	useEffect(() => {
+		if (isDiaryLoading) {
+			// ローディング開始時は最速でスケルトンを展開（CLSを防御）
+			setStableLoading(true);
+		} else {
+			// データが着信した（falseになった）時は、最低200msの猶予を持たせてから解除
+			const timer = setTimeout(() => {
+				setStableLoading(false);
+			}, SKELETON_HOLD_DURATION);
+
+			return () => clearTimeout(timer);
+		}
+	}, [isDiaryLoading]);
 
 	// マウス押し下げ時の座標
 	const startCoords = useRef({ x: 0, y: 0 });
@@ -189,7 +208,21 @@ export default function DiaryView({
 					className="flex-1 overflow-y-auto p-5 flex flex-col min-h-0 [overflow-wrap:anywhere] break-words"
 					role="document"
 				>
-					{isEditingDiary ? (
+					{stableLoading ? (
+						/* 美しいシマー付きスケルトン盾で骨組みを隠蔽し、レイアウトシフト（CLS）を防止 */
+						<div
+							className="flex flex-col gap-4 w-full animate-pulse"
+							data-testid="diary-skeleton"
+						>
+							<div className="h-12 bg-neutral-100 rounded-xl w-full" />
+							<div className="space-y-3 mt-2 flex-1">
+								<div className="h-4 bg-neutral-100 rounded w-full" />
+								<div className="h-4 bg-neutral-100 rounded w-11/12" />
+								<div className="h-4 bg-neutral-100 rounded w-full" />
+								<div className="h-4 bg-neutral-100 rounded w-4/5" />
+							</div>
+						</div>
+					) : isEditingDiary ? (
 						// 編集モード中のコンテンツ（stopPropagationで余白クリックバブリングを防ぐ）
 						// biome-ignore lint/a11y/noStaticElementInteractions: stops click-out propagation
 						<div
@@ -278,7 +311,7 @@ export default function DiaryView({
 								value={editDiaryContent}
 								onChange={(e) => setEditDiaryContent(e.target.value)}
 								placeholder="Write down your thoughts... (Markdown supported)"
-								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-900 min-h-[200px] font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
+								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-800 antialiased min-h-[200px] font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:focus-ring-sitecue focus:ring-0"
 								onKeyDown={onKeyDown}
 								onPaste={onPaste}
 							/>
@@ -305,11 +338,7 @@ export default function DiaryView({
 							)}
 
 							<div className="prose prose-sm max-w-none text-neutral-900 flex-1">
-								{isDiaryLoading ? (
-									<div className="text-xs text-neutral-400 animate-pulse">
-										Loading diary...
-									</div>
-								) : diaryData?.content ? (
+								{diaryData?.content ? (
 									<MarkdownRenderer content={diaryData.content} />
 								) : (
 									<div className="text-xs text-neutral-400 italic">

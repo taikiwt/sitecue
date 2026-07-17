@@ -276,3 +276,73 @@ describe("NoteInput Select UI Component Tests", () => {
 		expect(diarySubmitBtn).not.toBeDisabled();
 	});
 });
+
+describe("NoteInput Component - Dynamic Plans and Limits", () => {
+	const mockOnAddNote = vi.fn().mockResolvedValue(true);
+	const mockOnAppendDiary = vi.fn().mockResolvedValue(true);
+	const mockOnClose = vi.fn();
+
+	it("freeプランでノート上限に達している場合、警告文言が表示され送信ボタンが非活性化すること", () => {
+		render(
+			<NoteInput
+				initialScope="exact"
+				initialType="all"
+				maxFreeNotes={500}
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				onClose={mockOnClose}
+				totalNoteCount={500}
+				userPlan="free"
+			/>,
+		);
+
+		expect(screen.getByText(/Note Limit Reached/i)).toBeInTheDocument();
+		const submitButton = screen.getByTitle("Add Note");
+		expect(submitButton).toBeDisabled();
+	});
+
+	it("proプランの場合、500件を超えていても件数制限警告が表示されず送信可能なこと", () => {
+		render(
+			<NoteInput
+				initialScope="exact"
+				initialType="all"
+				maxFreeNotes={500}
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				onClose={mockOnClose}
+				totalNoteCount={550}
+				userPlan="pro"
+			/>,
+		);
+
+		expect(screen.queryByText(/Note Limit Reached/i)).not.toBeInTheDocument();
+		const textarea = screen.getByPlaceholderText(/Add a cue to/i);
+		fireEvent.change(textarea, { target: { value: "Test Pro Content" } });
+
+		const submitButton = screen.getByTitle("Add Note");
+		expect(submitButton).not.toBeDisabled();
+	});
+
+	it("10,000文字を超えた入力がある場合はプランに関わらず送信ボタンが非活性化すること", () => {
+		render(
+			<NoteInput
+				initialScope="exact"
+				initialType="all"
+				maxFreeNotes={500}
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				onClose={mockOnClose}
+				totalNoteCount={10}
+				userPlan="pro"
+			/>,
+		);
+
+		const textarea = screen.getByPlaceholderText(/Add a cue to/i);
+		const overLimitText = "a".repeat(10001);
+		fireEvent.change(textarea, { target: { value: overLimitText } });
+
+		const submitButton = screen.getByTitle("Add Note");
+		expect(submitButton).toBeDisabled();
+		expect(screen.getByText("10,001 / 10,000")).toHaveClass("text-note-alert");
+	});
+});

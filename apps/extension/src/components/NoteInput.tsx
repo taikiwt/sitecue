@@ -62,8 +62,9 @@ export default function NoteInput({
 		}
 	};
 
-	const isNearLimit = totalNoteCount >= maxFreeNotes * 0.9;
-	const isLimitReached = totalNoteCount >= maxFreeNotes;
+	const isFreeOrGuest = userPlan === "free" || userPlan === "guest";
+	const isNearLimit = isFreeOrGuest && totalNoteCount >= maxFreeNotes * 0.9;
+	const isLimitReached = isFreeOrGuest && totalNoteCount >= maxFreeNotes;
 
 	const charCount = newNote.length;
 	const isCharNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
@@ -283,7 +284,12 @@ export default function NoteInput({
 
 				{/* 右側: カプセル内部に完全にアラインされた送信ボタン（items-center で常に垂直中央ロック） */}
 				<button
-					disabled={activeType !== "note" || !newNote.trim() || isCharOverLimit}
+					disabled={
+						activeType !== "note" ||
+						!newNote.trim() ||
+						isCharOverLimit ||
+						isLimitReached
+					}
 					type="button"
 					onClick={handleSubmit}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"

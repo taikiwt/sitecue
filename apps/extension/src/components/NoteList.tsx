@@ -5,6 +5,7 @@ import {
 	DragOverlay,
 	type DragStartEvent,
 	PointerSensor,
+	pointerWithin,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -418,6 +419,7 @@ export default function NoteList({
 					{isFavoritesOpen && (
 						<DndContext
 							sensors={sensors}
+							collisionDetection={pointerWithin}
 							onDragStart={(e) => handleDragStart(e, "favorites")}
 							onDragOver={createDragOverHandler("favorites")}
 							onDragEnd={handleDragEndFavorites}
@@ -469,6 +471,7 @@ export default function NoteList({
 					)}
 					<DndContext
 						sensors={sensors}
+						collisionDetection={pointerWithin}
 						onDragStart={(e) => handleDragStart(e, "pinned")}
 						onDragOver={createDragOverHandler("pinned")}
 						onDragEnd={handleDragEndPinned}
@@ -516,6 +519,7 @@ export default function NoteList({
 					)}
 					<DndContext
 						sensors={sensors}
+						collisionDetection={pointerWithin}
 						onDragStart={(e) => handleDragStart(e, "normal")}
 						onDragOver={createDragOverHandler("normal")}
 						onDragEnd={handleDragEndNormal}

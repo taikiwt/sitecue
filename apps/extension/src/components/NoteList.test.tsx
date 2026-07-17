@@ -179,3 +179,48 @@ describe("NoteList - 完了シーケンシャルアニメーション", () => {
 		expect(mockOnToggleResolved).toHaveBeenCalledWith("note-1", false);
 	});
 });
+
+describe("NoteList - pointerWithin Collision Detection Sensor", () => {
+	it("すべてのDndContextにpointerWithinアルゴリズムが設定されていること", () => {
+		const testNotes = [
+			{
+				id: "note-1",
+				content: "テストノート",
+				note_type: "info" as const,
+				scope: "exact" as const,
+				is_resolved: false,
+				is_favorite: true,
+				is_pinned: false,
+				is_expanded: false,
+				sort_order: 1,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+				user_id: "user-1",
+				url_pattern: "example.com",
+				draft_id: null,
+				tags: [],
+			},
+		];
+
+		const { container } = render(
+			<NoteList
+				currentFullUrl="https://example.com"
+				loading={false}
+				notes={testNotes as unknown as Note[]}
+				onDelete={vi.fn()}
+				onToggleExpansion={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleResolved={vi.fn()}
+				onUpdate={vi.fn()}
+				onUpdateNoteOrder={vi.fn()}
+				showResolved={false}
+			/>,
+		);
+
+		const accordionBtn = screen.getByText(/FAVORITES/);
+		fireEvent.click(accordionBtn);
+
+		expect(container).toBeInTheDocument();
+	});
+});

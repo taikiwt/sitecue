@@ -19,6 +19,7 @@ import {
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
+import { APP_LIMITS } from "../constants/limits";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -193,6 +194,10 @@ export default function NoteItem({
 
 	const handleUpdate = async () => {
 		if (!editContent.trim()) return;
+		if (editContent.length > APP_LIMITS.MAX_NOTE_LENGTH) {
+			toast.error("Content exceeds the 10,000 character limit.");
+			return;
+		}
 		setUpdating(true);
 		const success = await onUpdate(note.id, editContent, editType, editScope);
 		if (success) {
@@ -406,7 +411,7 @@ export default function NoteItem({
 										editType !== (note.note_type || "info"),
 								);
 							}}
-							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-900 font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
+							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-800 antialiased font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
 							autoFocus
 							onKeyDown={(e) => {
 								if (e.nativeEvent.isComposing) return;
