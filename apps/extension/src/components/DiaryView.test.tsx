@@ -18,7 +18,6 @@ describe("DiaryView Auto-save and Drag-safe Padding Focus Interactive Tests", ()
 		updateDiaryMutationPending: false,
 		handleSaveDiaryEdit: vi.fn(),
 		handleStartEdit: vi.fn(),
-		handleAutoIndent: vi.fn(),
 	};
 
 	beforeEach(() => {
