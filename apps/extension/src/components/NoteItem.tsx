@@ -501,7 +501,7 @@ export default function NoteItem({
 											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
 											icon={
 												copiedNoteId === note.id ? (
-													<Check className="w-3.5 h-3.5 text-note-info" />
+													<Check className="w-3.5 h-3.5 text-success" />
 												) : (
 													<Copy className="w-3.5 h-3.5" />
 												)
