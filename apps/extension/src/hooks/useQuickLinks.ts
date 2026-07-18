@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 
 // biome-ignore lint/suspicious/noExplicitAny: Temporary until shared types are fully implemented for links
@@ -10,6 +10,7 @@ export function useQuickLinks(currentDomain: string | null) {
 	const [links, setLinks] = useState<Link[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const prevDomainRef = useRef<string | null>(null);
 
 	const fetchLinks = useCallback(async () => {
 		if (!currentDomain) {
@@ -17,6 +18,12 @@ export function useQuickLinks(currentDomain: string | null) {
 			setLoading(false);
 			return;
 		}
+
+		// 同一ドメイン内での不要な再実行を完全にガード
+		if (prevDomainRef.current === currentDomain) {
+			return;
+		}
+		prevDomainRef.current = currentDomain;
 
 		try {
 			setLoading(true);

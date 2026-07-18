@@ -20,7 +20,7 @@ export function useNotes(
 	authStatus: AuthStatus,
 	currentFullUrl: string,
 	setTotalNoteCount: React.Dispatch<React.SetStateAction<number>>,
-	viewScope: "exact" | "domain" | "inbox",
+	_viewScope: "exact" | "domain" | "inbox",
 ) {
 	const [notes, setNotes] = useState<Note[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -70,11 +70,6 @@ export function useNotes(
 	const fetchNotes = useCallback(async () => {
 		if (!currentFullUrl || authStatus.mode === "loading") return;
 
-		// Inbox閲覧中、かつ「URLのみ」が変化した場合は再フェッチをスキップしてちらつきを防止
-		if (viewScope === "inbox" && prevUrlRef.current !== currentFullUrl) {
-			prevUrlRef.current = currentFullUrl;
-			return;
-		}
 		prevUrlRef.current = currentFullUrl;
 
 		// 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
@@ -105,11 +100,11 @@ export function useNotes(
 		} catch (error) {
 			console.error("Failed to fetch notes", error);
 		} finally {
-			// フェッチ完了後、初回フラグを true にして以降の setLoading(true) をブロックする
+			// フェッチ完了後、初回フラグを true にして以降 of setLoading(true) をブロックする
 			hasInitialFetchRef.current = true;
 			setLoading(false);
 		}
-	}, [currentFullUrl, authStatus.mode, hydrateContent, viewScope, client]);
+	}, [currentFullUrl, authStatus.mode, hydrateContent, client]);
 
 	useEffect(() => {
 		fetchNotes();

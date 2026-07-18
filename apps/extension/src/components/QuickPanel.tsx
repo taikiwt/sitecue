@@ -16,7 +16,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import { useQuickLinks } from "../hooks/useQuickLinks";
@@ -45,6 +45,9 @@ export default function QuickPanel({
 	const [noteText, setNoteText] = useState("");
 	const [copied, setCopied] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
+	const textRef = useRef("");
+	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const isStorageLoadedRef = useRef(false); // 🚨 起動時データ復元未完了状態の強制上書き保存ロック（防壁）
 
 	// 既存のQuickLinks用ステート
 	const [isAdding, setIsAdding] = useState(false);
@@ -57,31 +60,69 @@ export default function QuickPanel({
 
 	const handleAutoIndent = useAutoIndent();
 
-	// 🛡️ ストレージからの自動復元
+	// 🛡️ ストレージへの強制書き込み安全装置（Flush）
+	const flushTextStorage = useCallback(() => {
+		// 🚨 防壁ロジック：ストレージからの非同期getが一度も完了していない初期化揺らぎ状態での書き込みを100%鉄壁ガード！
+		if (!isStorageLoadedRef.current) return;
+
+		if (debounceTimerRef.current) {
+			clearTimeout(debounceTimerRef.current);
+			debounceTimerRef.current = null;
+		}
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			chrome.storage.local.set({ quick_note_text: textRef.current });
+		}
+	}, []);
+
+	// 🛡️ ストレージからの自動復元時、State と Ref の双方に即時同期し、ロックを解除
 	useEffect(() => {
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
 			chrome.storage.local.get("quick_note_text", (result) => {
 				const val = (result as Record<string, unknown>).quick_note_text;
 				if (typeof val === "string") {
 					setNoteText(val);
+					textRef.current = val; // 同期
 				}
+				isStorageLoadedRef.current = true; // 🚨 復元が正常完了したため、ここで初めて書き込みロックを解除！
 			});
 		}
 	}, []);
 
-	// 🛡️ 入力のたびに自動退避
+	// 🛡️ 入力時：State と Ref を「完全同時（同期的）」に即時更新し、デバウンスを設定
 	const handleTextChange = (val: string) => {
+		// 🚨 まだ復元が完了していない起動時の一瞬の入力はガード（通常ありえないが安全弁として）
+		if (!isStorageLoadedRef.current) return;
+
 		setNoteText(val);
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ quick_note_text: val });
+		textRef.current = val; // 🚨 ここで 0ms 同期更新！useEffectでの遅延更新は全面廃止
+
+		if (debounceTimerRef.current) {
+			clearTimeout(debounceTimerRef.current);
 		}
+		debounceTimerRef.current = setTimeout(() => {
+			if (typeof chrome !== "undefined" && chrome.storage?.local) {
+				chrome.storage.local.set({ quick_note_text: val });
+			}
+			debounceTimerRef.current = null;
+		}, 300);
 	};
+
+	// 🛡️ 多層防壁：アンマウントクリーンアップおよび急なプロセス切断（pagehide）への安全弁バインド
+	useEffect(() => {
+		const handlePageHide = () => {
+			flushTextStorage();
+		};
+		window.addEventListener("pagehide", handlePageHide);
+
+		return () => {
+			window.removeEventListener("pagehide", handlePageHide);
+			flushTextStorage();
+		};
+	}, [flushTextStorage]);
 
 	const handleClearText = () => {
 		handleTextChange("");
 	};
-
-	if (!currentDomain) return null;
 
 	const toggleSection = (section: "note" | "links") => {
 		setActiveSection((prev) => (prev === section ? "none" : section));
@@ -141,7 +182,9 @@ export default function QuickPanel({
 
 	return (
 		// 最外殻は flex-col の構造とし、全体の高さが間伸びしない防壁とする
-		<div className="border-b border-base-border bg-base-bg w-full font-sans flex flex-col min-h-0">
+		<div
+			className={`border-b border-base-border bg-base-bg w-full font-sans flex flex-col min-h-0 ${!currentDomain ? "hidden" : ""}`}
+		>
 			{/* 【完全不動: shrink-0】 2連独立文字タブヘッダーアラインメント */}
 			<div className="flex items-center justify-between p-3 py-2 text-xs font-semibold select-none border-b border-base-border/10 shrink-0">
 				{/* 左タブトリガー: Quick Note */}
@@ -272,6 +315,7 @@ export default function QuickPanel({
 					<div className="w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none">
 						<TextareaAutosize
 							onChange={(e) => handleTextChange(e.target.value)}
+							onBlur={flushTextStorage}
 							value={noteText}
 							placeholder="Temporary text scratchpad... (Cross-site session persistent)"
 							className="w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none"

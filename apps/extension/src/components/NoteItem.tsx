@@ -1,4 +1,3 @@
-import { useSortable } from "@dnd-kit/sortable";
 import { getScopeUrls } from "@sitecue/shared";
 import {
 	AlertTriangle,
@@ -16,7 +15,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { APP_LIMITS } from "../constants/limits";
@@ -55,9 +54,12 @@ interface NoteItemProps {
 	onSetIsEditDirty: (dirty: boolean) => void;
 	isPreview?: boolean;
 	isResolving?: boolean;
+	sortableAttributes?: Record<string, unknown>;
+	sortableListeners?: Record<string, unknown>;
+	dragHandleRef?: React.Ref<HTMLDivElement>;
 }
 
-export default function NoteItem({
+function NoteItem({
 	note,
 	currentFullUrl,
 	onUpdate,
@@ -72,6 +74,9 @@ export default function NoteItem({
 	onSetIsEditDirty,
 	isPreview = false,
 	isResolving = false,
+	sortableAttributes,
+	sortableListeners,
+	dragHandleRef,
 }: NoteItemProps) {
 	const [editContent, setEditContent] = useState("");
 	const [editType, setEditType] = useState<NoteType>("info");
@@ -144,22 +149,6 @@ export default function NoteItem({
 		setAnimatingHeight(null);
 		setIsCollapsePhase(false);
 	}, [isResolving]);
-
-	const {
-		attributes,
-		listeners,
-		setNodeRef,
-		transform,
-		transition,
-		isDragging,
-	} = useSortable({ id: note.id });
-	const style = {
-		transform: transform
-			? `translate3d(${transform.x}, ${transform.y}, 0)`
-			: undefined,
-		transition,
-		opacity: isDragging ? 0 : undefined,
-	};
 
 	// 変更検知（無変更保存ガード用防壁）
 	const isUnchanged =
@@ -245,12 +234,8 @@ export default function NoteItem({
 
 	return (
 		<div
-			ref={(node) => {
-				setNodeRef(node);
-				cardRef.current = node;
-			}}
+			ref={cardRef}
 			style={{
-				...style,
 				contentVisibility: "auto",
 				maxHeight:
 					animatingHeight !== null ? `${animatingHeight}px` : undefined,
@@ -435,8 +420,9 @@ export default function NoteItem({
 							<div className="flex items-center gap-1.5 shrink-0">
 								{!isPreview && (
 									<div
-										{...attributes}
-										{...listeners}
+										ref={dragHandleRef}
+										{...sortableAttributes}
+										{...sortableListeners}
 										style={{ touchAction: "none" }}
 										className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/40 hover:text-action transition-colors shrink-0"
 										title="Drag to reorder"
@@ -629,3 +615,5 @@ export default function NoteItem({
 		</div>
 	);
 }
+
+export default React.memo(NoteItem);
