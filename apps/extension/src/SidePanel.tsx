@@ -19,7 +19,7 @@ import Header from "./components/Header";
 import LoginScreen from "./components/LoginScreen";
 import NoteInput from "./components/NoteInput";
 import NoteList from "./components/NoteList";
-import QuickLinks from "./components/QuickLinks";
+import QuickPanel from "./components/QuickPanel";
 import type { AuthStatus } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
 import { useCurrentTab } from "./hooks/useCurrentTab";
@@ -558,10 +558,12 @@ function NotesUI({
 				}}
 			/>
 
-			<QuickLinks
+			<QuickPanel
 				currentDomain={
 					currentFullUrl ? getScopeUrls(currentFullUrl).domain : null
 				}
+				onAddNote={handleAddNote}
+				onAppendDiary={handleAppendDiary}
 			/>
 
 			<FilterBar
