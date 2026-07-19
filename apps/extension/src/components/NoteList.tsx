@@ -1,7 +1,6 @@
 import {
 	DndContext,
 	type DragEndEvent,
-	type DragOverEvent,
 	DragOverlay,
 	type DragStartEvent,
 	PointerSensor,
@@ -12,10 +11,12 @@ import {
 import {
 	arrayMove,
 	SortableContext,
+	useSortable,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
-import { useState } from "react";
+import type React from "react";
+import { useMemo, useState } from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import NoteItem from "./NoteItem";
 import NoteSkeleton from "./NoteSkeleton";
@@ -42,6 +43,42 @@ interface NoteListProps {
 	showResolved?: boolean;
 }
 
+interface SortableWrapperProps {
+	note: Note;
+	children: (props: {
+		setNodeRef: (node: HTMLElement | null) => void;
+		style: React.CSSProperties;
+		attributes: Record<string, unknown>;
+		listeners: Record<string, unknown> | undefined;
+	}) => React.ReactElement;
+}
+
+function SortableNoteItemWrapper({ note, children }: SortableWrapperProps) {
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({ id: note.id });
+
+	const style: React.CSSProperties = {
+		transform: transform
+			? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+			: undefined,
+		transition,
+		opacity: isDragging ? 0 : undefined,
+	};
+
+	return children({
+		setNodeRef,
+		style,
+		attributes: attributes as unknown as Record<string, unknown>,
+		listeners: listeners as unknown as Record<string, unknown>,
+	});
+}
+
 export default function NoteList({
 	notes,
 	loading,
@@ -64,139 +101,44 @@ export default function NoteList({
 	const [resolvingNoteIds, setResolvingNoteIds] = useState<Set<string>>(
 		new Set(),
 	);
-	// ------------------------------------------
 
-	const [activeFavoriteNotes, setActiveFavoriteNotes] = useState<Note[] | null>(
-		null,
-	);
-	const [activePinnedNotes, setActivePinnedNotes] = useState<Note[] | null>(
-		null,
-	);
-	const [activeNormalNotes, setActiveNormalNotes] = useState<Note[] | null>(
-		null,
-	);
+	const sortedAllNotes = useMemo(() => {
+		return [...notes].sort((a, b) => {
+			if ((a.sort_order ?? 0) !== (b.sort_order ?? 0)) {
+				return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+			}
+			return (
+				new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+			);
+		});
+	}, [notes]);
 
-	const handleDragStart = (
-		event: DragStartEvent,
-		group: "favorites" | "pinned" | "normal",
-	) => {
+	const favoriteNotes = useMemo(() => {
+		return sortedAllNotes.filter((n) => n.is_favorite);
+	}, [sortedAllNotes]);
+
+	const pinnedNotes = useMemo(() => {
+		return sortedAllNotes.filter((n) => !n.is_favorite && n.is_pinned);
+	}, [sortedAllNotes]);
+
+	const normalNotes = useMemo(() => {
+		return sortedAllNotes.filter((n) => !n.is_favorite && !n.is_pinned);
+	}, [sortedAllNotes]);
+
+	const handleDragStart = (event: DragStartEvent) => {
 		const note = notes.find((n) => n.id === event.active.id);
-		if (note) setActiveDragNote(note);
-
-		if (group === "favorites") {
-			setActiveFavoriteNotes(
-				notes
-					.filter((n) => n.is_favorite)
-					.sort(
-						(a, b) =>
-							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() -
-								new Date(b.created_at).getTime(),
-					),
-			);
-		}
-		if (group === "pinned") {
-			setActivePinnedNotes(
-				notes
-					.filter((n) => !n.is_favorite && n.is_pinned)
-					.sort(
-						(a, b) =>
-							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() -
-								new Date(b.created_at).getTime(),
-					),
-			);
-		}
-		if (group === "normal") {
-			setActiveNormalNotes(
-				notes
-					.filter((n) => !n.is_favorite && !n.is_pinned)
-					.sort(
-						(a, b) =>
-							(a.sort_order || 0) - (b.sort_order || 0) ||
-							new Date(a.created_at).getTime() -
-								new Date(b.created_at).getTime(),
-					),
-			);
+		if (note) {
+			setActiveDragNote(note);
 		}
 	};
 
-	const createDragOverHandler =
-		(group: "favorites" | "pinned" | "normal") => (event: DragOverEvent) => {
-			const { active, over } = event;
-			if (!over || active.id === over.id) return;
-
-			if (group === "favorites" && activeFavoriteNotes) {
-				const oldIndex = activeFavoriteNotes.findIndex(
-					(n) => n.id === active.id,
-				);
-				const newIndex = activeFavoriteNotes.findIndex((n) => n.id === over.id);
-				if (oldIndex !== -1 && newIndex !== -1) {
-					setActiveFavoriteNotes(
-						arrayMove(activeFavoriteNotes, oldIndex, newIndex),
-					);
-				}
-			}
-			if (group === "pinned" && activePinnedNotes) {
-				const oldIndex = activePinnedNotes.findIndex((n) => n.id === active.id);
-				const newIndex = activePinnedNotes.findIndex((n) => n.id === over.id);
-				if (oldIndex !== -1 && newIndex !== -1) {
-					setActivePinnedNotes(
-						arrayMove(activePinnedNotes, oldIndex, newIndex),
-					);
-				}
-			}
-			if (group === "normal" && activeNormalNotes) {
-				const oldIndex = activeNormalNotes.findIndex((n) => n.id === active.id);
-				const newIndex = activeNormalNotes.findIndex((n) => n.id === over.id);
-				if (oldIndex !== -1 && newIndex !== -1) {
-					setActiveNormalNotes(
-						arrayMove(activeNormalNotes, oldIndex, newIndex),
-					);
-				}
-			}
-		};
-
 	const handleDragCancel = () => {
 		setActiveDragNote(null);
-		setActiveFavoriteNotes(null);
-		setActivePinnedNotes(null);
-		setActiveNormalNotes(null);
 	};
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 	);
-
-	const favoriteNotes =
-		activeFavoriteNotes ??
-		notes
-			.filter((n) => n.is_favorite)
-			.sort(
-				(a, b) =>
-					(a.sort_order || 0) - (b.sort_order || 0) ||
-					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-			);
-
-	const pinnedNotes =
-		activePinnedNotes ??
-		notes
-			.filter((n) => !n.is_favorite && n.is_pinned)
-			.sort(
-				(a, b) =>
-					(a.sort_order || 0) - (b.sort_order || 0) ||
-					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-			);
-
-	const normalNotes =
-		activeNormalNotes ??
-		notes
-			.filter((n) => !n.is_favorite && !n.is_pinned)
-			.sort(
-				(a, b) =>
-					(a.sort_order || 0) - (b.sort_order || 0) ||
-					new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-			);
 
 	const handleRequestEdit = (id: string) => {
 		if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
@@ -209,105 +151,95 @@ export default function NoteList({
 		setIsEditDirty(false);
 	};
 
-	const createDragEndHandler =
-		(group: "favorites" | "pinned" | "normal") =>
-		async (event: DragEndEvent) => {
-			const { active, over } = event;
+	const handleDragEnd = async (event: DragEndEvent) => {
+		const { active, over } = event;
+		if (!over) {
+			handleDragCancel();
+			return;
+		}
 
-			let finalList: Note[] | null = null;
-			if (group === "favorites") finalList = activeFavoriteNotes;
-			if (group === "pinned") finalList = activePinnedNotes;
-			if (group === "normal") finalList = activeNormalNotes;
+		const activeNote = notes.find((n) => n.id === active.id);
+		const overNote = notes.find((n) => n.id === over.id);
 
-			const getInitialList = () => {
-				return group === "favorites"
-					? notes
-							.filter((n) => n.is_favorite)
-							.sort(
-								(a, b) =>
-									(a.sort_order || 0) - (b.sort_order || 0) ||
-									new Date(a.created_at).getTime() -
-										new Date(b.created_at).getTime(),
-							)
-					: group === "pinned"
-						? notes
-								.filter((n) => !n.is_favorite && n.is_pinned)
-								.sort(
-									(a, b) =>
-										(a.sort_order || 0) - (b.sort_order || 0) ||
-										new Date(a.created_at).getTime() -
-											new Date(b.created_at).getTime(),
-								)
-						: notes
-								.filter((n) => !n.is_favorite && !n.is_pinned)
-								.sort(
-									(a, b) =>
-										(a.sort_order || 0) - (b.sort_order || 0) ||
-										new Date(a.created_at).getTime() -
-											new Date(b.created_at).getTime(),
-								);
-			};
+		if (!activeNote || !overNote) {
+			handleDragCancel();
+			return;
+		}
 
-			const initialList = getInitialList();
-			if (!finalList) finalList = initialList;
+		if (
+			activeNote.is_favorite !== overNote.is_favorite ||
+			activeNote.is_pinned !== overNote.is_pinned
+		) {
+			handleDragCancel();
+			return;
+		}
 
-			if (!over) {
-				handleDragCancel();
-				return;
-			}
+		const sectionNotes = sortedAllNotes.filter(
+			(n) =>
+				n.is_favorite === activeNote.is_favorite &&
+				n.is_pinned === activeNote.is_pinned,
+		);
 
-			const initialIndex = initialList.findIndex((n) => n.id === active.id);
-			const finalIndex = finalList.findIndex((n) => n.id === active.id);
+		const activeSectionIndex = sectionNotes.findIndex(
+			(n) => n.id === active.id,
+		);
+		const overSectionIndex = sectionNotes.findIndex((n) => n.id === over.id);
 
-			if (initialIndex === -1 || finalIndex === -1) {
-				handleDragCancel();
-				return;
-			}
+		if (
+			activeSectionIndex === -1 ||
+			overSectionIndex === -1 ||
+			activeSectionIndex === overSectionIndex
+		) {
+			handleDragCancel();
+			return;
+		}
 
-			if (initialIndex === finalIndex) {
-				handleDragCancel();
-				return;
-			}
+		const movedSectionNotes = arrayMove(
+			sectionNotes,
+			activeSectionIndex,
+			overSectionIndex,
+		);
+		const finalIndex = movedSectionNotes.findIndex((n) => n.id === active.id);
 
-			let newOrder: number;
-			const OFFSET = 0.0001;
-			const EPSILON = 1e-9;
+		if (finalIndex === -1) {
+			handleDragCancel();
+			return;
+		}
 
-			if (finalIndex === 0) {
-				const nextOrder = finalList[1]?.sort_order ?? 0;
-				newOrder = nextOrder - 1.0;
-			} else if (finalIndex === finalList.length - 1) {
-				const prevOrder = finalList[finalIndex - 1]?.sort_order ?? 0;
-				newOrder = prevOrder + 1.0;
+		let newOrder: number;
+		const OFFSET = 0.0001;
+		const EPSILON = 1e-9;
+
+		if (finalIndex === 0) {
+			const nextOrder = movedSectionNotes[1]?.sort_order ?? 0;
+			newOrder = nextOrder - 1.0;
+		} else if (finalIndex === movedSectionNotes.length - 1) {
+			const prevOrder = movedSectionNotes[finalIndex - 1]?.sort_order ?? 0;
+			newOrder = prevOrder + 1.0;
+		} else {
+			const prevOrder = movedSectionNotes[finalIndex - 1]?.sort_order ?? 0;
+			const nextOrder = movedSectionNotes[finalIndex + 1]?.sort_order ?? 0;
+
+			if (Math.abs(prevOrder - nextOrder) < EPSILON) {
+				newOrder =
+					activeSectionIndex > overSectionIndex
+						? nextOrder - OFFSET
+						: prevOrder + OFFSET;
 			} else {
-				const prevOrder = finalList[finalIndex - 1]?.sort_order ?? 0;
-				const nextOrder = finalList[finalIndex + 1]?.sort_order ?? 0;
-
-				if (Math.abs(prevOrder - nextOrder) < EPSILON) {
-					if (initialIndex > finalIndex) {
-						newOrder = nextOrder - OFFSET;
-					} else {
-						newOrder = prevOrder + OFFSET;
-					}
-				} else {
-					newOrder = (prevOrder + nextOrder) / 2.0;
-				}
+				newOrder = (prevOrder + nextOrder) / 2.0;
 			}
+		}
 
-			setIsSorting(true);
-			try {
-				await onUpdateNoteOrder(active.id as string, newOrder);
-			} catch (error) {
-				console.error("Failed to update note order:", error);
-			} finally {
-				setIsSorting(false);
-				handleDragCancel();
-			}
-		};
-
-	const handleDragEndFavorites = createDragEndHandler("favorites");
-	const handleDragEndPinned = createDragEndHandler("pinned");
-	const handleDragEndNormal = createDragEndHandler("normal");
+		setIsSorting(true);
+		try {
+			await onUpdateNoteOrder(active.id as string, newOrder);
+		} catch (error) {
+			console.error("Failed to update note order:", error);
+		} finally {
+			setIsSorting(false);
+			handleDragCancel();
+		}
+	};
 
 	if (loading && notes.length === 0) {
 		return (
@@ -345,15 +277,12 @@ export default function NoteList({
 	) => {
 		const willBeResolved = !currentStatus;
 
-		// 🛡️ 多重クリック防止（二重ソフトウェアロック）
 		if (resolvingNoteIds.has(id)) return false;
 
-		// 🛡️【完了ONモードまたは未解決化時は即時更新】
 		if (showResolved || !willBeResolved) {
 			return await onToggleResolved(id, currentStatus);
 		}
 
-		// 🛡️【完了OFFモード時はシーケンシャル制御】
 		setResolvingNoteIds((prev) => {
 			const next = new Set(prev);
 			next.add(id);
@@ -381,50 +310,58 @@ export default function NoteList({
 	const renderItem = (note: Note, isFavorite: boolean) => {
 		const isResolving = resolvingNoteIds.has(note.id);
 		return (
-			<NoteItem
-				key={note.id}
-				note={note}
-				currentFullUrl={currentFullUrl}
-				isFavoriteList={isFavorite}
-				isEditing={note.id === editingNoteId}
-				onRequestEdit={handleRequestEdit}
-				onSetIsEditDirty={setIsEditDirty}
-				onUpdate={onUpdate}
-				onDelete={onDelete}
-				onToggleResolved={handleToggleResolved}
-				onToggleFavorite={onToggleFavorite}
-				onTogglePinned={onTogglePinned}
-				onToggleExpansion={onToggleExpansion}
-				isResolving={isResolving}
-			/>
+			<SortableNoteItemWrapper key={note.id} note={note}>
+				{({ setNodeRef, style: sortableStyle, attributes, listeners }) => (
+					<div ref={setNodeRef} style={sortableStyle}>
+						<NoteItem
+							note={note}
+							currentFullUrl={currentFullUrl}
+							isFavoriteList={isFavorite}
+							isEditing={note.id === editingNoteId}
+							onRequestEdit={handleRequestEdit}
+							onSetIsEditDirty={setIsEditDirty}
+							onUpdate={onUpdate}
+							onDelete={onDelete}
+							onToggleResolved={handleToggleResolved}
+							onToggleFavorite={onToggleFavorite}
+							onTogglePinned={onTogglePinned}
+							onToggleExpansion={onToggleExpansion}
+							isResolving={isResolving}
+							sortableAttributes={attributes}
+							sortableListeners={listeners}
+						/>
+					</div>
+				)}
+			</SortableNoteItemWrapper>
 		);
 	};
 
 	return (
-		<div className="space-y-4 relative">
-			{favoriteNotes.length > 0 && (
-				<div className="space-y-3">
-					<button
-						type="button"
-						onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
-						className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 hover:text-action transition-colors cursor-pointer"
-					>
-						{isFavoritesOpen ? (
-							<ChevronDown className="w-3 h-3" />
-						) : (
-							<ChevronRight className="w-3 h-3" />
-						)}
-						<span>FAVORITES ({favoriteNotes.length})</span>
-					</button>
-					{isFavoritesOpen && (
-						<DndContext
-							sensors={sensors}
-							collisionDetection={pointerWithin}
-							onDragStart={(e) => handleDragStart(e, "favorites")}
-							onDragOver={createDragOverHandler("favorites")}
-							onDragEnd={handleDragEndFavorites}
-							onDragCancel={handleDragCancel}
+		<DndContext
+			collisionDetection={pointerWithin}
+			id="extension-global-notes-dnd-context"
+			onDragCancel={handleDragCancel}
+			onDragEnd={handleDragEnd}
+			onDragStart={handleDragStart}
+			sensors={sensors}
+		>
+			<div className="space-y-4 relative">
+				{/* --- 1. FAVORITES セクション --- */}
+				{favoriteNotes.length > 0 && (
+					<div className="space-y-3">
+						<button
+							type="button"
+							onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
+							className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 hover:text-action transition-colors cursor-pointer"
 						>
+							{isFavoritesOpen ? (
+								<ChevronDown className="w-3 h-3" />
+							) : (
+								<ChevronRight className="w-3 h-3" />
+							)}
+							<span>FAVORITES ({favoriteNotes.length})</span>
+						</button>
+						{isFavoritesOpen && (
 							<SortableContext
 								items={favoriteNotes.map((n) => n.id)}
 								strategy={verticalListSortingStrategy}
@@ -433,50 +370,21 @@ export default function NoteList({
 									{favoriteNotes.map((note) => renderItem(note, true))}
 								</div>
 							</SortableContext>
-							<DragOverlay dropAnimation={null}>
-								{activeDragNote ? (
-									<div className="shadow-2xl scale-[1.02] rotate-1 transition-transform pointer-events-none border border-action/30 rounded-xl bg-base-bg">
-										<NoteItem
-											note={activeDragNote}
-											currentFullUrl={currentFullUrl}
-											isFavoriteList={activeDragNote.is_favorite}
-											isEditing={false}
-											onRequestEdit={() => {}}
-											onSetIsEditDirty={() => {}}
-											onUpdate={async () => false}
-											onDelete={async () => false}
-											onToggleResolved={async () => false}
-											onToggleFavorite={async () => false}
-											onTogglePinned={async () => false}
-											onToggleExpansion={async () => false}
-											isPreview={true}
-										/>
-									</div>
-								) : null}
-							</DragOverlay>
-						</DndContext>
-					)}
-					{(pinnedNotes.length > 0 || normalNotes.length > 0) && (
-						<hr className="border-base-border" />
-					)}
-				</div>
-			)}
+						)}
+						{(pinnedNotes.length > 0 || normalNotes.length > 0) && (
+							<hr className="border-base-border" />
+						)}
+					</div>
+				)}
 
-			{pinnedNotes.length > 0 && (
-				<div className="space-y-3">
-					{favoriteNotes.length > 0 && (
-						<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-							<span>Current Page</span>
-						</div>
-					)}
-					<DndContext
-						sensors={sensors}
-						collisionDetection={pointerWithin}
-						onDragStart={(e) => handleDragStart(e, "pinned")}
-						onDragOver={createDragOverHandler("pinned")}
-						onDragEnd={handleDragEndPinned}
-						onDragCancel={handleDragCancel}
-					>
+				{/* --- 2. PINNED セクション --- */}
+				{pinnedNotes.length > 0 && (
+					<div className="space-y-3">
+						{favoriteNotes.length > 0 && (
+							<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+								<span>Current Page</span>
+							</div>
+						)}
 						<SortableContext
 							items={pinnedNotes.map((n) => n.id)}
 							strategy={verticalListSortingStrategy}
@@ -485,46 +393,17 @@ export default function NoteList({
 								{pinnedNotes.map((note) => renderItem(note, false))}
 							</div>
 						</SortableContext>
-						<DragOverlay dropAnimation={null}>
-							{activeDragNote ? (
-								<div className="shadow-2xl scale-[1.02] rotate-1 transition-transform pointer-events-none border border-action/30 rounded-xl bg-base-bg">
-									<NoteItem
-										note={activeDragNote}
-										currentFullUrl={currentFullUrl}
-										isFavoriteList={activeDragNote.is_favorite}
-										isEditing={false}
-										onRequestEdit={() => {}}
-										onSetIsEditDirty={() => {}}
-										onUpdate={async () => false}
-										onDelete={async () => false}
-										onToggleResolved={async () => false}
-										onToggleFavorite={async () => false}
-										onTogglePinned={async () => false}
-										onToggleExpansion={async () => false}
-										isPreview={true}
-									/>
-								</div>
-							) : null}
-						</DragOverlay>
-					</DndContext>
-				</div>
-			)}
+					</div>
+				)}
 
-			{normalNotes.length > 0 && (
-				<div className="space-y-3">
-					{favoriteNotes.length > 0 && pinnedNotes.length === 0 && (
-						<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-							<span>Current Page</span>
-						</div>
-					)}
-					<DndContext
-						sensors={sensors}
-						collisionDetection={pointerWithin}
-						onDragStart={(e) => handleDragStart(e, "normal")}
-						onDragOver={createDragOverHandler("normal")}
-						onDragEnd={handleDragEndNormal}
-						onDragCancel={handleDragCancel}
-					>
+				{/* --- 3. NORMAL セクション --- */}
+				{normalNotes.length > 0 && (
+					<div className="space-y-3">
+						{favoriteNotes.length > 0 && pinnedNotes.length === 0 && (
+							<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
+								<span>Current Page</span>
+							</div>
+						)}
 						<SortableContext
 							items={normalNotes.map((n) => n.id)}
 							strategy={verticalListSortingStrategy}
@@ -533,30 +412,31 @@ export default function NoteList({
 								{normalNotes.map((note) => renderItem(note, false))}
 							</div>
 						</SortableContext>
-						<DragOverlay dropAnimation={null}>
-							{activeDragNote ? (
-								<div className="shadow-2xl scale-[1.02] rotate-1 transition-transform pointer-events-none border border-action/30 rounded-xl bg-base-bg">
-									<NoteItem
-										note={activeDragNote}
-										currentFullUrl={currentFullUrl}
-										isFavoriteList={activeDragNote.is_favorite}
-										isEditing={false}
-										onRequestEdit={() => {}}
-										onSetIsEditDirty={() => {}}
-										onUpdate={async () => false}
-										onDelete={async () => false}
-										onToggleResolved={async () => false}
-										onToggleFavorite={async () => false}
-										onTogglePinned={async () => false}
-										onToggleExpansion={async () => false}
-										isPreview={true}
-									/>
-								</div>
-							) : null}
-						</DragOverlay>
-					</DndContext>
-				</div>
-			)}
-		</div>
+					</div>
+				)}
+			</div>
+
+			<DragOverlay dropAnimation={null}>
+				{activeDragNote ? (
+					<div className="shadow-2xl scale-[1.02] rotate-1 transition-transform pointer-events-none border border-action/30 rounded-xl bg-base-bg">
+						<NoteItem
+							note={activeDragNote}
+							currentFullUrl={currentFullUrl}
+							isFavoriteList={activeDragNote.is_favorite}
+							isEditing={false}
+							onRequestEdit={() => {}}
+							onSetIsEditDirty={() => {}}
+							onUpdate={async () => false}
+							onDelete={async () => false}
+							onToggleResolved={async () => false}
+							onToggleFavorite={async () => false}
+							onTogglePinned={async () => false}
+							onToggleExpansion={async () => false}
+							isPreview={true}
+						/>
+					</div>
+				) : null}
+			</DragOverlay>
+		</DndContext>
 	);
 }

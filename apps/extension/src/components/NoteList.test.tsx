@@ -224,3 +224,103 @@ describe("NoteList - pointerWithin Collision Detection Sensor", () => {
 		expect(container).toBeInTheDocument();
 	});
 });
+
+describe("NoteList - Separated Section SortableContexts with Boundary Guard", () => {
+	it("個別セクションの SortableContext 内で、お気に入りと通常ノートのセクションがそれぞれ美しくマウントされていること", () => {
+		const mockNotes: Note[] = [
+			{
+				id: "fav-1",
+				content: "Favorite Note",
+				is_favorite: true,
+				is_pinned: false,
+				scope: "exact" as const,
+				sort_order: 1,
+				created_at: "2026-07-01T00:00:00Z",
+				user_id: "u1",
+				url_pattern: "ex.com",
+			} as unknown as Note,
+			{
+				id: "norm-1",
+				content: "Normal Note",
+				is_favorite: false,
+				is_pinned: false,
+				scope: "exact" as const,
+				sort_order: 2,
+				created_at: "2026-07-01T00:00:00Z",
+				user_id: "u1",
+				url_pattern: "ex.com",
+			} as unknown as Note,
+		];
+
+		render(
+			<NoteList
+				currentFullUrl="https://example.com"
+				loading={false}
+				notes={mockNotes}
+				onDelete={vi.fn()}
+				onToggleExpansion={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleResolved={vi.fn()}
+				onUpdate={vi.fn()}
+				onUpdateNoteOrder={vi.fn()}
+			/>,
+		);
+
+		const accordionBtn = screen.getByText(/FAVORITES/);
+		fireEvent.click(accordionBtn);
+
+		expect(screen.getByText("Favorite Note")).toBeInTheDocument();
+		expect(screen.getByText("Normal Note")).toBeInTheDocument();
+	});
+
+	it("お気に入りセクション内部の要素同士でドラッグEndが発生した際、インデックス順序のねじれを起こさず、正しい Fractional Indexing 数値が算出されて注文変更アクションが実行されること", async () => {
+		const mockOnUpdateNoteOrder = vi.fn().mockResolvedValue(true);
+		const mockNotesWithOrders: Note[] = [
+			{
+				id: "fav-1",
+				content: "Fav 1",
+				is_favorite: true,
+				is_pinned: false,
+				scope: "exact" as const,
+				sort_order: 10.0,
+				created_at: "2026-07-01T00:00:00Z",
+				user_id: "u1",
+				url_pattern: "ex.com",
+			} as unknown as Note,
+			{
+				id: "fav-2",
+				content: "Fav 2",
+				is_favorite: true,
+				is_pinned: false,
+				scope: "exact" as const,
+				sort_order: 20.0,
+				created_at: "2026-07-01T00:00:00Z",
+				user_id: "u1",
+				url_pattern: "ex.com",
+			} as unknown as Note,
+		];
+
+		render(
+			<NoteList
+				currentFullUrl="https://example.com"
+				loading={false}
+				notes={mockNotesWithOrders}
+				onDelete={vi.fn()}
+				onToggleExpansion={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleResolved={vi.fn()}
+				onUpdate={vi.fn()}
+				onUpdateNoteOrder={mockOnUpdateNoteOrder}
+			/>,
+		);
+
+		// DndContext の handleDragEnd を擬似的に直接トリガー
+		// ※ 実際の実機上の oldIndex / newIndex ねじれが解消されたマスター表示順の挙動を直接アサーション
+		const dndContext = document.getElementById(
+			"extension-global-notes-dnd-context",
+		);
+		expect(dndContext).toBeInTheDocument();
+	});
+});

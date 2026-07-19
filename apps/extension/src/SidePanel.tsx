@@ -11,7 +11,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Check, Copy, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import DiaryView from "./components/DiaryView";
 import FilterBar from "./components/FilterBar";
@@ -91,12 +91,11 @@ function NotesUI({
 	const session =
 		authStatus.mode === "authenticated" ? authStatus.session : null;
 	const { currentFullUrl, url, title } = useCurrentTab();
-	const {
-		userPlan: dbUserPlan,
-		totalNoteCount: dbTotalNoteCount,
-		setTotalNoteCount,
-		userStatsLoading: dbUserStatsLoading,
-	} = useUserStats(session);
+	const { userPlan: dbUserPlan, userStatsLoading: dbUserStatsLoading } =
+		useUserStats(session);
+
+	const [stableNotesLoading, setStableNotesLoading] = useState(false);
+	const [isPending, startTransition] = useTransition();
 
 	const isGuest = authStatus.mode === "guest";
 	const userPlan = isGuest ? "guest" : dbUserPlan;
@@ -110,8 +109,16 @@ function NotesUI({
 	const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">(
 		"exact",
 	);
+	const [localScope, setLocalScope] = useState<"exact" | "domain" | "inbox">(
+		"exact",
+	); // 🚨 UI先行応答用Stateを新設
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+	// 💡 URL変化や初期マウント時に localScope をパッシブにSSOTと同期
+	useEffect(() => {
+		setLocalScope(viewScope);
+	}, [viewScope]);
 
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
@@ -358,7 +365,10 @@ function NotesUI({
 
 	const handleViewScopeChange = (scope: "exact" | "domain" | "inbox") => {
 		if (!checkLeaveGuard()) return;
-		setViewScope(scope);
+		setLocalScope(scope); // 1. 先行応答（0msでボタン背景色を即座に変える）
+		startTransition(() => {
+			setViewScope(scope); // 2. 重い裏側処理のキック
+		});
 	};
 
 	const handleCloseDiary = () => {
@@ -432,11 +442,22 @@ function NotesUI({
 		togglePinned,
 		updateNoteOrder,
 		toggleNoteExpansion,
-	} = useNotes(authStatus, currentFullUrl, setTotalNoteCount, viewScope);
+	} = useNotes(authStatus, currentFullUrl, () => {}, viewScope);
 
-	const totalNoteCount = isGuest
-		? notes.filter((n) => n.scope !== "inbox").length
-		: dbTotalNoteCount;
+	useEffect(() => {
+		if (loading) {
+			setStableNotesLoading(true);
+		} else {
+			const timer = setTimeout(() => {
+				setStableNotesLoading(false);
+			}, 200);
+			return () => clearTimeout(timer);
+		}
+	}, [loading]);
+
+	const isNotesLoading = stableNotesLoading || isPending;
+
+	const totalNoteCount = notes.filter((n) => n.scope !== "inbox").length;
 
 	// スクロールバック付きのラッパー関数
 	const handleAddNote = async (
@@ -459,77 +480,91 @@ function NotesUI({
 		return success;
 	};
 
-	// 🔍 フィルタリングロジックの集約 (SSOT)
+	// 🔍 フィルタリングロジックの集約 (SSOT) を useMemo で要塞化
 	const scopeUrls = currentFullUrl
 		? getScopeUrls(currentFullUrl)
 		: { domain: "", exact: "" };
 
-	const filteredNotesForTags = notes.filter((n) => {
-		// 1. スコープ（タブ）フィルターの適用
-		// 原則: 「現在お気に入りである」か「現在のURL/スコープに一致する」かのいずれかが必要
-		const isCurrentScope =
-			(viewScope === "inbox" && n.scope === "inbox") ||
-			(viewScope === "domain" &&
-				n.scope === "domain" &&
-				n.url_pattern === scopeUrls.domain) ||
-			(viewScope === "exact" &&
-				n.scope === "exact" &&
-				n.url_pattern === scopeUrls.exact);
+	const filteredNotesForTags = useMemo(() => {
+		return notes.filter((n) => {
+			// 1. スコープ（タブ）フィルターの適用
+			// 原則: 「現在お気に入りである」か「現在のURL/スコープに一致する」かのいずれかが必要
+			const isCurrentScope =
+				(viewScope === "inbox" && n.scope === "inbox") ||
+				(viewScope === "domain" &&
+					n.scope === "domain" &&
+					n.url_pattern === scopeUrls.domain) ||
+				(viewScope === "exact" &&
+					n.scope === "exact" &&
+					n.url_pattern === scopeUrls.exact);
 
-		// 🚨 お気に入りを解除した瞬間、isCurrentScopeがfalseならリストから除外される
-		if (!n.is_favorite && !isCurrentScope) {
-			return false;
-		}
-
-		// 他のタブの「お気に入り」は表示するが、現在のタブの「お気に入りではないノート」も表示する
-		// ただし、現在選択中のタブ(viewScope)とノートのscopeが不一致なものは落とす（InboxタブにDomainノートを出さない等）
-		if (viewScope === "inbox" && n.scope !== "inbox") return false;
-		if (viewScope !== "inbox" && n.scope === "inbox") return false;
-		if (viewScope !== "inbox" && !n.is_favorite && n.scope !== viewScope)
-			return false;
-
-		// 2. Note Type フィルター
-		if (filterType !== "all" && (n.note_type || "info") !== filterType) {
-			return false;
-		}
-
-		// 3. 解決済みフィルター
-		if (!showResolved && n.is_resolved) {
-			return false;
-		}
-
-		// 4. 検索クエリフィルター
-		if (searchQuery) {
-			const searchLower = searchQuery.toLowerCase();
-			const matchesContent = n.content?.toLowerCase().includes(searchLower);
-			const matchesTags = n.tags?.some((tag) =>
-				tag.toLowerCase().includes(searchLower),
-			);
-			const matchesUrl = n.url_pattern?.toLowerCase().includes(searchLower);
-
-			if (!matchesContent && !matchesTags && !matchesUrl) {
+			// 🚨 お気に入りを解除した瞬間、isCurrentScopeがfalseならリストから除外される
+			if (!n.is_favorite && !isCurrentScope) {
 				return false;
 			}
-		}
 
-		return true;
-	});
+			// 他のタブの「お気に入り」は表示するが、現在のタブの「お気に入りではないノート」も表示する
+			// ただし、現在選択中のタブ(viewScope)とノートのscopeが不一致なものは落とす（InboxタブにDomainノートを出さない等）
+			if (viewScope === "inbox" && n.scope !== "inbox") return false;
+			if (viewScope !== "inbox" && n.scope === "inbox") return false;
+			if (viewScope !== "inbox" && !n.is_favorite && n.scope !== viewScope)
+				return false;
 
-	const availableTags = Array.from(
-		new Set(
-			filteredNotesForTags.flatMap(
-				(n) => (n as { tags?: string[] }).tags || [],
+			// 2. Note Type フィルター
+			if (filterType !== "all" && (n.note_type || "info") !== filterType) {
+				return false;
+			}
+
+			// 3. 解決済みフィルター
+			if (!showResolved && n.is_resolved) {
+				return false;
+			}
+
+			// 4. 検索クエリフィルター
+			if (searchQuery) {
+				const searchLower = searchQuery.toLowerCase();
+				const matchesContent = n.content?.toLowerCase().includes(searchLower);
+				const matchesTags = n.tags?.some((tag) =>
+					tag.toLowerCase().includes(searchLower),
+				);
+				const matchesUrl = n.url_pattern?.toLowerCase().includes(searchLower);
+
+				if (!matchesContent && !matchesTags && !matchesUrl) {
+					return false;
+				}
+			}
+
+			return true;
+		});
+	}, [
+		notes,
+		viewScope,
+		filterType,
+		showResolved,
+		searchQuery,
+		scopeUrls.domain,
+		scopeUrls.exact,
+	]);
+
+	const availableTags = useMemo(() => {
+		return Array.from(
+			new Set(
+				filteredNotesForTags.flatMap(
+					(n) => (n as { tags?: string[] }).tags || [],
+				),
 			),
-		),
-	).sort();
+		).sort();
+	}, [filteredNotesForTags]);
 
-	const finalFilteredNotes = filteredNotesForTags.filter((n) => {
-		const noteTags = (n as { tags?: string[] }).tags || [];
-		if (selectedTag && !noteTags.includes(selectedTag)) {
-			return false;
-		}
-		return true;
-	});
+	const finalFilteredNotes = useMemo(() => {
+		return filteredNotesForTags.filter((n) => {
+			const noteTags = (n as { tags?: string[] }).tags || [];
+			if (selectedTag && !noteTags.includes(selectedTag)) {
+				return false;
+			}
+			return true;
+		});
+	}, [filteredNotesForTags, selectedTag]);
 
 	return (
 		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_auto_1fr] relative font-sans">
@@ -571,7 +606,7 @@ function NotesUI({
 				setFilterType={setFilterType}
 				showResolved={showResolved}
 				setShowResolved={setShowResolved}
-				viewScope={viewScope}
+				viewScope={localScope}
 				setViewScope={handleViewScopeChange}
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
@@ -650,14 +685,14 @@ function NotesUI({
 				{/* 💡 スティッキー吸着時の上部隙間をゼロにしつつ、初期状態の窮屈さを防ぐ空気感スペーサー */}
 				<div className="h-2 shrink-0" aria-hidden="true" />
 
-				{loading && notes.length === 0 ? (
+				{isNotesLoading && notes.length === 0 ? (
 					<div className="w-full h-32 flex items-center justify-center">
 						<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
 					</div>
 				) : (
 					<NoteList
 						notes={finalFilteredNotes}
-						loading={loading}
+						loading={stableNotesLoading}
 						currentFullUrl={currentFullUrl}
 						onUpdate={updateNote}
 						onDelete={deleteNote}
