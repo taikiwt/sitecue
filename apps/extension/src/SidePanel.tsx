@@ -11,7 +11,7 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Check, Copy, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import DiaryView from "./components/DiaryView";
 import FilterBar from "./components/FilterBar";
@@ -95,7 +95,6 @@ function NotesUI({
 		useUserStats(session);
 
 	const [stableNotesLoading, setStableNotesLoading] = useState(false);
-	const [isPending, startTransition] = useTransition();
 
 	const isGuest = authStatus.mode === "guest";
 	const userPlan = isGuest ? "guest" : dbUserPlan;
@@ -366,9 +365,7 @@ function NotesUI({
 	const handleViewScopeChange = (scope: "exact" | "domain" | "inbox") => {
 		if (!checkLeaveGuard()) return;
 		setLocalScope(scope); // 1. 先行応答（0msでボタン背景色を即座に変える）
-		startTransition(() => {
-			setViewScope(scope); // 2. 重い裏側処理のキック
-		});
+		setViewScope(scope); // 2. 同期更新
 	};
 
 	const handleCloseDiary = () => {
@@ -455,7 +452,7 @@ function NotesUI({
 		}
 	}, [loading]);
 
-	const isNotesLoading = stableNotesLoading || isPending;
+	const isNotesLoading = stableNotesLoading;
 
 	const totalNoteCount = notes.filter((n) => n.scope !== "inbox").length;
 
