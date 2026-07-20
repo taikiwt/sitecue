@@ -1,5 +1,5 @@
 import { Loader2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -46,6 +46,9 @@ export default function DiaryView({
 	const [editingTopicText, setEditingTopicText] = useState("");
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const { onKeyDown, onPaste } = useMarkdownAssist();
+
+	// 💡 カプセルボタンUI着色（selectedDiaryDate: 0ms）と重いコンテンツ描画を Concurrent 非同期分離
+	const deferredSelectedDiaryDate = useDeferredValue(selectedDiaryDate);
 
 	// 💡 フリッカーを防止するためのインメモリ遅延フラグを配備
 	const [stableLoading, setStableLoading] = useState(isDiaryLoading);
@@ -192,7 +195,7 @@ export default function DiaryView({
 					}}
 				>
 					<span className="text-xs font-bold text-neutral-500 font-mono tracking-wide">
-						{selectedDiaryDate}
+						{deferredSelectedDiaryDate}
 					</span>
 					{updateDiaryMutationPending && (
 						<div className="flex items-center gap-1 text-[10px] text-neutral-400 font-medium">

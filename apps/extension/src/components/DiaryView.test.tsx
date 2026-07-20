@@ -108,6 +108,20 @@ describe("DiaryView Auto-save and Drag-safe Padding Focus Interactive Tests", ()
 		]);
 	});
 
+	it("日付ボタンクリック時に setSelectedDiaryDate が即座に呼び出されること", () => {
+		render(<DiaryView {...mockProps} />);
+
+		const todayButton = screen.getByRole("button", { name: "Today" });
+		fireEvent.click(todayButton);
+
+		const now = new Date();
+		const expectedTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+		expect(mockProps.setSelectedDiaryDate).toHaveBeenCalledWith(
+			expectedTodayStr,
+		);
+	});
+
 	it("isDiaryLoadingがfalseに切り替わっても、200ms経過するまではスケルトン盾が維持されること", () => {
 		vi.useFakeTimers();
 

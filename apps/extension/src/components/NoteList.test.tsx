@@ -651,7 +651,7 @@ describe("NoteList Deferred Search & Expansion Verification", () => {
 	});
 });
 
-describe("NoteList Deferred ViewScope Separation Verification", () => {
+describe("NoteList Batch Deferred Filter Verification", () => {
 	const testMockProps = {
 		notes: [],
 		loading: false,
@@ -665,10 +665,10 @@ describe("NoteList Deferred ViewScope Separation Verification", () => {
 		onToggleExpansion: vi.fn(),
 	};
 
-	it("単一NoteList構造で指定したスコープのノートが正確にフィルタリング描画されること", () => {
+	it("一括Deferred化されたfilterStateのもとでNoteListが正常に描画されること", () => {
 		const sampleNote = {
-			id: "exact-1",
-			content: "Exact scope note",
+			id: "batch-filter-1",
+			content: "Batch filter test content",
 			note_type: "info" as const,
 			scope: "exact" as const,
 			url_pattern: "example.com/page",
@@ -679,8 +679,15 @@ describe("NoteList Deferred ViewScope Separation Verification", () => {
 			created_at: new Date().toISOString(),
 		} as unknown as Note;
 
-		render(<NoteList {...testMockProps} notes={[sampleNote]} scope="exact" />);
+		render(
+			<NoteList
+				{...testMockProps}
+				notes={[sampleNote]}
+				scope="exact"
+				showResolved={false}
+			/>,
+		);
 
-		expect(screen.getByText("Exact scope note")).toBeInTheDocument();
+		expect(screen.getByText("Batch filter test content")).toBeInTheDocument();
 	});
 });
