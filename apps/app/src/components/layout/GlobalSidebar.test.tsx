@@ -5,8 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
-import { useNotesStore } from "@/store/useNotesStore";
 import { useLayoutStore } from "@/store/useLayoutStore";
+import { useNotesStore } from "@/store/useNotesStore";
 import { GlobalSidebar } from "./GlobalSidebar";
 
 // Mock next/navigation

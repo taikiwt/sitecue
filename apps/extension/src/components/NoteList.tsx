@@ -15,13 +15,13 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
-import type React from "react";
-import { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import NoteItem from "./NoteItem";
 import NoteSkeleton from "./NoteSkeleton";
 
 interface NoteListProps {
+	scope?: "exact" | "domain" | "inbox";
 	notes: Note[];
 	loading: boolean;
 	currentFullUrl: string;
@@ -79,7 +79,8 @@ function SortableNoteItemWrapper({ note, children }: SortableWrapperProps) {
 	});
 }
 
-export default function NoteList({
+function NoteList({
+	scope = "exact",
 	notes,
 	loading,
 	currentFullUrl,
@@ -140,16 +141,55 @@ export default function NoteList({
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 	);
 
-	const handleRequestEdit = (id: string) => {
-		if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
-			const confirmLeave = window.confirm(
-				"You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
-			);
-			if (!confirmLeave) return;
-		}
-		setEditingNoteId(id);
-		setIsEditDirty(false);
-	};
+	const handleRequestEdit = useCallback(
+		(id: string) => {
+			if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
+				const confirmLeave = window.confirm(
+					"You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
+				);
+				if (!confirmLeave) return;
+			}
+			setEditingNoteId(id);
+			setIsEditDirty(false);
+		},
+		[editingNoteId, isEditDirty],
+	);
+
+	const handleToggleResolved = useCallback(
+		async (id: string, currentStatus: boolean | undefined) => {
+			const willBeResolved = !currentStatus;
+
+			if (resolvingNoteIds.has(id)) return false;
+
+			if (showResolved || !willBeResolved) {
+				return await onToggleResolved(id, currentStatus);
+			}
+
+			setResolvingNoteIds((prev) => {
+				const next = new Set(prev);
+				next.add(id);
+				return next;
+			});
+
+			setTimeout(async () => {
+				try {
+					await onToggleResolved(id, currentStatus);
+				} catch (error) {
+					console.error("Failed to toggle resolved status:", error);
+				} finally {
+					setResolvingNoteIds((current) => {
+						if (!current.has(id)) return current;
+						const next = new Set(current);
+						next.delete(id);
+						return next;
+					});
+				}
+			}, 500);
+
+			return true;
+		},
+		[resolvingNoteIds, showResolved, onToggleResolved],
+	);
 
 	const handleDragEnd = async (event: DragEndEvent) => {
 		const { active, over } = event;
@@ -271,42 +311,6 @@ export default function NoteList({
 		);
 	}
 
-	const handleToggleResolved = async (
-		id: string,
-		currentStatus: boolean | undefined,
-	) => {
-		const willBeResolved = !currentStatus;
-
-		if (resolvingNoteIds.has(id)) return false;
-
-		if (showResolved || !willBeResolved) {
-			return await onToggleResolved(id, currentStatus);
-		}
-
-		setResolvingNoteIds((prev) => {
-			const next = new Set(prev);
-			next.add(id);
-			return next;
-		});
-
-		setTimeout(async () => {
-			try {
-				await onToggleResolved(id, currentStatus);
-			} catch (error) {
-				console.error("Failed to toggle resolved status:", error);
-			} finally {
-				setResolvingNoteIds((current) => {
-					if (!current.has(id)) return current;
-					const next = new Set(current);
-					next.delete(id);
-					return next;
-				});
-			}
-		}, 500);
-
-		return true;
-	};
-
 	const renderItem = (note: Note, isFavorite: boolean) => {
 		const isResolving = resolvingNoteIds.has(note.id);
 		return (
@@ -339,7 +343,7 @@ export default function NoteList({
 	return (
 		<DndContext
 			collisionDetection={pointerWithin}
-			id="extension-global-notes-dnd-context"
+			id={`extension-global-notes-dnd-context-${scope}`}
 			onDragCancel={handleDragCancel}
 			onDragEnd={handleDragEnd}
 			onDragStart={handleDragStart}
@@ -361,7 +365,7 @@ export default function NoteList({
 							)}
 							<span>FAVORITES ({favoriteNotes.length})</span>
 						</button>
-						{isFavoritesOpen && (
+						<div className={isFavoritesOpen ? "block" : "hidden"}>
 							<SortableContext
 								items={favoriteNotes.map((n) => n.id)}
 								strategy={verticalListSortingStrategy}
@@ -370,7 +374,7 @@ export default function NoteList({
 									{favoriteNotes.map((note) => renderItem(note, true))}
 								</div>
 							</SortableContext>
-						)}
+						</div>
 						{(pinnedNotes.length > 0 || normalNotes.length > 0) && (
 							<hr className="border-base-border" />
 						)}
@@ -440,3 +444,5 @@ export default function NoteList({
 		</DndContext>
 	);
 }
+
+export default React.memo(NoteList);

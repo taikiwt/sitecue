@@ -15,7 +15,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { APP_LIMITS } from "../constants/limits";
@@ -23,6 +23,16 @@ import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { Button } from "./ui/button";
+
+// 💡 重いMarkdown解析・DOM描画部を content プロパティのみで厳格に要塞化するコンポーネント
+const MemoizedMarkdown = React.memo(
+	function MemoizedMarkdown({ content }: { content: string }) {
+		return <MarkdownRenderer content={content} />;
+	},
+	(prevProps, nextProps) => prevProps.content === nextProps.content,
+);
+
+// ... 既存の NoteItemProps と NoteItem コンポーネント定義 ...
 
 const COLLAPSE_THRESHOLD = 160;
 
@@ -83,7 +93,11 @@ function NoteItem({
 	const [editScope, setEditScope] = useState<NoteScope>(note.scope);
 	const [updating, setUpdating] = useState(false);
 	const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
-	const [isOverflowing, setIsOverflowing] = useState(false);
+	const [isOverflowing, setIsOverflowing] = useState(() => {
+		return (note.content ?? "").length > 120;
+	});
+	const isExpanded = note.is_expanded ?? false;
+	const isCollapsed = isOverflowing && !isExpanded;
 	const { onKeyDown, onPaste } = useMarkdownAssist();
 
 	const cardRef = useRef<HTMLDivElement | null>(null);
@@ -158,12 +172,19 @@ function NoteItem({
 
 	const contentRef = useRef<HTMLDivElement>(null);
 
+	// 💡 原本通りのシンプルで不具合のない高さ測定ロジックへ復元
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed to recalculate height on content change
-	useLayoutEffect(() => {
-		if (contentRef.current) {
-			setIsOverflowing(contentRef.current.scrollHeight > COLLAPSE_THRESHOLD);
+	useEffect(() => {
+		if (isPreview) return;
+		const el = contentRef.current;
+		if (!el) return;
+
+		// 🚨 重要: display: none (hidden) 時は scrollHeight が 0 になるためガード！
+		// 高さが正しく測定できる（> 0）可視化状態の場合のみ isOverflowing を評価する
+		if (el.scrollHeight > 0) {
+			setIsOverflowing(el.scrollHeight > COLLAPSE_THRESHOLD);
 		}
-	}, [note.content]);
+	}, [note.content, isPreview]);
 
 	const startEditing = () => {
 		onRequestEdit(note.id);
@@ -215,7 +236,6 @@ function NoteItem({
 	}
 
 	const resolvedClasses = note.is_resolved ? "opacity-60 grayscale-[0.5]" : "";
-	const isCollapsed = isOverflowing && !note.is_expanded;
 
 	// アニメーション中の競合排除用クラス出し分け
 	const paddingClass = isResolving && isCollapsePhase ? "p-0" : "p-2";
@@ -539,13 +559,14 @@ function NoteItem({
 							</div>
 						</div>
 
-						{isOverflowing && note.is_expanded && (
+						{isOverflowing && isExpanded && (
 							<div className="absolute top-[44px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
 								<button
 									type="button"
-									onClick={() =>
-										onToggleExpansion(note.id, note.is_expanded ?? false)
-									}
+									onClick={(e) => {
+										e.stopPropagation();
+										onToggleExpansion(note.id, isExpanded);
+									}}
 									className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action hover:bg-base-surface/80 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-base-border/50 bg-base-bg/90 shadow-sm"
 								>
 									<ChevronDown className="w-3.5 h-3.5 shrink-0 rotate-180" />
@@ -561,19 +582,25 @@ function NoteItem({
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm px-4 py-2 ${note.is_resolved ? "line-through text-muted-foreground" : "text-action"}`}
+								className={`text-sm px-4 py-2 ${
+									note.is_resolved
+										? "line-through text-muted-foreground"
+										: "text-action"
+								}`}
 							>
-								<MarkdownRenderer content={note.content} />
+								<MemoizedMarkdown content={note.content} />
 							</div>
+
 							{isCollapsed && (
 								<>
 									<div className="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
 									<div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20">
 										<button
 											type="button"
-											onClick={() =>
-												onToggleExpansion(note.id, note.is_expanded ?? false)
-											}
+											onClick={(e) => {
+												e.stopPropagation();
+												onToggleExpansion(note.id, isExpanded);
+											}}
 											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
 										>
 											<ChevronDown className="w-3.5 h-3.5 shrink-0" />
@@ -616,4 +643,39 @@ function NoteItem({
 	);
 }
 
-export default React.memo(NoteItem);
+function arePropsEqual(prevProps: NoteItemProps, nextProps: NoteItemProps) {
+	const prevNote = prevProps.note;
+	const nextNote = nextProps.note;
+
+	// 💡 note オブジェクトの参照比較＋重要な内包プロパティの比較
+	const isNoteEqual =
+		prevNote === nextNote ||
+		(prevNote.id === nextNote.id &&
+			prevNote.content === nextNote.content &&
+			prevNote.is_expanded === nextNote.is_expanded &&
+			prevNote.is_favorite === nextNote.is_favorite &&
+			prevNote.is_pinned === nextNote.is_pinned &&
+			prevNote.is_resolved === nextNote.is_resolved &&
+			prevNote.note_type === nextNote.note_type &&
+			prevNote.scope === nextNote.scope);
+
+	return (
+		isNoteEqual &&
+		prevProps.currentFullUrl === nextProps.currentFullUrl &&
+		prevProps.isFavoriteList === nextProps.isFavoriteList &&
+		prevProps.isEditing === nextProps.isEditing &&
+		prevProps.isResolving === nextProps.isResolving &&
+		prevProps.isPreview === nextProps.isPreview &&
+		prevProps.onRequestEdit === nextProps.onRequestEdit &&
+		prevProps.onSetIsEditDirty === nextProps.onSetIsEditDirty &&
+		prevProps.onUpdate === nextProps.onUpdate &&
+		prevProps.onDelete === nextProps.onDelete &&
+		prevProps.onToggleResolved === nextProps.onToggleResolved &&
+		prevProps.onToggleFavorite === nextProps.onToggleFavorite &&
+		prevProps.onTogglePinned === nextProps.onTogglePinned &&
+		prevProps.onToggleExpansion === nextProps.onToggleExpansion
+	);
+}
+
+// 💡 カスタム比較関数を渡して React.memo を100%確実に機能させる
+export default React.memo(NoteItem, arePropsEqual);
