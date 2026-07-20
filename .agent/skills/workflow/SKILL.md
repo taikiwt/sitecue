@@ -148,6 +148,9 @@ AIが実装や修正を提案する際、以下の「コードの匂い（Code S
   タブ切り替え操作時、FilterBar に渡すアクティブタブState（viewScope）は 0ms 最優先で即座に更新してボタンを速やかに着色させ、ノートリストのフィルタリング計算および NoteList への渡しには React 公式の `useDeferredValue(viewScope)` を適用して非同期遅延化（Concurrent Rendering）すること。
 - **Pageタブを含む全スコープ Cold Start スケルトン保証規約**:
   `visitedScopesRef` の初期値は空（new Set()）とし、サイドパネル起動時の初回表示（Pageタブ含む）では必ず最小 200ms のスケルトン（isScopeSwitching）を適用して裏で安定してツリー構築を完了させること（対象ノート件数が 0 件確定時のみスケルトンスキップで 0ms 空状態表示とすること）。
-
-
-
+- **高負荷UI描画における UI State と Render State の Concurrent 非同期分離汎用規約**:
+  入力打鍵、タブ選択、フィルターボタン押下などのUI状態（viewScope, filterType, searchQuery, selectedTag, showResolved 等）は 0ms で即座に更新してUIボタンを最優先で着色・応答させること。重い再計算やDOM構築を伴う子コンポーネント（NoteList 等）への Props 伝播やフィルタリングロジック参照には、必ず `useDeferredValue` で一括遅延化させた Render State（deferredFilterState）を使用し、操作レスポンスを物理的に100%保護すること。
+- **大量ノート描画における Viewport Lazy (content-visibility: auto) 規約**:
+  `NoteItem.tsx` の最外形要素スタイルの `contentVisibility`（inline style: `contentVisibility: "auto"`）を活用し、ビューポート外に存在するノートカードのHTML解析・レイアウト計算をブラウザレベルで自動スキップさせること。
+- **DiaryView 日付切替における Concurrent 非同期分離規約**:
+  `DiaryView.tsx` において、日付カプセルボタンのアクティブ判定（UI応答）は Props の `selectedDiaryDate` を参照して 0ms 即時着色させ、ヘッダーの日付テキスト表示および内部の非同期計算・表示参照には `useDeferredValue(selectedDiaryDate)` を適用すること。これによりボタン応答と重いコンテンツ描画を物理的に分離し、既存の 200ms スケルトン保持（SKELETON_HOLD_DURATION）と両立させること。

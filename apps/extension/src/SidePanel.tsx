@@ -114,16 +114,28 @@ function NotesUI({
 	const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">(
 		"exact",
 	);
-	// 💡 タブボタン着色（viewScope）と重いリスト描画（deferredViewScope）を Concurrent 非同期分離
-	const deferredViewScope = useDeferredValue(viewScope);
 
 	const [isScopeSwitching, setIsScopeSwitching] = useState(false);
 	// 💡 初期値を空 Set とし、初回起動（Pageタブ Cold Start）でも確実にスケルトンを表示させる
 	const visitedScopesRef = useRef<Set<"exact" | "domain" | "inbox">>(new Set());
 	const [searchQuery, setSearchQuery] = useState("");
-	const deferredSearchQuery = useDeferredValue(searchQuery);
 
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+	// 💡 全フィルター状態を1つのオブジェクトに集約
+	const rawFilterState = useMemo(
+		() => ({
+			viewScope,
+			filterType,
+			searchQuery,
+			selectedTag,
+			showResolved,
+		}),
+		[viewScope, filterType, searchQuery, selectedTag, showResolved],
+	);
+
+	// 💡 React Concurrent Rendering で全フィルター操作と重いリスト描画を一括非同期分離
+	const deferredFilterState = useDeferredValue(rawFilterState);
 
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
@@ -520,11 +532,11 @@ function NotesUI({
 	const filteredNotesForTags = useMemo(() => {
 		return notes.filter((n) => {
 			const isCurrentScope =
-				(deferredViewScope === "inbox" && n.scope === "inbox") ||
-				(deferredViewScope === "domain" &&
+				(deferredFilterState.viewScope === "inbox" && n.scope === "inbox") ||
+				(deferredFilterState.viewScope === "domain" &&
 					n.scope === "domain" &&
 					n.url_pattern === scopeUrls.domain) ||
-				(deferredViewScope === "exact" &&
+				(deferredFilterState.viewScope === "exact" &&
 					n.scope === "exact" &&
 					n.url_pattern === scopeUrls.exact);
 
@@ -532,25 +544,30 @@ function NotesUI({
 				return false;
 			}
 
-			if (deferredViewScope === "inbox" && n.scope !== "inbox") return false;
-			if (deferredViewScope !== "inbox" && n.scope === "inbox") return false;
+			if (deferredFilterState.viewScope === "inbox" && n.scope !== "inbox")
+				return false;
+			if (deferredFilterState.viewScope !== "inbox" && n.scope === "inbox")
+				return false;
 			if (
-				deferredViewScope !== "inbox" &&
+				deferredFilterState.viewScope !== "inbox" &&
 				!n.is_favorite &&
-				n.scope !== deferredViewScope
+				n.scope !== deferredFilterState.viewScope
 			)
 				return false;
 
-			if (filterType !== "all" && (n.note_type || "info") !== filterType) {
+			if (
+				deferredFilterState.filterType !== "all" &&
+				(n.note_type || "info") !== deferredFilterState.filterType
+			) {
 				return false;
 			}
 
-			if (!showResolved && n.is_resolved) {
+			if (!deferredFilterState.showResolved && n.is_resolved) {
 				return false;
 			}
 
-			if (deferredSearchQuery) {
-				const searchLower = deferredSearchQuery.toLowerCase();
+			if (deferredFilterState.searchQuery) {
+				const searchLower = deferredFilterState.searchQuery.toLowerCase();
 				const matchesContent = n.content?.toLowerCase().includes(searchLower);
 				const matchesTags = n.tags?.some((tag) =>
 					tag.toLowerCase().includes(searchLower),
@@ -564,15 +581,7 @@ function NotesUI({
 
 			return true;
 		});
-	}, [
-		notes,
-		deferredViewScope,
-		filterType,
-		showResolved,
-		deferredSearchQuery,
-		scopeUrls.domain,
-		scopeUrls.exact,
-	]);
+	}, [notes, deferredFilterState, scopeUrls.domain, scopeUrls.exact]);
 
 	const availableTags = useMemo(() => {
 		return Array.from(
@@ -587,12 +596,15 @@ function NotesUI({
 	const finalFilteredNotes = useMemo(() => {
 		return filteredNotesForTags.filter((n) => {
 			const noteTags = (n as { tags?: string[] }).tags || [];
-			if (selectedTag && !noteTags.includes(selectedTag)) {
+			if (
+				deferredFilterState.selectedTag &&
+				!noteTags.includes(deferredFilterState.selectedTag)
+			) {
 				return false;
 			}
 			return true;
 		});
-	}, [filteredNotesForTags, selectedTag]);
+	}, [filteredNotesForTags, deferredFilterState.selectedTag]);
 
 	return (
 		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_auto_1fr] relative font-sans">
@@ -721,7 +733,7 @@ function NotesUI({
 					</div>
 				) : (
 					<NoteList
-						scope={deferredViewScope}
+						scope={deferredFilterState.viewScope}
 						notes={finalFilteredNotes}
 						loading={loading}
 						currentFullUrl={currentFullUrl}
@@ -732,7 +744,7 @@ function NotesUI({
 						onTogglePinned={togglePinned}
 						onUpdateNoteOrder={handleUpdateNoteOrder}
 						onToggleExpansion={toggleNoteExpansion}
-						showResolved={showResolved}
+						showResolved={deferredFilterState.showResolved}
 					/>
 				)}
 			</div>
