@@ -28,7 +28,7 @@ describe("NoteList Component (Skeleton)", () => {
 		expect(skeletons.length).toBe(3);
 	});
 
-	it("データがある場合はスケルトンが表示されないこと", () => {
+	it("既存データがある場合は, loadingがtrueであってもスケルトンを表示せずリストを描画すること", () => {
 		const notes = [
 			{
 				id: "note-1",
@@ -46,6 +46,28 @@ describe("NoteList Component (Skeleton)", () => {
 		render(<NoteList {...mockProps} notes={notes} loading={true} />);
 
 		expect(screen.queryByTestId("note-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByText("Test note")).toBeInTheDocument();
+	});
+
+	it("loadingがfalseかつデータがある場合はスケルトンが表示されないこと", () => {
+		const notes = [
+			{
+				id: "note-1",
+				content: "Test note",
+				note_type: "info" as const,
+				scope: "exact" as const,
+				url_pattern: "example.com",
+				is_resolved: false,
+				is_pinned: false,
+				is_favorite: false,
+				sort_order: 0,
+				created_at: new Date().toISOString(),
+			},
+		] as unknown as Note[];
+		render(<NoteList {...mockProps} notes={notes} loading={false} />);
+
+		expect(screen.queryByTestId("note-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByText("Test note")).toBeInTheDocument();
 	});
 });
 
@@ -218,9 +240,6 @@ describe("NoteList - pointerWithin Collision Detection Sensor", () => {
 			/>,
 		);
 
-		const accordionBtn = screen.getByText(/FAVORITES/);
-		fireEvent.click(accordionBtn);
-
 		expect(container).toBeInTheDocument();
 	});
 });
@@ -266,9 +285,6 @@ describe("NoteList - Separated Section SortableContexts with Boundary Guard", ()
 				onUpdateNoteOrder={vi.fn()}
 			/>,
 		);
-
-		const accordionBtn = screen.getByText(/FAVORITES/);
-		fireEvent.click(accordionBtn);
 
 		expect(screen.getByText("Favorite Note")).toBeInTheDocument();
 		expect(screen.getByText("Normal Note")).toBeInTheDocument();
@@ -319,8 +335,352 @@ describe("NoteList - Separated Section SortableContexts with Boundary Guard", ()
 		// DndContext の handleDragEnd を擬似的に直接トリガー
 		// ※ 実際の実機上の oldIndex / newIndex ねじれが解消されたマスター表示順の挙動を直接アサーション
 		const dndContext = document.getElementById(
-			"extension-global-notes-dnd-context",
+			"extension-global-notes-dnd-context-exact",
 		);
 		expect(dndContext).toBeInTheDocument();
+	});
+});
+
+describe("NoteList Component Fixes", () => {
+	const testMockProps = {
+		notes: [],
+		loading: false,
+		currentFullUrl: "https://example.com/page",
+		onUpdate: vi.fn(),
+		onDelete: vi.fn(),
+		onToggleResolved: vi.fn(),
+		onToggleFavorite: vi.fn(),
+		onTogglePinned: vi.fn(),
+		onUpdateNoteOrder: vi.fn(),
+		onToggleExpansion: vi.fn(),
+	};
+
+	it("ノートが0件の時, スケルトンではなく空状態メッセージが表示されること", () => {
+		render(<NoteList scope="exact" {...testMockProps} notes={[]} />);
+
+		expect(screen.queryByTestId("note-skeleton")).not.toBeInTheDocument();
+		expect(screen.getByText("No notes for this page yet")).toBeInTheDocument();
+	});
+
+	it("Favoriteセクションが初期表示で閉じており、トグルクリックで表示（block）になること", () => {
+		const favoriteNote = {
+			id: "fav-1",
+			content: "Favorite note content",
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: true,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		render(
+			<NoteList scope="exact" {...testMockProps} notes={[favoriteNote]} />,
+		);
+
+		const noteElement = screen
+			.getByText("Favorite note content")
+			.closest(".block, .hidden");
+		expect(noteElement).toHaveClass("hidden");
+
+		const favoriteHeader = screen.getByText(/FAVORITES/i);
+		fireEvent.click(favoriteHeader);
+
+		expect(noteElement).toHaveClass("block");
+	});
+
+	it("展開中の長文ノートで Show less ボタンが描画されていること", () => {
+		// jsdom does not calculate layout, mock scrollHeight so overflow detection succeeds
+		const originalScrollHeight = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			"scrollHeight",
+		);
+		Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+			configurable: true,
+			value: 200,
+		});
+
+		const longContentNote = {
+			id: "long-note-1",
+			content: "A ".repeat(200),
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			is_expanded: true,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		render(
+			<NoteList {...testMockProps} notes={[longContentNote]} scope="exact" />,
+		);
+
+		expect(screen.getByText("Show less")).toBeInTheDocument();
+
+		if (originalScrollHeight) {
+			Object.defineProperty(
+				HTMLElement.prototype,
+				"scrollHeight",
+				originalScrollHeight,
+			);
+		} else {
+			delete (HTMLElement.prototype as { scrollHeight?: number }).scrollHeight;
+		}
+	});
+
+	it("scrollHeightが0（非表示時）の際はisOverflowingが破壊されず維持されること", () => {
+		const longContentNote = {
+			id: "long-note-keepalive",
+			content: "B ".repeat(200),
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		// 1. 通常表示（scrollHeight = 200）で Read more ボタンが出ること
+		const originalScrollHeight = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			"scrollHeight",
+		);
+		Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+			configurable: true,
+			value: 200,
+		});
+
+		const { rerender } = render(
+			<NoteList {...testMockProps} notes={[longContentNote]} scope="exact" />,
+		);
+
+		expect(screen.getByText("Read more")).toBeInTheDocument();
+
+		// 2. 一時的に非表示（scrollHeight = 0）にシミュレートしても、Read more が消えず維持されること
+		Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+			configurable: true,
+			value: 0,
+		});
+
+		rerender(
+			<NoteList {...testMockProps} notes={[longContentNote]} scope="exact" />,
+		);
+
+		expect(screen.getByText("Read more")).toBeInTheDocument();
+
+		// クリーンアップ
+		if (originalScrollHeight) {
+			Object.defineProperty(
+				HTMLElement.prototype,
+				"scrollHeight",
+				originalScrollHeight,
+			);
+		}
+	});
+});
+
+describe("NoteList Single Component Clean-up Verification", () => {
+	const testMockProps = {
+		notes: [],
+		loading: false,
+		currentFullUrl: "https://example.com/page",
+		onUpdate: vi.fn(),
+		onDelete: vi.fn(),
+		onToggleResolved: vi.fn(),
+		onToggleFavorite: vi.fn(),
+		onTogglePinned: vi.fn(),
+		onUpdateNoteOrder: vi.fn(),
+		onToggleExpansion: vi.fn(),
+	};
+
+	it("単一NoteList構造で正常にリストと空状態が描画されること", () => {
+		render(<NoteList {...testMockProps} notes={[]} scope="exact" />);
+		expect(screen.getByText("No notes for this page yet")).toBeInTheDocument();
+	});
+
+	it("Favoritesがデフォルト閉であり、クリックで開くこと", () => {
+		const favoriteNote = {
+			id: "fav-1",
+			content: "Favorite note content",
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: true,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		render(
+			<NoteList {...testMockProps} notes={[favoriteNote]} scope="exact" />,
+		);
+
+		const favoriteHeader = screen.getByText(/FAVORITES/i);
+		const noteContainer = screen
+			.getByText("Favorite note content")
+			.closest(".block, .hidden");
+
+		expect(noteContainer).toHaveClass("hidden");
+
+		fireEvent.click(favoriteHeader);
+		expect(noteContainer).toHaveClass("block");
+	});
+});
+
+describe("NoteList Deferred Search & Expansion Verification", () => {
+	const testMockProps = {
+		notes: [],
+		loading: false,
+		currentFullUrl: "https://example.com/page",
+		onUpdate: vi.fn(),
+		onDelete: vi.fn(),
+		onToggleResolved: vi.fn(),
+		onToggleFavorite: vi.fn(),
+		onTogglePinned: vi.fn(),
+		onUpdateNoteOrder: vi.fn(),
+		onToggleExpansion: vi.fn(),
+	};
+
+	it("Favoritesリスト内の長文ノートでRead moreボタンが表示・動作すること", () => {
+		const longFavoriteNote = {
+			id: "fav-long-1",
+			content: "Favorites long text ".repeat(30),
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: true,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		// jsdom 用の scrollHeight モック
+		const originalScrollHeight = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			"scrollHeight",
+		);
+		Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+			configurable: true,
+			value: 200,
+		});
+
+		render(
+			<NoteList {...testMockProps} notes={[longFavoriteNote]} scope="exact" />,
+		);
+
+		// Favorites アコーディオンを開く
+		const favoriteHeader = screen.getByRole("button", { name: /^FAVORITES/ });
+		fireEvent.click(favoriteHeader);
+
+		// Read more ボタンが存在することを確認
+		expect(screen.getByText("Read more")).toBeInTheDocument();
+
+		if (originalScrollHeight) {
+			Object.defineProperty(
+				HTMLElement.prototype,
+				"scrollHeight",
+				originalScrollHeight,
+			);
+		}
+	});
+
+	it("初期閉状態のFavoritesを開いた際、長文ノートのRead moreボタンが保持されること", () => {
+		const longFavoriteNote = {
+			id: "fav-long-1",
+			content: "Favorites long text ".repeat(30),
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com/page",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: true,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		// jsdom 用の scrollHeight モック
+		const originalScrollHeight = Object.getOwnPropertyDescriptor(
+			HTMLElement.prototype,
+			"scrollHeight",
+		);
+		Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+			configurable: true,
+			value: 200,
+		});
+
+		render(
+			<NoteList
+				scope="exact"
+				{...testMockProps}
+				currentFullUrl="https://example.com"
+				notes={[
+					{
+						...longFavoriteNote,
+						url_pattern: "example.com",
+					},
+				]}
+			/>,
+		);
+
+		// Favorites アコーディオンを開く
+		const favoriteHeader = screen.getByRole("button", { name: /^FAVORITES/ });
+		fireEvent.click(favoriteHeader);
+
+		// Read more ボタンが存在することを確認
+		expect(screen.getByText("Read more")).toBeInTheDocument();
+
+		if (originalScrollHeight) {
+			Object.defineProperty(
+				HTMLElement.prototype,
+				"scrollHeight",
+				originalScrollHeight,
+			);
+		}
+	});
+});
+
+describe("NoteList Deferred ViewScope Separation Verification", () => {
+	const testMockProps = {
+		notes: [],
+		loading: false,
+		currentFullUrl: "https://example.com/page",
+		onUpdate: vi.fn(),
+		onDelete: vi.fn(),
+		onToggleResolved: vi.fn(),
+		onToggleFavorite: vi.fn(),
+		onTogglePinned: vi.fn(),
+		onUpdateNoteOrder: vi.fn(),
+		onToggleExpansion: vi.fn(),
+	};
+
+	it("単一NoteList構造で指定したスコープのノートが正確にフィルタリング描画されること", () => {
+		const sampleNote = {
+			id: "exact-1",
+			content: "Exact scope note",
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com/page",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			sort_order: 0,
+			created_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		render(<NoteList {...testMockProps} notes={[sampleNote]} scope="exact" />);
+
+		expect(screen.getByText("Exact scope note")).toBeInTheDocument();
 	});
 });

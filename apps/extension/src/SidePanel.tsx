@@ -11,7 +11,14 @@ import {
 	useQueryClient,
 } from "@tanstack/react-query";
 import { Check, Copy, Loader2, Plus, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	useCallback,
+	useDeferredValue,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { Toaster, toast } from "react-hot-toast";
 import DiaryView from "./components/DiaryView";
 import FilterBar from "./components/FilterBar";
@@ -19,6 +26,7 @@ import Header from "./components/Header";
 import LoginScreen from "./components/LoginScreen";
 import NoteInput from "./components/NoteInput";
 import NoteList from "./components/NoteList";
+import NoteSkeleton from "./components/NoteSkeleton";
 import QuickPanel from "./components/QuickPanel";
 import type { AuthStatus } from "./hooks/useAuth";
 import { useAuth } from "./hooks/useAuth";
@@ -94,8 +102,6 @@ function NotesUI({
 	const { userPlan: dbUserPlan, userStatsLoading: dbUserStatsLoading } =
 		useUserStats(session);
 
-	const [stableNotesLoading, setStableNotesLoading] = useState(false);
-
 	const isGuest = authStatus.mode === "guest";
 	const userPlan = isGuest ? "guest" : dbUserPlan;
 	const userStatsLoading = isGuest ? false : dbUserStatsLoading;
@@ -108,16 +114,16 @@ function NotesUI({
 	const [viewScope, setViewScope] = useState<"exact" | "domain" | "inbox">(
 		"exact",
 	);
-	const [localScope, setLocalScope] = useState<"exact" | "domain" | "inbox">(
-		"exact",
-	); // 🚨 UI先行応答用Stateを新設
-	const [searchQuery, setSearchQuery] = useState("");
-	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+	// 💡 タブボタン着色（viewScope）と重いリスト描画（deferredViewScope）を Concurrent 非同期分離
+	const deferredViewScope = useDeferredValue(viewScope);
 
-	// 💡 URL変化や初期マウント時に localScope をパッシブにSSOTと同期
-	useEffect(() => {
-		setLocalScope(viewScope);
-	}, [viewScope]);
+	const [isScopeSwitching, setIsScopeSwitching] = useState(false);
+	// 💡 初期値を空 Set とし、初回起動（Pageタブ Cold Start）でも確実にスケルトンを表示させる
+	const visitedScopesRef = useRef<Set<"exact" | "domain" | "inbox">>(new Set());
+	const [searchQuery, setSearchQuery] = useState("");
+	const deferredSearchQuery = useDeferredValue(searchQuery);
+
+	const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
@@ -347,26 +353,76 @@ function NotesUI({
 		setIsEditingDiary(true);
 	};
 
+	const {
+		notes,
+		loading,
+		addNote: originalAddNote,
+		updateNote,
+		deleteNote,
+		toggleResolved,
+		toggleFavorite,
+		togglePinned,
+		updateNoteOrder,
+		toggleNoteExpansion,
+	} = useNotes(authStatus, currentFullUrl, () => {}, viewScope);
+
+	// 🔍 フィルタリングロジックの集約 (SSOT) を useMemo で要塞化
+	const scopeUrls = currentFullUrl
+		? getScopeUrls(currentFullUrl)
+		: { domain: "", exact: "" };
+
 	const isContentUnchanged = editDiaryContent === (diaryData?.content ?? "");
 	const isTopicsUnchanged =
 		JSON.stringify(editDiaryTopics) === JSON.stringify(diaryData?.topics ?? []);
 	const hasDiaryChanges =
 		isEditingDiary && (!isContentUnchanged || !isTopicsUnchanged);
 
-	const checkLeaveGuard = (): boolean => {
+	const checkLeaveGuard = useCallback((): boolean => {
 		if (hasDiaryChanges) {
 			return confirm(
 				"You have unsaved diary changes. Are you sure you want to discard them?",
 			);
 		}
 		return true;
-	};
+	}, [hasDiaryChanges]);
 
-	const handleViewScopeChange = (scope: "exact" | "domain" | "inbox") => {
-		if (!checkLeaveGuard()) return;
-		setLocalScope(scope); // 1. 先行応答（0msでボタン背景色を即座に変える）
-		setViewScope(scope); // 2. 同期更新
-	};
+	// 💡 スコープごとの対象ノート件数を事前計算（0件スケルトンスキップ用）
+	const getScopeNoteCount = useCallback(
+		(targetScope: "exact" | "domain" | "inbox") => {
+			return notes.filter((n) => {
+				if (targetScope === "inbox") return n.scope === "inbox";
+				if (targetScope === "domain")
+					return n.scope === "domain" && n.url_pattern === scopeUrls.domain;
+				return n.scope === "exact" && n.url_pattern === scopeUrls.exact;
+			}).length;
+		},
+		[notes, scopeUrls.domain, scopeUrls.exact],
+	);
+
+	const handleViewScopeChange = useCallback(
+		(scope: "exact" | "domain" | "inbox") => {
+			if (!checkLeaveGuard()) return;
+
+			// 1. タブの選択Stateは 0ms 最優先で即座に更新
+			setViewScope(scope);
+
+			const isVisited = visitedScopesRef.current.has(scope);
+			const targetCount = getScopeNoteCount(scope);
+
+			// 2. 未訪問（Cold Tab）かつ 1件以上ノートが存在する場合のみ 200ms スケルトンで裏側構築
+			//    0件と分かっている場合や訪問済み（Warm Tab）はスケルトンを出さず 0ms で即座に切替
+			if (!isVisited && targetCount > 0) {
+				visitedScopesRef.current.add(scope);
+				setIsScopeSwitching(true);
+				setTimeout(() => {
+					setIsScopeSwitching(false);
+				}, 200);
+			} else {
+				visitedScopesRef.current.add(scope);
+			}
+		},
+		[checkLeaveGuard, getScopeNoteCount],
+	);
 
 	const handleCloseDiary = () => {
 		if (!checkLeaveGuard()) return;
@@ -428,31 +484,14 @@ function NotesUI({
 		};
 	}, [isCopyMenuOpen]);
 
-	const {
-		notes,
-		loading,
-		addNote: originalAddNote,
-		updateNote,
-		deleteNote,
-		toggleResolved,
-		toggleFavorite,
-		togglePinned,
-		updateNoteOrder,
-		toggleNoteExpansion,
-	} = useNotes(authStatus, currentFullUrl, () => {}, viewScope);
+	const isNotesLoading = (loading && notes.length === 0) || isScopeSwitching;
 
-	useEffect(() => {
-		if (loading) {
-			setStableNotesLoading(true);
-		} else {
-			const timer = setTimeout(() => {
-				setStableNotesLoading(false);
-			}, 200);
-			return () => clearTimeout(timer);
-		}
-	}, [loading]);
-
-	const isNotesLoading = stableNotesLoading;
+	const handleUpdateNoteOrder = useCallback(
+		(id: string, newOrder: number) => {
+			return updateNoteOrder(id, newOrder);
+		},
+		[updateNoteOrder],
+	);
 
 	const totalNoteCount = notes.filter((n) => n.scope !== "inbox").length;
 
@@ -477,49 +516,41 @@ function NotesUI({
 		return success;
 	};
 
-	// 🔍 フィルタリングロジックの集約 (SSOT) を useMemo で要塞化
-	const scopeUrls = currentFullUrl
-		? getScopeUrls(currentFullUrl)
-		: { domain: "", exact: "" };
-
+	// 🔍 単一の直感的フィルタリングロジックへ一本化 (SSOT)
 	const filteredNotesForTags = useMemo(() => {
 		return notes.filter((n) => {
-			// 1. スコープ（タブ）フィルターの適用
-			// 原則: 「現在お気に入りである」か「現在のURL/スコープに一致する」かのいずれかが必要
 			const isCurrentScope =
-				(viewScope === "inbox" && n.scope === "inbox") ||
-				(viewScope === "domain" &&
+				(deferredViewScope === "inbox" && n.scope === "inbox") ||
+				(deferredViewScope === "domain" &&
 					n.scope === "domain" &&
 					n.url_pattern === scopeUrls.domain) ||
-				(viewScope === "exact" &&
+				(deferredViewScope === "exact" &&
 					n.scope === "exact" &&
 					n.url_pattern === scopeUrls.exact);
 
-			// 🚨 お気に入りを解除した瞬間、isCurrentScopeがfalseならリストから除外される
 			if (!n.is_favorite && !isCurrentScope) {
 				return false;
 			}
 
-			// 他のタブの「お気に入り」は表示するが、現在のタブの「お気に入りではないノート」も表示する
-			// ただし、現在選択中のタブ(viewScope)とノートのscopeが不一致なものは落とす（InboxタブにDomainノートを出さない等）
-			if (viewScope === "inbox" && n.scope !== "inbox") return false;
-			if (viewScope !== "inbox" && n.scope === "inbox") return false;
-			if (viewScope !== "inbox" && !n.is_favorite && n.scope !== viewScope)
+			if (deferredViewScope === "inbox" && n.scope !== "inbox") return false;
+			if (deferredViewScope !== "inbox" && n.scope === "inbox") return false;
+			if (
+				deferredViewScope !== "inbox" &&
+				!n.is_favorite &&
+				n.scope !== deferredViewScope
+			)
 				return false;
 
-			// 2. Note Type フィルター
 			if (filterType !== "all" && (n.note_type || "info") !== filterType) {
 				return false;
 			}
 
-			// 3. 解決済みフィルター
 			if (!showResolved && n.is_resolved) {
 				return false;
 			}
 
-			// 4. 検索クエリフィルター
-			if (searchQuery) {
-				const searchLower = searchQuery.toLowerCase();
+			if (deferredSearchQuery) {
+				const searchLower = deferredSearchQuery.toLowerCase();
 				const matchesContent = n.content?.toLowerCase().includes(searchLower);
 				const matchesTags = n.tags?.some((tag) =>
 					tag.toLowerCase().includes(searchLower),
@@ -535,10 +566,10 @@ function NotesUI({
 		});
 	}, [
 		notes,
-		viewScope,
+		deferredViewScope,
 		filterType,
 		showResolved,
-		searchQuery,
+		deferredSearchQuery,
 		scopeUrls.domain,
 		scopeUrls.exact,
 	]);
@@ -603,7 +634,7 @@ function NotesUI({
 				setFilterType={setFilterType}
 				showResolved={showResolved}
 				setShowResolved={setShowResolved}
-				viewScope={localScope}
+				viewScope={viewScope}
 				setViewScope={handleViewScopeChange}
 				searchQuery={searchQuery}
 				setSearchQuery={setSearchQuery}
@@ -682,23 +713,24 @@ function NotesUI({
 				{/* 💡 スティッキー吸着時の上部隙間をゼロにしつつ、初期状態の窮屈さを防ぐ空気感スペーサー */}
 				<div className="h-2 shrink-0" aria-hidden="true" />
 
-				{isNotesLoading && notes.length === 0 ? (
-					<div className="w-full h-32 flex items-center justify-center">
-						<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+				{isNotesLoading ? (
+					<div className="space-y-3 pt-2">
+						{["skel-1", "skel-2", "skel-3"].map((key) => (
+							<NoteSkeleton key={key} />
+						))}
 					</div>
 				) : (
 					<NoteList
+						scope={deferredViewScope}
 						notes={finalFilteredNotes}
-						loading={stableNotesLoading}
+						loading={loading}
 						currentFullUrl={currentFullUrl}
 						onUpdate={updateNote}
 						onDelete={deleteNote}
 						onToggleResolved={toggleResolved}
 						onToggleFavorite={toggleFavorite}
 						onTogglePinned={togglePinned}
-						onUpdateNoteOrder={(id, newOrder) =>
-							updateNoteOrder(id, newOrder as number)
-						}
+						onUpdateNoteOrder={handleUpdateNoteOrder}
 						onToggleExpansion={toggleNoteExpansion}
 						showResolved={showResolved}
 					/>
