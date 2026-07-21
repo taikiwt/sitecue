@@ -798,16 +798,16 @@ function NotesUI({
 			>
 				{/* 1. 最上部ヘッダー：完全不動固定マウント */}
 				<div className="flex items-center justify-between px-4 py-3 border-b border-base-border/40 shrink-0">
-					<div className="flex items-center gap-4">
+					<div className="flex items-center justify-between gap-4 w-full">
+					<h1 className="text-lg font-bold text-base-text">Diary</h1>
 						<button
 							type="button"
 							onClick={handleCloseDiary}
-							className="cursor-pointer size-8 flex items-center justify-center rounded-full bg-base-surface hover:bg-base-border text-muted-foreground"
+							className="cursor-pointer size-8 flex items-center justify-center rounded-full bg-base-bg hover:bg-base-surface text-muted-foreground border border-base-border"
 							title="Close diary"
 						>
 							<X aria-hidden="true" className="size-5" />
 						</button>
-						<h1 className="text-lg font-bold text-base-text">Diary</h1>
 					</div>
 				</div>
 

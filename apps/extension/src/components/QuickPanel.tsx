@@ -4,7 +4,7 @@ import {
 	ChevronDown,
 	ChevronRight,
 	Copy,
-	Eraser,
+	CircleX,
 	ExternalLink,
 	FileText,
 	Link as LinkIcon,
@@ -244,11 +244,10 @@ export default function QuickPanel({
 				<div className="px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0">
 					{/* 【完全不動: shrink-0】 コックピット操作バー */}
 					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-base-border/30 pb-2">
-						{/* 左側: 未入力時に美しくシンメトリーに不活性化される Eraser & Copy */}
 						<div className="flex items-center gap-1">
 							<Button
 								disabled={!noteText}
-								icon={<Eraser className="size-4" />}
+								icon={<CircleX className="size-4" />}
 								size="sm"
 								variant="ghost"
 								onClick={handleClearText}
