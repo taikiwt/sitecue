@@ -238,7 +238,7 @@ function NoteItem({
 	const resolvedClasses = note.is_resolved ? "opacity-60 grayscale-[0.5]" : "";
 
 	// アニメーション中の競合排除用クラス出し分け
-	const paddingClass = isResolving && isCollapsePhase ? "p-0" : "p-2";
+	const paddingClass = isResolving && isCollapsePhase ? "p-0" : "p-0";
 	const borderClass =
 		isResolving && isCollapsePhase
 			? "border-transparent"
@@ -287,8 +287,8 @@ function NoteItem({
 			{isEditing ? (
 				<div className="space-y-3 flex flex-col flex-1 min-w-0 relative animate-fadeIn">
 					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20">
-						<div className="flex items-center justify-between w-full min-h-[40px] py-1">
-							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none">
+						<div className="flex items-center justify-between w-full min-h-[40px] px-2">
+							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none opacity-0">
 								Editing note...
 							</div>
 							<div className="flex items-center gap-1.5">
@@ -318,7 +318,7 @@ function NoteItem({
 							</div>
 						</div>
 
-						<div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-base-border/30">
+						<div className="flex items-center justify-between w-full py-1 px-2 border-t border-base-border/30">
 							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
 								<select
 									value={editScope}
@@ -404,7 +404,7 @@ function NoteItem({
 						</div>
 					</div>
 
-					<div className="flex-1 min-w-0 w-full px-1">
+					<div className="flex-1 min-w-0 w-full px-2">
 						<TextareaAutosize
 							value={editContent}
 							onChange={(e) => {
@@ -416,7 +416,7 @@ function NoteItem({
 										editType !== (note.note_type || "info"),
 								);
 							}}
-							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-800 antialiased font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:outline-none focus:ring-0"
+							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-800 antialiased font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:outline-none focus:ring-0"
 							autoFocus
 							onKeyDown={(e) => {
 								if (e.nativeEvent.isComposing) return;
@@ -436,8 +436,8 @@ function NoteItem({
 			) : (
 				<div className="flex flex-col flex-1">
 					<div className="sticky top-0 z-10 bg-base-bg flex flex-col gap-0 select-none border-b border-base-border/20">
-						<div className="flex items-center justify-between w-full min-h-[40px] py-1 transition-colors">
-							<div className="flex items-center gap-1.5 shrink-0">
+						<div className="flex items-center justify-between w-full min-h-[40px] px-2 transition-colors">
+							<div className="flex items-center gap-1 shrink-0">
 								{!isPreview && (
 									<div
 										ref={dragHandleRef}
@@ -447,7 +447,7 @@ function NoteItem({
 										className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/40 hover:text-action transition-colors shrink-0"
 										title="Drag to reorder"
 									>
-										<GripVertical className="w-3.5 h-3.5" aria-hidden="true" />
+										<GripVertical className="size-4" aria-hidden="true" />
 									</div>
 								)}
 								<button
@@ -496,7 +496,7 @@ function NoteItem({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground/60"
+											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
 											icon={<Pencil className="size-4" />}
 											onClick={startEditing}
 											title="Edit"
@@ -560,7 +560,7 @@ function NoteItem({
 						</div>
 
 						{isOverflowing && isExpanded && (
-							<div className="absolute top-[44px] left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
+							<div className="absolute top-11 left-1/2 -translate-x-1/2 z-20 pointer-events-auto">
 								<button
 									type="button"
 									onClick={(e) => {
@@ -594,14 +594,14 @@ function NoteItem({
 							{isCollapsed && (
 								<>
 									<div className="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
-									<div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20">
+									<div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20">
 										<button
 											type="button"
 											onClick={(e) => {
 												e.stopPropagation();
 												onToggleExpansion(note.id, isExpanded);
 											}}
-											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
+											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-bg hover:bg-base-surface px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
 										>
 											<ChevronDown className="w-3.5 h-3.5 shrink-0" />
 											<span>Read more</span>

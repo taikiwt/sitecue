@@ -234,7 +234,7 @@ export default function DiaryView({
 							className="flex flex-col gap-3 min-h-full"
 						>
 							<div className="relative flex flex-col gap-2 w-full border border-neutral-200 bg-neutral-50/60 p-3 rounded-xl mb-1 text-neutral-900 shrink-0">
-								<span className="text-[9px] font-bold font-mono text-neutral-400 uppercase tracking-wider">
+								<span className="text-[10px] font-bold font-['Hack'] text-neutral-400 uppercase tracking-wider">
 									Key Events ({editDiaryTopics.length}/10)
 								</span>
 								<div className="flex flex-col gap-1.5 w-full">
@@ -254,7 +254,7 @@ export default function DiaryView({
 														}
 														if (e.key === "Escape") setEditingTopicIndex(null);
 													}}
-													className="flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+													className=													"flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
 													// biome-ignore lint/a11y/noAutofocus: autoFocus required on editing topic
 													autoFocus
 												/>
@@ -265,7 +265,7 @@ export default function DiaryView({
 														setEditingTopicIndex(index);
 														setEditingTopicText(topic);
 													}}
-													className="flex-1 text-left text-xs px-3 py-1 rounded-full border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 transition-colors truncate"
+													className="flex-1 text-left text-xs px-3 py-1 rounded-full border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50 transition-colors truncate font-['Hack'] tracking-[-0.02em]"
 												>
 													{topic}
 												</button>
@@ -295,7 +295,7 @@ export default function DiaryView({
 													handleAddTopic();
 												}
 											}}
-											className="flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+											className=											"flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
 										/>
 										<button
 											type="button"
@@ -314,7 +314,7 @@ export default function DiaryView({
 								value={editDiaryContent}
 								onChange={(e) => setEditDiaryContent(e.target.value)}
 								placeholder="Write down your thoughts... (Markdown supported)"
-								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-800 antialiased min-h-[200px] font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:focus-ring-sitecue focus-visible:focus-ring-sitecue focus:outline-none focus-visible:focus-ring-sitecue focus:ring-0"
+								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-800 antialiased min-h-[200px] font-['Hack'] leading-[1.6] trahking-[0.02em] focus:outline-none focus:ring-0"
 								onKeyDown={onKeyDown}
 								onPaste={onPaste}
 							/>
@@ -332,7 +332,7 @@ export default function DiaryView({
 									{diaryData.topics.map((topic) => (
 										<div
 											key={topic}
-											className="w-full text-xs bg-base-surface border border-base-border rounded-full px-3 py-2 text-left"
+											className=											"w-full text-xs bg-base-surface border border-base-border rounded-full px-3 py-2 text-left font-['Hack'] tracking-[-0.02em]"
 										>
 											{topic}
 										</div>
@@ -340,7 +340,7 @@ export default function DiaryView({
 								</div>
 							)}
 
-							<div className="prose prose-sm max-w-none text-neutral-900 flex-1">
+							<div className=							"prose prose-sm max-w-none text-neutral-900 flex-1 font-['Hack'] tracking-[-0.02em]">
 								{diaryData?.content ? (
 									<MarkdownRenderer content={diaryData.content} />
 								) : (
