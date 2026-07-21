@@ -18,7 +18,8 @@
 
 @utility focus-ring-sitecue {
   outline: none;
-  border-color: var(--color-action);
+  /*border-color: var(--color-action);*/
+  border-color: none;
   box-shadow: 0 0 0 3px rgba(6, 32, 50, 0.15);
   transition: box-shadow 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }

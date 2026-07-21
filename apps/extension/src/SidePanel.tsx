@@ -352,7 +352,7 @@ function NotesUI({
 			});
 			await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
 			setIsEditingDiary(false);
-			toast.success("Diary synced");
+			// toast.success("Diary synced");
 		} catch (_err) {
 			toast.error("Cloud sync failed. Kept in local buffer.");
 			setIsEditingDiary(false); // 見た目上は復帰させるがバッファは維持する
