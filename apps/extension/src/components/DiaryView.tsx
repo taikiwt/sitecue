@@ -1,4 +1,4 @@
-import { Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
@@ -35,7 +35,7 @@ export default function DiaryView({
 	editDiaryTopics,
 	setEditDiaryTopics,
 	basecampArchiveUrl,
-	updateDiaryMutationPending,
+	updateDiaryMutationPending: _updateDiaryMutationPending,
 	handleSaveDiaryEdit,
 	handleStartEdit,
 }: DiaryViewProps) {
@@ -47,25 +47,57 @@ export default function DiaryView({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const { onKeyDown, onPaste } = useMarkdownAssist();
 
+	// 💡 日付変更検知用の Ref 保持
+	const prevDateRef = useRef(selectedDiaryDate);
+	const isDateChanged = prevDateRef.current !== selectedDiaryDate;
+
+	useEffect(() => {
+		prevDateRef.current = selectedDiaryDate;
+	}, [selectedDiaryDate]);
+
 	// 💡 カプセルボタンUI着色（selectedDiaryDate: 0ms）と重いコンテンツ描画を Concurrent 非同期分離
 	const deferredSelectedDiaryDate = useDeferredValue(selectedDiaryDate);
 
-	// 💡 フリッカーを防止するためのインメモリ遅延フラグを配備
-	const [stableLoading, setStableLoading] = useState(isDiaryLoading);
+	// 💡 diaryData 全体（トピック ＋ 本文）を一括で useDeferredValue にバインド
+	const deferredDiaryData = useDeferredValue(diaryData);
+
+	// 💡 新旧本文の文字数差分を判定
+	const rawContent = diaryData?.content ?? "";
+	const deferredContent = deferredDiaryData?.content ?? "";
+	const charDelta = Math.abs(rawContent.length - deferredContent.length);
+
+	// 💡 初回読み込み（Cold State）または 同一日付内での編集保存時（!isDateChanged）かつ文字数差分500文字以上の遅延描画時（Large Delta）にスケルトンを発動
+	const isColdLoading = isDiaryLoading && !diaryData;
+	const isLargeDeltaDeferred =
+		!isDateChanged && charDelta >= 500 && rawContent !== deferredContent;
+	const needsSkeleton = isColdLoading || isLargeDeltaDeferred;
+
+	const [stableLoading, setStableLoading] = useState(needsSkeleton);
+	const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	useEffect(() => {
-		if (isDiaryLoading) {
-			// ローディング開始時は最速でスケルトンを展開（CLSを防御）
+		if (needsSkeleton) {
+			if (holdTimerRef.current) {
+				clearTimeout(holdTimerRef.current);
+				holdTimerRef.current = null;
+			}
 			setStableLoading(true);
 		} else {
-			// データが着信した（falseになった）時は、最低200msの猶予を持たせてから解除
-			const timer = setTimeout(() => {
-				setStableLoading(false);
-			}, SKELETON_HOLD_DURATION);
-
-			return () => clearTimeout(timer);
+			if (stableLoading && !holdTimerRef.current) {
+				holdTimerRef.current = setTimeout(() => {
+					setStableLoading(false);
+					holdTimerRef.current = null;
+				}, SKELETON_HOLD_DURATION);
+			}
 		}
-	}, [isDiaryLoading]);
+
+		return () => {
+			if (holdTimerRef.current) {
+				clearTimeout(holdTimerRef.current);
+				holdTimerRef.current = null;
+			}
+		};
+	}, [needsSkeleton, stableLoading]);
 
 	// マウス押し下げ時の座標
 	const startCoords = useRef({ x: 0, y: 0 });
@@ -152,9 +184,9 @@ export default function DiaryView({
 						<button
 							key={dateStr}
 							type="button"
-							onClick={() => {
+							onClick={async () => {
 								if (isEditingDiary) {
-									handleSaveDiaryEdit(); // 別の日に切り替えた際も現在の変更をセーブ
+									await handleSaveDiaryEdit();
 								}
 								setSelectedDiaryDate(dateStr);
 								setIsEditingDiary(false);
@@ -197,12 +229,6 @@ export default function DiaryView({
 					<span className="text-xs font-bold text-neutral-500 font-mono tracking-wide">
 						{deferredSelectedDiaryDate}
 					</span>
-					{updateDiaryMutationPending && (
-						<div className="flex items-center gap-1 text-[10px] text-neutral-400 font-medium">
-							<Loader2 className="w-3 h-3 animate-spin text-action" />
-							<span>Saving...</span>
-						</div>
-					)}
 				</div>
 
 				{/* スクロール隔離インナーコンテナ：余白を p-6 に広げる */}
@@ -254,7 +280,7 @@ export default function DiaryView({
 														}
 														if (e.key === "Escape") setEditingTopicIndex(null);
 													}}
-													className=													"flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
+													className="flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
 													// biome-ignore lint/a11y/noAutofocus: autoFocus required on editing topic
 													autoFocus
 												/>
@@ -295,7 +321,7 @@ export default function DiaryView({
 													handleAddTopic();
 												}
 											}}
-											className=											"flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
+											className="flex-1 text-xs px-2.5 py-1 rounded-full border border-neutral-200 bg-white text-neutral-950 focus:outline-none focus:ring-1 focus:ring-neutral-400 font-['Hack'] tracking-[-0.02em]"
 										/>
 										<button
 											type="button"
@@ -327,22 +353,23 @@ export default function DiaryView({
 							onMouseUp={handleMouseUp}
 							className="flex flex-col gap-3 flex-1"
 						>
-							{diaryData?.topics && diaryData.topics.length > 0 && (
-								<div className="flex flex-col gap-1.5 w-full border-b border-neutral-100 pb-3 mb-1 shrink-0">
-									{diaryData.topics.map((topic) => (
-										<div
-											key={topic}
-											className=											"w-full text-xs bg-base-surface border border-base-border rounded-full px-3 py-2 text-left font-['Hack'] tracking-[-0.02em]"
-										>
-											{topic}
-										</div>
-									))}
-								</div>
-							)}
+							{deferredDiaryData?.topics &&
+								deferredDiaryData.topics.length > 0 && (
+									<div className="flex flex-col gap-1.5 w-full border-b border-neutral-100 pb-3 mb-1 shrink-0">
+										{deferredDiaryData.topics.map((topic) => (
+											<div
+												key={topic}
+												className="w-full text-xs bg-base-surface border border-base-border rounded-full px-3 py-2 text-left font-['Hack'] tracking-[-0.02em]"
+											>
+												{topic}
+											</div>
+										))}
+									</div>
+								)}
 
-							<div className=							"prose prose-sm max-w-none text-neutral-900 flex-1 font-['Hack'] tracking-[-0.02em]">
-								{diaryData?.content ? (
-									<MarkdownRenderer content={diaryData.content} />
+							<div className="prose prose-sm max-w-none text-neutral-900 flex-1 font-['Hack'] tracking-[-0.02em]">
+								{deferredDiaryData?.content ? (
+									<MarkdownRenderer content={deferredDiaryData.content} />
 								) : (
 									<div className="text-xs text-neutral-400 italic">
 										No logs written for this day.
