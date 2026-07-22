@@ -78,6 +78,24 @@ $$;
 ALTER FUNCTION "public"."check_array_elements_length"("arr" "text"[], "max_len" integer) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."check_diary_content_length"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+declare
+  user_plan text;
+begin
+  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
+  if (user_plan = 'free' or user_plan is null) and char_length(NEW.content) > 50000 then
+    raise exception 'content length exceeds free plan limit (50000 chars)';
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."check_diary_content_length"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."check_draft_limit"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -105,6 +123,24 @@ $$;
 
 
 ALTER FUNCTION "public"."check_draft_limit"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."check_note_content_length"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+declare
+  user_plan text;
+begin
+  select plan into user_plan from public.sitecue_profiles where id = auth.uid();
+  if (user_plan = 'free' or user_plan is null) and char_length(NEW.content) > 10000 then
+    raise exception 'content length exceeds free plan limit (10000 chars)';
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."check_note_content_length"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."check_note_limit"() RETURNS "trigger"
@@ -311,7 +347,7 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_notes" (
     "is_expanded" boolean DEFAULT false NOT NULL,
     "draft_id" "uuid",
     "tags" "text"[] DEFAULT '{}'::"text"[],
-    CONSTRAINT "sitecue_notes_content_len_check" CHECK (("char_length"("content") <= 10000)),
+    CONSTRAINT "sitecue_notes_content_len_check" CHECK (("char_length"("content") <= 30000)),
     CONSTRAINT "sitecue_notes_note_type_check" CHECK (("note_type" = ANY (ARRAY['info'::"text", 'alert'::"text", 'idea'::"text"]))),
     CONSTRAINT "sitecue_notes_scope_check" CHECK (("scope" = ANY (ARRAY['domain'::"text", 'exact'::"text", 'inbox'::"text", 'draft'::"text"])))
 );
@@ -430,6 +466,7 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_diaries" (
     "topics" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    CONSTRAINT "sitecue_diaries_content_len_check" CHECK (("char_length"("content") <= 100000)),
     CONSTRAINT "sitecue_diaries_topics_count_check" CHECK (("cardinality"("topics") <= 10)),
     CONSTRAINT "sitecue_diaries_topics_length_check" CHECK ("public"."check_array_elements_length"("topics", 50))
 );
@@ -608,7 +645,15 @@ CREATE INDEX "sitecue_notes_user_idx" ON "public"."sitecue_notes" USING "btree" 
 
 
 
+CREATE OR REPLACE TRIGGER "on_diary_content_length_check" BEFORE INSERT OR UPDATE ON "public"."sitecue_diaries" FOR EACH ROW EXECUTE FUNCTION "public"."check_diary_content_length"();
+
+
+
 CREATE OR REPLACE TRIGGER "on_draft_created_check_limit" BEFORE INSERT ON "public"."sitecue_drafts" FOR EACH ROW EXECUTE FUNCTION "public"."check_draft_limit"();
+
+
+
+CREATE OR REPLACE TRIGGER "on_note_content_length_check" BEFORE INSERT OR UPDATE ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."check_note_content_length"();
 
 
 
@@ -990,9 +1035,21 @@ GRANT ALL ON FUNCTION "public"."check_array_elements_length"("arr" "text"[], "ma
 
 
 
+GRANT ALL ON FUNCTION "public"."check_diary_content_length"() TO "anon";
+GRANT ALL ON FUNCTION "public"."check_diary_content_length"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."check_diary_content_length"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "anon";
 GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."check_draft_limit"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."check_note_content_length"() TO "anon";
+GRANT ALL ON FUNCTION "public"."check_note_content_length"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."check_note_content_length"() TO "service_role";
 
 
 

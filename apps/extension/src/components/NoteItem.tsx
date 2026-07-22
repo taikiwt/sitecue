@@ -1,4 +1,4 @@
-import { getScopeUrls } from "@sitecue/shared";
+import { getScopeUrls, SHARED_LIMITS } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	Check,
@@ -18,7 +18,6 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
-import { APP_LIMITS } from "../constants/limits";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -44,6 +43,7 @@ const ANIM_STAGE2_DURATION = 200; // 後半：カードが物理的に縮んで�
 interface NoteItemProps {
 	note: Note;
 	currentFullUrl: string;
+	userPlan?: "free" | "pro" | "guest";
 	onUpdate: (
 		id: string,
 		content: string,
@@ -72,6 +72,7 @@ interface NoteItemProps {
 function NoteItem({
 	note,
 	currentFullUrl,
+	userPlan = "free",
 	onUpdate,
 	onDelete,
 	onToggleResolved,
@@ -204,8 +205,13 @@ function NoteItem({
 
 	const handleUpdate = async () => {
 		if (!editContent.trim()) return;
-		if (editContent.length > APP_LIMITS.MAX_NOTE_LENGTH) {
-			toast.error("Content exceeds the 10,000 character limit.");
+		if (
+			(userPlan === "free" || userPlan === "guest") &&
+			editContent.length > SHARED_LIMITS.NOTE_LENGTH.FREE
+		) {
+			toast.error(
+				"Free plan limit is 10,000 characters. Please shorten text or upgrade.",
+			);
 			return;
 		}
 		setUpdating(true);

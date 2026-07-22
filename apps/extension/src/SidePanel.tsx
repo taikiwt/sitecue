@@ -2,6 +2,7 @@ import {
 	appendDiaryLog,
 	fetchDiaryByDate,
 	getScopeUrls,
+	SHARED_LIMITS,
 } from "@sitecue/shared";
 import {
 	QueryClient,
@@ -150,6 +151,9 @@ function NotesUI({
 	const [isEditingDiary, setIsEditingDiary] = useState(false);
 	const [editDiaryContent, setEditDiaryContent] = useState("");
 	const [editDiaryTopics, setEditDiaryTopics] = useState<string[]>([]);
+	const diaryDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+		null,
+	);
 
 	const queryClient = useQueryClient();
 
@@ -250,14 +254,16 @@ function NotesUI({
 	// 1. ミリ秒レベルの一時保存
 	useEffect(() => {
 		if (!isEditingDiary) return;
-		const key = `diary-temp-${selectedDiaryDate}`;
-		chrome.storage.local.set({
-			[key]: {
-				content: editDiaryContent,
-				topics: editDiaryTopics,
-				lastSavedAt: Date.now(),
-			},
-		});
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			const key = `diary-temp-${selectedDiaryDate}`;
+			chrome.storage.local.set({
+				[key]: {
+					content: editDiaryContent,
+					topics: editDiaryTopics,
+					lastSavedAt: Date.now(),
+				},
+			});
+		}
 	}, [editDiaryContent, editDiaryTopics, isEditingDiary, selectedDiaryDate]);
 
 	// 2. 「3秒」デバウンスでのサイレントクラウド本保存
@@ -278,13 +284,22 @@ function NotesUI({
 					topics: editDiaryTopics,
 				});
 				// 本保存が成功したら一時バッファを削除
-				await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+				if (typeof chrome !== "undefined" && chrome.storage?.local) {
+					await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+				}
 			} catch (_err) {
 				// ネットワークオフライン等の場合は一時バッファにデータを保持し続ける
 			}
 		}, 3000);
 
-		return () => clearTimeout(timer);
+		diaryDebounceTimerRef.current = timer;
+
+		return () => {
+			clearTimeout(timer);
+			if (diaryDebounceTimerRef.current === timer) {
+				diaryDebounceTimerRef.current = null;
+			}
+		};
 	}, [
 		editDiaryContent,
 		editDiaryTopics,
@@ -296,13 +311,27 @@ function NotesUI({
 
 	// 3. 起動時・日付変更時の自動復元・同期マージ
 	useEffect(() => {
+		const isPro = userPlan === "pro";
+		const maxDiaryLength = isPro
+			? SHARED_LIMITS.DIARY_LENGTH.PRO
+			: SHARED_LIMITS.DIARY_LENGTH.FREE;
+
 		const checkAndRestore = async () => {
+			if (typeof chrome === "undefined" || !chrome.storage?.local) return;
 			const key = `diary-temp-${selectedDiaryDate}`;
 			const result = await chrome.storage.local.get(key);
 			const temp = result[key] as
 				| { content: string; topics: string[]; lastSavedAt: number }
 				| undefined;
-			if (temp) {
+			if (temp && typeof temp.content === "string" && temp.content.trim()) {
+				// 🛡️ キャッシュが上限を超えている場合は汚染キャッシュとみなし即座に削除・拒否
+				if (temp.content.length > maxDiaryLength) {
+					await chrome.storage.local.remove(key);
+					setEditDiaryContent(diaryData?.content ?? "");
+					setEditDiaryTopics(diaryData?.topics ?? []);
+					return;
+				}
+
 				// 一時バッファを発見した場合、即メモリにロード（In-Memory First）
 				setEditDiaryContent(temp.content);
 				setEditDiaryTopics(temp.topics);
@@ -325,7 +354,14 @@ function NotesUI({
 			}
 		};
 		checkAndRestore();
-	}, [selectedDiaryDate, updateDiaryMutation.mutateAsync, queryClient]);
+	}, [
+		selectedDiaryDate,
+		updateDiaryMutation.mutateAsync,
+		queryClient,
+		userPlan,
+		diaryData?.content,
+		diaryData?.topics,
+	]);
 
 	const handleAppendDiary = async (content: string) => {
 		try {
@@ -337,25 +373,82 @@ function NotesUI({
 	};
 
 	const handleSaveDiaryEdit = async () => {
-		const isContentUnchanged = editDiaryContent === (diaryData?.content ?? "");
-		const isTopicsUnchanged =
-			JSON.stringify(editDiaryTopics) ===
-			JSON.stringify(diaryData?.topics ?? []);
-		if (isContentUnchanged && isTopicsUnchanged) {
+		// 1. デバウンスタイマーが存在する場合は即時破棄
+		if (diaryDebounceTimerRef.current) {
+			clearTimeout(diaryDebounceTimerRef.current);
+			diaryDebounceTimerRef.current = null;
+		}
+
+		const isPro = userPlan === "pro";
+		const maxDiaryLength = isPro
+			? SHARED_LIMITS.DIARY_LENGTH.PRO
+			: SHARED_LIMITS.DIARY_LENGTH.FREE;
+
+		// 2. 事前バリデーション（文字数上限チェック）
+		if (editDiaryContent.length > maxDiaryLength) {
+			toast.error(
+				`Diary content exceeds limit (${maxDiaryLength.toLocaleString()} chars). Reverted.`,
+			);
+			if (typeof chrome !== "undefined" && chrome.storage?.local) {
+				await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+			}
+			setEditDiaryContent(diaryData?.content ?? "");
+			setEditDiaryTopics(diaryData?.topics ?? []);
 			setIsEditingDiary(false);
 			return;
 		}
+
+		// 3. 無変更ガード（完全一致時はスキップ）
+		if (
+			editDiaryContent === (diaryData?.content ?? "") &&
+			JSON.stringify(editDiaryTopics) ===
+				JSON.stringify(diaryData?.topics ?? [])
+		) {
+			if (typeof chrome !== "undefined" && chrome.storage?.local) {
+				await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+			}
+			setIsEditingDiary(false);
+			return;
+		}
+
+		// 🌟 4. 楽観的UI（Optimistic UI）化: 通信完了を待たずに 0ms で閲覧モード復帰 ＆ キャッシュ即時更新
+		const previousData = diaryData;
+		const optimisticData = {
+			content: editDiaryContent,
+			topics: editDiaryTopics,
+		};
+
+		const queryKey = [
+			"diary",
+			selectedDiaryDate,
+			authStatus.mode === "authenticated"
+				? authStatus.session?.user.id
+				: "guest",
+		];
+
+		// ① キャッシュを0msで先行更新（Optimistic Update）
+		queryClient.setQueryData(queryKey, optimisticData);
+
+		// ② 閲覧モードへ0msで即時復帰（引っかかりを100%パージ）
+		setIsEditingDiary(false);
+
+		// ③ 一時ローカルキャッシュのクリア
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
+		}
+
+		// ④ バックグラウンドでの非同期通信実行
 		try {
 			await updateDiaryMutation.mutateAsync({
 				text: editDiaryContent,
 				topics: editDiaryTopics,
 			});
-			await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
-			setIsEditingDiary(false);
-			// toast.success("Diary synced");
 		} catch (_err) {
-			toast.error("Cloud sync failed. Kept in local buffer.");
-			setIsEditingDiary(false); // 見た目上は復帰させるがバッファは維持する
+			toast.error("Failed to save diary. Reverted.");
+			// 通信失敗時のみ以前のデータへロールバック
+			queryClient.setQueryData(queryKey, previousData);
+			setEditDiaryContent(previousData?.content ?? "");
+			setEditDiaryTopics(previousData?.topics ?? []);
 		}
 	};
 
@@ -609,7 +702,7 @@ function NotesUI({
 	return (
 		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_auto_1fr] relative font-sans">
 			<Toaster
-				position="bottom-center"
+				position="top-center"
 				toastOptions={{
 					style: {
 						fontSize: "12px",
@@ -639,6 +732,7 @@ function NotesUI({
 				}
 				onAddNote={handleAddNote}
 				onAppendDiary={handleAppendDiary}
+				userPlan={userPlan}
 			/>
 
 			<FilterBar
@@ -799,7 +893,7 @@ function NotesUI({
 				{/* 1. 最上部ヘッダー：完全不動固定マウント */}
 				<div className="flex items-center justify-between px-4 py-3 border-b border-base-border/40 shrink-0">
 					<div className="flex items-center justify-between gap-4 w-full">
-					<h1 className="text-lg font-bold text-base-text">Diary</h1>
+						<h1 className="text-lg font-bold text-base-text">Diary</h1>
 						<button
 							type="button"
 							onClick={handleCloseDiary}

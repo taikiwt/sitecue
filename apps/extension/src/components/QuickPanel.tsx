@@ -1,10 +1,11 @@
+import { SHARED_LIMITS } from "@sitecue/shared";
 import {
 	ArrowRightLeft,
 	Check,
 	ChevronDown,
 	ChevronRight,
-	Copy,
 	CircleX,
+	Copy,
 	ExternalLink,
 	FileText,
 	Link as LinkIcon,
@@ -17,13 +18,16 @@ import {
 	X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
+import { useAuth } from "../hooks/useAuth";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import { useQuickLinks } from "../hooks/useQuickLinks";
 import { Button } from "./ui/button";
 
 interface QuickPanelProps {
 	currentDomain: string | null;
+	userPlan: "free" | "pro" | "guest";
 	onAddNote: (
 		content: string,
 		scope: "exact" | "domain" | "inbox",
@@ -34,17 +38,36 @@ interface QuickPanelProps {
 
 export default function QuickPanel({
 	currentDomain,
+	userPlan,
 	onAddNote,
 	onAppendDiary,
 }: QuickPanelProps) {
+	const { authStatus } = useAuth();
+	const storageKey = `quick_note_text_${authStatus.userId || "guest"}`;
+
 	const { links, loading, addLink, updateLink, deleteLink } =
 		useQuickLinks(currentDomain);
 	const [activeSection, setActiveSection] = useState<"none" | "note" | "links">(
 		"none",
 	);
 	const [noteText, setNoteText] = useState("");
+
+	const isPro = userPlan === "pro";
+
+	const maxNoteLength = isPro
+		? SHARED_LIMITS.NOTE_LENGTH.PRO
+		: SHARED_LIMITS.NOTE_LENGTH.FREE;
+
+	const maxDiaryLength = isPro
+		? SHARED_LIMITS.DIARY_LENGTH.PRO
+		: SHARED_LIMITS.DIARY_LENGTH.FREE;
+
+	const isNoteOverLimit = noteText.length > maxNoteLength;
+	const isDiaryOverLimit = noteText.length > maxDiaryLength;
 	const [copied, setCopied] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
+	const [isSliding, setIsSliding] = useState(false);
+	const pendingTextRef = useRef("");
 	const textRef = useRef("");
 	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const isStorageLoadedRef = useRef(false); // 🚨 起動時データ復元未完了状態の強制上書き保存ロック（防壁）
@@ -70,23 +93,26 @@ export default function QuickPanel({
 			debounceTimerRef.current = null;
 		}
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ quick_note_text: textRef.current });
+			chrome.storage.local.set({ [storageKey]: textRef.current });
 		}
-	}, []);
+	}, [storageKey]);
 
 	// 🛡️ ストレージからの自動復元時、State と Ref の双方に即時同期し、ロックを解除
 	useEffect(() => {
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.get("quick_note_text", (result) => {
-				const val = (result as Record<string, unknown>).quick_note_text;
+			chrome.storage.local.get(storageKey, (result) => {
+				const val = (result as Record<string, unknown>)[storageKey];
 				if (typeof val === "string") {
 					setNoteText(val);
 					textRef.current = val; // 同期
+				} else {
+					setNoteText("");
+					textRef.current = "";
 				}
 				isStorageLoadedRef.current = true; // 🚨 復元が正常完了したため、ここで初めて書き込みロックを解除！
 			});
 		}
-	}, []);
+	}, [storageKey]);
 
 	// 🛡️ 入力時：State と Ref を「完全同時（同期的）」に即時更新し、デバウンスを設定
 	const handleTextChange = (val: string) => {
@@ -101,7 +127,7 @@ export default function QuickPanel({
 		}
 		debounceTimerRef.current = setTimeout(() => {
 			if (typeof chrome !== "undefined" && chrome.storage?.local) {
-				chrome.storage.local.set({ quick_note_text: val });
+				chrome.storage.local.set({ [storageKey]: val });
 			}
 			debounceTimerRef.current = null;
 		}, 300);
@@ -136,17 +162,50 @@ export default function QuickPanel({
 	};
 
 	const handleSaveAsNote = async () => {
-		if (!noteText.trim() || submitting) return;
+		if (!noteText.trim() || submitting || isNoteOverLimit) return;
 		setSubmitting(true);
-		await onAddNote(noteText.trim(), "inbox", "info");
+		const textToSave = noteText.trim();
+		pendingTextRef.current = textToSave;
+
+		// 1. スライド発火
+		setIsSliding(true);
+
+		// 2. 300ms 待機
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		// 3. テキスト消去 & 0ms定位置復帰
+		handleClearText();
+		setIsSliding(false);
+
+		// 4. 通信実行
+		const success = await onAddNote(textToSave, "inbox", "info");
 		setSubmitting(false);
+
+		if (!success) {
+			handleTextChange(pendingTextRef.current);
+			toast.error("Failed to send text");
+		}
 	};
 
 	const handleSaveToDiary = async () => {
-		if (!noteText.trim() || submitting) return;
+		if (!noteText.trim() || submitting || isDiaryOverLimit) return;
 		setSubmitting(true);
-		await onAppendDiary(noteText.trim());
+		const textToSave = noteText.trim();
+		pendingTextRef.current = textToSave;
+
+		setIsSliding(true);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		handleClearText();
+		setIsSliding(false);
+
+		const success = await onAppendDiary(textToSave);
 		setSubmitting(false);
+
+		if (!success) {
+			handleTextChange(pendingTextRef.current);
+			toast.error("Failed to send text");
+		}
 	};
 
 	const handleLinkClick = (
@@ -274,7 +333,7 @@ export default function QuickPanel({
 						{/* 右側: 紙飛行機アイコンを内包した等高カプセルボタン群 */}
 						<div className="flex items-center gap-1.5">
 							<Button
-								disabled={!noteText.trim() || submitting}
+								disabled={!noteText.trim() || submitting || isNoteOverLimit}
 								icon={
 									submitting ? (
 										<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -285,13 +344,17 @@ export default function QuickPanel({
 								onClick={handleSaveAsNote}
 								size="xs"
 								variant="outline"
-								title="Save as Inbox Note"
+								title={
+									isNoteOverLimit
+										? `Exceeds Note limit (${maxNoteLength.toLocaleString()} chars)`
+										: "Save as Inbox Note"
+								}
 								className="text-muted-foreground hover:text-action"
 							>
 								Note
 							</Button>
 							<Button
-								disabled={!noteText.trim() || submitting}
+								disabled={!noteText.trim() || submitting || isDiaryOverLimit}
 								icon={
 									submitting ? (
 										<Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -302,7 +365,11 @@ export default function QuickPanel({
 								onClick={handleSaveToDiary}
 								size="xs"
 								variant="outline"
-								title="Append to Today's Diary"
+								title={
+									isDiaryOverLimit
+										? `Exceeds Diary limit (${maxDiaryLength.toLocaleString()} chars)`
+										: "Append to Today's Diary"
+								}
 								className="text-muted-foreground hover:text-action"
 							>
 								Diary
@@ -310,20 +377,29 @@ export default function QuickPanel({
 						</div>
 					</div>
 
-					{/* 【中央隔離スクロール領域】 最大高 30vh ガードのインナースクロール壁 */}
-					<div className="w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none">
-						<TextareaAutosize
-							onChange={(e) => handleTextChange(e.target.value)}
-							onBlur={flushTextStorage}
-							value={noteText}
-							placeholder="Temporary text scratchpad... (Cross-site session persistent)"
-							className="w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none"
-							minRows={3}
-							onKeyDown={(e) => {
-								if (e.nativeEvent.isComposing) return;
-								handleAutoIndent(e);
-							}}
-						/>
+					{/* 【中央隔離スクロール領域】 1. 固定マスク親ラッパー */}
+					<div className="w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none overflow-hidden">
+						{/* 🌟 2. スライド駆動子コンテナ (isSliding に連動) */}
+						<div
+							className={
+								isSliding
+									? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
+									: "transition-none"
+							}
+						>
+							<TextareaAutosize
+								onChange={(e) => handleTextChange(e.target.value)}
+								onBlur={flushTextStorage}
+								value={noteText}
+								placeholder="Temporary text scratchpad... (Cross-site session persistent)"
+								className="w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out"
+								minRows={3}
+								onKeyDown={(e) => {
+									if (e.nativeEvent.isComposing) return;
+									handleAutoIndent(e);
+								}}
+							/>
+						</div>
 					</div>
 				</div>
 			)}

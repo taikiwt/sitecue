@@ -33,14 +33,18 @@ describe("NoteInput Component", () => {
 		await user.click(submitButton);
 
 		// 3. onAddNoteが正しい引数で呼ばれたか検証（デフォルトは exact と info）
-		expect(mockOnAddNote).toHaveBeenCalledWith(
-			"新しいアイデアのメモ",
-			"exact",
-			"info",
-		);
+		await waitFor(() => {
+			expect(mockOnAddNote).toHaveBeenCalledWith(
+				"新しいアイデアのメモ",
+				"exact",
+				"info",
+			);
+		});
 
-		// 4. オプティミスティック更新により、入力欄が即座にクリアされているか検証
-		expect(input).toHaveValue("");
+		// 4. オプティミスティック更新（300msアニメーション後）により、入力欄がクリアされているか検証
+		await waitFor(() => {
+			expect(input).toHaveValue("");
+		});
 	});
 
 	it("無料枠の上限に達している場合、入力欄が非表示になり警告メッセージが出ること", () => {
@@ -125,6 +129,7 @@ describe("NoteInput Component - 連続作成 & IME Guard", () => {
 
 describe("NoteInput + Diary Integration Split Test", () => {
 	it("ノート入力欄でのCtrl+Enterと、日記入力欄でのCtrl+Enterが個別に正しいハンドラーをトリガーすること", async () => {
+		const user = userEvent.setup();
 		const mockAddNote = vi.fn().mockResolvedValue(true);
 		const mockAppendDiary = vi.fn().mockResolvedValue(true);
 		const mockClose = vi.fn();
@@ -149,23 +154,26 @@ describe("NoteInput + Diary Integration Split Test", () => {
 			target: { value: "Note Content via Test" },
 		});
 		fireEvent.keyDown(noteTextarea, { key: "Enter", ctrlKey: true });
-		expect(mockAddNote).toHaveBeenCalledWith(
-			"Note Content via Test",
-			"exact",
-			"info",
-		);
+		await waitFor(() => {
+			expect(mockAddNote).toHaveBeenCalledWith(
+				"Note Content via Test",
+				"exact",
+				"info",
+			);
+		});
 		expect(mockAppendDiary).not.toHaveBeenCalled();
 
 		vi.clearAllMocks();
 
 		// 2. 日記用テキストエリアの検証
 		const diaryTextarea = screen.getByPlaceholderText(/Append log text/i);
-		fireEvent.focus(diaryTextarea);
-		fireEvent.change(diaryTextarea, {
-			target: { value: "Diary Segment via Test" },
+		await user.type(
+			diaryTextarea,
+			"Diary Segment via Test{Control>}{Enter}{/Control}",
+		);
+		await waitFor(() => {
+			expect(mockAppendDiary).toHaveBeenCalledWith("Diary Segment via Test");
 		});
-		fireEvent.keyDown(diaryTextarea, { key: "Enter", ctrlKey: true });
-		expect(mockAppendDiary).toHaveBeenCalledWith("Diary Segment via Test");
 		expect(mockAddNote).not.toHaveBeenCalled();
 	});
 
@@ -323,7 +331,7 @@ describe("NoteInput Component - Dynamic Plans and Limits", () => {
 		expect(submitButton).not.toBeDisabled();
 	});
 
-	it("10,000文字を超えた入力がある場合はプランに関わらず送信ボタンが非活性化すること", () => {
+	it("10,000文字を超えた入力がある場合はFreeプランで送信ボタンが非活性化すること", () => {
 		render(
 			<NoteInput
 				initialScope="exact"
@@ -333,7 +341,7 @@ describe("NoteInput Component - Dynamic Plans and Limits", () => {
 				onAppendDiary={mockOnAppendDiary}
 				onClose={mockOnClose}
 				totalNoteCount={10}
-				userPlan="pro"
+				userPlan="free"
 			/>,
 		);
 
@@ -344,5 +352,44 @@ describe("NoteInput Component - Dynamic Plans and Limits", () => {
 		const submitButton = screen.getByTitle("Add Note");
 		expect(submitButton).toBeDisabled();
 		expect(screen.getByText("10,001 / 10,000")).toHaveClass("text-note-alert");
+	});
+});
+
+describe("NoteInput Component - Slide Out & Auto-Recovery on Failure", () => {
+	it("onAddNoteがfalse(失敗)を返した場合、テキストが自動復元されtoast.errorが呼ばれること", async () => {
+		const mockOnAddNote = vi.fn().mockResolvedValue(false); // 失敗レスポンス
+		render(
+			<NoteInput
+				initialScope="exact"
+				initialType="info"
+				maxFreeNotes={500}
+				onAddNote={mockOnAddNote}
+				onAppendDiary={vi.fn()}
+				onClose={vi.fn()}
+				totalNoteCount={10}
+				userPlan="free"
+			/>,
+		);
+
+		const textarea = screen.getByPlaceholderText(/Add a cue to/i);
+		const submitBtn = screen.getByTitle("Add Note");
+
+		fireEvent.change(textarea, {
+			target: { value: "重要で消えてはいけない長文テキスト" },
+		});
+		fireEvent.click(submitBtn);
+
+		await waitFor(() => {
+			expect(mockOnAddNote).toHaveBeenCalledWith(
+				"重要で消えてはいけない長文テキスト",
+				"exact",
+				"info",
+			);
+		});
+
+		// 復元されたテキストがテキストエリアに戻っていることを検証
+		await waitFor(() => {
+			expect(textarea).toHaveValue("重要で消えてはいけない長文テキスト");
+		});
 	});
 });

@@ -1,3 +1,4 @@
+import { SHARED_LIMITS } from "@sitecue/shared";
 import {
 	AlertTriangle,
 	CalendarDays,
@@ -6,9 +7,9 @@ import {
 	Send,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
+import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
-import { APP_LIMITS } from "../constants/limits";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import type { NoteScope, NoteType } from "../hooks/useNotes";
 
@@ -48,16 +49,44 @@ export default function NoteInput({
 	);
 	const [newNote, setNewNote] = useState("");
 	const [diaryText, setDiaryText] = useState("");
+	const [isSlidingNote, setIsSlidingNote] = useState(false);
+	const [isSlidingDiary, setIsSlidingDiary] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
+	const pendingNoteRef = useRef("");
+	const pendingDiaryRef = useRef("");
+
 	const handleAutoIndent = useAutoIndent();
+
+	const maxNoteCharLength =
+		userPlan === "pro"
+			? SHARED_LIMITS.NOTE_LENGTH.PRO
+			: SHARED_LIMITS.NOTE_LENGTH.FREE;
 
 	const handleDiarySubmit = async () => {
 		const content = diaryText.trim();
-		if (!content) return;
-		setDiaryText("");
+		if (!content || submitting) return;
+
+		setSubmitting(true);
+		pendingDiaryRef.current = content;
+
+		// 1. スライド発火 (0ms)
+		setIsSlidingDiary(true);
+
+		// 2. 300ms アニメーション完了を優雅に待機
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		// 3. 通信実行
 		const success = await onAppendDiary(content);
+		setSubmitting(false);
+
 		if (!success) {
-			setDiaryText(content);
+			// 失敗時のみロールバック（復元）
+			setIsSlidingDiary(false);
+			setDiaryText(pendingDiaryRef.current);
+			toast.error("Failed to send text");
 		} else {
+			// 🌟 成功時: フォームをリセット（isSlidingDiary=false）せず、消えた状態(opacity-0)のままダイアログを即時閉鎖！
+			// これにより、閉じる直前の「空フォーム露出フラッシュ」を100%防止。
 			onClose();
 		}
 	};
@@ -67,20 +96,35 @@ export default function NoteInput({
 	const isLimitReached = isFreeOrGuest && totalNoteCount >= maxFreeNotes;
 
 	const charCount = newNote.length;
-	const isCharNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
-	const isCharOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
+	const isCharNearLimit = charCount >= maxNoteCharLength * 0.9;
+	const isCharOverLimit = charCount > maxNoteCharLength;
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleSubmit = async (e?: React.FormEvent) => {
+		if (e) e.preventDefault();
 		const content = newNote.trim();
-		if (!content || isCharOverLimit) return;
+		if (!content || isCharOverLimit || submitting) return;
 
+		setSubmitting(true);
+		pendingNoteRef.current = content;
+
+		// 1. スライド発火 (0ms)
+		setIsSlidingNote(true);
+
+		// 2. 300ms アニメーション完了を優雅に待機
+		await new Promise((resolve) => setTimeout(resolve, 300));
+
+		// 3. テキストクリア＆0msでスタイル定位置復帰（巻き戻りなし）
 		setNewNote("");
-		setTimeout(() => textareaRef?.current?.focus(), 10);
+		setIsSlidingNote(false);
+		textareaRef?.current?.focus();
 
+		// 4. 通信実行
 		const success = await onAddNote(content, selectedScope, selectedType);
+		setSubmitting(false);
+
 		if (!success) {
-			setNewNote(content);
+			setNewNote(pendingNoteRef.current);
+			toast.error("Failed to send text");
 		}
 	};
 
@@ -239,45 +283,53 @@ export default function NoteInput({
 							</div>
 						</div>
 					) : (
-						<div className="relative w-full">
-							<TextareaAutosize
-								ref={textareaRef}
-								value={newNote}
-								onFocus={() => setActiveType("note")}
-								onChange={(e) => setNewNote(e.target.value)}
-								placeholder={`Add a cue to ${
-									selectedScope === "inbox"
-										? "Inbox"
-										: selectedScope === "domain"
-											? "this domain"
-											: "this page"
-								}...`}
-								className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
-								minRows={1}
-								onKeyDown={(e) => {
-									if (e.nativeEvent.isComposing) return; // IME Guard
-									if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-										e.preventDefault();
-										if (activeType === "note" && newNote.trim()) {
-											handleSubmit(e);
+						<div className="relative w-full overflow-hidden">
+							<div
+								className={
+									isSlidingNote
+										? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
+										: "transition-none"
+								}
+							>
+								<TextareaAutosize
+									ref={textareaRef}
+									value={newNote}
+									onFocus={() => setActiveType("note")}
+									onChange={(e) => setNewNote(e.target.value)}
+									placeholder={`Add a cue to ${
+										selectedScope === "inbox"
+											? "Inbox"
+											: selectedScope === "domain"
+												? "this domain"
+												: "this page"
+									}...`}
+									className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
+									minRows={1}
+									onKeyDown={(e) => {
+										if (e.nativeEvent.isComposing) return; // IME Guard
+										if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+											e.preventDefault();
+											if (newNote.trim()) {
+												handleSubmit(e);
+											}
+										} else {
+											handleAutoIndent(e);
 										}
-									} else {
-										handleAutoIndent(e);
-									}
-								}}
-							/>
-							{isCharNearLimit && (
-								<div className="absolute right-0 bottom-0 pointer-events-none pb-1">
-									<span
-										className={`text-[9px] font-bold ${
-											isCharOverLimit ? "text-note-alert" : "text-note-idea"
-										}`}
-									>
-										{charCount.toLocaleString()} /{" "}
-										{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
-									</span>
-								</div>
-							)}
+									}}
+								/>
+								{isCharNearLimit && (
+									<div className="absolute right-0 bottom-0 pointer-events-none pb-1">
+										<span
+											className={`text-[9px] font-bold ${
+												isCharOverLimit ? "text-note-alert" : "text-note-idea"
+											}`}
+										>
+											{charCount.toLocaleString()} /{" "}
+											{maxNoteCharLength.toLocaleString()}
+										</span>
+									</div>
+								)}
+							</div>
 						</div>
 					)}
 				</div>
@@ -288,7 +340,8 @@ export default function NoteInput({
 						activeType !== "note" ||
 						!newNote.trim() ||
 						isCharOverLimit ||
-						isLimitReached
+						isLimitReached ||
+						submitting
 					}
 					type="button"
 					onClick={handleSubmit}
@@ -326,31 +379,42 @@ export default function NoteInput({
 					<div className="text-xs font-bold text-neutral-800 tracking-wide select-none px-0.5 mb-1">
 						Today's Diary
 					</div>
-					{/* 入力欄: 最大高ガード付き内部スクロール対応 */}
-					<TextareaAutosize
-						value={diaryText}
-						onFocus={() => setActiveType("diary")}
-						onChange={(e) => setDiaryText(e.target.value)}
-						placeholder="Append log text..."
-						className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
-						minRows={1}
-						onKeyDown={(e) => {
-							if (e.nativeEvent.isComposing) return; // IME Guard
-							if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-								e.preventDefault();
-								if (activeType === "diary" && diaryText.trim()) {
-									handleDiarySubmit();
-								}
+					{/* 🌟 1. 固定マスク親ラッパー (overflow-hidden) */}
+					<div className="w-full overflow-hidden">
+						{/* 🌟 2. スライド駆動子コンテナ (isSlidingDiary に連動) */}
+						<div
+							className={
+								isSlidingDiary
+									? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
+									: "transition-none"
 							}
-						}}
-					/>
+						>
+							<TextareaAutosize
+								value={diaryText}
+								onFocus={() => setActiveType("diary")}
+								onChange={(e) => setDiaryText(e.target.value)}
+								placeholder="Append log text..."
+								className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
+								minRows={1}
+								onKeyDown={(e) => {
+									if (e.nativeEvent.isComposing) return; // IME Guard
+									if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+										e.preventDefault();
+										if (diaryText.trim()) {
+											handleDiarySubmit();
+										}
+									}
+								}}
+							/>
+						</div>
+					</div>
 				</div>
 
 				{/* 右側: 送信ボタン（items-center で常に垂直中央ロック） */}
 				<button
 					type="button"
 					onClick={handleDiarySubmit}
-					disabled={activeType !== "diary" || !diaryText.trim()}
+					disabled={activeType !== "diary" || !diaryText.trim() || submitting}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
 					title="Append to Diary"
 				>
