@@ -8,7 +8,6 @@ export const SHARED_LIMITS = {
 		FREE: 50000,
 		PRO: 100000,
 	},
-	QUICK_NOTE_LENGTH: 30000,
 
 	// 🛡️ 後方互換性維持（既存の参照箇所を壊さないための定数）
 	MAX_NOTE_LENGTH: 10000,
@@ -23,4 +22,3 @@ export const SHARED_LIMITS = {
 		WARNING_THRESHOLD: 45,
 	},
 } as const;
-
