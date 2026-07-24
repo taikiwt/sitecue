@@ -1,6 +1,7 @@
 "use client";
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { fetchOrResetUserProfile, SHARED_LIMITS } from "@sitecue/shared";
 import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +12,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { AI_LIMIT, DRAFTS_LIMIT, NOTES_LIMIT } from "@/constants/limits";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
@@ -35,18 +35,10 @@ export function UserMenu() {
 			setUser(user);
 
 			if (user) {
-				// AI利用状況の取得
-				const { data } = await supabase
-					.from("sitecue_profiles")
-					.select("plan, ai_usage_count")
-					.eq("id", user.id)
-					.single();
-
-				if (data) {
-					setUserData(
-						data.ai_usage_count || 0,
-						(data.plan as "free" | "pro") || "free",
-					);
+				// DAL 経由で Lazy Reset 判定を含むプロフィール情報を取得
+				const profileData = await fetchOrResetUserProfile(supabase, user.id);
+				if (profileData) {
+					setUserData(profileData.ai_usage_count, profileData.plan);
 				}
 			}
 		};
@@ -60,6 +52,8 @@ export function UserMenu() {
 	};
 
 	if (!user) return null;
+
+	const { AI_LIMIT, NOTES_LIMIT, DRAFTS_LIMIT } = SHARED_LIMITS;
 
 	return (
 		<Popover open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -80,7 +74,6 @@ export function UserMenu() {
 								className="h-full w-full object-cover"
 							/>
 						) : (
-							/* 💡 アイコンの縮小を防ぐため className を size-5 に変更 */
 							<User className="size-5" aria-hidden="true" />
 						)}
 					</Button>

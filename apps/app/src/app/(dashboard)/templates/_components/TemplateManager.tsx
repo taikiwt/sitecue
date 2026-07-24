@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { APP_LIMITS } from "@/constants/limits";
+import { APP_LIMITS } from "@sitecue/shared";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {
 	useCreateTemplate,

@@ -17,6 +17,7 @@ description: Supabase、RLS、マイグレーション、およびデータ操�
 - **型の使い分け (Slim Fetching)**: 
   ノート一覧などの大量データ取得時は、パフォーマンス最適化のため本文を含まない `NoteMetadata` 型を使用すること。詳細表示や編集、またはバックグラウンドでの遅延フェッチ完了後には、本文を含む完全な `Note` 型を使用し、型レベルでデータの有無をガードすること。
 - **定数とDBスキーマの整合性保証**: `packages/shared/src/utils/limits.ts` に定義された上限値と `supabase/schema.sql` 内の CHECK 制約（文字数制限等）の数値が一致しているかを自動検証するテストコードを `limits.test.ts` に配置し、定数とDBの不整合をCI/テスト段階で100%防止すること。
+- **リソース制限定数のSSOT集約**: リソース制限定数（ノート・ドラフト・AI等）は、必ず `@sitecue/shared`（`packages/shared/src/utils/limits.ts`）を単一の信頼できる情報源（SSOT）として参照すること。
 - **DBトリガーによるプラン別文字数制限の動的検証**: ノートおよび日記の作成・更新時、DBトリガー関数（`check_note_content_length`, `check_diary_content_length`）にて `sitecue_profiles.plan` を参照し、`free` ユーザーが Free プランの上限（ノート 10,000文字 / 日記 50,000文字）を超えるコンテンツを保存しようとした場合は `RAISE EXCEPTION` を発火させて書き込みをDB層で物理的に遮断すること。
 
 ## 2. データ操作の実装方針

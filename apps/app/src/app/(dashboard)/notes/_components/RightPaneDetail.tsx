@@ -1,7 +1,10 @@
 "use client";
 
-import type { NoteType } from "@sitecue/shared";
-import { normalizeUrlForGrouping } from "@sitecue/shared";
+import {
+	type NoteType,
+	normalizeUrlForGrouping,
+	SHARED_LIMITS,
+} from "@sitecue/shared";
 import {
 	ClipboardCopy,
 	Copy,
@@ -61,6 +64,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const deleteNoteMutation = useDeleteNote();
 	const router = useRouter();
 	const searchParams = useSearchParams();
+	const { plan, openPaywall } = useUserStore();
 
 	// 1. URLパラメータから現在の「主軸となるビューモード」をSSOTとして解決する
 	const viewParam = searchParams.get("view");
@@ -102,7 +106,6 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	const [editNoteType, setEditNoteType] = useState<Note["note_type"]>(
 		note?.note_type || "info",
 	);
-	const openPaywall = useUserStore((state) => state.openPaywall);
 
 	// Sync edit states when note changes
 	useEffect(() => {
@@ -286,8 +289,17 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 		}
 	};
 
+	const maxNoteLimit =
+		plan === "pro"
+			? SHARED_LIMITS.NOTE_LENGTH.PRO
+			: SHARED_LIMITS.NOTE_LENGTH.FREE;
+
+	const charCount = editContent.length;
+	const isNearLimit = charCount >= maxNoteLimit * 0.9;
+	const isOverLimit = charCount > maxNoteLimit;
+
 	const handleSave = async () => {
-		if (!note && !isNewNote) return;
+		if ((!note && !isNewNote) || isOverLimit) return;
 
 		setIsSaving(true);
 		const newContent = editContent.trim();
@@ -568,7 +580,7 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 									size="sm"
 									onClick={handleSave}
 									className="disabled:opacity-50 cursor-pointer shadow-sm"
-									disabled={isSaving}
+									disabled={isSaving || isOverLimit}
 								>
 									{isSaving ? "Saving..." : "Save"}
 								</Button>
@@ -773,6 +785,23 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 										/>
 									);
 								})()}
+								{isEditing && (
+									<div className="flex justify-between items-center pt-2 text-[10px] font-mono font-bold text-neutral-400">
+										<span />
+										{isNearLimit ? (
+											<span
+												className={cn(
+													isOverLimit ? "text-note-alert" : "text-note-idea",
+												)}
+											>
+												{charCount.toLocaleString()} /{" "}
+												{maxNoteLimit.toLocaleString()} chars
+											</span>
+										) : (
+											<span>{charCount.toLocaleString()} chars</span>
+										)}
+									</div>
+								)}
 							</div>
 						</div>
 					) : (

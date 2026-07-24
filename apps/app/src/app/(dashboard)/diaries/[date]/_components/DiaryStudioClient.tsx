@@ -1,6 +1,6 @@
 "use client";
 
-import type { Diary } from "@sitecue/shared";
+import { type Diary, SHARED_LIMITS } from "@sitecue/shared";
 import {
 	ArrowLeft,
 	CalendarDays,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -29,6 +30,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUpdateDiary } from "@/hooks/useDiariesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
+import { useUserStore } from "@/store/useUserStore";
 import { DiaryMaterialsPane } from "./DiaryMaterialsPane";
 
 interface Props {
@@ -38,6 +40,7 @@ interface Props {
 
 export function DiaryStudioClient({ initialDiary, date }: Props) {
 	const router = useRouter();
+	const { plan, openPaywall } = useUserStore();
 	const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 	const togglePanel = () => {
@@ -115,6 +118,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 	};
 
 	const handleSave = async () => {
+		if (isOverLimit) return;
 		setStatus("saving");
 		try {
 			await updateDiaryMutation.mutateAsync({ date, text: content, topics });
@@ -122,8 +126,23 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 			setSavedTopics(topics);
 			setStatus("success");
 			setTimeout(() => setStatus("idle"), 2000);
-		} catch (err) {
-			console.error(err);
+		} catch (err: unknown) {
+			console.error("Failed to save diary:", err);
+			const errorMessage =
+				err instanceof Error
+					? err.message.toLowerCase()
+					: typeof err === "object" && err !== null && "message" in err
+						? String((err as { message: unknown }).message).toLowerCase()
+						: String(err).toLowerCase();
+
+			if (
+				errorMessage.includes("limit reached") ||
+				errorMessage.includes("exceeds")
+			) {
+				openPaywall("notes");
+			} else {
+				toast.error("Failed to save diary log.");
+			}
 			setStatus("error");
 		}
 	};
@@ -138,6 +157,12 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 	};
 
 	const charCount = content.length;
+	const maxDiaryLimit =
+		plan === "pro"
+			? SHARED_LIMITS.DIARY_LENGTH.PRO
+			: SHARED_LIMITS.DIARY_LENGTH.FREE;
+	const isNearLimit = charCount >= maxDiaryLimit * 0.9;
+	const isOverLimit = charCount > maxDiaryLimit;
 
 	if (isDesktop && isLargeDesktop) {
 		return (
@@ -173,7 +198,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							<div className="flex items-center gap-2">
 								<Button
 									className="shadow-sm font-bold min-w-[80px] cursor-pointer"
-									disabled={status === "saving" || !isDirty}
+									disabled={status === "saving" || !isDirty || isOverLimit}
 									onClick={handleSave}
 									size="sm"
 									variant="default"
@@ -291,7 +316,18 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										onGenerateHint={async () => null}
 									/>
 									<div className="flex justify-end pt-2 text-[10px] font-mono font-bold text-neutral-400">
-										{charCount.toLocaleString()} chars
+										{isNearLimit ? (
+											<span
+												className={cn(
+													isOverLimit ? "text-note-alert" : "text-note-idea",
+												)}
+											>
+												{charCount.toLocaleString()} /{" "}
+												{maxDiaryLimit.toLocaleString()} chars
+											</span>
+										) : (
+											<span>{charCount.toLocaleString()} chars</span>
+										)}
 									</div>
 								</div>
 							</div>
@@ -344,7 +380,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 						<div className="flex items-center gap-2">
 							<Button
 								className="shadow-sm font-bold min-w-[80px] cursor-pointer"
-								disabled={status === "saving" || !isDirty}
+								disabled={status === "saving" || !isDirty || isOverLimit}
 								onClick={handleSave}
 								size="sm"
 								variant="default"
@@ -462,7 +498,18 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 									onGenerateHint={async () => null}
 								/>
 								<div className="flex justify-end pt-2 text-[10px] font-mono font-bold text-neutral-400">
-									{charCount.toLocaleString()} chars
+									{isNearLimit ? (
+										<span
+											className={cn(
+												isOverLimit ? "text-note-alert" : "text-note-idea",
+											)}
+										>
+											{charCount.toLocaleString()} /{" "}
+											{maxDiaryLimit.toLocaleString()} chars
+										</span>
+									) : (
+										<span>{charCount.toLocaleString()} chars</span>
+									)}
 								</div>
 							</div>
 						</div>
