@@ -1,5 +1,4 @@
 export const SHARED_LIMITS = {
-	// 🌱 新設: プラン別・種別ごとの制限構造
 	NOTE_LENGTH: {
 		FREE: 10000,
 		PRO: 30000,
@@ -8,8 +7,6 @@ export const SHARED_LIMITS = {
 		FREE: 50000,
 		PRO: 100000,
 	},
-
-	// 🛡️ 後方互換性維持（既存の参照箇所を壊さないための定数）
 	MAX_NOTE_LENGTH: 10000,
 	MAX_DRAFT_LENGTH: 100000,
 	MAX_TEMPLATE_LENGTH: 5000,
@@ -21,4 +18,15 @@ export const SHARED_LIMITS = {
 		MAX_FREE: 50,
 		WARNING_THRESHOLD: 45,
 	},
+	AI_LIMIT: {
+		MAX_FREE: 3,
+		MAX_PRO: 100,
+		WARNING_THRESHOLD_FREE: 3,
+		WARNING_THRESHOLD_PRO: 90,
+	},
 } as const;
+
+export const APP_LIMITS = SHARED_LIMITS;
+export const NOTES_LIMIT = SHARED_LIMITS.NOTES_LIMIT;
+export const DRAFTS_LIMIT = SHARED_LIMITS.DRAFTS_LIMIT;
+export const AI_LIMIT = SHARED_LIMITS.AI_LIMIT;

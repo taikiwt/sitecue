@@ -12,7 +12,6 @@ export const getQuotaStatus = async (
 	currentCount?: number;
 	newResetAt?: string;
 }> => {
-	// ユーザーの権限（RLS）でSupabaseクライアントを作成
 	const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		global: { headers: { Authorization: authHeader } },
 	});
@@ -23,7 +22,6 @@ export const getQuotaStatus = async (
 	} = await supabase.auth.getUser();
 	if (authError || !user) return { allowed: false, reason: "Unauthorized" };
 
-	// 既存の sitecue_profiles テーブルから現在の利用状況を取得
 	const { data: profile, error: profileError } = await supabase
 		.from("sitecue_profiles")
 		.select("plan, ai_usage_count, ai_usage_reset_at")
@@ -34,19 +32,28 @@ export const getQuotaStatus = async (
 		return { allowed: false, reason: "Profile not found" };
 
 	const now = new Date();
-	const resetAt = new Date(profile.ai_usage_reset_at);
+	const resetAt = profile.ai_usage_reset_at
+		? new Date(profile.ai_usage_reset_at)
+		: null;
 	let currentCount = profile.ai_usage_count;
-	let newResetAt = profile.ai_usage_reset_at;
+	let newResetAt = profile.ai_usage_reset_at || now.toISOString();
 
-	// リセット日時を過ぎている場合はカウントを0に戻し、次のリセット日を1ヶ月後に設定
-	if (now > resetAt) {
+	if (resetAt && now >= resetAt) {
 		currentCount = 0;
 		const nextReset = new Date(now);
 		nextReset.setMonth(nextReset.getMonth() + 1);
 		newResetAt = nextReset.toISOString();
+
+		// アトミックにDBを更新
+		await supabase
+			.from("sitecue_profiles")
+			.update({
+				ai_usage_count: 0,
+				ai_usage_reset_at: newResetAt,
+			})
+			.eq("id", user.id);
 	}
 
-	// プランごとの上限設定 (例: Freeは3回, Proは100回)
 	const limit = profile.plan === "pro" ? 100 : 3;
 	if (currentCount >= limit) {
 		return {
@@ -65,9 +72,6 @@ export const getQuotaStatus = async (
 	};
 };
 
-/**
- * AI利用回数をインクリメントする（API通信成功後に呼び出す）
- */
 export const consumeQuota = async (
 	supabaseUrl: string,
 	supabaseAnonKey: string,

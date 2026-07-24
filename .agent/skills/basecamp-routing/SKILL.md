@@ -48,3 +48,5 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
   未認証時は早期リターンで即座に `redirect('/login')` などを発火させ、RLSによる空データの描画（Ghost UI）を確実に防ぐ。
 - **`getUser()` の絶対使用**:
   セッションの有効性をサーバー側で正確に検証するため、認証ユーティリティの内部では `getSession()` ではなく、必ず `supabase.auth.getUser()` を使用すること。
+- **SPAナビゲーションの維持**:
+  認証リダイレクトおよびログイン済みチェック時の転送には `window.location.replace` などのハードリロードを絶対に使用せず、Next.js の `router.replace()` または SSR レベルでの `redirect()` による SPA ナビゲーションを維持すること。

@@ -97,6 +97,22 @@ describe("DiaryStudioClient", () => {
 		expect(saveBtn).not.toBeDisabled();
 	});
 
+	it("文字数が制限（Free: 50,000字）を超えた場合、Saveボタンが非活性化すること", () => {
+		setup({
+			user_id: "u1",
+			date: "2026-06-28",
+			content: "Original Content",
+			topics: [],
+			created_at: "",
+			updated_at: "",
+		});
+		const editor = screen.getByTestId("mock-editor");
+		const overLimitText = "a".repeat(50001);
+		fireEvent.change(editor, { target: { value: overLimitText } });
+		const saveBtn = screen.getAllByRole("button", { name: /Save Diary/i })[0];
+		expect(saveBtn).toBeDisabled();
+	});
+
 	it("素材のインサートボタンを押した際にエディタの末尾にテキストが追記結合されること", () => {
 		setup({
 			user_id: "u1",

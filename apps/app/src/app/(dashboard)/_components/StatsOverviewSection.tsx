@@ -1,5 +1,5 @@
 import { Activity } from "lucide-react";
-import { NOTES_LIMIT } from "@/constants/limits";
+import { SHARED_LIMITS } from "@sitecue/shared";
 import { requireUser } from "@/utils/supabase/server";
 import { ComingSoonButton } from "./ComingSoonButton";
 
@@ -9,6 +9,8 @@ export async function StatsOverviewSection() {
 		supabase.from("sitecue_notes").select("*", { count: "exact", head: true }),
 		supabase.from("sitecue_drafts").select("*", { count: "exact", head: true }),
 	]);
+
+	const { NOTES_LIMIT } = SHARED_LIMITS;
 
 	return (
 		<div>

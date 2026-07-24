@@ -39,6 +39,7 @@ sitecueは、Webで日々活動する人向けの「コンテキスト認識型�
 - **自動生成ファイルの保護**: `packages/shared/src/types/supabase.ts` は `bun x supabase gen types` によって自動生成されるファイルです。**AIによる手動での直接編集は絶対に禁止**します（次回の生成時に上書きされ、型が破綻するため）。
   - DBスキーマに変更があった場合は、必ずローカルDBにマイグレーション（`.sql`）を適用した上で、ターミナルから `bunx supabase gen types typescript --local > packages/shared/src/types/supabase.ts` を実行して一括で上書きしてください。
 - **型のラップとSSOTの集約**: DBの `CHECK` 制約などで自動生成ファイル上で単なる `string` になってしまう型（例：`sitecue_notes` の `scope` カラム）は、すべて共通パッケージ `packages/shared/src/types/app.ts` にて厳密なユニオン型（例：`'exact' | 'domain' | 'inbox'`）として定義・ラップされています。プロジェクトにおける型定義の情報源はここを唯一の正（SSOT）とします。
+- **リソース制限定数のSSOT集約**: リソース制限定数（ノート・ドラフト・AI等）は、必ず `@sitecue/shared`（`packages/shared/src/utils/limits.ts`）を単一の信頼できる情報源（SSOT）として参照すること。
 - **コンポーネントからの参照**: UIコンポーネントやHooks（Extension/App Basecamp問わず）から型を `import` する際は、ローカルの型定義ファイルを直接参照せず、必ず `@sitecue/shared` からインポートして使用してください。
 
 ## 🧹 Linting & Code Quality Rules (Biome 絶対遵守)

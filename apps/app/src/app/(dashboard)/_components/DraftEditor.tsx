@@ -1,7 +1,7 @@
 "use client";
 
 import type { Draft, Note, Template } from "@sitecue/shared";
-import { extractTags } from "@sitecue/shared";
+import { APP_LIMITS, extractTags } from "@sitecue/shared";
 import { ArrowLeft, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -23,7 +23,6 @@ import {
 	DrawerTrigger,
 } from "@/components/ui/drawer";
 import { InlineCopyButton } from "@/components/ui/inline-copy-button";
-import { APP_LIMITS } from "@/constants/limits";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useDraftHistory } from "@/hooks/useDraftHistory";
 import {
@@ -593,9 +592,9 @@ export default function DraftEditor({
 										</span>
 										{isNearLimit ? (
 											<span
-												className={
-													isOverLimit ? "text-note-alert" : "text-neutral-400"
-												}
+												className={cn(
+													isOverLimit ? "text-note-alert" : "text-note-idea",
+												)}
 											>
 												{charCount.toLocaleString()} /{" "}
 												{effectiveLimit.toLocaleString()} chars
@@ -780,9 +779,9 @@ export default function DraftEditor({
 									</span>
 									{isNearLimit ? (
 										<span
-											className={
-												isOverLimit ? "text-note-alert" : "text-neutral-400"
-											}
+											className={cn(
+												isOverLimit ? "text-note-alert" : "text-note-idea",
+											)}
 										>
 											{charCount.toLocaleString()} /{" "}
 											{effectiveLimit.toLocaleString()} chars

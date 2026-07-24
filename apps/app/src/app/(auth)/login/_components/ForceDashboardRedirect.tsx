@@ -1,16 +1,20 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 
-/**
- * ForceDashboardRedirect
- *
- * ログイン済みの場合にネイティブの window.location.replace("/") を実行し、
- * Next.js のキャッシュ/ナビゲーションバグ（認証済みユーザーが /login に留まる等）を
- * ハードリロードを伴って強制的に解消するコンポーネント。
- */
-export function ForceDashboardRedirect() {
+interface ForceDashboardRedirectProps {
+	isSwitch?: boolean;
+	nextPath?: string;
+}
+
+export function ForceDashboardRedirect({
+	isSwitch = false,
+	nextPath = "/",
+}: ForceDashboardRedirectProps) {
+	const router = useRouter();
+
 	useEffect(() => {
 		const checkSession = async () => {
 			const supabase = createClient();
@@ -19,13 +23,19 @@ export function ForceDashboardRedirect() {
 			} = await supabase.auth.getSession();
 
 			if (session) {
-				// ハードリダイレクト
-				window.location.replace("/");
+				if (isSwitch) {
+					// アカウント切り替えモードの場合は自動サインアウトを実行してログイン画面を維持
+					await supabase.auth.signOut();
+					router.refresh();
+				} else {
+					// SPA ナビゲーションリダイレクト
+					router.replace(nextPath);
+				}
 			}
 		};
 
 		checkSession();
-	}, []);
+	}, [router, isSwitch, nextPath]);
 
 	return null;
 }

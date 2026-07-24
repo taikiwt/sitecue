@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { APP_LIMITS } from "@/constants/limits";
+import { APP_LIMITS } from "@sitecue/shared";
 import { useAppendDiary } from "@/hooks/useDiariesQuery";
 import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";

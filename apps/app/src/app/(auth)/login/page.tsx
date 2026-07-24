@@ -10,17 +10,17 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
 	searchParams,
 }: {
-	searchParams: Promise<{ next?: string }>;
+	searchParams: Promise<{ next?: string; switch?: string }>;
 }) {
 	const resolvedSearchParams = await searchParams;
 	const nextPath = resolvedSearchParams.next || "/";
+	const isSwitch = resolvedSearchParams.switch === "true";
 
 	const handleLogin = async (formData: FormData) => {
 		"use server";
 		const provider = formData.get("provider") as "google" | "github";
 		const supabase = await createClient();
 
-		// ヘッダーから安全にオリジンを取得（本番/ローカル対応）
 		const headersList = await headers();
 		const host =
 			headersList.get("x-forwarded-host") ||
@@ -32,10 +32,15 @@ export default async function LoginPage({
 			: host;
 		const origin = `${protocol}://${safeHost}`;
 
+		const queryParams: Record<string, string> = {
+			prompt: "select_account",
+		};
+
 		const { data, error } = await supabase.auth.signInWithOAuth({
 			provider,
 			options: {
 				redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`,
+				queryParams,
 			},
 		});
 
@@ -51,7 +56,7 @@ export default async function LoginPage({
 
 	return (
 		<div className="flex min-h-screen w-full items-center justify-center bg-base-bg p-4">
-			<ForceDashboardRedirect />
+			<ForceDashboardRedirect isSwitch={isSwitch} nextPath={nextPath} />
 			<div className="w-full max-w-sm space-y-8 text-center">
 				<div className="flex justify-center">
 					<Image
