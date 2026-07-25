@@ -1,12 +1,30 @@
+import type { User } from "@supabase/supabase-js";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { createClient } from "@/utils/supabase/server";
 import { ContributionTimeline } from "./ContributionTimeline";
 
-// requireUser のモック化
-vi.mock("@/utils/supabase/server", () => ({
-	requireUser: vi.fn().mockResolvedValue({
-		user: { id: "user-123" },
-		supabase: {
+// custom-link のモック化
+vi.mock("@/components/ui/custom-link", () => ({
+	CustomLink: ({
+		children,
+		href,
+		className,
+	}: {
+		children: React.ReactNode;
+		href: string;
+		className?: string;
+	}) => (
+		<a href={href} className={className}>
+			{children}
+		</a>
+	),
+}));
+
+describe("ContributionTimeline Component", () => {
+	it("規約通り view=domains を含む正しいURLパラメータが構築されること", async () => {
+		const mockUser = { id: "user-123" } as unknown as User;
+		const mockSupabase = {
 			from: vi.fn().mockReturnValue({
 				select: vi.fn().mockReturnValue({
 					eq: vi.fn().mockReturnValue({
@@ -36,30 +54,12 @@ vi.mock("@/utils/supabase/server", () => ({
 					}),
 				}),
 			}),
-		},
-	}),
-}));
+		} as unknown as Awaited<ReturnType<typeof createClient>>;
 
-// custom-link のモック化
-vi.mock("@/components/ui/custom-link", () => ({
-	CustomLink: ({
-		children,
-		href,
-		className,
-	}: {
-		children: React.ReactNode;
-		href: string;
-		className?: string;
-	}) => (
-		<a href={href} className={className}>
-			{children}
-		</a>
-	),
-}));
-
-describe("ContributionTimeline Component", () => {
-	it("規約通り view=domains を含む正しいURLパラメータが構築されること", async () => {
-		const JSX = await ContributionTimeline();
+		const JSX = await ContributionTimeline({
+			supabase: mockSupabase,
+			user: mockUser,
+		});
 		render(JSX);
 
 		expect(screen.queryByText("exact")).toBeNull();

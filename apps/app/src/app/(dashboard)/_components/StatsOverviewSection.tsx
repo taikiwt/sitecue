@@ -1,5 +1,5 @@
-import { Activity } from "lucide-react";
 import { SHARED_LIMITS } from "@sitecue/shared";
+import { Activity } from "lucide-react";
 import { requireUser } from "@/utils/supabase/server";
 import { ComingSoonButton } from "./ComingSoonButton";
 
