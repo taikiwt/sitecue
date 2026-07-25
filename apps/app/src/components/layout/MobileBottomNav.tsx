@@ -35,14 +35,14 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 		<nav className="md:hidden shrink-0 w-auto mx-4 mb-4 pb-safe z-40 bg-action rounded-full shadow-lg overflow-visible border border-white/5">
 			{/* Flexベースの完全シンメトリー構造（中央スペースの最大拡張） */}
 			<div className="flex justify-between items-center h-16 px-4">
-				{/* 左端エリア：ホームボタン（w-12固定、ボタン自体は w-9 h-9 へと引き算・小ぶり化） */}
+				{/* 左端エリア：ホームボタン（w-12固定、ボタン物理判定を size-10 / 40px に微拡大してヒット領域を確保） */}
 				<div className="w-12 flex justify-start items-center">
 					{/* 💡 共通Linkのghost駆動へリプレイス。ネイビー背景に合わせてホバー色をホワイト半透明に最適化 */}
 					<Link
 						href="/"
 						variant="ghost"
 						size="icon"
-						className="size-9 text-white/60 hover-safe:text-white hover-safe:bg-white/10 transition-all active:scale-90"
+						className="size-10 text-white/60 hover-safe:text-white hover-safe:bg-white/10 transition-all active:scale-95"
 						aria-label="Home"
 					>
 						{/* 💡 安全令を回避するため size-[18px] を指定 */}
