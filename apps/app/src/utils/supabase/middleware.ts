@@ -15,8 +15,8 @@ export async function updateSession(request: NextRequest) {
 					return request.cookies.getAll();
 				},
 				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value }) => {
-						request.cookies.set(name, value);
+					cookiesToSet.forEach(({ name, value, options }) => {
+						request.cookies.set({ name, value, ...options });
 					});
 					supabaseResponse = NextResponse.next({
 						request,
@@ -57,7 +57,13 @@ export async function updateSession(request: NextRequest) {
 		}
 		// biome-ignore format: User preference for single line
 		redirectUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
-		return NextResponse.redirect(redirectUrl);
+
+		const response = NextResponse.redirect(redirectUrl);
+		// ★ 重要: リダイレクト発生時にも supabaseResponse にセットされた最新 Cookie を完全に同期
+		supabaseResponse.cookies.getAll().forEach((cookie) => {
+			response.cookies.set(cookie.name, cookie.value, cookie);
+		});
+		return response;
 	}
 
 	return supabaseResponse;
