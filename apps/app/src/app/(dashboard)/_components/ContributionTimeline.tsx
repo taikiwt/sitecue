@@ -1,7 +1,13 @@
+import type { User } from "@supabase/supabase-js";
 import { Edit3, FileText, Zap } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import { requireUser } from "@/utils/supabase/server";
+import type { createClient } from "@/utils/supabase/server";
 import { DomainFavicon } from "./DomainFavicon";
+
+type Props = {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	user: User;
+};
 
 export interface ActivityItem {
 	id: string;
@@ -55,9 +61,7 @@ function extractDomain(url: string): string {
 	return cleanUrl.split("/")[0];
 }
 
-export async function ContributionTimeline() {
-	const { supabase, user } = await requireUser("/");
-
+export async function ContributionTimeline({ supabase, user }: Props) {
 	const sevenDaysAgo = new Date();
 	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 	const dateStr = sevenDaysAgo.toISOString();

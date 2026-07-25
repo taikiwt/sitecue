@@ -1,9 +1,13 @@
+import type { User } from "@supabase/supabase-js";
 import { Edit3, FileText } from "lucide-react";
-import { requireUser } from "@/utils/supabase/server";
+import type { createClient } from "@/utils/supabase/server";
 
-export async function RadialActivityChart() {
-	const { supabase, user } = await requireUser("/");
+type Props = {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	user: User;
+};
 
+export async function RadialActivityChart({ supabase, user }: Props) {
 	const sevenDaysAgo = new Date();
 	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 	const dateStr = sevenDaysAgo.toISOString();

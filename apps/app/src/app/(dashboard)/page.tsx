@@ -1,17 +1,27 @@
 import { fetchDashboardDomainActivity } from "@sitecue/shared";
+import type { User } from "@supabase/supabase-js";
 import { Activity, CalendarDays, Layers } from "lucide-react";
 import { Suspense } from "react";
 import { CustomLink } from "@/components/ui/custom-link";
-import { requireUser } from "@/utils/supabase/server";
+import { type createClient, requireUser } from "@/utils/supabase/server";
 import { AppendDiaryButton } from "./_components/AppendDiaryButton";
 import { ContributionTimeline } from "./_components/ContributionTimeline";
 import { DomainDashboardCard } from "./_components/DomainDashboardCard";
 import { RadialActivityChart } from "./_components/RadialActivityChart";
+import {
+	ContributionTimelineSkeleton,
+	DomainDashboardGridSkeleton,
+	RadialActivityChartSkeleton,
+	TodayRecapCardSkeleton,
+} from "./_components/Skeletons";
+
+type ComponentAuthProps = {
+	supabase: Awaited<ReturnType<typeof createClient>>;
+	user: User;
+};
 
 // Today's Stats card component
-async function TodayRecapCard() {
-	const { supabase, user } = await requireUser("/");
-
+async function TodayRecapCard({ supabase, user }: ComponentAuthProps) {
 	// 基準となる Date インスタンスの生成と JST（UTC+9時間）への厳格な物理オフセット補正
 	const d = new Date();
 	const jstTime = d.getTime() + 9 * 60 * 60 * 1000;
@@ -99,7 +109,7 @@ async function TodayRecapCard() {
 				{/* 2. 「+ append to today's diary」テキストリンク（Zustandキックのクライアントボタン） */}
 				<AppendDiaryButton />
 
-				{/* 修正ポイント3: 勝手に削除された元の実績表示文言（new entries today）を完全に復活 */}
+				{/* 元の実績表示文言（new entries today） */}
 				<div className="flex flex-col justify-center items-center text-center mt-2">
 					<div className="flex items-baseline gap-1">
 						<span className="text-4xl font-black tracking-tighter text-action drop-shadow-sm font-mono">
@@ -116,8 +126,7 @@ async function TodayRecapCard() {
 }
 
 // Domain Dashboard Grid Component
-async function DomainDashboardGrid() {
-	const { supabase, user } = await requireUser("/");
+async function DomainDashboardGrid({ supabase, user }: ComponentAuthProps) {
 	const activities = await fetchDashboardDomainActivity(supabase, user.id, 6);
 
 	if (activities.length === 0) {
@@ -140,26 +149,18 @@ async function DomainDashboardGrid() {
 
 // Main page component
 export default async function LaunchpadPage() {
-	await requireUser("/");
+	const { supabase, user } = await requireUser("/");
 
 	return (
 		<div className="flex-1 bg-base-bg text-action font-sans overflow-y-auto">
 			<div className="mx-auto px-4 py-8 md:px-6 md:py-12 flex flex-col gap-12">
 				{/* ① [最上部] ダッシュボード（Radial Chart & 今日のノート等） */}
 				<section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-					<Suspense
-						fallback={
-							<div className="h-48 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-						}
-					>
-						<TodayRecapCard />
+					<Suspense fallback={<TodayRecapCardSkeleton />}>
+						<TodayRecapCard supabase={supabase} user={user} />
 					</Suspense>
-					<Suspense
-						fallback={
-							<div className="h-48 md:col-span-2 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-						}
-					>
-						<RadialActivityChart />
+					<Suspense fallback={<RadialActivityChartSkeleton />}>
+						<RadialActivityChart supabase={supabase} user={user} />
 					</Suspense>
 				</section>
 
@@ -171,16 +172,8 @@ export default async function LaunchpadPage() {
 							Domain Activity
 						</h2>
 					</div>
-					<Suspense
-						fallback={
-							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-								<div className="h-28 bg-base-surface rounded-xl border border-base-border animate-pulse" />
-							</div>
-						}
-					>
-						<DomainDashboardGrid />
+					<Suspense fallback={<DomainDashboardGridSkeleton />}>
+						<DomainDashboardGrid supabase={supabase} user={user} />
 					</Suspense>
 				</section>
 
@@ -192,15 +185,8 @@ export default async function LaunchpadPage() {
 							Activity Log
 						</h2>
 					</div>
-					<Suspense
-						fallback={
-							<div className="pl-4 ml-2 flex flex-col gap-4">
-								<div className="h-8 w-2/3 bg-base-surface/50 rounded animate-pulse" />
-								<div className="h-8 w-1/2 bg-base-surface/50 rounded animate-pulse" />
-							</div>
-						}
-					>
-						<ContributionTimeline />
+					<Suspense fallback={<ContributionTimelineSkeleton />}>
+						<ContributionTimeline supabase={supabase} user={user} />
 					</Suspense>
 				</section>
 			</div>

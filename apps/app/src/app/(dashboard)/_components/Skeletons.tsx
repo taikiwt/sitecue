@@ -83,3 +83,93 @@ export function TemplateSelectorSkeleton() {
 		</>
 	);
 }
+
+export function TodayRecapCardSkeleton() {
+	return (
+		<div className="flex flex-col justify-between items-center p-5 rounded-xl bg-base-surface border border-base-border h-full min-h-[340px] md:min-h-[320px]">
+			<div className="flex justify-between items-start w-full">
+				<Skeleton className="h-3 w-24" />
+				<Skeleton className="h-7 w-7 rounded-full" />
+			</div>
+			<div className="flex flex-col items-center gap-4 my-4 flex-1 w-full">
+				<Skeleton className="w-24 h-28 md:w-20 md:h-24 lg:w-28 lg:h-32 rounded-xl" />
+				<Skeleton className="h-4 w-36 rounded-full" />
+				<div className="flex flex-col items-center gap-1 mt-2">
+					<Skeleton className="h-9 w-12" />
+					<Skeleton className="h-3 w-24" />
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export function RadialActivityChartSkeleton() {
+	return (
+		<div className="flex flex-col md:flex-row items-center gap-6 p-6 rounded-xl border border-base-border bg-base-bg md:col-span-2 min-h-[190px]">
+			<Skeleton className="w-32 h-32 rounded-full shrink-0" />
+			<div className="flex-1 flex flex-col justify-center gap-4 w-full">
+				<div className="space-y-2">
+					<Skeleton className="h-6 w-40" />
+					<Skeleton className="h-3 w-64" />
+				</div>
+				<div className="flex flex-col gap-3 pt-1">
+					<div className="flex items-center justify-between">
+						<Skeleton className="h-4 w-32" />
+						<Skeleton className="h-4 w-8" />
+					</div>
+					<div className="flex items-center justify-between">
+						<Skeleton className="h-4 w-32" />
+						<Skeleton className="h-4 w-8" />
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+export function DomainDashboardCardSkeleton() {
+	return (
+		<div className="border border-base-border rounded-xl p-5 flex flex-col gap-4 bg-base-bg">
+			<div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center w-full pb-3 border-b border-base-border/50">
+				<div className="flex items-center gap-2">
+					<Skeleton className="h-6 w-6 rounded-md" />
+					<Skeleton className="h-7 w-40" />
+				</div>
+				<Skeleton className="h-9 w-16 rounded-full" />
+			</div>
+			<div className="flex flex-col gap-2">
+				<Skeleton className="h-4 w-3/4" />
+				<Skeleton className="h-4 w-1/2" />
+			</div>
+		</div>
+	);
+}
+
+export function DomainDashboardGridSkeleton() {
+	return (
+		<div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+			<DomainDashboardCardSkeleton />
+			<DomainDashboardCardSkeleton />
+		</div>
+	);
+}
+
+export function ContributionTimelineSkeleton() {
+	return (
+		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-6 w-full min-w-0">
+			{["skel-1", "skel-2"].map((id) => (
+				<div key={id} className="flex flex-col gap-3">
+					<div className="flex items-center gap-2">
+						<Skeleton className="h-4 w-20" />
+						<Skeleton className="h-3 w-24" />
+					</div>
+					<div className="flex flex-col gap-2 pl-2 border-l border-neutral-100 dark:border-neutral-800">
+						<Skeleton className="h-3 w-28" />
+						<Skeleton className="h-5 w-full max-w-md" />
+						<Skeleton className="h-5 w-3/4 max-w-sm" />
+					</div>
+				</div>
+			))}
+		</div>
+	);
+}

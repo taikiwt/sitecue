@@ -1,7 +1,7 @@
 "use client";
 
-import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { fetchOrResetUserProfile, SHARED_LIMITS } from "@sitecue/shared";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { Activity, LogOut, Settings, Sparkles, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

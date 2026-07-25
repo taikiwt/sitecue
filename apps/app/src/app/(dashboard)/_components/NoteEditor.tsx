@@ -1,11 +1,11 @@
 "use client";
 
+import { APP_LIMITS } from "@sitecue/shared";
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import { FilterBadge } from "@/components/ui/filter-badge";
-import { APP_LIMITS } from "@sitecue/shared";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Template } from "@sitecue/shared";
+import { APP_LIMITS } from "@sitecue/shared";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -16,7 +17,6 @@ import {
 } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { APP_LIMITS } from "@sitecue/shared";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import {
 	useCreateTemplate,
