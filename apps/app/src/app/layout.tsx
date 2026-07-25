@@ -38,13 +38,14 @@ export const metadata: Metadata = {
 	description: "Context-aware note taking app",
 	appleWebApp: {
 		capable: true,
-		statusBarStyle: "black-translucent",
+		statusBarStyle: "default",
 		title: "sitecue",
+		startupImage: ["/apple-splash.svg"],
 	},
 };
 
 export const viewport: Viewport = {
-	themeColor: "#0a0a0a",
+	themeColor: "#ffffff",
 	width: "device-width",
 	initialScale: 1,
 	maximumScale: 1,
