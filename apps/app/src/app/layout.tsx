@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import { Toaster } from "react-hot-toast";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,12 +34,21 @@ const hackFont = localFont({
 });
 
 export const metadata: Metadata = {
-	title: "sitecue - context-aware notes",
-	description: "The simplest context-aware notepad for your browser.",
+	title: "sitecue",
+	description: "Context-aware note taking app",
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: "black-translucent",
+		title: "sitecue",
+	},
 };
 
-import { Toaster } from "react-hot-toast";
-import { QueryProvider } from "@/providers/QueryProvider";
+export const viewport: Viewport = {
+	themeColor: "#0a0a0a",
+	width: "device-width",
+	initialScale: 1,
+	maximumScale: 1,
+};
 
 export default function RootLayout({
 	children,
@@ -49,6 +61,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} ${hackFont.variable} antialiased`}
 			>
 				<QueryProvider>
+					<ServiceWorkerRegister />
 					{children}
 					<Toaster
 						position="top-center"
