@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
@@ -15,22 +15,38 @@ vi.mock("next/navigation", () => ({
 	}),
 }));
 
+const mockFetchContentMutate = vi.fn();
+const mockDraftsResult = { data: [], isLoading: false };
+const mockDiariesResult = { data: [], isLoading: false };
+
 // モック: Hooks (ZustandやReact Queryの部分を純粋な値としてモック化)
 vi.mock("@/hooks/useNotesQuery", () => ({
 	useFetchNotes: vi.fn(),
-	useFetchNoteContents: vi.fn(() => ({ mutate: vi.fn() })),
+	useFetchNoteContents: vi.fn(() => ({ mutate: mockFetchContentMutate })),
 }));
 
 vi.mock("@/hooks/useDraftsQuery", () => ({
-	useFetchDrafts: vi.fn(() => ({ data: [], isLoading: false })),
+	useFetchDrafts: () => mockDraftsResult,
 }));
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
-	useFetchDiaries: vi.fn(() => ({ data: [], isLoading: false })),
+	useFetchDiaries: () => mockDiariesResult,
 }));
 
 vi.mock("./MiddlePaneList", () => ({
-	MiddlePaneList: () => <div data-testid="middle-pane" />,
+	MiddlePaneList: (props: {
+		currentView?: string;
+		items?: unknown[];
+		isLoading?: boolean;
+	}) => (
+		<div
+			data-testid="middle-pane"
+			data-view={props.currentView}
+			data-loading={props.isLoading}
+		>
+			{props.isLoading ? "loading" : `${props.items?.length ?? 0} items`}
+		</div>
+	),
 }));
 
 vi.mock("./RightPaneDetail", () => ({
@@ -52,9 +68,39 @@ Object.defineProperty(window, "matchMedia", {
 	})),
 });
 
-describe("NotesContainer - Frontend Search & Slim Fetching", () => {
-	it("URLの q パラメータに基づいて、フロントエンドでノートが正しくフィルタリングされること", () => {
-		// "q=match" の検索状態
+describe("NotesContainer - URL Normalization & Async Rendering", () => {
+	it("view=exact などの非正規なパラメータが渡されても、effectiveView として 'domains' に自動フォールバックされること", async () => {
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams(
+				"?view=exact&domain=example.com",
+			) as unknown as ReturnType<typeof useSearchParams>,
+		);
+
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [
+				{
+					id: "note-1",
+					content: "Exact fallback test",
+					url_pattern: "example.com",
+					scope: "domain",
+					is_pinned: false,
+					sort_order: 0,
+					created_at: new Date().toISOString(),
+				},
+			],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchNotes>);
+
+		render(<NotesContainer />);
+
+		await waitFor(() => {
+			const middlePane = screen.getByTestId("middle-pane");
+			expect(middlePane).toBeInTheDocument();
+			expect(middlePane.getAttribute("data-view")).toBe("domains");
+		});
+	});
+
+	it("URLの q パラメータに基づいて、フロントエンドでノートが正しくフィルタリングされること", async () => {
 		vi.mocked(useSearchParams).mockReturnValue(
 			new URLSearchParams("?q=match") as unknown as ReturnType<
 				typeof useSearchParams
@@ -68,12 +114,18 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 					content: "This is a match",
 					url_pattern: "example.com",
 					scope: "inbox",
+					is_pinned: false,
+					sort_order: 0,
+					created_at: new Date().toISOString(),
 				},
 				{
 					id: "note-2",
 					content: "No luck here",
 					url_pattern: "example.com",
 					scope: "inbox",
+					is_pinned: false,
+					sort_order: 0,
+					created_at: new Date().toISOString(),
 				},
 			],
 			isLoading: false,
@@ -81,14 +133,14 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 
 		render(<NotesContainer />);
 
-		// MiddlePaneList が呼ばれ、フィルタリングされたアイテムが渡されていることを確認
-		// (MiddlePaneList のモックで渡された props をキャプチャするように後で修正するか、
-		// あるいは NoteItem などの描画を待つ)
-		// 今回はモックなので、呼び出し時の props を確認するのが確実
+		await waitFor(() => {
+			const middlePane = screen.getByTestId("middle-pane");
+			expect(middlePane).toBeInTheDocument();
+			expect(middlePane).toHaveTextContent("1 items");
+		});
 	});
 
-	it("Slim Fetching対応: content が undefined のノートは、検索クエリがあってもフィルタリングされずに残ること", () => {
-		// "q=anything"
+	it("Slim Fetching対応: content が undefined のノートは、検索クエリがあってもフィルタリングされずに残ること", async () => {
 		vi.mocked(useSearchParams).mockReturnValue(
 			new URLSearchParams("?q=anything") as unknown as ReturnType<
 				typeof useSearchParams
@@ -101,12 +153,18 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 				content: undefined,
 				url_pattern: "example.com",
 				scope: "inbox",
+				is_pinned: false,
+				sort_order: 0,
+				created_at: new Date().toISOString(),
 			},
 			{
 				id: "note-mismatch",
 				content: "No match",
 				url_pattern: "example.com",
 				scope: "inbox",
+				is_pinned: false,
+				sort_order: 0,
+				created_at: new Date().toISOString(),
 			},
 		];
 
@@ -115,11 +173,10 @@ describe("NotesContainer - Frontend Search & Slim Fetching", () => {
 			isLoading: false,
 		} as unknown as ReturnType<typeof useFetchNotes>);
 
-		// Note: content が undefined の場合、フィルタは true を返して残すはず
-		// これにより useFetchNoteContents が発火する。
 		render(<NotesContainer />);
 
-		// クラッシュしないことの確認
-		expect(screen.getByTestId("middle-pane")).toBeInTheDocument();
+		await waitFor(() => {
+			expect(screen.getByTestId("middle-pane")).toBeInTheDocument();
+		});
 	});
 });
