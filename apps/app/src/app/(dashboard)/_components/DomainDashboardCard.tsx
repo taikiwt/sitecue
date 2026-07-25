@@ -44,7 +44,7 @@ export function DomainDashboardCard({ data }: Props) {
 				</div>
 				<div className="shrink-0">
 					<Link
-						href={`/notes?domain=${data.domain}&view=domain`}
+						href={`/notes?domain=${data.domain}&view=domains`}
 						className={buttonVariants({ variant: "outline", size: "lg" })}
 					>
 						Open
@@ -58,7 +58,7 @@ export function DomainDashboardCard({ data }: Props) {
 					{data.domain_notes.map((note) => (
 						<Link
 							key={note.id}
-							href={`/notes?domain=${data.domain}&view=domain&noteId=${note.id}`}
+							href={`/notes?domain=${data.domain}&view=domains&noteId=${note.id}`}
 							className="text-xs font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
 						>
 							<FileText
@@ -102,7 +102,7 @@ export function DomainDashboardCard({ data }: Props) {
 										</a>
 									</div>
 									<Link
-										href={`/notes?domain=${data.domain}&view=exact&exact=${encodeURIComponent(page.page_url)}`}
+										href={`/notes?domain=${data.domain}&view=domains&exact=${encodeURIComponent(page.page_url)}`}
 										className="shrink-0 text-[10px] text-neutral-400 hover-safe:text-action font-medium flex items-center gap-0.5 transition-colors ml-2"
 									>
 										<FolderOpen className="w-3 h-3" aria-hidden="true" />
@@ -115,7 +115,7 @@ export function DomainDashboardCard({ data }: Props) {
 										{page.page_notes.map((note) => (
 											<Link
 												key={note.id}
-												href={`/notes?domain=${data.domain}&view=exact&exact=${encodeURIComponent(page.page_url)}&noteId=${note.id}`}
+												href={`/notes?domain=${data.domain}&view=domains&exact=${encodeURIComponent(page.page_url)}&noteId=${note.id}`}
 												className="text-[11px] font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
 											>
 												<FileText

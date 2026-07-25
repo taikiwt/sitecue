@@ -40,12 +40,13 @@ describe("DomainDashboardCard", () => {
 		const links = screen.getAllByRole("link");
 
 		const domainLink = links.find(
-			(l) => l.getAttribute("href") === "/notes?domain=example.com&view=domain",
+			(l) =>
+				l.getAttribute("href") === "/notes?domain=example.com&view=domains",
 		);
 		const pageLink = links.find(
 			(l) =>
 				l.getAttribute("href") ===
-				`/notes?domain=example.com&view=exact&exact=${encodeURIComponent("https://example.com/blog/1")}`,
+				`/notes?domain=example.com&view=domains&exact=${encodeURIComponent("https://example.com/blog/1")}`,
 		);
 		const externalDomainLink = links.find(
 			(l) => l.getAttribute("href") === "https://example.com",
@@ -58,12 +59,12 @@ describe("DomainDashboardCard", () => {
 		const domainNoteLink = links.find(
 			(l) =>
 				l.getAttribute("href") ===
-				"/notes?domain=example.com&view=domain&noteId=1",
+				"/notes?domain=example.com&view=domains&noteId=1",
 		);
 		const pageNoteLink = links.find(
 			(l) =>
 				l.getAttribute("href") ===
-				`/notes?domain=example.com&view=exact&exact=${encodeURIComponent("https://example.com/blog/1")}&noteId=2`,
+				`/notes?domain=example.com&view=domains&exact=${encodeURIComponent("https://example.com/blog/1")}&noteId=2`,
 		);
 
 		expect(domainLink).toBeDefined();
@@ -77,7 +78,7 @@ describe("DomainDashboardCard", () => {
 		const openLink = screen.getByRole("link", { name: /Open/i });
 		expect(openLink).toHaveAttribute(
 			"href",
-			"/notes?domain=example.com&view=domain",
+			"/notes?domain=example.com&view=domains",
 		);
 
 		// Verify title attributes for tooltips

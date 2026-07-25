@@ -58,7 +58,7 @@ vi.mock("@/components/ui/custom-link", () => ({
 }));
 
 describe("ContributionTimeline Component", () => {
-	it("データベースの生の値 'exact' を露出させず、規約通りのURLパラメータおよび動的パスが構築されること", async () => {
+	it("規約通り view=domains を含む正しいURLパラメータが構築されること", async () => {
 		const JSX = await ContributionTimeline();
 		render(JSX);
 
@@ -69,6 +69,7 @@ describe("ContributionTimeline Component", () => {
 		const linkElement = titleElement.closest("a");
 		const href = linkElement?.getAttribute("href");
 		expect(href).toContain("domain=qiita.com");
+		expect(href).toContain("view=domains");
 		expect(href).toContain(
 			`exact=${encodeURIComponent("https://qiita.com/stock-feed")}`,
 		);

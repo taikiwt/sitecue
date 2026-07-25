@@ -203,10 +203,10 @@ export async function ContributionTimeline() {
 											if (item.scope === "inbox") {
 												href = `/notes?view=inbox&noteId=${item.id}`;
 											} else if (item.scope === "domain") {
-												href = `/notes?domain=${encodeURIComponent(item.title)}&exact=all&noteId=${item.id}`;
+												href = `/notes?domain=${encodeURIComponent(item.title)}&view=domains&exact=all&noteId=${item.id}`;
 											} else if (item.scope === "exact") {
 												const targetDomain = item.domain || "inbox";
-												href = `/notes?domain=${encodeURIComponent(targetDomain)}&exact=${encodeURIComponent(item.title)}&noteId=${item.id}`;
+												href = `/notes?domain=${encodeURIComponent(targetDomain)}&view=domains&exact=${encodeURIComponent(item.title)}&noteId=${item.id}`;
 											}
 										}
 

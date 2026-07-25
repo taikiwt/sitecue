@@ -3,16 +3,17 @@
 import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
 import { groupNotes } from "@/store/useNotesStore";
 import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
-import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { RightPaneDetail } from "./RightPaneDetail";
+
+const SKELETON_HOLD_MS = 200;
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
@@ -22,14 +23,6 @@ export function NotesContainer() {
 	const { data: diaries = [], isLoading: isDiariesLoading } = useFetchDiaries();
 	const { mutate: fetchContentForIds } = useFetchNoteContents();
 
-	const groupedNotes = useMemo(() => {
-		if (isNotesLoading || isDraftsLoading) return null;
-		return groupNotes(notes, drafts);
-	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
-
-	const isDataReady = !isNotesLoading && !isDraftsLoading && !isDiariesLoading;
-
-	// Convert searchParams to our SearchParams type
 	const params: SearchParams = useMemo(() => {
 		return {
 			view: searchParams.get("view") as SearchParams["view"],
@@ -49,11 +42,32 @@ export function NotesContainer() {
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
 
+	// 【多層防御の正規化】params.view が exact や domain など旧形式・非正規値の場合は domains へ安全にフォールバック
 	const effectiveView = useMemo(() => {
-		if (params.view) return params.view;
-		if (params.domain && params.domain !== "inbox") return "domains";
-		return "domains"; // デフォルトフォールバックを domains に変更
-	}, [params.view, params.domain]);
+		const rawView = params.view as string | undefined;
+		if (
+			rawView &&
+			["domains", "inbox", "drafts", "diaries"].includes(rawView)
+		) {
+			return rawView as SearchParams["view"] & string;
+		}
+		return "domains";
+	}, [params.view]);
+
+	// クエリデータの準備完了状態（対象ビューに必要なデータが準備できているか判定）
+	const isTabReady = useMemo(() => {
+		if (effectiveView === "drafts") return !isDraftsLoading;
+		if (effectiveView === "diaries") return !isDiariesLoading;
+		return !isNotesLoading && !isDraftsLoading;
+	}, [effectiveView, isDraftsLoading, isDiariesLoading, isNotesLoading]);
+
+	// スケルトン表示保護タイマー管理
+	const [showSkeleton, setShowSkeleton] = useState(true);
+
+	const groupedNotes = useMemo(() => {
+		if (isNotesLoading || isDraftsLoading) return null;
+		return groupNotes(notes, drafts);
+	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
 	// Inbox URLのクリーンアップ (domain=inbox の排除)
 	useEffect(() => {
@@ -68,16 +82,17 @@ export function NotesContainer() {
 	const isSearchActive = !!params.q || !!params.tags;
 	const query = params.q?.toLowerCase() || "";
 
-	// フィルタリングされた一覧の計算 (Frontend Search & Late-Binding)
+	// フィルタリングされた一覧の計算
 	const filteredItems = useMemo(() => {
-		if (!isDataReady || !groupedNotes) return [];
+		if (!isTabReady) return [];
 
-		// 1. View / Domain による一次フィルタリング
 		let items: (Note | Draft | Diary)[] = [];
 		if (effectiveView === "drafts") {
 			items = drafts;
 		} else if (effectiveView === "diaries") {
 			items = diaries;
+		} else if (!groupedNotes) {
+			items = [];
 		} else if (exact === "all") {
 			items = groupedNotes.domains[domain || ""]?.domainNotes || [];
 		} else if (exact) {
@@ -91,7 +106,6 @@ export function NotesContainer() {
 					...domainData.domainNotes,
 					...Object.values(domainData.pages).flat(),
 				];
-				// ソート
 				items.sort((a, b) => {
 					const noteA = a as Note;
 					const noteB = b as Note;
@@ -107,14 +121,11 @@ export function NotesContainer() {
 				});
 			}
 		} else if (isSearchActive) {
-			// 全件からの検索（ビュー指定がない場合）
 			items = [...notes, ...drafts];
 		} else {
-			// デフォルト（domains一覧用ソースとして、全notesをアタッチ）
 			items = notes;
 		}
 
-		// 2. クイックフィルター (q パラメータによる絞り込み)
 		if (!query) return items;
 
 		return items.filter((item) => {
@@ -126,15 +137,13 @@ export function NotesContainer() {
 			if ("url_pattern" in item) {
 				const note = item as Note;
 
-				if (effectiveView === "domains" && !domain) {
-					// ドメイン一覧画面での検索
+				if (effectiveView === "domains" && !domain && !isSearchActive) {
 					const safeUrl = getSafeUrl(note.url_pattern);
 					const searchableHost = safeUrl ? safeUrl.hostname : note.url_pattern;
 					return searchableHost.toLowerCase().includes(query);
 				}
 
 				if (effectiveView === "domains" && domain && !exact) {
-					// ページ一覧画面での検索
 					const safeUrl = getSafeUrl(note.url_pattern);
 					const searchablePath = safeUrl
 						? safeUrl.pathname + safeUrl.search
@@ -142,17 +151,12 @@ export function NotesContainer() {
 					return searchablePath.toLowerCase().includes(query);
 				}
 
-				// Slim Fetching対応: 本文が未取得（undefined）の場合は除外せず残す
-				// これにより、描画された瞬間に fetchContentForIds が走り、
-				// データ取得後に再レンダリング & 再フィルタリングが走る
 				if (note.content === undefined) return true;
-				// nullチェック（空のノート）
 				if (!note.content) return false;
 
 				return note.content.toLowerCase().includes(query);
 			}
 
-			// Drafts: タイトル（content）で検索
 			const draft = item as Draft;
 			return draft.content?.toLowerCase().includes(query) ?? false;
 		});
@@ -166,14 +170,41 @@ export function NotesContainer() {
 		notes,
 		drafts,
 		diaries,
-		isDataReady,
+		isTabReady,
 	]);
 
-	// フォールバック: 表示されているリストの中に本文(content)がないものがあれば自動取得
+	// 初回データロード後の 200ms 保護タイマー ＆ 軽量ケース（5件以下）スキップ処理
 	useEffect(() => {
-		if (!isDataReady || filteredItems.length === 0) return;
+		if (!isTabReady) return;
 
-		const missingIds = filteredItems
+		// 軽量ケース判定: 5件以下かつ文字数が一定以下の場合は0msでスケルトン消去
+		const isLightweight =
+			filteredItems.length <= 5 &&
+			filteredItems.every((item) => {
+				const len = "content" in item && item.content ? item.content.length : 0;
+				return len < 1000;
+			});
+
+		if (isLightweight) {
+			setShowSkeleton(false);
+			return;
+		}
+
+		const timer = setTimeout(() => {
+			setShowSkeleton(false);
+		}, SKELETON_HOLD_MS);
+
+		return () => clearTimeout(timer);
+	}, [isTabReady, filteredItems]);
+
+	// 非同期・ノンブロッキング遅延描画用の用例
+	const deferredFilteredItems = useDeferredValue(filteredItems);
+
+	// 本文の遅延取得 (Hydration)
+	useEffect(() => {
+		if (!isTabReady || deferredFilteredItems.length === 0) return;
+
+		const missingIds = deferredFilteredItems
 			.filter(
 				(item): item is Note =>
 					"url_pattern" in item && item.content === undefined,
@@ -183,12 +214,10 @@ export function NotesContainer() {
 		if (missingIds.length > 0) {
 			fetchContentForIds(missingIds);
 		}
-	}, [filteredItems, isDataReady, fetchContentForIds]);
+	}, [deferredFilteredItems, isTabReady, fetchContentForIds]);
 
-	// 選択されたノートまたはドラフトの取得
 	const selectedNote = useMemo(() => {
 		if (!params.noteId) return undefined;
-		// 全体データ（Slim Fetchingキャッシュ等）から探す
 		return notes.find((n) => n.id === params.noteId);
 	}, [notes, params.noteId]);
 
@@ -198,19 +227,7 @@ export function NotesContainer() {
 		[drafts, params.draftId],
 	);
 
-	if (!isDataReady) {
-		return (
-			<ResponsiveNotesLayout
-				selectedNoteId={params.noteId ?? null}
-				selectedDraftId={params.draftId ?? null}
-				selectedDate={params.date ?? null}
-				middleNode={<MiddlePaneListSkeleton />}
-				rightNode={null}
-			/>
-		);
-	}
-
-	if (!groupedNotes) return null;
+	const isListLoading = !isTabReady || showSkeleton;
 
 	return (
 		<ResponsiveNotesLayout
@@ -219,13 +236,14 @@ export function NotesContainer() {
 			selectedDate={params.date ?? null}
 			middleNode={
 				<MiddlePaneList
-					items={filteredItems}
-					groupedNotes={groupedNotes}
+					items={deferredFilteredItems}
+					groupedNotes={groupedNotes || { inbox: [], drafts: [], domains: {} }}
 					currentView={effectiveView}
 					currentDomain={domain ?? null}
 					currentExact={exact ?? null}
 					selectedNoteId={params.noteId ?? null}
 					selectedDraftId={params.draftId ?? null}
+					isLoading={isListLoading}
 				/>
 			}
 			rightNode={

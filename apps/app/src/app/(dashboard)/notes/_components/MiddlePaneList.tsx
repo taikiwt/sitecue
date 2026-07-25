@@ -49,6 +49,7 @@ import { createClient } from "@/utils/supabase/client";
 import { DomainFavicon } from "../../_components/DomainFavicon";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
+import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 
 const MONTH_MAP: Record<string, string> = {
 	"01": "Jan",
@@ -73,6 +74,7 @@ type Props = {
 	currentExact: string | null;
 	selectedNoteId: string | null;
 	selectedDraftId: string | null;
+	isLoading?: boolean;
 };
 
 export function MiddlePaneList(props: Props) {
@@ -84,6 +86,7 @@ export function MiddlePaneList(props: Props) {
 		currentExact,
 		selectedNoteId,
 		selectedDraftId,
+		isLoading = false,
 	} = props;
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const searchParams = useSearchParams();
@@ -756,8 +759,9 @@ export function MiddlePaneList(props: Props) {
 			</div>
 
 			<div className="flex-1 overflow-y-auto divide-y divide-base-border">
-				{/* Diaries View */}
-				{currentView === "diaries" ? (
+				{isLoading ? (
+					<MiddlePaneListSkeleton />
+				) : currentView === "diaries" ? (
 					(() => {
 						const years = Array.from(
 							new Set(diaries.map((d) => d.date.split("-")[0])),
