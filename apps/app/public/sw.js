@@ -1,10 +1,11 @@
-const CACHE_NAME = "sitecue-app-shell-v1";
+const CACHE_NAME = "sitecue-app-shell-v2";
 const STATIC_ASSETS = [
 	"/",
 	"/notes",
 	"/logo.svg",
 	"/icon.ico",
 	"/apple-icon.png",
+	"/apple-splash.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -20,11 +21,9 @@ self.addEventListener("activate", (event) => {
 	event.waitUntil(
 		caches.keys().then((keys) => {
 			return Promise.all(
-				keys.map((key) => {
-					if (key !== CACHE_NAME) {
-						return caches.delete(key);
-					}
-				}),
+				keys
+					.filter((key) => key !== CACHE_NAME)
+					.map((key) => caches.delete(key)),
 			);
 		}),
 	);
@@ -36,10 +35,7 @@ self.addEventListener("fetch", (event) => {
 
 	const url = new URL(event.request.url);
 	// APIや認証関連リクエストはキャッシュ除外
-	if (
-		url.pathname.startsWith("/api/") ||
-		url.pathname.startsWith("/auth/")
-	) {
+	if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
 		return;
 	}
 
