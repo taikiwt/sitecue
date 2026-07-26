@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 		capable: true,
 		statusBarStyle: "default",
 		title: "sitecue",
-		startupImage: ["/apple-splash.svg"],
+		startupImage: ["/apple-splash.png"],
 	},
 };
 
