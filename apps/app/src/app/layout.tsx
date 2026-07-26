@@ -40,7 +40,13 @@ export const metadata: Metadata = {
 		capable: true,
 		statusBarStyle: "default",
 		title: "sitecue",
-		startupImage: ["/apple-splash.png"],
+		startupImage: [
+			{
+				url: "/apple-splash.png",
+				media:
+					"(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3), (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3), (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3), (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3), (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)",
+			},
+		],
 	},
 };
 
