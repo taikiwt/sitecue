@@ -34,6 +34,7 @@ export type PinnedSite = SitecuePinnedSiteBase;
 export interface DashboardSnippetNote {
 	id: string;
 	content: string;
+	is_resolved: boolean;
 }
 
 export interface DashboardPageActivity {

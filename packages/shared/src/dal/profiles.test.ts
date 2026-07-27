@@ -60,7 +60,9 @@ describe("Shared DAL: profiles (Lazy Reset)", () => {
 			error: null,
 		});
 
-		const mockUpdateSelect = vi.fn().mockReturnValue({ single: mockSingleUpdate });
+		const mockUpdateSelect = vi
+			.fn()
+			.mockReturnValue({ single: mockSingleUpdate });
 		const mockUpdateEq = vi.fn().mockReturnValue({ select: mockUpdateSelect });
 		const mockUpdate = vi.fn().mockReturnValue({ eq: mockUpdateEq });
 

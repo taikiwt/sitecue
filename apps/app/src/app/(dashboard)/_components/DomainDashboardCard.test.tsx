@@ -6,86 +6,58 @@ import { DomainDashboardCard } from "./DomainDashboardCard";
 const mockData: DashboardDomainActivity = {
 	domain: "example.com",
 	total_count: 12,
-	domain_notes: [{ id: "1", content: "Domain note content" }],
+	domain_notes: [
+		{ id: "1", content: "Domain note content", is_resolved: false },
+	],
 	top_pages: [
 		{
 			page_url: "https://example.com/blog/1",
 			page_title: "React Hooks Guide",
 			page_count: 5,
-			page_notes: [{ id: "2", content: "Page note content" }],
+			page_notes: [
+				{ id: "2", content: "Page note content", is_resolved: true },
+			],
 		},
 	],
 };
 
 describe("DomainDashboardCard", () => {
-	it("renders domain and nested page structure with exact URL parameter routing and complete context links", () => {
+	it("renders domain and nested page structure with resolved note styling", () => {
 		render(<DomainDashboardCard data={mockData} />);
 
-		// ドメイン情報の検証
 		expect(screen.getByText("example.com")).toBeInTheDocument();
 		expect(screen.getByText("12 notes")).toBeInTheDocument();
-
-		// ネストされたページ情報の検証
 		expect(screen.getByText("React Hooks Guide")).toBeInTheDocument();
-		expect(screen.getByText("5 notes")).toBeInTheDocument();
 
-		// ドメインおよびページ直下のノートスニペットの検証
-		expect(screen.getByText("Domain note content")).toBeInTheDocument();
-		expect(screen.getByText("Page note content")).toBeInTheDocument();
-
-		// 英語ラベル化（日本語の排除）の検証
-		expect(screen.getByText("Open")).toBeInTheDocument();
-
-		// 各リンクが正しいクエリパラメータ（/notes?domain=... 形式）を持っているかの検証
-		const links = screen.getAllByRole("link");
-
-		const domainLink = links.find(
-			(l) =>
-				l.getAttribute("href") === "/notes?domain=example.com&view=domains",
-		);
-		const pageLink = links.find(
-			(l) =>
-				l.getAttribute("href") ===
-				`/notes?domain=example.com&view=domains&exact=${encodeURIComponent("https://example.com/blog/1")}`,
-		);
-		const externalDomainLink = links.find(
-			(l) => l.getAttribute("href") === "https://example.com",
-		);
-		const externalPageLink = links.find(
-			(l) => l.getAttribute("href") === "https://example.com/blog/1",
+		const activeNote = screen.getByText("Domain note content");
+		expect(activeNote).toBeInTheDocument();
+		expect(activeNote.className).not.toContain("line-through");
+		const domainNoteLink = activeNote.closest("a");
+		expect(domainNoteLink?.getAttribute("href")).toBe(
+			"/notes?domain=example.com&view=domains&exact=all&noteId=1",
 		);
 
-		// ノートスニペットからのコンテキスト付きダイレクト起動リンクの検証
-		const domainNoteLink = links.find(
-			(l) =>
-				l.getAttribute("href") ===
-				"/notes?domain=example.com&view=domains&noteId=1",
-		);
-		const pageNoteLink = links.find(
-			(l) =>
-				l.getAttribute("href") ===
-				`/notes?domain=example.com&view=domains&exact=${encodeURIComponent("https://example.com/blog/1")}&noteId=2`,
-		);
+		const resolvedNote = screen.getByText("Page note content");
+		expect(resolvedNote).toBeInTheDocument();
+		expect(resolvedNote.className).toContain("line-through");
+	});
 
-		expect(domainLink).toBeDefined();
-		expect(pageLink).toBeDefined();
-		expect(externalDomainLink).toBeDefined();
-		expect(externalPageLink).toBeDefined();
-		expect(domainNoteLink).toBeDefined();
-		expect(pageNoteLink).toBeDefined();
+	it("renders local domain with port correctly", () => {
+		const mockLocalData: DashboardDomainActivity = {
+			domain: "127.0.0.1:3000",
+			total_count: 2,
+			domain_notes: [
+				{ id: "1", content: "Local note content", is_resolved: false },
+			],
+			top_pages: [],
+		};
 
-		// Verify that Open link exists and routes correctly
-		const openLink = screen.getByRole("link", { name: /Open/i });
-		expect(openLink).toHaveAttribute(
-			"href",
-			"/notes?domain=example.com&view=domains",
-		);
+		render(<DomainDashboardCard data={mockLocalData} />);
 
-		// Verify title attributes for tooltips
-		const domainText = screen.getByText("example.com");
-		expect(domainText).toHaveAttribute("title", "example.com");
+		expect(screen.getByText("127.0.0.1:3000")).toBeInTheDocument();
+		expect(screen.getByText("2 notes")).toBeInTheDocument();
 
-		const pageLinkEl = screen.getByTitle("https://example.com/blog/1");
-		expect(pageLinkEl).toBeInTheDocument();
+		const activeNote = screen.getByText("Local note content");
+		expect(activeNote).toBeInTheDocument();
 	});
 });

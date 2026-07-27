@@ -1,3 +1,4 @@
+import { buildNoteContextHref } from "@sitecue/shared";
 import type { User } from "@supabase/supabase-js";
 import { Edit3, FileText, Zap } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -16,6 +17,7 @@ export interface ActivityItem {
 	domain?: string;
 	noteType?: "info" | "alert" | "idea";
 	scope?: "exact" | "domain" | "inbox";
+	isResolved?: boolean;
 }
 
 export interface ActivityEvent {
@@ -69,7 +71,9 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 	const [notesResult, draftsResult] = await Promise.all([
 		supabase
 			.from("sitecue_notes")
-			.select("id, content, scope, url_pattern, created_at, note_type")
+			.select(
+				"id, content, scope, url_pattern, created_at, note_type, is_resolved",
+			)
 			.eq("user_id", user.id)
 			.gte("created_at", dateStr)
 			.order("created_at", { ascending: false }),
@@ -109,6 +113,7 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 			domain: extractDomain(note.url_pattern || ""),
 			noteType: (note.note_type as "info" | "alert" | "idea") || undefined,
 			scope: (note.scope as "exact" | "domain" | "inbox") || undefined,
+			isResolved: note.is_resolved,
 		});
 	}
 
@@ -203,15 +208,11 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 											// ドラフト成果物はスタジオの動的ルートへダイレクトパス遷移
 											href = `/studio/${item.id}`;
 										} else {
-											// ノートはスコープに応じてパラメータを厳密に分離マッピング
-											if (item.scope === "inbox") {
-												href = `/notes?view=inbox&noteId=${item.id}`;
-											} else if (item.scope === "domain") {
-												href = `/notes?domain=${encodeURIComponent(item.title)}&view=domains&exact=all&noteId=${item.id}`;
-											} else if (item.scope === "exact") {
-												const targetDomain = item.domain || "inbox";
-												href = `/notes?domain=${encodeURIComponent(targetDomain)}&view=domains&exact=${encodeURIComponent(item.title)}&noteId=${item.id}`;
-											}
+											href = buildNoteContextHref({
+												id: item.id,
+												scope: item.scope,
+												url_pattern: item.title,
+											});
 										}
 
 										// 第1軸: ドットのカラー決定
@@ -273,7 +274,9 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 															•
 														</span>
 														<span
-															className="truncate text-neutral-400 group-hover/item:text-neutral-500 transition-colors w-full leading-none"
+															className={`truncate text-neutral-400 group-hover/item:text-neutral-500 transition-colors w-full leading-none ${
+																item.isResolved ? "line-through opacity-50" : ""
+															}`}
 															title={contentPreview}
 														>
 															{contentPreview}

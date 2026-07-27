@@ -39,6 +39,8 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 ## 5. Server Component Constraints (RSCの掟)
 - **イベントハンドラの禁止**: `page.tsx` や `layout.tsx` などの Server Component 内で、直接 `onClick` や `onChange` などのイベントハンドラを記述したり、`useState` などの React Hooks を呼び出したりすることは**厳禁**。
 - **解決策 (Expand & Contract)**: ボタンのクリックによるトースト通知や状態変更など、インタラクティブな処理が必要な場合は、そのボタン部分のみを純粋な Client Component (`"use client"`) として別ファイル（例: `_components/HogeButton.tsx`）に切り出し、Server Component にインポートして配置すること。
+- **RSC Top-level Blocking の禁止**: ダッシュボード等のポータルページにおいて、すべての通信フェッチを親の `page.tsx` 直下で一括 `await` してSSRレスポンスを止める実装を禁止する。必ずコンポーネント単位で `<Suspense>` を配置し、RSC Streaming を実現すること。
+- **ローカルURLに対する外部 Favicon API リクエストの遮断**: `localhost`, `127.0.0.1`, `0.0.0.0`, `.local` 等のローカルドメインに対しては、Google Favicon API 等の外部ネットワーク通信を呼び出さず、専用のフォールバックアイコン (`Laptop`) を返すこと。
 
 ## 6. Route Protection & Auth Constraints (多層防御の掟)
 - **オプトアウト方式の Middleware**:

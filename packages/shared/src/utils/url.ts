@@ -22,7 +22,7 @@ export function normalizeUrlForGrouping(url: string): string {
 }
 
 export function normalizeUrl(url: string, scope: "domain" | "exact"): string {
-	const safeUrl = getSafeUrl(url);
+	const safeUrl = getSafeUrl(url.startsWith("http") ? url : `https://${url}`);
 	if (!safeUrl) {
 		return normalizeUrlForGrouping(url);
 	}
@@ -47,4 +47,34 @@ export function getScopeUrls(currentUrl: string): {
 		domain: normalizeUrl(currentUrl, "domain"),
 		exact: normalizeUrl(currentUrl, "exact"),
 	};
+}
+
+export interface BuildNoteContextHrefInput {
+	id: string;
+	scope?: "exact" | "domain" | "inbox" | string;
+	url_pattern?: string;
+}
+
+/**
+ * ノートのコンテキストに応じた詳細遷移URL (/notes?...) を統一生成する純粋関数。
+ */
+export function buildNoteContextHref(note: BuildNoteContextHrefInput): string {
+	const { id, scope, url_pattern = "" } = note;
+
+	if (scope === "inbox") {
+		return `/notes?view=inbox&noteId=${encodeURIComponent(id)}`;
+	}
+
+	if (scope === "domain") {
+		const domain = normalizeUrl(url_pattern, "domain") || "inbox";
+		return `/notes?domain=${encodeURIComponent(domain)}&view=domains&exact=all&noteId=${encodeURIComponent(id)}`;
+	}
+
+	if (scope === "exact") {
+		const domain = normalizeUrl(url_pattern, "domain") || "inbox";
+		return `/notes?domain=${encodeURIComponent(domain)}&view=domains&exact=${encodeURIComponent(url_pattern)}&noteId=${encodeURIComponent(id)}`;
+	}
+
+	// デフォルトフォールバック
+	return `/notes?view=inbox&noteId=${encodeURIComponent(id)}`;
 }

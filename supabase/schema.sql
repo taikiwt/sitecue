@@ -179,7 +179,6 @@ CREATE OR REPLACE FUNCTION "public"."get_dashboard_domain_activity"("p_user_id" 
 DECLARE
   result json;
 BEGIN
-  -- セキュリティチェック：認証ユーザーは自身のデータのみ操作可能
   IF auth.uid() IS NOT NULL AND auth.uid() <> p_user_id THEN
     RAISE EXCEPTION 'Access denied';
   END IF;
@@ -206,13 +205,13 @@ BEGIN
     SELECT
       td.domain_name,
       COALESCE(
-        json_agg(json_build_object('id', ln.id, 'content', ln.content) ORDER BY ln.created_at DESC) 
+        json_agg(json_build_object('id', ln.id, 'content', ln.content, 'is_resolved', ln.is_resolved) ORDER BY ln.created_at DESC) 
         FILTER (WHERE ln.id IS NOT NULL), 
         '[]'::json
       ) AS domain_notes
     FROM top_domains td
     LEFT JOIN LATERAL (
-      SELECT id, content, created_at
+      SELECT id, content, is_resolved, created_at
       FROM note_with_domain n2
       WHERE n2.domain_name = td.domain_name AND n2.scope = 'domain'
       ORDER BY n2.created_at DESC
@@ -243,13 +242,13 @@ BEGIN
       tp.domain_name,
       tp.page_url,
       COALESCE(
-        json_agg(json_build_object('id', lpn.id, 'content', lpn.content) ORDER BY lpn.created_at DESC)
+        json_agg(json_build_object('id', lpn.id, 'content', lpn.content, 'is_resolved', lpn.is_resolved) ORDER BY lpn.created_at DESC)
         FILTER (WHERE lpn.id IS NOT NULL),
         '[]'::json
       ) AS page_notes
     FROM top_pages_filtered tp
     LEFT JOIN LATERAL (
-      SELECT id, content, created_at
+      SELECT id, content, is_resolved, created_at
       FROM note_with_domain n2
       WHERE n2.domain_name = tp.domain_name AND n2.url_pattern = tp.page_url AND n2.scope = 'exact'
       ORDER BY n2.created_at DESC
@@ -264,7 +263,6 @@ BEGIN
       json_agg(
         json_build_object(
           'page_url', tp.page_url,
-          -- スキーマに title が存在しないため NULL を返し、フロントの getSafeUrl フォールバックへ確実に渡す
           'page_title', NULL,
           'page_count', tp.page_count,
           'page_notes', COALESCE(pn.page_notes, '[]'::json)

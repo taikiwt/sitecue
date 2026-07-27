@@ -5,6 +5,7 @@ import type {
 	Note,
 	ViewScope as NoteScope,
 } from "@sitecue/shared";
+import { APP_LIMITS } from "@sitecue/shared";
 import { CalendarDays, Inbox, PenTool } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -14,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { APP_LIMITS } from "@sitecue/shared";
 import { useAppendDiary } from "@/hooks/useDiariesQuery";
 import { useCreateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
@@ -140,6 +140,7 @@ export function GlobalNewNoteDialog() {
 					text: capturedContent,
 				});
 				toast.success("Logged");
+				router.refresh();
 				return;
 			}
 
@@ -152,6 +153,7 @@ export function GlobalNewNoteDialog() {
 
 			await createNoteMutation.mutateAsync(input);
 			toast.success("Saved");
+			router.refresh();
 		} catch (err: unknown) {
 			console.error("Failed to save via background pipeline:", err);
 			const errorMessage =

@@ -10,9 +10,14 @@ import { GlobalNewNoteDialog } from "./GlobalNewNoteDialog";
 // next/navigation のモック
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
+const mockRefresh = vi.fn();
 const mockUseSearchParams = vi.fn();
 vi.mock("next/navigation", () => ({
-	useRouter: () => ({ push: mockPush, replace: mockReplace }),
+	useRouter: () => ({
+		push: mockPush,
+		replace: mockReplace,
+		refresh: mockRefresh,
+	}),
 	useSearchParams: () => mockUseSearchParams(),
 }));
 
