@@ -15,6 +15,8 @@ import {
 	TodayRecapCardSkeleton,
 } from "./_components/Skeletons";
 
+export const dynamic = "force-dynamic";
+
 type ComponentAuthProps = {
 	supabase: Awaited<ReturnType<typeof createClient>>;
 	user: User;

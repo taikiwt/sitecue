@@ -1,11 +1,23 @@
 "use client";
 
-import { Globe } from "lucide-react";
+import { Globe, Laptop } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface DomainFaviconProps {
 	domain: string;
 	sizeClassName?: string;
+}
+
+function isLocalDomain(domain: string): boolean {
+	if (!domain) return false;
+	// ポート番号 (:3000 等) およびプロトコルや末尾スラッシュを除去した純粋なホスト名を抽出
+	const host = domain.toLowerCase().trim().split("/")[0].split(":")[0];
+	return (
+		host === "localhost" ||
+		host === "127.0.0.1" ||
+		host === "0.0.0.0" ||
+		host.endsWith(".local")
+	);
 }
 
 export function DomainFavicon({
@@ -15,7 +27,6 @@ export function DomainFavicon({
 	const [isFallback, setIsFallback] = useState(false);
 	const imgRef = useRef<HTMLImageElement>(null);
 
-	// useEffect を早期リターン（if文）よりも「上」に配置
 	useEffect(() => {
 		if (imgRef.current?.complete) {
 			if (
@@ -27,7 +38,15 @@ export function DomainFavicon({
 		}
 	}, []);
 
-	// 早期リターン（条件分岐でのUI変更）は、すべてのフックが宣言し終わった「後」に行う
+	if (isLocalDomain(domain)) {
+		return (
+			<Laptop
+				className={`${sizeClassName} text-neutral-400 shrink-0 object-contain align-middle`}
+				aria-hidden="true"
+			/>
+		);
+	}
+
 	if (isFallback || !domain) {
 		return (
 			<Globe

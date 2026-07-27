@@ -1,8 +1,11 @@
-import type { DashboardDomainActivity } from "@sitecue/shared";
+import {
+	buildNoteContextHref,
+	type DashboardDomainActivity,
+} from "@sitecue/shared";
 import { FileText, FolderOpen } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import { DomainFavicon } from "./DomainFavicon"; //
+import { DomainFavicon } from "./DomainFavicon";
 
 const getFallbackPathname = (urlStr: string) => {
 	try {
@@ -30,7 +33,6 @@ export function DomainDashboardCard({ data }: Props) {
 						className="flex items-center gap-2 text-base-text hover-safe:text-action hover-safe:underline min-w-0"
 					>
 						<DomainFavicon domain={data.domain} />
-
 						<span
 							className="truncate block font-medium text-2xl"
 							title={data.domain}
@@ -58,8 +60,14 @@ export function DomainDashboardCard({ data }: Props) {
 					{data.domain_notes.map((note) => (
 						<Link
 							key={note.id}
-							href={`/notes?domain=${data.domain}&view=domains&noteId=${note.id}`}
-							className="text-xs font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
+							href={buildNoteContextHref({
+								id: note.id,
+								scope: "domain",
+								url_pattern: data.domain,
+							})}
+							className={`text-xs font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block ${
+								note.is_resolved ? "line-through opacity-50" : ""
+							}`}
 						>
 							<FileText
 								className="w-2.5 h-2.5 text-neutral-400 shrink-0 inline-block mr-1"
@@ -95,7 +103,6 @@ export function DomainDashboardCard({ data }: Props) {
 												domain={data.domain}
 												sizeClassName="w-3 h-3"
 											/>
-
 											<span className="text-base text-base-content line-clamp-1 truncate block min-w-0">
 												{page.page_title || getFallbackPathname(page.page_url)}
 											</span>
@@ -115,8 +122,14 @@ export function DomainDashboardCard({ data }: Props) {
 										{page.page_notes.map((note) => (
 											<Link
 												key={note.id}
-												href={`/notes?domain=${data.domain}&view=domains&exact=${encodeURIComponent(page.page_url)}&noteId=${note.id}`}
-												className="text-[11px] font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block"
+												href={buildNoteContextHref({
+													id: note.id,
+													scope: "exact",
+													url_pattern: page.page_url,
+												})}
+												className={`text-[11px] font-normal text-neutral-600 hover-safe:text-action leading-tight truncate font-sans transition-colors block ${
+													note.is_resolved ? "line-through opacity-50" : ""
+												}`}
 											>
 												<FileText
 													className="w-3 h-3 text-neutral-400 shrink-0 inline-block mr-1"

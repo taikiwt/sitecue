@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildNoteContextHref,
 	getSafeUrl,
 	getScopeUrls,
 	normalizeUrl,
@@ -34,5 +35,45 @@ describe("URL Utilities", () => {
 			domain: "sitecue.app",
 			exact: "sitecue.app/notes",
 		});
+	});
+});
+
+describe("buildNoteContextHref", () => {
+	it("generates correct URL for inbox scope", () => {
+		const href = buildNoteContextHref({ id: "note-1", scope: "inbox" });
+		expect(href).toBe("/notes?view=inbox&noteId=note-1");
+	});
+
+	it("generates correct URL with exact=all for domain scope", () => {
+		const href = buildNoteContextHref({
+			id: "note-2",
+			scope: "domain",
+			url_pattern: "127.0.0.1:3000",
+		});
+		expect(href).toBe(
+			"/notes?domain=127.0.0.1%3A3000&view=domains&exact=all&noteId=note-2",
+		);
+	});
+
+	it("generates correct URL with exact parameter for exact page scope", () => {
+		const href = buildNoteContextHref({
+			id: "note-3",
+			scope: "exact",
+			url_pattern: "example.com/blog/1",
+		});
+		expect(href).toBe(
+			`/notes?domain=example.com&view=domains&exact=${encodeURIComponent("example.com/blog/1")}&noteId=note-3`,
+		);
+	});
+
+	it("extracts domain correctly when url_pattern includes http protocol", () => {
+		const href = buildNoteContextHref({
+			id: "note-4",
+			scope: "exact",
+			url_pattern: "https://qiita.com/stock-feed",
+		});
+		expect(href).toBe(
+			`/notes?domain=qiita.com&view=domains&exact=${encodeURIComponent("https://qiita.com/stock-feed")}&noteId=note-4`,
+		);
 	});
 });
