@@ -180,3 +180,56 @@ describe("NotesContainer - URL Normalization & Async Rendering", () => {
 		});
 	});
 });
+
+describe("NotesContainer - Skeleton & Cache Strategy", () => {
+	it("bypasses skeleton immediately (0ms) when cache exists", async () => {
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,
+		);
+
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [
+				{
+					id: "cached-note",
+					content: "Cached note content",
+					url_pattern: "example.com",
+					scope: "inbox",
+					is_pinned: false,
+					sort_order: 0,
+					created_at: new Date().toISOString(),
+				},
+			],
+			isLoading: false,
+		} as unknown as ReturnType<typeof useFetchNotes>);
+
+		render(<NotesContainer />);
+
+		await waitFor(() => {
+			const middlePane = screen.getByTestId("middle-pane");
+			expect(middlePane).toBeInTheDocument();
+			// キャッシュが存在するため loading は false
+			expect(middlePane.getAttribute("data-loading")).toBe("false");
+		});
+	});
+
+	it("holds skeleton for 200ms when fetching fresh data without cache to prevent flicker", async () => {
+		vi.useFakeTimers();
+
+		vi.mocked(useSearchParams).mockReturnValue(
+			new URLSearchParams("") as unknown as ReturnType<typeof useSearchParams>,
+		);
+
+		vi.mocked(useFetchNotes).mockReturnValue({
+			data: [],
+			isLoading: true,
+		} as unknown as ReturnType<typeof useFetchNotes>);
+
+		render(<NotesContainer />);
+
+		// データ取得中かつキャッシュがないため loading は true
+		const middlePane = screen.getByTestId("middle-pane");
+		expect(middlePane.getAttribute("data-loading")).toBe("true");
+
+		vi.useRealTimers();
+	});
+});

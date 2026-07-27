@@ -3,7 +3,8 @@
 import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo } from "react";
+import { SWRBoundary } from "@/components/ui/swr-boundary";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNoteContents, useFetchNotes } from "@/hooks/useNotesQuery";
@@ -12,8 +13,6 @@ import type { Draft, Note, SearchParams } from "../types";
 import { MiddlePaneList } from "./MiddlePaneList";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 import { RightPaneDetail } from "./RightPaneDetail";
-
-const SKELETON_HOLD_MS = 200;
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
@@ -42,7 +41,6 @@ export function NotesContainer() {
 	const { domain, exact } = params;
 	const isNewNote = params.new === "note";
 
-	// 【多層防御の正規化】params.view が exact や domain など旧形式・非正規値の場合は domains へ安全にフォールバック
 	const effectiveView = useMemo(() => {
 		const rawView = params.view as string | undefined;
 		if (
@@ -54,6 +52,19 @@ export function NotesContainer() {
 		return "domains";
 	}, [params.view]);
 
+	// 1. 右ペイン用アイテムの最優先（0ms）ダイレクト抽出
+	// 中ペインの全件計算やフィルタリングの完了を待たず、キャッシュ（notes/drafts）から即時取得する
+	const selectedNote = useMemo(() => {
+		if (!params.noteId) return undefined;
+		return notes.find((n) => n.id === params.noteId);
+	}, [notes, params.noteId]);
+
+	const selectedDraft = useMemo(
+		() =>
+			params.draftId ? drafts.find((d) => d.id === params.draftId) : undefined,
+		[drafts, params.draftId],
+	);
+
 	// クエリデータの準備完了状態（対象ビューに必要なデータが準備できているか判定）
 	const isTabReady = useMemo(() => {
 		if (effectiveView === "drafts") return !isDraftsLoading;
@@ -61,15 +72,11 @@ export function NotesContainer() {
 		return !isNotesLoading && !isDraftsLoading;
 	}, [effectiveView, isDraftsLoading, isDiariesLoading, isNotesLoading]);
 
-	// スケルトン表示保護タイマー管理
-	const [showSkeleton, setShowSkeleton] = useState(true);
-
 	const groupedNotes = useMemo(() => {
 		if (isNotesLoading || isDraftsLoading) return null;
 		return groupNotes(notes, drafts);
 	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
 
-	// Inbox URLのクリーンアップ (domain=inbox の排除)
 	useEffect(() => {
 		if (params.domain === "inbox") {
 			const newParams = new URLSearchParams(searchParams.toString());
@@ -82,7 +89,6 @@ export function NotesContainer() {
 	const isSearchActive = !!params.q || !!params.tags;
 	const query = params.q?.toLowerCase() || "";
 
-	// フィルタリングされた一覧の計算
 	const filteredItems = useMemo(() => {
 		if (!isTabReady) return [];
 
@@ -173,34 +179,8 @@ export function NotesContainer() {
 		isTabReady,
 	]);
 
-	// 初回データロード後の 200ms 保護タイマー ＆ 軽量ケース（5件以下）スキップ処理
-	useEffect(() => {
-		if (!isTabReady) return;
-
-		// 軽量ケース判定: 5件以下かつ文字数が一定以下の場合は0msでスケルトン消去
-		const isLightweight =
-			filteredItems.length <= 5 &&
-			filteredItems.every((item) => {
-				const len = "content" in item && item.content ? item.content.length : 0;
-				return len < 1000;
-			});
-
-		if (isLightweight) {
-			setShowSkeleton(false);
-			return;
-		}
-
-		const timer = setTimeout(() => {
-			setShowSkeleton(false);
-		}, SKELETON_HOLD_MS);
-
-		return () => clearTimeout(timer);
-	}, [isTabReady, filteredItems]);
-
-	// 非同期・ノンブロッキング遅延描画用の用例
 	const deferredFilteredItems = useDeferredValue(filteredItems);
 
-	// 本文の遅延取得 (Hydration)
 	useEffect(() => {
 		if (!isTabReady || deferredFilteredItems.length === 0) return;
 
@@ -216,41 +196,52 @@ export function NotesContainer() {
 		}
 	}, [deferredFilteredItems, isTabReady, fetchContentForIds]);
 
-	const selectedNote = useMemo(() => {
-		if (!params.noteId) return undefined;
-		return notes.find((n) => n.id === params.noteId);
-	}, [notes, params.noteId]);
-
-	const selectedDraft = useMemo(
-		() =>
-			params.draftId ? drafts.find((d) => d.id === params.draftId) : undefined,
-		[drafts, params.draftId],
-	);
-
-	const isListLoading = !isTabReady || showSkeleton;
-
 	return (
 		<ResponsiveNotesLayout
 			selectedNoteId={params.noteId ?? null}
 			selectedDraftId={params.draftId ?? null}
 			selectedDate={params.date ?? null}
 			middleNode={
-				<MiddlePaneList
-					items={deferredFilteredItems}
-					groupedNotes={groupedNotes || { inbox: [], drafts: [], domains: {} }}
-					currentView={effectiveView}
-					currentDomain={domain ?? null}
-					currentExact={exact ?? null}
-					selectedNoteId={params.noteId ?? null}
-					selectedDraftId={params.draftId ?? null}
-					isLoading={isListLoading}
-				/>
+				<SWRBoundary
+					data={isTabReady ? deferredFilteredItems : undefined}
+					isLoading={!isTabReady}
+					fallback={
+						<MiddlePaneList
+							items={[]}
+							groupedNotes={
+								groupedNotes || { inbox: [], drafts: [], domains: {} }
+							}
+							currentView={effectiveView}
+							currentDomain={domain ?? null}
+							currentExact={exact ?? null}
+							selectedNoteId={params.noteId ?? null}
+							selectedDraftId={params.draftId ?? null}
+							isLoading={true}
+						/>
+					}
+				>
+					{(items) => (
+						<MiddlePaneList
+							items={items}
+							groupedNotes={
+								groupedNotes || { inbox: [], drafts: [], domains: {} }
+							}
+							currentView={effectiveView}
+							currentDomain={domain ?? null}
+							currentExact={exact ?? null}
+							selectedNoteId={params.noteId ?? null}
+							selectedDraftId={params.draftId ?? null}
+							isLoading={false}
+						/>
+					)}
+				</SWRBoundary>
 			}
 			rightNode={
 				<RightPaneDetail
 					note={selectedNote}
 					draft={selectedDraft}
 					isNewNote={isNewNote}
+					isLoading={isNotesLoading || isDraftsLoading}
 				/>
 			}
 		/>

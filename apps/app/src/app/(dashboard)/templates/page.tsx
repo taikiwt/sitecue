@@ -25,7 +25,17 @@ async function TemplatesLoader({
 	);
 }
 
-export default async function TemplatesPage({
+export default function TemplatesPageWrapper(props: {
+	searchParams: Promise<{ id?: string }>;
+}) {
+	return (
+		<Suspense fallback={<TemplatesPageSkeleton />}>
+			<TemplatesPage searchParams={props.searchParams} />
+		</Suspense>
+	);
+}
+
+async function TemplatesPage({
 	searchParams,
 }: {
 	searchParams: Promise<{ id?: string }>;

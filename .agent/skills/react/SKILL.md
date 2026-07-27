@@ -50,6 +50,14 @@ description: 楽観的UI、ソート描画、UX等に関するReactのリファ�
    - データベースに保存されない純粋なUIの振る舞い（現在選択中のノートID、検索クエリ文字列、サイドバーの開閉状態、未保存フラグ `isDirty` 等）の管理にのみ使用する。
    - APIのレスポンスデータ（リスト配列など）を Zustand のステートとして保持したり、`addNote` などのアクションで手動操作・同期してはならない。
 
+### ミューテーションにおける二重同期規約 (Dual Sync Rule for Mutations)
+- **原則:** すべてのデータ変更フック (Create, Update, Delete) の `onSuccess` では、以下の2つの処理を**必ずセットで実行**すること。
+  1. **手元キャッシュの 0ms 即時更新 (`setQueriesData`):** 
+     単一キー向けの `setQueryData` ではなく、必ずプレフィックス一致の `setQueriesData` を使用し、配列・検索結果オブジェクト双方の手元キャッシュを即時挿入/置換/削除すること。
+  2. **関連クエリの一括バックグラウンド再検証 (`invalidateQueries`):** 
+     自身のエンティティキー (`NOTES_QUERY_KEY` 等) に加え、トップページが参照する `DASHBOARD_QUERY_KEY` (`["dashboard", "data"]`) などの関連クエリキーを一括無効化・再検証させること。
+
+
 ### 【重要】URL State (SSOT) と Client State (UI) の住み分けの掟
 AIエディタによる「URL一元管理（SSOT）」への過剰適応（すべての状態をURLに同期しようとしてパフォーマンスを破壊する挙動）を物理的に防ぐため、以下の境界線を厳格に遵守すること。
 
@@ -204,6 +212,14 @@ AIエディタによる「URL一元管理（SSOT）」への過剰適応（す�
 - **厳守事項:** 画面の即時同期を伴うライフサイクルでは、必ず **`mutateAsync` を使用し、通信とデータ層のキャッシュ分配の解決を物理的に `await` で100%待機すること**。データ層の要塞化が完全に解決された直後のクリーンな状態になってから、初めて `router.refresh()` を直列実行させる実行パイプラインを構築しなければならない。
 
 ## Partial Skeleton & Non-blocking UI Rules (局所スケルトンとノンブロッキングUI規約)
+
+### SWRBoundary & Partial Skeleton Standard Rules
+- 非同期データ表示用の境界として `apps/app/src/components/ui/swr-boundary.tsx` の `SWRBoundary` を使用すること。
+- `SWRBoundary` 内部に「メモリキャッシュ存在時は 0ms で子要素を即時表示」および「キャッシュ未存在でスケルトン (fallback) を表示した場合は視覚的チラつき防止のため最低 200ms (SKELETON_HOLD_MS) 保持してから滑らかに切り替える」制御ロジックがカプセル化されている。呼び出し側で個別のタイマーを二重実装してはならない。
+- 本文キャッシュなど一部のフィールドが遅延フェッチされるデータに対しては、`isDataReady` プロップを拡張してデータが描画可能（例: `content !== undefined`）かを評価し、キャッシュ存在時は 0ms 即時表示、未存在時のみスケルトン表示を行う制御を行うこと。
+- ルート階層（`page.tsx` の親など）での全画面 `loading.tsx` による一律ブロックは禁止する。
+- ダッシュボードやアプリ内の画面間遷移は必ず `CustomLink` (Soft Navigation) を使用し、App Shell (Slim Rail) を破棄・アンマウントさせないこと。
+
 
 - **外殻・ヘッダーの常時露出 (Unblocked Shell)**:
   - 画面全体のデータ読み込み待ち（`isLoading`）を理由に、ヘッダーや操作バー、ナビゲーション、右詳細ペイン全体をスケルトンや `null` で丸ごと置換・ロックしてはならない。

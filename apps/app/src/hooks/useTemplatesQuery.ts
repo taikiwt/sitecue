@@ -46,7 +46,14 @@ export function useCreateTemplate() {
 			if (error) throw error;
 			return data as Template;
 		},
-		onSuccess: () => {
+		onSuccess: (newTemplate) => {
+			queryClient.setQueriesData<Template[]>(
+				{ queryKey: TEMPLATES_QUERY_KEY },
+				(old) => {
+					if (!old) return [newTemplate];
+					return [...old.filter((t) => t.id !== newTemplate.id), newTemplate];
+				},
+			);
 			queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY });
 		},
 	});
@@ -75,12 +82,16 @@ export function useUpdateTemplate() {
 			return data as Template;
 		},
 		onSuccess: (updatedTemplate) => {
-			queryClient.setQueryData<Template[]>(TEMPLATES_QUERY_KEY, (old) => {
-				if (!old) return old;
-				return old.map((template) =>
-					template.id === updatedTemplate.id ? updatedTemplate : template,
-				);
-			});
+			queryClient.setQueriesData<Template[]>(
+				{ queryKey: TEMPLATES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					return old.map((template) =>
+						template.id === updatedTemplate.id ? updatedTemplate : template,
+					);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY });
 		},
 	});
 }
@@ -100,10 +111,14 @@ export function useDeleteTemplate() {
 			return id;
 		},
 		onSuccess: (deletedId) => {
-			queryClient.setQueryData<Template[]>(TEMPLATES_QUERY_KEY, (old) => {
-				if (!old) return old;
-				return old.filter((template) => template.id !== deletedId);
-			});
+			queryClient.setQueriesData<Template[]>(
+				{ queryKey: TEMPLATES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					return old.filter((template) => template.id !== deletedId);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TEMPLATES_QUERY_KEY });
 		},
 	});
 }

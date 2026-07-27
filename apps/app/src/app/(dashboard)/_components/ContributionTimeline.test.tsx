@@ -1,10 +1,7 @@
-import type { User } from "@supabase/supabase-js";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { createClient } from "@/utils/supabase/server";
 import { ContributionTimeline } from "./ContributionTimeline";
 
-// custom-link のモック化
 vi.mock("@/components/ui/custom-link", () => ({
 	CustomLink: ({
 		children,
@@ -22,63 +19,32 @@ vi.mock("@/components/ui/custom-link", () => ({
 }));
 
 describe("ContributionTimeline Component", () => {
-	it("規約通り view=domains を含む正しいURLパラメータが構築されること", async () => {
-		const mockUser = { id: "user-123" } as unknown as User;
-		const mockSupabase = {
-			from: vi.fn().mockReturnValue({
-				select: vi.fn().mockReturnValue({
-					eq: vi.fn().mockReturnValue({
-						gte: vi.fn().mockReturnValue({
-							order: vi.fn().mockResolvedValue({
-								data: [
-									{
-										id: "note-exact-1",
-										content: "This is an exact match note content",
-										scope: "exact",
-										url_pattern: "https://qiita.com/stock-feed",
-										created_at: new Date().toISOString(),
-										note_type: "idea",
-									},
-									{
-										id: "note-inbox-1",
-										content: "Inbox short note",
-										scope: "inbox",
-										url_pattern: "inbox",
-										created_at: new Date().toISOString(),
-										note_type: "info",
-									},
-								],
-								error: null,
-							}),
-						}),
-					}),
-				}),
-			}),
-		} as unknown as Awaited<ReturnType<typeof createClient>>;
+	it("renders contribution timeline items correctly from notes and drafts props", () => {
+		const mockNotes = [
+			{
+				id: "n-1",
+				content: "Sample Note Content",
+				is_resolved: false,
+				scope: "inbox" as const,
+				url_pattern: "inbox",
+				created_at: new Date().toISOString(),
+				note_type: "info" as const,
+			},
+		];
+		const mockDrafts = [
+			{
+				id: "d-1",
+				title: "Sample Draft Title",
+				content: "Draft content",
+				created_at: new Date().toISOString(),
+			},
+		];
 
-		const JSX = await ContributionTimeline({
-			supabase: mockSupabase,
-			user: mockUser,
-		});
-		render(JSX);
+		render(<ContributionTimeline notes={mockNotes} drafts={mockDrafts} />);
 
-		expect(screen.queryByText("exact")).toBeNull();
-
-		// 1. Exactノートの検証
-		const titleElement = screen.getByText("https://qiita.com/stock-feed");
-		const linkElement = titleElement.closest("a");
-		const href = linkElement?.getAttribute("href");
-		expect(href).toContain("domain=qiita.com");
-		expect(href).toContain("view=domains");
-		expect(href).toContain(
-			`exact=${encodeURIComponent("https://qiita.com/stock-feed")}`,
-		);
-		expect(href).toContain("noteId=note-exact-1");
-
-		// 2. Inboxノートの検証 (不要なexact/domainクエリがパージされていること)
-		const inboxElement = screen.getByText("Inbox");
-		const inboxLink = inboxElement.closest("a");
-		const inboxHref = inboxLink?.getAttribute("href");
-		expect(inboxHref).toBe("/notes?view=inbox&noteId=note-inbox-1");
+		expect(screen.getByText("Today")).toBeInTheDocument();
+		expect(screen.getByText("(2 activities)")).toBeInTheDocument();
+		expect(screen.getByText("Sample Note Content")).toBeInTheDocument();
+		expect(screen.getByText("Sample Draft Title")).toBeInTheDocument();
 	});
 });

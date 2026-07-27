@@ -2,6 +2,8 @@
 
 import type { Draft } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DASHBOARD_QUERY_KEY } from "@/hooks/useDashboardQuery";
+import { NOTES_QUERY_KEY } from "@/hooks/useNotesQuery";
 import { createClient } from "@/utils/supabase/client";
 
 export const DRAFTS_QUERY_KEY = ["drafts"];
@@ -52,8 +54,28 @@ export function useCreateDraft() {
 			if (error) throw error;
 			return data as Draft;
 		},
-		onSuccess: () => {
+		onSuccess: (newDraft) => {
+			queryClient.setQueriesData<
+				Draft[] | { drafts: Draft[]; notes: unknown[] }
+			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {
+				if (!old) return [newDraft];
+				if (Array.isArray(old)) {
+					return [newDraft, ...old.filter((d) => d.id !== newDraft.id)];
+				}
+				if ("drafts" in old) {
+					return {
+						...old,
+						drafts: [
+							newDraft,
+							...old.drafts.filter((d) => d.id !== newDraft.id),
+						],
+					};
+				}
+				return old;
+			});
 			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 		},
 	});
 }
@@ -81,12 +103,26 @@ export function useUpdateDraft() {
 			return data as Draft;
 		},
 		onSuccess: (updatedDraft) => {
-			queryClient.setQueryData<Draft[]>(DRAFTS_QUERY_KEY, (old) => {
+			queryClient.setQueriesData<
+				Draft[] | { drafts: Draft[]; notes: unknown[] }
+			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {
 				if (!old) return old;
-				return old.map((draft) =>
-					draft.id === updatedDraft.id ? updatedDraft : draft,
-				);
+				if (Array.isArray(old)) {
+					return old.map((d) => (d.id === updatedDraft.id ? updatedDraft : d));
+				}
+				if ("drafts" in old) {
+					return {
+						...old,
+						drafts: old.drafts.map((d) =>
+							d.id === updatedDraft.id ? updatedDraft : d,
+						),
+					};
+				}
+				return old;
 			});
+			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 		},
 	});
 }
@@ -106,10 +142,24 @@ export function useDeleteDraft() {
 			return id;
 		},
 		onSuccess: (deletedId) => {
-			queryClient.setQueryData<Draft[]>(DRAFTS_QUERY_KEY, (old) => {
+			queryClient.setQueriesData<
+				Draft[] | { drafts: Draft[]; notes: unknown[] }
+			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {
 				if (!old) return old;
-				return old.filter((draft) => draft.id !== deletedId);
+				if (Array.isArray(old)) {
+					return old.filter((d) => d.id !== deletedId);
+				}
+				if ("drafts" in old) {
+					return {
+						...old,
+						drafts: old.drafts.filter((d) => d.id !== deletedId),
+					};
+				}
+				return old;
 			});
+			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 		},
 	});
 }

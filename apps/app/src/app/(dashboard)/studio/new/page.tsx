@@ -22,10 +22,24 @@ async function NewDraftLoader({
 		template = data;
 	}
 
-	return <DraftEditor template={template} />;
+	return (
+		<Suspense fallback={<StudioEditorSkeleton hasDraftId={false} />}>
+			<DraftEditor template={template} />
+		</Suspense>
+	);
 }
 
-export default async function FocusModePage({
+export default function FocusModePageWrapper(props: {
+	searchParams: Promise<{ template_id?: string }>;
+}) {
+	return (
+		<Suspense fallback={<StudioEditorSkeleton hasDraftId={false} />}>
+			<FocusModePage searchParams={props.searchParams} />
+		</Suspense>
+	);
+}
+
+async function FocusModePage({
 	searchParams,
 }: {
 	searchParams: Promise<{ template_id?: string }>;

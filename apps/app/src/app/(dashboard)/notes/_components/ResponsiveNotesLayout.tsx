@@ -59,7 +59,7 @@ export function ResponsiveNotesLayout({
 	// 1. PC大画面（1024px以上）: 完全3ペイン並列 Flow 配置
 	if (isLargeDesktop) {
 		return (
-			<div className="flex h-full overflow-hidden bg-base-bg font-sans text-action">
+			<div className="hidden lg:flex h-full w-full overflow-hidden bg-base-bg font-sans text-action">
 				<Fragment key="middle">{middleNode}</Fragment>
 				<Fragment key="right">{rightNode}</Fragment>
 			</div>
@@ -69,7 +69,7 @@ export function ResponsiveNotesLayout({
 	// 2. iPad縦持ち（768px 〜 1023px）: 中ペイン固定 ＋ 右詳細部分オーバーレイ
 	if (isTabletPortrait) {
 		return (
-			<div className="relative flex h-full overflow-hidden bg-base-bg font-sans text-action">
+			<div className="hidden md:flex lg:hidden relative h-full w-full overflow-hidden bg-base-bg font-sans text-action">
 				{/* Middle List: 常時固定描画 */}
 				<div className="w-96 shrink-0 h-full overflow-hidden border-r border-base-border">
 					{middleNode}
@@ -99,7 +99,7 @@ export function ResponsiveNotesLayout({
 
 	// 3. モバイル環境（767px以下）: 既存のStack遷移を100%維持
 	return (
-		<div className="flex flex-col h-full overflow-hidden bg-base-bg font-sans text-action">
+		<div className="flex lg:hidden flex-col h-full w-full overflow-hidden bg-base-bg font-sans text-action">
 			<div
 				className={cn(
 					"flex-1 overflow-hidden",

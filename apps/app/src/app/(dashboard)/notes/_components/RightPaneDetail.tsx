@@ -42,6 +42,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { SWRBoundary } from "@/components/ui/swr-boundary";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import {
 	useCreateNote,
@@ -56,9 +57,15 @@ type Props = {
 	note?: Note;
 	draft?: Draft;
 	isNewNote?: boolean;
+	isLoading?: boolean;
 };
 
-export function RightPaneDetail({ note, draft, isNewNote }: Props) {
+export function RightPaneDetail({
+	note,
+	draft,
+	isNewNote,
+	isLoading = false,
+}: Props) {
 	const createNoteMutation = useCreateNote();
 	const updateNoteMutation = useUpdateNote();
 	const deleteNoteMutation = useDeleteNote();
@@ -158,8 +165,14 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 	}, [note?.content, isNewNote]);
 
 	// 2. 物理的な外殻コンテナ構造（Anti-CLS）を破壊しないトップレベルガードの構造化
-	// ① 何も選択されていない空状態のガード
-	if (!note && !draft && !isNewNote && !(currentView === "diaries" && diary)) {
+	// ① 何も選択されていない空状態のガード：isLoading が true の場合はスキップしてスケルトンを表示させる
+	if (
+		!isLoading &&
+		!note &&
+		!draft &&
+		!isNewNote &&
+		!(currentView === "diaries" && diary)
+	) {
 		return (
 			<div className="flex-1 flex flex-col items-center justify-center bg-base-bg text-gray-400 p-8">
 				<MousePointerClick
@@ -805,63 +818,104 @@ export function RightPaneDetail({ note, draft, isNewNote }: Props) {
 							</div>
 						</div>
 					) : (
-						<>
-							{note && note.scope !== "inbox" && (
-								<div className="mb-10">
-									<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
-										Source URL
+						<SWRBoundary
+							key={note?.id ?? draft?.id ?? "none"}
+							data={
+								note ? note.content : draft ? (draft.content ?? "") : undefined
+							}
+							isLoading={
+								isLoading || (note ? note.content === undefined : false)
+							}
+							isDataReady={(content) => content !== undefined}
+							fallback={
+								<div
+									className="space-y-8 animate-pulse py-4"
+									data-testid="detail-skeleton"
+								>
+									{/* Source URL 領域の骨格 */}
+									<div className="mb-10 space-y-2">
+										<div className="h-3 bg-base-surface/60 rounded w-24 uppercase" />
+										<div className="h-12 bg-base-surface/40 rounded-lg border border-base-border/50 w-full" />
 									</div>
-									<div className="flex items-center gap-2 group">
-										{(() => {
-											const formattedUrl = note.url_pattern.startsWith("http")
-												? note.url_pattern
-												: note.url_pattern.includes("localhost") ||
-														note.url_pattern.includes("127.0.0.1")
-													? `http://${note.url_pattern}`
-													: `https://${note.url_pattern}`;
-											return (
-												<>
-													<a
-														href={formattedUrl}
-														target="_blank"
-														rel="noopener noreferrer"
-														className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
-													>
-														{note.url_pattern}
-													</a>
-													<InlineCopyButton
-														text={formattedUrl}
-														className="text-neutral-400 hover:text-action"
-													/>
-												</>
-											);
-										})()}
-									</div>
-								</div>
-							)}
 
-							<div
-								className={cn(
-									"space-y-4",
-									currentResolved && "opacity-50 transition-opacity",
-								)}
-							>
-								<div className="flex items-center justify-between px-1">
-									<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-										{note ? "Note Content" : "Draft Content"}
+									{/* 本文領域の骨格（実表示の min-h-50 ＋ 複数行テキスト段落と構造一致） */}
+									<div className="space-y-4">
+										<div className="flex justify-between items-center px-1">
+											<div className="h-3 bg-base-surface/60 rounded w-28 uppercase" />
+										</div>
+										<div className="space-y-3 min-h-50 rounded-2xl bg-base-surface/30 p-6 border border-base-border/50">
+											<div className="h-4 bg-base-surface/80 rounded w-3/4" />
+											<div className="h-4 bg-base-surface/60 rounded w-1/2" />
+											<div className="h-4 bg-base-surface/40 rounded w-5/6" />
+											<div className="h-4 bg-base-surface/30 rounded w-2/3" />
+											<div className="h-4 bg-base-surface/20 rounded w-4/5" />
+										</div>
 									</div>
-									{content && (
-										<InlineCopyButton
-											text={content}
-											className="text-neutral-400 hover:text-action"
-										/>
+								</div>
+							}
+						>
+							{(content) => (
+								<>
+									{note && note.scope !== "inbox" && (
+										<div className="mb-10">
+											<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
+												Source URL
+											</div>
+											<div className="flex items-center gap-2 group">
+												{(() => {
+													const formattedUrl = note.url_pattern.startsWith(
+														"http",
+													)
+														? note.url_pattern
+														: note.url_pattern.includes("localhost") ||
+																note.url_pattern.includes("127.0.0.1")
+															? `http://${note.url_pattern}`
+															: `https://${note.url_pattern}`;
+													return (
+														<>
+															<a
+																href={formattedUrl}
+																target="_blank"
+																rel="noopener noreferrer"
+																className="text-gray-600 underline hover:text-action break-all text-sm flex-1 bg-base-surface p-3 rounded-lg border border-base-border transition-colors"
+															>
+																{note.url_pattern}
+															</a>
+															<InlineCopyButton
+																text={formattedUrl}
+																className="text-neutral-400 hover:text-action"
+															/>
+														</>
+													);
+												})()}
+											</div>
+										</div>
 									)}
-								</div>
-								<div className="min-h-50 rounded-2xl">
-									<MarkdownRenderer content={content} />
-								</div>
-							</div>
-						</>
+
+									<div
+										className={cn(
+											"space-y-4",
+											currentResolved && "opacity-50 transition-opacity",
+										)}
+									>
+										<div className="flex items-center justify-between px-1">
+											<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+												{note ? "Note Content" : "Draft Content"}
+											</div>
+											{content && (
+												<InlineCopyButton
+													text={content}
+													className="text-neutral-400 hover:text-action"
+												/>
+											)}
+										</div>
+										<div className="min-h-50 rounded-2xl">
+											<MarkdownRenderer content={content} />
+										</div>
+									</div>
+								</>
+							)}
+						</SWRBoundary>
 					)}
 					<div className="mt-8 pt-4 border-t border-base-border text-xs text-neutral-400">
 						<dl className="grid grid-cols-[100px_1fr] gap-y-2">
