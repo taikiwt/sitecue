@@ -60,13 +60,12 @@ export async function fetchDashboardOverviewData(
 	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 	const dateStr = sevenDaysAgo.toISOString();
 
+	// 重複クエリ（全期間のrecentNotes/recentDrafts）を排除し、初期並列クエリを5つに一元化
 	const [
 		{ count: todayNotes },
 		{ count: todayDrafts },
 		{ data: notes7dData },
 		{ data: drafts7dData },
-		{ data: recentNotes },
-		{ data: recentDrafts },
 		domainActivities,
 	] = await Promise.all([
 		supabase
@@ -93,20 +92,35 @@ export async function fetchDashboardOverviewData(
 			.eq("user_id", userId)
 			.gte("created_at", dateStr)
 			.order("created_at", { ascending: false }),
-		supabase
+		fetchDashboardDomainActivity(supabase, userId, 6),
+	]);
+
+	const notes7d = (notes7dData as DashboardOverviewData["notes7d"]) ?? [];
+	const drafts7d = (drafts7dData as DashboardOverviewData["drafts7d"]) ?? [];
+
+	// 過去7日間のデータからインメモリで直近5件を取得
+	let recentNotes: DashboardOverviewData["recentNotes"] = notes7d.slice(0, 5);
+	// 過去7日間のデータが5件未満の場合は、全期間の直近5件をフォールバックフェッチ
+	if (notes7d.length < 5) {
+		const { data: fallbackNotes } = await supabase
 			.from("sitecue_notes")
 			.select("id, content, is_resolved, scope, url_pattern, created_at")
 			.eq("user_id", userId)
 			.order("created_at", { ascending: false })
-			.limit(5),
-		supabase
+			.limit(5);
+		recentNotes = (fallbackNotes as DashboardOverviewData["recentNotes"]) ?? [];
+	}
+
+	let recentDrafts: DashboardOverviewData["recentDrafts"] = drafts7d.slice(0, 5);
+	if (drafts7d.length < 5) {
+		const { data: fallbackDrafts } = await supabase
 			.from("sitecue_drafts")
 			.select("id, title, content, created_at")
 			.eq("user_id", userId)
 			.order("created_at", { ascending: false })
-			.limit(5),
-		fetchDashboardDomainActivity(supabase, userId, 6),
-	]);
+			.limit(5);
+		recentDrafts = (fallbackDrafts as DashboardOverviewData["recentDrafts"]) ?? [];
+	}
 
 	return {
 		todayTotal: (todayNotes ?? 0) + (todayDrafts ?? 0),
@@ -124,12 +138,12 @@ export async function fetchDashboardOverviewData(
 			.toUpperCase(),
 		currentYear: year.toString(),
 		currentMonth: month,
-		noteCount7d: notes7dData?.length ?? 0,
-		draftCount7d: drafts7dData?.length ?? 0,
-		recentNotes: (recentNotes as DashboardOverviewData["recentNotes"]) ?? [],
-		recentDrafts: (recentDrafts as DashboardOverviewData["recentDrafts"]) ?? [],
+		noteCount7d: notes7d.length,
+		draftCount7d: drafts7d.length,
+		recentNotes,
+		recentDrafts,
 		domainActivities: domainActivities ?? [],
-		notes7d: (notes7dData as DashboardOverviewData["notes7d"]) ?? [],
-		drafts7d: (drafts7dData as DashboardOverviewData["drafts7d"]) ?? [],
+		notes7d,
+		drafts7d,
 	};
 }
