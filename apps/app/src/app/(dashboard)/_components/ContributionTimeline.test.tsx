@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ContributionTimeline } from "./ContributionTimeline";
@@ -19,14 +20,14 @@ vi.mock("@/components/ui/custom-link", () => ({
 }));
 
 describe("ContributionTimeline Component", () => {
-	it("renders contribution timeline items correctly from notes and drafts props", () => {
+	it("renders captured notes and created drafts grouped by date", () => {
 		const mockNotes = [
 			{
 				id: "n-1",
 				content: "Sample Note Content",
 				is_resolved: false,
-				scope: "inbox" as const,
-				url_pattern: "inbox",
+				scope: "domain" as const,
+				url_pattern: "github.com",
 				created_at: new Date().toISOString(),
 				note_type: "info" as const,
 			},
@@ -43,7 +44,8 @@ describe("ContributionTimeline Component", () => {
 		render(<ContributionTimeline notes={mockNotes} drafts={mockDrafts} />);
 
 		expect(screen.getByText("Today")).toBeInTheDocument();
-		expect(screen.getByText("(2 activities)")).toBeInTheDocument();
+		expect(screen.getByText("Captured Notes")).toBeInTheDocument();
+		expect(screen.getByText("Created Drafts")).toBeInTheDocument();
 		expect(screen.getByText("Sample Note Content")).toBeInTheDocument();
 		expect(screen.getByText("Sample Draft Title")).toBeInTheDocument();
 	});

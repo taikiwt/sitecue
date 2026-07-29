@@ -7,7 +7,7 @@ import { SWRBoundary } from "@/components/ui/swr-boundary";
 import { useFetchDashboardData } from "@/hooks/useDashboardQuery";
 import { AppendDiaryButton } from "./AppendDiaryButton";
 import { ContributionTimeline } from "./ContributionTimeline";
-import { DomainFavicon } from "./DomainFavicon";
+import { DomainDashboardCard } from "./DomainDashboardCard";
 import {
 	ContributionTimelineSkeleton,
 	DomainDashboardGridSkeleton,
@@ -307,67 +307,7 @@ export function DashboardContainer() {
 								) : (
 									<div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
 										{data.domainActivities.map((act) => (
-											<div
-												key={act.domain}
-												className="border border-base-border rounded-xl p-5 flex flex-col gap-4"
-											>
-												<div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-center w-full pb-3 border-b border-base-border/50">
-													<div className="flex items-center min-w-0 gap-2">
-														<a
-															href={`https://${act.domain}`}
-															target="_blank"
-															rel="noopener noreferrer"
-															className="flex items-center gap-2 text-base-text hover-safe:text-action hover-safe:underline min-w-0"
-														>
-															<DomainFavicon domain={act.domain} />
-															<span
-																className="truncate block font-medium text-2xl"
-																title={act.domain}
-															>
-																{act.domain}
-															</span>
-														</a>
-														<span className="text-[10px] text-neutral-400 font-mono shrink-0">
-															{act.total_count} notes
-														</span>
-													</div>
-													<div className="shrink-0">
-														<Link
-															className="inline-flex items-center justify-center rounded-full border border-base-border bg-base-bg px-4 py-2 text-xs font-bold hover-safe:bg-base-surface"
-															href={`/notes?domain=${encodeURIComponent(act.domain)}&view=domains`}
-														>
-															Open
-														</Link>
-													</div>
-												</div>
-												{act.domain_notes.length > 0 && (
-													<div className="flex flex-col gap-1.5">
-														{act.domain_notes.map((n) => (
-															<Link
-																key={n.id}
-																href={buildNoteContextHref({
-																	id: n.id,
-																	scope: "domain",
-																	url_pattern: act.domain,
-																})}
-																className={`text-xs font-normal font-sans text-neutral-600 hover-safe:text-action transition-colors truncate block leading-tight ${
-																	n.is_resolved ? "line-through opacity-50" : ""
-																}`}
-															>
-																<FileText
-																	aria-hidden="true"
-																	className="w-2.5 h-2.5 text-neutral-400 shrink-0 inline-block mr-1"
-																/>
-																{n.content
-																	? n.content
-																			.substring(0, 45)
-																			.replace(/[#*`-]/g, "")
-																	: "Untitled note"}
-															</Link>
-														))}
-													</div>
-												)}
-											</div>
+											<DomainDashboardCard data={act} key={act.domain} />
 										))}
 									</div>
 								)}

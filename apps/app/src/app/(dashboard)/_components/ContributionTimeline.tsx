@@ -134,7 +134,7 @@ export function ContributionTimeline({
 		});
 
 	return (
-		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-4 w-full min-w-0">
+		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-4 w-full min-w-0 min-h-[160px]">
 			{dailyActivities.map((day) => (
 				<div
 					key={day.date}

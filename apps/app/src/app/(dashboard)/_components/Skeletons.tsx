@@ -156,7 +156,7 @@ export function DomainDashboardGridSkeleton() {
 
 export function ContributionTimelineSkeleton() {
 	return (
-		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-6 w-full min-w-0">
+		<div className="flex flex-col border-l border-base-border ml-2 pl-4 gap-6 w-full min-w-0 min-h-[160px]">
 			{["skel-1", "skel-2"].map((id) => (
 				<div key={id} className="flex flex-col gap-3">
 					<div className="flex items-center gap-2">

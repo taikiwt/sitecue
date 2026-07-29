@@ -30,6 +30,11 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+	// 外部ドメインや特殊スキームに対する例外安全バイパス
+	if (!event.request.url.startsWith(self.location.origin)) {
+		return;
+	}
+
 	if (event.request.method !== "GET") return;
 
 	const url = new URL(event.request.url);
@@ -78,9 +83,13 @@ self.addEventListener("fetch", (event) => {
 					}
 					return networkResponse;
 				})
-				.catch(() => cachedResponse);
+				.catch((_error) => {
+					return cachedResponse || new Response("", { status: 504 });
+				});
 
 			return cachedResponse || fetchPromise;
+		}).catch((_error) => {
+			return new Response("", { status: 504 });
 		}),
 	);
 });
