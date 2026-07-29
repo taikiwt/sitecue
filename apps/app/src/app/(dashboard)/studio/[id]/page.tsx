@@ -32,10 +32,12 @@ async function DraftEditorLoader({
 	};
 
 	return (
-		<DraftEditor
-			initialDraft={formattedDraft}
-			template={formattedDraft.sitecue_templates}
-		/>
+		<Suspense fallback={<StudioEditorSkeleton hasDraftId={true} />}>
+			<DraftEditor
+				initialDraft={formattedDraft}
+				template={formattedDraft.sitecue_templates}
+			/>
+		</Suspense>
 	);
 }
 
@@ -45,7 +47,15 @@ interface DraftPageProps {
 	}>;
 }
 
-export default async function DraftEditPage({ params }: DraftPageProps) {
+export default function DraftEditPageWrapper(props: DraftPageProps) {
+	return (
+		<Suspense fallback={<StudioEditorSkeleton hasDraftId={true} />}>
+			<DraftEditPage params={props.params} />
+		</Suspense>
+	);
+}
+
+async function DraftEditPage({ params }: DraftPageProps) {
 	const { id } = await params;
 	const currentPath = `/studio/${id}`;
 

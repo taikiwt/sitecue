@@ -14,11 +14,14 @@ import {
 } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Draft } from "@/app/(dashboard)/notes/types";
+import { DASHBOARD_QUERY_KEY } from "@/hooks/useDashboardQuery";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
 
 export function useFetchNotes() {
+	const queryClient = useQueryClient();
+
 	return useQuery({
 		queryKey: NOTES_QUERY_KEY,
 		staleTime: 5 * 60 * 1000, // 5分間はバックグラウンドフェッチによる上書きを防ぐ
@@ -30,7 +33,24 @@ export function useFetchNotes() {
 			if (!user) throw new Error("User not authenticated");
 
 			const metadatas = await fetchNoteMetadatas(supabase, user.id);
-			return metadatas as unknown as Note[];
+
+			// 💡 既存の TanStack Query キャッシュから保存済みの本文 (content) を保護・マージする
+			const existingCache = queryClient.getQueryData<Note[]>(NOTES_QUERY_KEY);
+			const existingContentMap = new Map(
+				existingCache
+					?.filter((n) => n.content !== undefined)
+					.map((n) => [n.id, n.content]),
+			);
+
+			return metadatas.map((meta) => {
+				const existingContent = existingContentMap.get(meta.id);
+				return {
+					...meta,
+					...(existingContent !== undefined
+						? { content: existingContent }
+						: {}),
+				};
+			}) as unknown as Note[];
 		},
 	});
 }
@@ -48,8 +68,48 @@ export function useCreateNote() {
 
 			return await createNoteEntity(supabase, user.id, input);
 		},
-		onSuccess: () => {
+		onSuccess: (newNote) => {
+			const sortNotes = (notes: Note[]) => {
+				return [...notes].sort((a, b) => {
+					if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+					if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+					return (
+						new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+					);
+				});
+			};
+
+			// 1. 手元キャッシュへ 0ms 即時追加
+			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return [newNote as Note];
+					if (Array.isArray(old)) {
+						const exists = old.some((n) => n.id === newNote.id);
+						const updated = exists
+							? old.map((n) => (n.id === newNote.id ? (newNote as Note) : n))
+							: [newNote as Note, ...old];
+						return sortNotes(updated);
+					}
+					if ("notes" in old) {
+						const exists = old.notes.some((n) => n.id === newNote.id);
+						const updated = exists
+							? old.notes.map((n) =>
+									n.id === newNote.id ? (newNote as Note) : n,
+								)
+							: [newNote as Note, ...old.notes];
+						return {
+							...old,
+							notes: sortNotes(updated),
+						};
+					}
+					return old;
+				},
+			);
+
+			// 2. 関連キャッシュを一括バックグラウンド再検証
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 		},
 	});
 }
@@ -118,6 +178,8 @@ export function useUpdateNote() {
 					return old;
 				},
 			);
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 		},
 	});
 }
@@ -131,10 +193,25 @@ export function useDeleteNote() {
 			return await deleteNoteEntity(supabase, id);
 		},
 		onSuccess: (deletedId) => {
-			queryClient.setQueryData<Note[]>(NOTES_QUERY_KEY, (old) => {
-				if (!old) return old;
-				return old.filter((note) => note.id !== deletedId);
-			});
+			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					if (Array.isArray(old)) {
+						return old.filter((note) => note.id !== deletedId);
+					}
+					if ("notes" in old) {
+						return {
+							...old,
+							notes: old.notes.filter((note) => note.id !== deletedId),
+						};
+					}
+					return old;
+				},
+			);
+
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 		},
 	});
 }
@@ -195,6 +272,7 @@ export function useUpsertNotes() {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 		},
 	});
 }
@@ -209,6 +287,7 @@ export function useDeleteNotes() {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 		},
 	});
 }

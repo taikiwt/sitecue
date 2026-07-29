@@ -1,14 +1,10 @@
+"use client";
+
 import { buildNoteContextHref } from "@sitecue/shared";
-import type { User } from "@supabase/supabase-js";
+import type { DashboardOverviewData } from "@sitecue/shared/dal";
 import { Edit3, FileText, Zap } from "lucide-react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
-import type { createClient } from "@/utils/supabase/server";
 import { DomainFavicon } from "./DomainFavicon";
-
-type Props = {
-	supabase: Awaited<ReturnType<typeof createClient>>;
-	user: User;
-};
 
 export interface ActivityItem {
 	id: string;
@@ -42,52 +38,29 @@ function getLocalDateString(date: Date) {
 }
 
 function getDisplayDate(dateStr: string) {
-	const today = getLocalDateString(new Date());
-	const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
-
-	if (dateStr === today) return "Today";
-	if (dateStr === yesterday) return "Yesterday";
-
-	const dateObj = new Date(dateStr);
-	return dateObj.toLocaleDateString("en-US", {
+	const todayStr = getLocalDateString(new Date());
+	if (dateStr === todayStr) return "Today";
+	const d = new Date(`${dateStr}T00:00:00`);
+	return d.toLocaleDateString("en-US", {
 		month: "short",
 		day: "numeric",
-		year: "numeric",
+		weekday: "short",
 	});
 }
 
 function extractDomain(url: string): string {
 	if (!url || url === "inbox") return "inbox";
-	// プロトコルやwwwを除去し、最初のスラッシュまでを取得
 	const cleanUrl = url.replace(/^(?:https?:\/\/)?(?:www\.)?/, "");
 	return cleanUrl.split("/")[0];
 }
 
-export async function ContributionTimeline({ supabase, user }: Props) {
-	const sevenDaysAgo = new Date();
-	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-	const dateStr = sevenDaysAgo.toISOString();
-
-	const [notesResult, draftsResult] = await Promise.all([
-		supabase
-			.from("sitecue_notes")
-			.select(
-				"id, content, scope, url_pattern, created_at, note_type, is_resolved",
-			)
-			.eq("user_id", user.id)
-			.gte("created_at", dateStr)
-			.order("created_at", { ascending: false }),
-		supabase
-			.from("sitecue_drafts")
-			.select("id, title, content, created_at")
-			.eq("user_id", user.id)
-			.gte("created_at", dateStr)
-			.order("created_at", { ascending: false }),
-	]);
-
-	const notes = notesResult.data || [];
-	const drafts = draftsResult.data || [];
-
+export function ContributionTimeline({
+	notes = [],
+	drafts = [],
+}: {
+	notes?: DashboardOverviewData["notes7d"];
+	drafts?: DashboardOverviewData["drafts7d"];
+}) {
 	if (notes.length === 0 && drafts.length === 0) {
 		return (
 			<div className="rounded-xl border border-dashed border-base-border p-8 text-center text-sm text-neutral-500">
@@ -111,8 +84,8 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 			title: note.scope === "inbox" ? "Inbox" : note.url_pattern || "",
 			content: note.content || "",
 			domain: extractDomain(note.url_pattern || ""),
-			noteType: (note.note_type as "info" | "alert" | "idea") || undefined,
-			scope: (note.scope as "exact" | "domain" | "inbox") || undefined,
+			noteType: note.note_type,
+			scope: note.scope,
 			isResolved: note.is_resolved,
 		});
 	}
@@ -167,9 +140,7 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 					key={day.date}
 					className="relative flex flex-col gap-2 group w-full min-w-0"
 				>
-					{/* 日ごとの左ノード */}
 					<div className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-600 ring-4 ring-base-bg transition-transform duration-300 group-hover:scale-125" />
-
 					<div className="flex items-center gap-2">
 						<span className="text-xs font-semibold text-action">
 							{day.displayDate}
@@ -188,13 +159,13 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 								<div className="flex items-center gap-1.5 text-[9px] font-mono uppercase tracking-wider text-neutral-400">
 									{event.type === "note_captured" ? (
 										<FileText
-											className="w-2.5 h-2.5 text-neutral-400"
 											aria-hidden="true"
+											className="w-2.5 h-2.5 text-neutral-400"
 										/>
 									) : (
 										<Edit3
-											className="w-3 h-3 text-neutral-400"
 											aria-hidden="true"
+											className="w-3 h-3 text-neutral-400"
 										/>
 									)}
 									<span>{event.label}</span>
@@ -203,9 +174,7 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 								<div className="flex flex-col w-full min-w-0">
 									{event.items.map((item) => {
 										let href = "";
-
 										if (event.type === "draft_created") {
-											// ドラフト成果物はスタジオの動的ルートへダイレクトパス遷移
 											href = `/studio/${item.id}`;
 										} else {
 											href = buildNoteContextHref({
@@ -215,8 +184,7 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 											});
 										}
 
-										// 第1軸: ドットのカラー決定
-										let dotColor = "bg-action"; // Draftsデフォルト
+										let dotColor = "bg-action";
 										if (event.type === "note_captured") {
 											dotColor = "bg-neutral-400";
 											if (item.noteType === "idea") dotColor = "bg-note-idea";
@@ -224,7 +192,6 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 											if (item.noteType === "alert") dotColor = "bg-note-alert";
 										}
 
-										// コンテンツプレビューのクリーンアップ
 										const contentPreview = item.content
 											? item.content.replace(/[#*`-]/g, "")
 											: "No content preview";
@@ -235,16 +202,13 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 												href={href}
 												className="grid grid-cols-[12px_1fr] gap-3 items-center text-xs text-neutral-500 hover-safe:text-action transition-colors w-full min-w-0 group/item"
 											>
-												{/* 第1軸: 垂直ロックされたドット */}
 												<div className="flex md:items-center justify-center h-5 w-3 shrink-0">
 													<div
 														className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`}
 													/>
 												</div>
 
-												{/* 第2軸: コンテキスト＆コンテンツ */}
 												<div className="grid grid-cols-1 md:grid-cols-[minmax(0,auto)_minmax(0,1fr)] items-center gap-x-3 md:gap-y-1 min-w-0 w-full min-h-[20px]">
-													{/* コンテキスト領域 */}
 													<div className="flex items-center gap-2 min-w-0 shrink-0 h-5">
 														{event.type === "note_captured" &&
 															item.scope !== "inbox" && (
@@ -256,8 +220,8 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 														{event.type === "note_captured" &&
 															item.scope === "inbox" && (
 																<Zap
-																	className="w-3 h-3 text-yellow-500 shrink-0"
 																	aria-hidden="true"
+																	className="w-3 h-3 text-yellow-500 shrink-0"
 																/>
 															)}
 														<span
@@ -268,7 +232,6 @@ export async function ContributionTimeline({ supabase, user }: Props) {
 														</span>
 													</div>
 
-													{/* コンテンツ領域 */}
 													<div className="flex items-center gap-2 min-w-0 w-full h-5">
 														<span className="hidden md:inline text-neutral-300 shrink-0 select-none leading-none">
 															•

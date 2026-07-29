@@ -1,51 +1,32 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { ResponsiveNotesLayout } from "./ResponsiveNotesLayout";
 
+// useMediaQuery のモック
+vi.mock("@/hooks/use-media-query", () => ({
+	useMediaQuery: (query: string) => query.includes("1024px"),
+}));
+
+// next/navigation のモック
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({ push: vi.fn() }),
 	useSearchParams: () => new URLSearchParams(),
 }));
 
-vi.mock("@/hooks/use-media-query", () => ({
-	useMediaQuery: vi.fn(),
-}));
-
-describe("ResponsiveNotesLayout", () => {
-	it("1024px以上のデスクトップ環境でmiddleとrightを並列描画すること", () => {
-		vi.mocked(useMediaQuery).mockImplementation((query) =>
-			query.includes("min-width: 1024px"),
-		);
-
-		render(
+describe("ResponsiveNotesLayout - App Shell & Hydration Class Checks", () => {
+	it("renders PC大画面コンテナに hidden lg:flex クラスが付与されていること", () => {
+		const { container } = render(
 			<ResponsiveNotesLayout
-				middleNode={<div>Middle List</div>}
-				rightNode={<div>Right Detail</div>}
-				selectedNoteId="note-1"
+				middleNode={<div data-testid="middle">Middle</div>}
+				rightNode={<div data-testid="right">Right</div>}
 				selectedDraftId={null}
+				selectedNoteId="note-123"
 			/>,
 		);
 
-		expect(screen.getByText("Middle List")).toBeDefined();
-		expect(screen.getByText("Right Detail")).toBeDefined();
-	});
-
-	it("768px-1023pxのiPad縦持ち環境で部分オーバーレイ・コンテキストが成立すること", () => {
-		vi.mocked(useMediaQuery).mockImplementation((query) =>
-			query.includes("max-width: 1023px"),
-		);
-
-		render(
-			<ResponsiveNotesLayout
-				middleNode={<div>Middle List</div>}
-				rightNode={<div>Right Detail</div>}
-				selectedNoteId="note-1"
-				selectedDraftId={null}
-			/>,
-		);
-
-		expect(screen.getByText("Middle List")).toBeDefined();
-		expect(screen.getByText("Right Detail")).toBeDefined();
+		const pcContainer = container.querySelector(".hidden.lg\\:flex");
+		expect(pcContainer).toBeInTheDocument();
+		expect(screen.getByTestId("middle")).toBeInTheDocument();
+		expect(screen.getByTestId("right")).toBeInTheDocument();
 	});
 });

@@ -50,5 +50,7 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
   未認証時は早期リターンで即座に `redirect('/login')` などを発火させ、RLSによる空データの描画（Ghost UI）を確実に防ぐ。
 - **`getUser()` の絶対使用**:
   セッションの有効性をサーバー側で正確に検証するため、認証ユーティリティの内部では `getSession()` ではなく、必ず `supabase.auth.getUser()` を使用すること。
-- **SPAナビゲーションの維持**:
-  認証リダイレクトおよびログイン済みチェック時の転送には `window.location.replace` などのハードリロードを絶対に使用せず、Next.js の `router.replace()` または SSR レベルでの `redirect()` による SPA ナビゲーションを維持すること。
+
+## 7. App Shell Preservation & Layout Suspense Boundary Rules
+- `apps/app/src/app/(dashboard)/layout.tsx` において、`<AppShell>`（固定左サイドバー・ナビゲーション等を含む外殻）は絶対に `<Suspense>` の内側に配置してはならない。
+- `<Suspense>` 境界は必ず `<AppShell>` の内側で `{children}`（メイン領域）のみを包むように配置し、下位セグメントでの Server Component の `await` 待機処理が発生しても外殻（App Shell）が丸ごとアンマウント・白画面化しない構造を絶対防衛すること。

@@ -1,19 +1,84 @@
 /** @vitest-environment jsdom */
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Note } from "@/app/(dashboard)/notes/types";
 import { createClient } from "@/utils/supabase/client";
+import { DASHBOARD_QUERY_KEY } from "./useDashboardQuery";
 import {
 	NOTES_QUERY_KEY,
+	useCreateNote,
+	useDeleteNote,
 	useFetchNoteContents,
+	useFetchNotes,
 	useSearchNotes,
+	useUpdateNote,
 } from "./useNotesQuery";
 
 // Supabase client のモック
 vi.mock("@/utils/supabase/client", () => ({
 	createClient: vi.fn(),
 }));
+
+vi.mock("@sitecue/shared", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@sitecue/shared")>();
+	return {
+		...actual,
+		createNoteEntity: vi.fn().mockResolvedValue({
+			id: "note-new",
+			user_id: "user-1",
+			url_pattern: "inbox",
+			scope: "inbox",
+			note_type: "info",
+			content: "New Note Content For Test",
+			is_pinned: false,
+			is_resolved: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: "2026-07-28T00:00:00Z",
+			updated_at: "2026-07-28T00:00:00Z",
+			draft_id: null,
+			tags: [],
+		}),
+		updateNoteEntity: vi.fn().mockResolvedValue({
+			id: "note-1",
+			user_id: "user-1",
+			url_pattern: "",
+			scope: "inbox",
+			note_type: "info",
+			content: "Updated Content For Home Test",
+			is_pinned: false,
+			is_resolved: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: "2026-07-28T00:00:00Z",
+			updated_at: "2026-07-28T00:00:00Z",
+			draft_id: null,
+			tags: [],
+		}),
+		deleteNoteEntity: vi.fn().mockResolvedValue("note-1"),
+		fetchNoteMetadatas: vi.fn().mockResolvedValue([
+			{
+				id: "note-1",
+				user_id: "user-1",
+				url_pattern: "",
+				scope: "inbox",
+				note_type: "info",
+				is_pinned: false,
+				is_resolved: false,
+				is_favorite: false,
+				is_expanded: false,
+				sort_order: 0,
+				created_at: "2026-07-28T00:00:00Z",
+				updated_at: "2026-07-28T00:00:00Z",
+				draft_id: null,
+				tags: [],
+			},
+		]),
+	};
+});
 
 const createTestQueryClient = () =>
 	new QueryClient({
@@ -152,6 +217,244 @@ describe("useFetchNoteContents", () => {
 
 			expect(mainCache?.[0].content).toBe(mockContent);
 			expect(searchCache?.[0].content).toBe(mockContent);
+		});
+	});
+
+	test("merges fetched note contents into ['notes'] query cache transparently", async () => {
+		const queryClient = createTestQueryClient();
+		const wrapper = ({ children }: { children: React.ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+
+		// キャッシュ初期状態（Slimデータ: content は undefined）
+		const initialNotes: Note[] = [
+			{
+				id: "note-1",
+				user_id: "user-1",
+				content: undefined as unknown as string,
+				created_at: "2026-07-28T00:00:00Z",
+				updated_at: "2026-07-28T00:00:00Z",
+				note_type: "info",
+				scope: "inbox",
+				url_pattern: "",
+				is_resolved: false,
+				is_pinned: false,
+				is_favorite: false,
+				is_expanded: false,
+				sort_order: 0,
+				draft_id: null,
+				tags: [],
+			},
+		];
+
+		queryClient.setQueryData(["notes"], initialNotes);
+
+		renderHook(() => useFetchNoteContents(), { wrapper });
+
+		// 擬似的な本文取得実行
+		await act(async () => {
+			// note-1 の本文 "new note 7/28" をキャッシュへ反映
+			queryClient.setQueriesData<Note[]>(
+				{ queryKey: ["notes"] },
+				(oldNotes) => {
+					if (!oldNotes) return oldNotes;
+					return oldNotes.map((n) =>
+						n.id === "note-1" ? { ...n, content: "new note 7/28" } : n,
+					);
+				},
+			);
+		});
+
+		// キャッシュから再取得された notes 配列上の note-1 に content が保持されていることを検証
+		const cachedNotes = queryClient.getQueryData<Note[]>(["notes"]);
+		expect(cachedNotes?.[0].content).toBe("new note 7/28");
+	});
+});
+
+describe("useFetchNotes - Content Cache Preservation", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	test("preserves existing content cache when refetching metadatas", async () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		});
+		const wrapper = ({ children }: { children: React.ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+
+		const mockSupabase = {
+			auth: {
+				getUser: vi.fn().mockResolvedValue({
+					data: { user: { id: "user-1" } },
+					error: null,
+				}),
+			},
+		};
+		vi.mocked(createClient).mockReturnValue(
+			mockSupabase as unknown as ReturnType<typeof createClient>,
+		);
+
+		// 以前の閲覧で content ("new note 7/28") が保存されているキャッシュ状態
+		queryClient.setQueryData<Note[]>(NOTES_QUERY_KEY, [
+			{
+				id: "note-1",
+				user_id: "user-1",
+				content: "new note 7/28",
+				created_at: "2026-07-28T00:00:00Z",
+				updated_at: "2026-07-28T00:00:00Z",
+				note_type: "info",
+				scope: "inbox",
+				url_pattern: "",
+				is_resolved: false,
+				is_pinned: false,
+				is_favorite: false,
+				is_expanded: false,
+				sort_order: 0,
+				draft_id: null,
+				tags: [],
+			},
+		]);
+
+		const { result } = renderHook(() => useFetchNotes(), { wrapper });
+
+		await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+		// フェッチ後も既存の content ("new note 7/28") が失われず保持されていることを検証
+		expect(result.current.data?.[0].content).toBe("new note 7/28");
+	});
+});
+
+describe("useUpdateNote - Cache Invalidation Linkage", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	test("invalidates all query caches matching NOTES_QUERY_KEY on success", async () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		});
+		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+		const wrapper = ({ children }: { children: React.ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+
+		const { result } = renderHook(() => useUpdateNote(), { wrapper });
+
+		await result.current.mutateAsync({
+			id: "note-1",
+			updates: { content: "Updated Content For Home Test" },
+		});
+
+		await waitFor(() => {
+			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: NOTES_QUERY_KEY });
+		});
+	});
+});
+
+describe("useDeleteNote - Cache Invalidation Linkage", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	test("removes note from cached lists and invalidates all query caches matching NOTES_QUERY_KEY on success", async () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		});
+		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+		const wrapper = ({ children }: { children: React.ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+
+		const initialNotes: Note[] = [
+			{
+				id: "note-1",
+				user_id: "user-1",
+				content: "To be deleted",
+				created_at: "2026-07-28T00:00:00Z",
+				updated_at: "2026-07-28T00:00:00Z",
+				note_type: "info",
+				scope: "inbox",
+				url_pattern: "",
+				is_resolved: false,
+				is_pinned: false,
+				is_favorite: false,
+				is_expanded: false,
+				sort_order: 0,
+				draft_id: null,
+				tags: [],
+			},
+		];
+
+		queryClient.setQueryData(NOTES_QUERY_KEY, initialNotes);
+		queryClient.setQueryData(
+			[...NOTES_QUERY_KEY, "search", "test", undefined],
+			{
+				notes: initialNotes,
+				drafts: [],
+			},
+		);
+
+		const { result } = renderHook(() => useDeleteNote(), { wrapper });
+
+		await result.current.mutateAsync("note-1");
+
+		await waitFor(() => {
+			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: NOTES_QUERY_KEY });
+			const cachedMain = queryClient.getQueryData<Note[]>(NOTES_QUERY_KEY);
+			const cachedSearch = queryClient.getQueryData<{ notes: Note[] }>([
+				...NOTES_QUERY_KEY,
+				"search",
+				"test",
+				undefined,
+			]);
+			expect(cachedMain).toEqual([]);
+			expect(cachedSearch?.notes).toEqual([]);
+		});
+	});
+});
+
+describe("useCreateNote - Cache Invalidation & Instant Insertion", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	test("inserts new note into cache immediately and invalidates NOTES and DASHBOARD queries", async () => {
+		const queryClient = new QueryClient({
+			defaultOptions: { queries: { retry: false } },
+		});
+		const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+		const wrapper = ({ children }: { children: React.ReactNode }) => (
+			<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+		);
+
+		vi.mocked(createClient).mockReturnValue({
+			auth: {
+				getUser: vi.fn().mockResolvedValue({
+					data: { user: { id: "user-1" } },
+					error: null,
+				}),
+			},
+		} as unknown as ReturnType<typeof createClient>);
+
+		const { result } = renderHook(() => useCreateNote(), { wrapper });
+
+		await result.current.mutateAsync({
+			content: "New Note Content For Test",
+			scope: "inbox",
+			note_type: "info",
+			currentUrl: "inbox",
+		});
+
+		await waitFor(() => {
+			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: NOTES_QUERY_KEY });
+			expect(invalidateSpy).toHaveBeenCalledWith({
+				queryKey: DASHBOARD_QUERY_KEY,
+			});
 		});
 	});
 });

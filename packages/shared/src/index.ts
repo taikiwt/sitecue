@@ -1,3 +1,4 @@
+export * from "./dal/dashboard";
 export * from "./dal/diaries";
 export * from "./dal/notes";
 export * from "./dal/profiles";

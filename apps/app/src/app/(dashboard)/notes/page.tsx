@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
 import { NotesContainer } from "./_components/NotesContainer";
 import type { SearchParams } from "./types";
@@ -14,9 +13,5 @@ export default async function Dashboard(_props: {
 
 	await requireUser(currentPath);
 
-	return (
-		<Suspense fallback={null}>
-			<NotesContainer />
-		</Suspense>
-	);
+	return <NotesContainer />;
 }

@@ -25,11 +25,12 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 	);
 
 	const isStudioPage = pathname?.startsWith("/studio");
-	// Library(Notes)がアクティブかどうかの判定を定義
 	const isNotes = pathname?.startsWith("/notes");
+	const isDiariesPage =
+		pathname?.startsWith("/diaries") || !!searchParams.get("date");
 
-	// 詳細ペイン展開時またはスタジオページではボトムナビを隠す
-	if (isDetailOpen || isStudioPage) return null;
+	// 詳細ペイン展開時、スタジオページ、または日記ページ/詳細ではボトムナビを隠す
+	if (isDetailOpen || isStudioPage || isDiariesPage) return null;
 
 	return (
 		<nav className="md:hidden shrink-0 w-auto mx-4 mb-4 pb-safe z-40 bg-action rounded-full shadow-lg overflow-visible border border-white/5">

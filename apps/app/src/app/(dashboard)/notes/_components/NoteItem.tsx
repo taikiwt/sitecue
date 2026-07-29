@@ -218,11 +218,11 @@ export function NoteItem({
 				</h3>
 				<p
 					className={cn(
-						"text-sm text-action line-clamp-2 break-words",
+						"text-sm text-action line-clamp-2 min-h-[2.5rem] break-words",
 						(isResolved || isExiting) && "line-through",
 					)}
 				>
-					{item.content}
+					{item.content || ""}
 				</p>
 				{isNote && item.scope === "exact" && !currentExact && (
 					<div className="mt-2 text-[10px] text-gray-400 truncate flex items-center gap-1 relative z-10 pointer-events-none break-all">

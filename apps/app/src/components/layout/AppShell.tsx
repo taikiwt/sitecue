@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
@@ -20,13 +20,7 @@ import { GlobalSidebar } from "./GlobalSidebar";
 import { MobileBottomNav } from "./MobileBottomNav";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-	const pathname = usePathname();
-	const searchParams = useSearchParams();
-	const isDiaryDetailOpen = !!searchParams.get("date");
-	const hideBottomNav =
-		pathname.startsWith("/studio") ||
-		pathname.startsWith("/diaries") ||
-		isDiaryDetailOpen;
+	const _pathname = usePathname();
 	const _isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const _setIsSidebarOpen = useLayoutStore((state) => state.setIsSidebarOpen);
 
@@ -80,9 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 						{children}
 					</div>
 
-					{!hideBottomNav && (
-						<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
-					)}
+					<MobileBottomNav onSearchOpen={() => setIsSearchModalOpen(true)} />
 				</main>
 			</div>
 
