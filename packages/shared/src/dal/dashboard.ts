@@ -26,10 +26,6 @@ export interface DashboardOverviewData {
 		created_at: string;
 	}>;
 	domainActivities: Awaited<ReturnType<typeof fetchDashboardDomainActivity>>;
-	contributions: Array<{
-		date: string;
-		count: number;
-	}>;
 	notes7d: Array<{
 		id: string;
 		content: string | null;
@@ -72,7 +68,6 @@ export async function fetchDashboardOverviewData(
 		{ data: recentNotes },
 		{ data: recentDrafts },
 		domainActivities,
-		contributionData,
 	] = await Promise.all([
 		supabase
 			.from("sitecue_notes")
@@ -111,7 +106,6 @@ export async function fetchDashboardOverviewData(
 			.order("created_at", { ascending: false })
 			.limit(5),
 		fetchDashboardDomainActivity(supabase, userId, 6),
-		supabase.rpc("get_user_contribution_activity", { p_user_id: userId }),
 	]);
 
 	return {
@@ -135,7 +129,6 @@ export async function fetchDashboardOverviewData(
 		recentNotes: (recentNotes as DashboardOverviewData["recentNotes"]) ?? [],
 		recentDrafts: (recentDrafts as DashboardOverviewData["recentDrafts"]) ?? [],
 		domainActivities: domainActivities ?? [],
-		contributions: contributionData?.data || [],
 		notes7d: (notes7dData as DashboardOverviewData["notes7d"]) ?? [],
 		drafts7d: (drafts7dData as DashboardOverviewData["drafts7d"]) ?? [],
 	};

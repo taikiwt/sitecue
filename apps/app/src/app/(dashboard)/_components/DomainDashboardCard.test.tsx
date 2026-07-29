@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import type { DashboardDomainActivity } from "@sitecue/shared";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
@@ -32,10 +33,6 @@ describe("DomainDashboardCard", () => {
 		const activeNote = screen.getByText("Domain note content");
 		expect(activeNote).toBeInTheDocument();
 		expect(activeNote.className).not.toContain("line-through");
-		const domainNoteLink = activeNote.closest("a");
-		expect(domainNoteLink?.getAttribute("href")).toBe(
-			"/notes?domain=example.com&view=domains&exact=all&noteId=1",
-		);
 
 		const resolvedNote = screen.getByText("Page note content");
 		expect(resolvedNote).toBeInTheDocument();

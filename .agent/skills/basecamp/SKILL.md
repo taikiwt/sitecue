@@ -56,3 +56,6 @@ Next.js App Router 環境では、クライアントサイドルーティング�
 1. **クリップボード操作の状態管理のカプセル化**:
    - `navigator.clipboard` を用いたコピー操作において、「コピー完了後のアイコン変化（タイマー）」などのUI状態を、利用側の親コンポーネントで個別に管理（`useState`）することは避ける。
    - 原則として `InlineCopyButton` 等のカプセル化されたコンポーネントを使用し、親コンポーネントのステートをパージ（引き算）することで、保守性とDRY原則を徹底する。
+
+## Service Worker (SW) サードパーティ通信エラーハンドリング
+Service Worker (`public/sw.js`) 内の `fetch` イベント処理において、外部アナリティクスやサードパーティドメインへの通信失敗（`net::ERR_BLOCKED_BY_CLIENT` 等）時に `TypeError: Failed to convert value to 'Response'` でレスポンス生成を破綻させないよう、例外を `try-catch` で安全に捕獲してフォールバック通過（または無効化）させる処理を必須とする。

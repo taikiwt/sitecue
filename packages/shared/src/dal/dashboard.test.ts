@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fetchDashboardOverviewData } from "./dashboard";
 
 describe("fetchDashboardOverviewData DAL", () => {
-	it("fetches dashboard data including 7d activity notes and drafts correctly", async () => {
+	it("fetches dashboard data without calling non-existent RPC get_user_contribution_activity", async () => {
 		const mockBuilder = {
 			select: vi.fn().mockReturnThis(),
 			eq: vi.fn().mockReturnThis(),
@@ -31,9 +31,10 @@ describe("fetchDashboardOverviewData DAL", () => {
 			),
 		};
 
+		const mockRpc = vi.fn().mockResolvedValue({ data: [], error: null });
 		const mockSupabase = {
 			from: vi.fn().mockReturnValue(mockBuilder),
-			rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
+			rpc: mockRpc,
 		};
 
 		const result = await fetchDashboardOverviewData(
@@ -45,5 +46,10 @@ describe("fetchDashboardOverviewData DAL", () => {
 
 		expect(result.notes7d).toBeDefined();
 		expect(result.notes7d.length).toBeGreaterThan(0);
+		// get_user_contribution_activity RPCが一切呼び出されていないことを厳密にアサート
+		expect(mockRpc).not.toHaveBeenCalledWith(
+			"get_user_contribution_activity",
+			expect.anything(),
+		);
 	});
 });
