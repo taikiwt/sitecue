@@ -335,6 +335,7 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		await user.click(domainsTab);
 		expect(mockPush).toHaveBeenCalledWith(
 			expect.stringContaining("view=domains"),
+			{ scroll: false },
 		);
 
 		// mockPushとmockReplaceの履歴をクリア
@@ -373,14 +374,15 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		await user.click(inboxTab);
 
 		// mockPush should be called with ONLY view=inbox
-		const pushCall = mockPush.mock.calls[0][0];
-		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
+		const pushCall = mockPush.mock.calls[0];
+		const resultParams = new URLSearchParams(pushCall[0].split("?")[1]);
 
 		expect(resultParams.get("view")).toBe("inbox");
 		expect(resultParams.has("domain")).toBe(false);
 		expect(resultParams.has("exact")).toBe(false);
 		expect(resultParams.has("noteId")).toBe(false);
 		expect(resultParams.has("q")).toBe(false);
+		expect(pushCall[1]).toEqual({ scroll: false });
 	});
 
 	it("clears search input when clear button is clicked", async () => {
@@ -582,11 +584,10 @@ describe("MiddlePaneList Back Button", () => {
 		const backBtn = screen.getByTitle("Go back");
 		await user.click(backBtn);
 
-		const pushCall = mockPush.mock.calls[0][0];
-		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
-
-		expect(resultParams.get("domain")).toBe("example.com");
-		expect(resultParams.has("exact")).toBe(false);
+		const pushCall = mockPush.mock.calls[0];
+		expect(pushCall[0]).toContain("domain=example.com");
+		expect(pushCall[0]).not.toContain("exact=");
+		expect(pushCall[1]).toEqual({ scroll: false });
 	});
 
 	it("removes 'domain' parameter and sets view=domains when clicking back from domain view", async () => {
@@ -610,11 +611,10 @@ describe("MiddlePaneList Back Button", () => {
 		const backBtn = screen.getByTitle("Go back");
 		await user.click(backBtn);
 
-		const pushCall = mockPush.mock.calls[0][0];
-		const resultParams = new URLSearchParams(pushCall.split("?")[1]);
-
-		expect(resultParams.has("exact")).toBe(false);
-		expect(resultParams.get("view")).toBe("domains");
+		const pushCall = mockPush.mock.calls[0];
+		expect(pushCall[0]).not.toContain("exact=");
+		expect(pushCall[0]).toContain("view=domains");
+		expect(pushCall[1]).toEqual({ scroll: false });
 	});
 
 	it("renders years list in diaries view when year is not selected", async () => {

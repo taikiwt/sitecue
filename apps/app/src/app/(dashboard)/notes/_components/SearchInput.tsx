@@ -1,6 +1,6 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useEditorStore } from "@/store/useEditorStore";
 
@@ -9,18 +9,28 @@ function SearchInputInner() {
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 
-	// Recover initial value from URL (combine q and tags for display)
-	const initialQ = searchParams.get("q") || "";
-	const initialTags = searchParams.get("tags")
+	// URLから期待される表示文字列を算出
+	const currentQ = searchParams.get("q") || "";
+	const currentTags = searchParams.get("tags")
 		? (searchParams.get("tags") ?? "")
 				.split(",")
 				.map((t) => `#${t}`)
 				.join(" ")
 		: "";
-	const [inputValue, setInputValue] = useState(
-		`${initialTags} ${initialQ}`.trim(),
-	);
+	const expectedValue = `${currentTags} ${currentQ}`.trim();
+
+	const [prevExpected, setPrevExpected] = useState(expectedValue);
+	const [inputValue, setInputValue] = useState(expectedValue);
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	// レンダー中に searchParams の変更を検知して同次同期（レンダーパスの追加を回避）
+	if (prevExpected !== expectedValue) {
+		setPrevExpected(expectedValue);
+		// ユーザーが入力中でない場合のみ上書きする
+		if (!inputRef.current || document.activeElement !== inputRef.current) {
+			setInputValue(expectedValue);
+		}
+	}
 
 	const isDirty = useEditorStore((state) => state.isDirty);
 
@@ -57,24 +67,6 @@ function SearchInputInner() {
 		const targetPath = pathname === "/notes" ? pathname : "/notes";
 		router.push(`${targetPath}?${params.toString()}`, { scroll: false });
 	};
-
-	// 外部からのURL変更（Inboxクリック等）に inputValue を追従させるだけの一方向同期
-	useEffect(() => {
-		// ユーザーが入力中の場合（IME変換中など）は、URLからの強制上書きをスキップする
-		if (inputRef.current && document.activeElement === inputRef.current) {
-			return;
-		}
-
-		const currentQ = searchParams.get("q") || "";
-		const currentTags = searchParams.get("tags")
-			? (searchParams.get("tags") ?? "")
-					.split(",")
-					.map((t) => `#${t}`)
-					.join(" ")
-			: "";
-		const expected = `${currentTags} ${currentQ}`.trim();
-		setInputValue(expected);
-	}, [searchParams]);
 
 	const handleClear = () => {
 		setInputValue("");
