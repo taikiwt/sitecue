@@ -66,11 +66,28 @@ export function NotesContainer() {
 	);
 
 	// クエリデータの準備完了状態（対象ビューに必要なデータが準備できているか判定）
+	// 💡 キャッシュデータが存在する場合は isLoading によるブロッキングをスキップし、手元データを0ms最優先描画する
 	const isTabReady = useMemo(() => {
-		if (effectiveView === "drafts") return !isDraftsLoading;
-		if (effectiveView === "diaries") return !isDiariesLoading;
-		return !isNotesLoading && !isDraftsLoading;
-	}, [effectiveView, isDraftsLoading, isDiariesLoading, isNotesLoading]);
+		if (effectiveView === "drafts") {
+			return drafts.length > 0 || !isDraftsLoading;
+		}
+		if (effectiveView === "diaries") {
+			return diaries.length > 0 || !isDiariesLoading;
+		}
+		return (
+			notes.length > 0 ||
+			drafts.length > 0 ||
+			(!isNotesLoading && !isDraftsLoading)
+		);
+	}, [
+		effectiveView,
+		drafts,
+		isDraftsLoading,
+		diaries,
+		isDiariesLoading,
+		notes,
+		isNotesLoading,
+	]);
 
 	const groupedNotes = useMemo(() => {
 		if (isNotesLoading || isDraftsLoading) return null;

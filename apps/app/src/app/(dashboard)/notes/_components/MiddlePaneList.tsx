@@ -30,7 +30,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import toast from "react-hot-toast";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,7 @@ export function MiddlePaneList(props: Props) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
+	const [_isPending, startTransition] = useTransition();
 	const diaries = items.filter(
 		(item): item is Diary => "date" in item && !("note_type" in item),
 	);
@@ -166,14 +167,18 @@ export function MiddlePaneList(props: Props) {
 			params.delete("month");
 		}
 
-		router.push(`${pathname}?${params.toString()}`);
+		startTransition(() => {
+			router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		});
 	};
 
 	const updateParams = (key: string, value: string) => {
 		const params = new URLSearchParams(searchParams.toString());
 		if (value) params.set(key, value);
 		else params.delete(key);
-		router.push(`${pathname}?${params.toString()}`);
+		startTransition(() => {
+			router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		});
 	};
 
 	const handleBack = () => {
@@ -194,7 +199,9 @@ export function MiddlePaneList(props: Props) {
 				params.set("view", "domains");
 			}
 		}
-		router.push(`${pathname}?${params.toString()}`);
+		startTransition(() => {
+			router.push(`${pathname}?${params.toString()}`, { scroll: false });
+		});
 	};
 
 	const [localItems, setLocalItems] = useState<(Note | Draft | Diary)[]>(items);
