@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -42,10 +43,9 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { SearchInputBase } from "@/components/ui/search-input-base";
-import { useUpdateNote } from "@/hooks/useNotesQuery";
+import { useDeleteNotes, useUpdateNote } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
-import { createClient } from "@/utils/supabase/client";
 import { DomainFavicon } from "../../_components/DomainFavicon";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
@@ -92,7 +92,6 @@ export function MiddlePaneList(props: Props) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
-	const supabase = createClient();
 	const diaries = items.filter(
 		(item): item is Diary => "date" in item && !("note_type" in item),
 	);
@@ -232,6 +231,7 @@ export function MiddlePaneList(props: Props) {
 	const copyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 	const { mutateAsync: updateNote } = useUpdateNote();
+	const { mutateAsync: deleteNotesAsync } = useDeleteNotes();
 
 	const handleTodoToggle = (
 		e: React.MouseEvent,
@@ -458,20 +458,26 @@ export function MiddlePaneList(props: Props) {
 
 	const handleDeleteSelected = async () => {
 		if (selectedIds.size === 0) return;
+		const idsToDelete = Array.from(selectedIds);
 		setIsDeletingBulk(true);
+
+		// 1. 楽観的UI: 0msでローカルリストから除外
+		setLocalItems((prev) =>
+			prev.filter((item) => {
+				if ("id" in item) return !selectedIds.has(item.id);
+				return true;
+			}),
+		);
+		setSelectedIds(new Set());
+		setIsSelectMode(false);
+
 		try {
-			const { error } = await supabase
-				.from("sitecue_notes")
-				.delete()
-				.in("id", Array.from(selectedIds));
-
-			if (error) throw error;
-
-			setSelectedIds(new Set());
-			router.refresh();
+			// 2. バックグラウンドでミューテーション実行
+			await deleteNotesAsync(idsToDelete);
 		} catch (err) {
 			console.error("Failed to delete selected notes:", err);
-			alert("Failed to delete selected notes.");
+			toast.error("Failed to delete selected notes.");
+			setLocalItems(items); // エラー時はロールバック
 		} finally {
 			setIsDeletingBulk(false);
 		}

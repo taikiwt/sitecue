@@ -16,7 +16,7 @@ import {
 	Star,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -113,6 +113,14 @@ export function RightPaneDetail({
 	const [editNoteType, setEditNoteType] = useState<Note["note_type"]>(
 		note?.note_type || "info",
 	);
+
+	const content =
+		optimisticContent !== null
+			? optimisticContent
+			: note
+				? note.content
+				: draft?.content || "";
+	const deferredContent = useDeferredValue(content);
 
 	// Sync edit states when note changes
 	useEffect(() => {
@@ -259,12 +267,6 @@ export function RightPaneDetail({
 		});
 	};
 
-	const content =
-		optimisticContent !== null
-			? optimisticContent
-			: note
-				? (note.content ?? "")
-				: draft?.content || "";
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";
 	const _id = note ? note.id : draft?.id || "";
@@ -821,7 +823,11 @@ export function RightPaneDetail({
 						<SWRBoundary
 							key={note?.id ?? draft?.id ?? "none"}
 							data={
-								note ? note.content : draft ? (draft.content ?? "") : undefined
+								note
+									? deferredContent
+									: draft
+										? (deferredContent ?? "")
+										: undefined
 							}
 							isLoading={
 								isLoading || (note ? note.content === undefined : false)

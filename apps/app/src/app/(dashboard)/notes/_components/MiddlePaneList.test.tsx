@@ -42,6 +42,7 @@ mockMutate.impl = () => {};
 
 vi.mock("@/hooks/useNotesQuery", () => ({
 	useUpdateNote: () => ({ mutate: mockMutate, mutateAsync: mockMutate }),
+	useDeleteNotes: () => ({ mutate: mockMutate, mutateAsync: mockMutate }),
 }));
 
 // Mock DndContext safely using a mock-prefixed bridge
@@ -964,5 +965,51 @@ describe("MiddlePaneList D&D Fractional Indexing", () => {
 			id: "note-a",
 			updates: { sort_order: 1.0001 },
 		});
+	});
+});
+
+describe("MiddlePaneList Bulk Delete Optimistic UI", () => {
+	afterEach(() => {
+		cleanup();
+		vi.clearAllMocks();
+		mockMutate.impl = () => {};
+	});
+
+	it("一括削除実行時、ローカルリストから即座に削除対象IDが除外されること", async () => {
+		const user = userEvent.setup();
+		const deleteNotesMock = vi.fn().mockResolvedValue(["note-1"]);
+		mockMutate.impl = deleteNotesMock;
+
+		render(
+			<MiddlePaneList
+				items={mockItems}
+				groupedNotes={mockGroupedNotes}
+				currentView="inbox"
+				currentDomain="inbox"
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		expect(screen.getByText("Note 1")).toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
+
+		// Enable select mode
+		const selectModeBtn = screen.getByTitle("Select Mode");
+		await user.click(selectModeBtn);
+
+		// Select Note 1
+		const checkboxes = screen.getAllByRole("checkbox");
+		await user.click(checkboxes[0]);
+
+		// Click Delete
+		const deleteBtn = screen.getByRole("button", { name: /delete/i });
+		await user.click(deleteBtn);
+
+		// Note 1 should immediately disappear from UI (optimistic UI)
+		expect(screen.queryByText("Note 1")).not.toBeInTheDocument();
+		expect(screen.getByText("Note 2")).toBeInTheDocument();
+		expect(deleteNotesMock).toHaveBeenCalledWith(["note-1"]);
 	});
 });
