@@ -218,7 +218,7 @@ export function NoteItem({
 				</h3>
 				<p
 					className={cn(
-						"text-sm text-action line-clamp-2 min-h-[2.5rem] break-words",
+						"text-sm text-action line-clamp-3 min-h-[3.75rem] break-words",
 						(isResolved || isExiting) && "line-through",
 					)}
 				>

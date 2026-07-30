@@ -211,22 +211,61 @@ AIエディタによる「URL一元管理（SSOT）」への過剰適応（す�
 - **理由:** `mutate` は非同期処理の完了を待機せず一瞬でスルーするため、Supabaseへの書き込みやTanStack Queryのキャッシュ分配が完了する前に `router.refresh()` が先行発火してしまう。結果として、サーバーが「まだ書き換えられていない古いデータ」をクライアントに返却し、画面が巻き戻る、あるいは「同じ操作を2回繰り返さないと成功しない」という怪現象のトリガーとなる。
 - **厳守事項:** 画面の即時同期を伴うライフサイクルでは、必ず **`mutateAsync` を使用し、通信とデータ層のキャッシュ分配の解決を物理的に `await` で100%待機すること**。データ層の要塞化が完全に解決された直後のクリーンな状態になってから、初めて `router.refresh()` を直列実行させる実行パイプラインを構築しなければならない。
 
-## Partial Skeleton & Non-blocking UI Rules (局所スケルトンとノンブロッキングUI規約)
+## ⚡ Core Async Display Infrastructure: SWRBoundary Rules (`apps/app/src/components/ui/swr-boundary.tsx`)
 
-### SWRBoundary & Partial Skeleton Standard Rules
-- 非同期データ表示用の境界として `apps/app/src/components/ui/swr-boundary.tsx` の `SWRBoundary` を使用すること。
-- `SWRBoundary` 内部に「メモリキャッシュ存在時は 0ms で子要素を即時表示」および「キャッシュ未存在でスケルトン (fallback) を表示した場合は視覚的チラつき防止のため最低 200ms (SKELETON_HOLD_MS) 保持してから滑らかに切り替える」制御ロジックがカプセル化されている。呼び出し側で個別のタイマーを二重実装してはならない。
-- 本文キャッシュなど一部のフィールドが遅延フェッチされるデータに対しては、`isDataReady` プロップを拡張してデータが描画可能（例: `content !== undefined`）かを評価し、キャッシュ存在時は 0ms 即時表示、未存在時のみスケルトン表示を行う制御を行うこと。
-- ルート階層（`page.tsx` の親など）での全画面 `loading.tsx` による一律ブロックは禁止する。
-- ダッシュボードやアプリ内の画面間遷移は必ず `CustomLink` (Soft Navigation) を使用し、App Shell (Slim Rail) を破棄・アンマウントさせないこと。
+sitecue における画面表示・非同期データの局所レンダリング制御は、すべて共通コンポーネント `<SWRBoundary>` を唯一の表示インフラ（SSOT）として通過させること。
+個別のコンポーネント内で独自にローディングタイマーや表示分岐ロジックを分散実装することを**固く禁止**する。
 
+---
 
-- **外殻・ヘッダーの常時露出 (Unblocked Shell)**:
-  - 画面全体のデータ読み込み待ち（`isLoading`）を理由に、ヘッダーや操作バー、ナビゲーション、右詳細ペイン全体をスケルトンや `null` で丸ごと置換・ロックしてはならない。
-  - 外殻（Shell）および操作ヘッダーは常にマウント・操作可能な状態を維持し、実際にデータ取得が必要な「スクロールリスト領域」や「本文キャンバス領域」のみを局所的（Partial）にスケルトン化すること。
-- **スケルトン保持タイマー (200ms) ＆ 軽量スキップ (0ms)**:
-  - 高速通信環境下での一瞬の点滅（Visual Flash）を防ぐため、初回データ取得時のスケルトン表示には最低 200ms の保持タイマー（`SKELETON_HOLD_MS = 200`）を設けること。
-  - ただし、対象要素が5件以下などの軽量ケース（またはデータが空）の場合はスケルトン保護タイマーを完全バイパスし、0ms で即時描画を行うこと。
-- **UI応答と重い描画の分離 (Concurrent Non-blocking UI)**:
-  - タブ切り替えやボタン押下時のアクティブハイライト・着色（UI State）は 0ms 最優先で即座に反映させること。
-  - コンテンツの再計算や再描画を伴うリスト（Render State）には `useDeferredValue` や `useTransition` を適用し、画面フリーズのないノンブロッキング非同期処理を徹底すること。
+### 1. SWRBoundary が保証する表示ライフサイクル
+
+1. **Unblocked Shell (外殻の0ms常時露出)**
+   - データの取得状態（`isLoading`）に関わらず、画面外殻（AppShell、ヘッダー、タブ、検索窓、操作バー）をスケルトンで覆い隠したり `isLoading` で同期ブロックしてはならない（常に0ms表示・即時操作可能）。
+
+2. **Cold Start / 初回リクエスト取得時 (200ms ホールド ＆ 0ms スキップ)**
+   - キャッシュがなく新規にデータ取得を行う場合、動的コンテンツ領域（Partial）にスケルトンを表示する。
+   - データ着信が中途半端に早い際の一瞬の点滅（Visual Flash）を防ぐため、スケルトン表示時は **最低 200ms (`SKELETON_HOLD_MS`)** 表示を維持する。
+   - ただし、データが空であることや件数が少ないことが瞬時に確定できる軽量ケースは、スケルトン保持をバイパスして **0ms で即時表示** すること。
+
+3. **Warm State / 2回目以降のキャッシュ保持時 (0ms 即時表示 ＋ Deferred 局所待機)**
+   - キャッシュが存在する場合は、UIだけでなく動的コンテンツも **0ms で即座に表示** すること。
+   - ただし、マークダウンレンダリング等の重い処理（Concurrent Rendering）で表示遅延が発生し、白い画面などでユーザーを待たせるリスクがある場合は、`useDeferredValue` と `<SWRBoundary>` の `isDataReady` プロップ等を連動させ、描画準備が整うまで局所スケルトンを表示して体感速度を保護すること。
+
+---
+
+### 2. SWRBoundary の「拡張と進化」に関する掟 (Extensibility Rule)
+
+- **個別ハックの禁止:** 今後の開発において、既存の `<SWRBoundary>` では対応できない「新しい表示要件・シチュエーション」が発生した場合であっても、呼び出し側のコンポーネントに独自の `useState` や `setTimeout` などを書くパッチ修正（Workaround）を行ってはならない。
+- **基盤側の進化 (Base Extension):** 未知の表示条件が必要になった場合は、**必ず `apps/app/src/components/ui/swr-boundary.tsx` 自体に新たなプロップ（判定関数やフラグ）や内部ロジックを追加・拡張し**、アプリ全体の共通基盤として進化させた上で使用すること。
+
+---
+
+### 3. 基本実装パターン
+
+```tsx
+import { useDeferredValue } from "react";
+import { SWRBoundary } from "@/components/ui/swr-boundary";
+
+export function ContentPane({ data, isLoading }: { data?: ContentData; isLoading: boolean }) {
+  // マークダウン解析等のConcurrent遅延化
+  const deferredData = useDeferredValue(data);
+
+  return (
+    <SWRBoundary
+      key={data?.id ?? "none"}
+      data={deferredData}
+      isLoading={isLoading}
+      isDataReady={(readyData) => readyData !== undefined && readyData.content !== undefined} // 必要に応じて「データの準備完了」を判定するオプショナル関数（拡張可）
+      fallback={<ContentSkeleton />} // 実データと全く同じ物理サイズ（min-h-50等）を固定確保
+    >
+      {(renderedData) => (
+        <div className="min-h-50">
+          <MarkdownRenderer content={renderedData.content} />
+        </div>
+      )}
+    </SWRBoundary>
+  );
+}
+```
+
