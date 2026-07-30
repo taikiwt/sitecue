@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Fragment, type ReactNode, useEffect, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
@@ -37,10 +37,28 @@ export function ResponsiveNotesLayout({
 	);
 
 	const [isDrawerOpen, setIsDrawerOpen] = useState(isDetailOpenUrl);
+	const [isPopStateActive, setIsPopStateActive] = useState(false);
+	const popStateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
 		setIsDrawerOpen(isDetailOpenUrl);
 	}, [isDetailOpenUrl]);
+
+	useEffect(() => {
+		const handlePopState = () => {
+			setIsPopStateActive(true);
+			if (popStateTimerRef.current) clearTimeout(popStateTimerRef.current);
+			popStateTimerRef.current = setTimeout(() => {
+				setIsPopStateActive(false);
+			}, 200);
+		};
+
+		window.addEventListener("popstate", handlePopState);
+		return () => {
+			window.removeEventListener("popstate", handlePopState);
+			if (popStateTimerRef.current) clearTimeout(popStateTimerRef.current);
+		};
+	}, []);
 
 	const handleCloseDetail = (open: boolean) => {
 		if (!open) {
@@ -87,7 +105,8 @@ export function ResponsiveNotesLayout({
 				{/* Right Detail Pane: 滑らかにスライドインする絶対配置ドロワー */}
 				<div
 					className={cn(
-						"absolute top-0 right-0 z-30 h-full w-[500px] bg-base-bg shadow-2xl border-l border-base-border transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
+						"absolute top-0 right-0 z-30 h-full w-[500px] bg-base-bg shadow-2xl border-l border-base-border transform-gpu transition-transform ease-in-out flex flex-col",
+						isPopStateActive ? "duration-0" : "duration-300",
 						isDrawerOpen ? "translate-x-0" : "translate-x-full",
 					)}
 				>
@@ -113,7 +132,8 @@ export function ResponsiveNotesLayout({
 
 			<div
 				className={cn(
-					"fixed inset-0 z-30 bg-base-bg transform-gpu transition-transform duration-300 ease-in-out flex flex-col",
+					"fixed inset-0 z-30 bg-base-bg transform-gpu transition-transform ease-in-out flex flex-col",
+					isPopStateActive ? "duration-0" : "duration-300",
 					isDrawerOpen ? "translate-x-0" : "translate-x-full",
 				)}
 				aria-hidden={!isDrawerOpen}
