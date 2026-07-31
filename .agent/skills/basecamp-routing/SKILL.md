@@ -54,3 +54,6 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 ## 7. App Shell Preservation & Layout Suspense Boundary Rules
 - `apps/app/src/app/(dashboard)/layout.tsx` において、`<AppShell>`（固定左サイドバー・ナビゲーション等を含む外殻）は絶対に `<Suspense>` の内側に配置してはならない。
 - `<Suspense>` 境界は必ず `<AppShell>` の内側で `{children}`（メイン領域）のみを包むように配置し、下位セグメントでの Server Component の `await` 待機処理が発生しても外殻（App Shell）が丸ごとアンマウント・白画面化しない構造を絶対防衛すること。
+
+## 8. 0ms Tab Navigation Rule
+App Basecamp の同一画面内におけるタブ切替・ローカルコンテキスト切替（ドリルダウン・戻る操作）時は、`startTransition` や `replaceState` 直書きハックを行わず、Next.js 標準の `router.replace(url, { scroll: false })` を用いて一貫してナビゲーションを行うこと。これにより Next.js の `useSearchParams()` を唯一の SSOT として維持しつつ、インメモリキャッシュから 0ms で即時UI描画を行うこと。また、タブ切替時には対象ペインのスクロールリセット（`scrollTop = 0`）を同時に実行すること。

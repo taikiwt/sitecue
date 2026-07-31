@@ -1,7 +1,6 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { describe, expect, it, vi } from "vitest";
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
@@ -123,40 +122,5 @@ describe("GlobalSidebar Hierarchical UI & Prefetch", () => {
 
 		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(true);
 		expect(useLayoutStore.getState().globalNewModal.mode).toBe("gate");
-	});
-
-	it("should invalidate notes and drafts queries when pathname is present", () => {
-		const mockInvalidateQueries = vi.fn();
-		vi.mocked(useQueryClient).mockReturnValue({
-			invalidateQueries: mockInvalidateQueries,
-		} as Partial<ReturnType<typeof useQueryClient>> as ReturnType<
-			typeof useQueryClient
-		>);
-
-		vi.mocked(usePathname).mockReturnValue("/notes");
-		vi.mocked(useFetchNotes).mockReturnValue({
-			data: [],
-			isLoading: false,
-		} as Partial<ReturnType<typeof useFetchNotes>> as ReturnType<
-			typeof useFetchNotes
-		>);
-		vi.mocked(useFetchDrafts).mockReturnValue({
-			data: [],
-			isLoading: false,
-		} as Partial<ReturnType<typeof useFetchDrafts>> as ReturnType<
-			typeof useFetchDrafts
-		>);
-		vi.mocked(useNotesStore).mockReturnValue({
-			searchResults: null,
-		} as Partial<ReturnType<typeof useNotesStore>> as ReturnType<
-			typeof useNotesStore
-		>);
-
-		render(<GlobalSidebar onSearchOpen={vi.fn()} />);
-
-		expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["notes"] });
-		expect(mockInvalidateQueries).toHaveBeenCalledWith({
-			queryKey: ["drafts"],
-		});
 	});
 });

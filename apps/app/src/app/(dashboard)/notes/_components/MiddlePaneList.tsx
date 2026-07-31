@@ -30,7 +30,7 @@ import {
 	Trash2,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
@@ -92,7 +92,6 @@ export function MiddlePaneList(props: Props) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
-	const [_isPending, startTransition] = useTransition();
 	const diaries = items.filter(
 		(item): item is Diary => "date" in item && !("note_type" in item),
 	);
@@ -143,6 +142,8 @@ export function MiddlePaneList(props: Props) {
 		};
 	}, [currentView, currentDomain, currentExact]);
 
+	const scrollRef = useRef<HTMLDivElement>(null);
+
 	const updateView = (newView: string) => {
 		const params = new URLSearchParams(searchParams.toString());
 		params.set("view", newView);
@@ -152,41 +153,39 @@ export function MiddlePaneList(props: Props) {
 		params.delete("noteId");
 		params.delete("draftId");
 		params.delete("date");
-		params.delete("q"); // 検索も基本リセット推奨の仕様に合わせる
+		params.delete("q");
 
 		if (newView === "diaries") {
 			if (!params.has("year") || !params.has("month")) {
 				const now = new Date();
-				const yyyy = now.getFullYear().toString();
-				const mm = String(now.getMonth() + 1).padStart(2, "0");
-				params.set("year", yyyy);
-				params.set("month", mm);
+				params.set("year", now.getFullYear().toString());
+				params.set("month", String(now.getMonth() + 1).padStart(2, "0"));
 			}
 		} else {
 			params.delete("year");
 			params.delete("month");
 		}
 
-		startTransition(() => {
-			router.push(`${pathname}?${params.toString()}`, { scroll: false });
-		});
+		router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+
+		if (scrollRef.current) {
+			scrollRef.current.scrollTop = 0;
+		}
 	};
 
 	const updateParams = (key: string, value: string) => {
 		const params = new URLSearchParams(searchParams.toString());
 		if (value) params.set(key, value);
 		else params.delete(key);
-		startTransition(() => {
-			router.push(`${pathname}?${params.toString()}`, { scroll: false });
-		});
+		router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 	};
 
 	const handleBack = () => {
 		const params = new URLSearchParams(searchParams.toString());
 		if (currentView === "diaries") {
-			if (currentMonth) {
+			if (params.has("month")) {
 				params.delete("month");
-			} else if (currentYear) {
+			} else if (params.has("year")) {
 				params.delete("year");
 			}
 		} else {
@@ -199,9 +198,13 @@ export function MiddlePaneList(props: Props) {
 				params.set("view", "domains");
 			}
 		}
-		startTransition(() => {
-			router.push(`${pathname}?${params.toString()}`, { scroll: false });
-		});
+		router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+	};
+
+	// ドリルダウン等でのクリックハンドラーヘルパー
+	const handleDrilldown = (e: React.MouseEvent, href: string) => {
+		e.preventDefault();
+		router.replace(href, { scroll: false });
 	};
 
 	const [localItems, setLocalItems] = useState<(Note | Draft | Diary)[]>(items);
@@ -628,7 +631,9 @@ export function MiddlePaneList(props: Props) {
 								const params = new URLSearchParams(searchParams.toString());
 								if (params.has("q")) {
 									params.delete("q");
-									router.replace(`${pathname}?${params.toString()}`);
+									router.replace(`${pathname}?${params.toString()}`, {
+										scroll: false,
+									});
 								}
 							}}
 							onSubmit={() => {
@@ -771,7 +776,10 @@ export function MiddlePaneList(props: Props) {
 				)}
 			</div>
 
-			<div className="flex-1 overflow-y-auto divide-y divide-base-border">
+			<div
+				ref={scrollRef}
+				className="flex-1 overflow-y-auto divide-y divide-base-border"
+			>
 				{isLoading ? (
 					<MiddlePaneListSkeleton />
 				) : currentView === "diaries" ? (
@@ -916,6 +924,7 @@ export function MiddlePaneList(props: Props) {
 							<Link
 								key={domain}
 								href={`/notes?domain=${domain}`}
+								onClick={(e) => handleDrilldown(e, `/notes?domain=${domain}`)}
 								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
 							>
 								<div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
@@ -945,6 +954,9 @@ export function MiddlePaneList(props: Props) {
 						{!query && (
 							<Link
 								href={`/notes?domain=${currentDomain}&exact=all`}
+								onClick={(e) =>
+									handleDrilldown(e, `/notes?domain=${currentDomain}&exact=all`)
+								}
 								className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
 							>
 								<div className="flex items-center gap-3">
@@ -975,6 +987,12 @@ export function MiddlePaneList(props: Props) {
 									<Link
 										key={url}
 										href={`/notes?domain=${currentDomain}&exact=${encodeURIComponent(url)}`}
+										onClick={(e) =>
+											handleDrilldown(
+												e,
+												`/notes?domain=${currentDomain}&exact=${encodeURIComponent(url)}`,
+											)
+										}
 										className="flex items-center justify-between p-4 hover-safe:bg-base-surface transition-colors group"
 									>
 										<div className="flex items-center gap-3 overflow-hidden">

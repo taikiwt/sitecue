@@ -37,7 +37,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Mock useUpdateNote safely using a mock-prefixed bridge to bypass hoisting errors
-const mockMutate: any = (...args: any[]) => mockMutate.impl(...args);
+const mockMutate: {
+	(...args: unknown[]): unknown;
+	impl: (...args: unknown[]) => unknown;
+} = (...args: unknown[]) => mockMutate.impl(...args);
 mockMutate.impl = () => {};
 
 vi.mock("@/hooks/useNotesQuery", () => ({
@@ -46,14 +49,19 @@ vi.mock("@/hooks/useNotesQuery", () => ({
 }));
 
 // Mock DndContext safely using a mock-prefixed bridge
-const mockLastOnDragEndContainer: any = { current: null };
+const mockLastOnDragEndContainer: {
+	current: ((event: unknown) => void) | null;
+} = { current: null };
 vi.mock("@dnd-kit/core", () => ({
 	closestCenter: vi.fn(),
 	PointerSensor: vi.fn(),
 	useSensor: vi.fn(),
 	useSensors: vi.fn(),
-	DndContext: (props: any) => {
-		mockLastOnDragEndContainer.current = props.onDragEnd;
+	DndContext: (props: {
+		children: React.ReactNode;
+		onDragEnd?: (event: unknown) => void;
+	}) => {
+		mockLastOnDragEndContainer.current = props.onDragEnd ?? null;
 		return props.children;
 	},
 }));
@@ -333,7 +341,7 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		// タブのクリック
 		const domainsTab = screen.getByRole("button", { name: /Domains/i });
 		await user.click(domainsTab);
-		expect(mockPush).toHaveBeenCalledWith(
+		expect(mockReplace).toHaveBeenCalledWith(
 			expect.stringContaining("view=domains"),
 			{ scroll: false },
 		);
@@ -373,16 +381,9 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		const inboxTab = screen.getByRole("button", { name: /Inbox/i });
 		await user.click(inboxTab);
 
-		// mockPush should be called with ONLY view=inbox
-		const pushCall = mockPush.mock.calls[0];
-		const resultParams = new URLSearchParams(pushCall[0].split("?")[1]);
-
-		expect(resultParams.get("view")).toBe("inbox");
-		expect(resultParams.has("domain")).toBe(false);
-		expect(resultParams.has("exact")).toBe(false);
-		expect(resultParams.has("noteId")).toBe(false);
-		expect(resultParams.has("q")).toBe(false);
-		expect(pushCall[1]).toEqual({ scroll: false });
+		expect(mockReplace).toHaveBeenCalledWith("/notes?view=inbox", {
+			scroll: false,
+		});
 	});
 
 	it("clears search input when clear button is clicked", async () => {
@@ -410,7 +411,10 @@ describe("MiddlePaneList Tab and Search Interactions", () => {
 		await user.click(clearButton);
 
 		expect(searchInput.value).toBe("");
-		expect(mockReplace).toHaveBeenCalledWith(expect.not.stringContaining("q="));
+		expect(mockReplace).toHaveBeenCalledWith(
+			expect.not.stringContaining("q="),
+			{ scroll: false },
+		);
 	});
 
 	it("excludes 'inbox' from domains list", () => {
@@ -512,6 +516,7 @@ describe("MiddlePaneList Back Button", () => {
 		cleanup();
 		vi.clearAllMocks();
 		searchParamsMock.mockReturnValue(new URLSearchParams());
+		window.history.replaceState(null, "", "/notes");
 		vi.useRealTimers();
 	});
 
@@ -584,10 +589,10 @@ describe("MiddlePaneList Back Button", () => {
 		const backBtn = screen.getByTitle("Go back");
 		await user.click(backBtn);
 
-		const pushCall = mockPush.mock.calls[0];
-		expect(pushCall[0]).toContain("domain=example.com");
-		expect(pushCall[0]).not.toContain("exact=");
-		expect(pushCall[1]).toEqual({ scroll: false });
+		expect(mockReplace).toHaveBeenCalledWith(
+			"/notes?view=domains&domain=example.com",
+			{ scroll: false },
+		);
 	});
 
 	it("removes 'domain' parameter and sets view=domains when clicking back from domain view", async () => {
@@ -611,10 +616,37 @@ describe("MiddlePaneList Back Button", () => {
 		const backBtn = screen.getByTitle("Go back");
 		await user.click(backBtn);
 
-		const pushCall = mockPush.mock.calls[0];
-		expect(pushCall[0]).not.toContain("exact=");
-		expect(pushCall[0]).toContain("view=domains");
-		expect(pushCall[1]).toEqual({ scroll: false });
+		expect(mockReplace).toHaveBeenCalledWith("/notes?view=domains", {
+			scroll: false,
+		});
+	});
+
+	it("drilldown link click fires replace for 0ms instant drilldown", async () => {
+		const user = userEvent.setup();
+		const groupedNotes = {
+			domains: { "example.com": { domainNotes: [], pages: {} } },
+			inbox: [],
+			drafts: [],
+		};
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={groupedNotes}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		const domainLink = screen.getByText("example.com");
+		await user.click(domainLink);
+
+		expect(mockReplace).toHaveBeenCalledWith("/notes?domain=example.com", {
+			scroll: false,
+		});
 	});
 
 	it("renders years list in diaries view when year is not selected", async () => {
@@ -837,7 +869,7 @@ describe("MiddlePaneList D&D Fractional Indexing", () => {
 
 		// note-1 を note-2 の後ろ（末尾）にドラッグ
 		await act(async () => {
-			await mockLastOnDragEndContainer.current({
+			await mockLastOnDragEndContainer.current?.({
 				active: { id: "note-1" },
 				over: { id: "note-2" },
 			});
@@ -867,7 +899,7 @@ describe("MiddlePaneList D&D Fractional Indexing", () => {
 		);
 
 		await act(async () => {
-			await mockLastOnDragEndContainer.current({
+			await mockLastOnDragEndContainer.current?.({
 				active: { id: "note-1" },
 				over: { id: "note-1" },
 			});
@@ -910,7 +942,7 @@ describe("MiddlePaneList D&D Fractional Indexing", () => {
 		// initialIndex (2) > finalIndex (1) は true (下から上)
 		// newOrder = nextOrder - OFFSET = 1.0 - 0.0001 = 0.9999
 		await act(async () => {
-			await mockLastOnDragEndContainer.current({
+			await mockLastOnDragEndContainer.current?.({
 				active: { id: "note-c" },
 				over: { id: "note-b" },
 			});
@@ -955,7 +987,7 @@ describe("MiddlePaneList D&D Fractional Indexing", () => {
 		// initialIndex (0) < finalIndex (1) は true (上から下)
 		// newOrder = prevOrder + OFFSET = 1.0 + 0.0001 = 1.0001
 		await act(async () => {
-			await mockLastOnDragEndContainer.current({
+			await mockLastOnDragEndContainer.current?.({
 				active: { id: "note-a" },
 				over: { id: "note-b" },
 			});
