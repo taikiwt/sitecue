@@ -1,10 +1,8 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import { Home, Library, Search } from "lucide-react";
 import Image from "next/image";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button"; // 👈 追加
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -17,17 +15,7 @@ interface GlobalSidebarProps {
 
 export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 	const pathname = usePathname();
-	const router = useRouter();
-	const searchParams = useSearchParams();
-	const queryClient = useQueryClient();
 	const { openGlobalNewModal } = useLayoutStore();
-
-	useEffect(() => {
-		if (pathname) {
-			queryClient.invalidateQueries({ queryKey: ["notes"] });
-			queryClient.invalidateQueries({ queryKey: ["drafts"] });
-		}
-	}, [pathname, queryClient]);
 
 	const isNotes = pathname.startsWith("/notes");
 

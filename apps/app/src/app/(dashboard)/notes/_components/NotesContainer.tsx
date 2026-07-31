@@ -17,6 +17,7 @@ import { RightPaneDetail } from "./RightPaneDetail";
 export function NotesContainer() {
 	const searchParams = useSearchParams();
 	const router = useRouter();
+
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
 	const { data: diaries = [], isLoading: isDiariesLoading } = useFetchDiaries();
@@ -99,7 +100,9 @@ export function NotesContainer() {
 			const newParams = new URLSearchParams(searchParams.toString());
 			newParams.delete("domain");
 			newParams.set("view", "inbox");
-			router.replace(`${window.location.pathname}?${newParams.toString()}`);
+			router.replace(`${window.location.pathname}?${newParams.toString()}`, {
+				scroll: false,
+			});
 		}
 	}, [params.domain, searchParams, router]);
 

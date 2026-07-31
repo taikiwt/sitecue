@@ -27,18 +27,12 @@ export function DomainFavicon({
 	const [isFallback, setIsFallback] = useState(false);
 	const imgRef = useRef<HTMLImageElement>(null);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset fallback state when domain changes
 	useEffect(() => {
-		if (imgRef.current?.complete) {
-			if (
-				imgRef.current.naturalWidth === 16 &&
-				imgRef.current.naturalHeight === 16
-			) {
-				setIsFallback(true);
-			}
-		}
-	}, []);
+		setIsFallback(false);
+	}, [domain]);
 
-	if (isLocalDomain(domain)) {
+	if (!domain || isLocalDomain(domain)) {
 		return (
 			<Laptop
 				className={`${sizeClassName} text-neutral-400 shrink-0 object-contain align-middle`}
@@ -47,7 +41,7 @@ export function DomainFavicon({
 		);
 	}
 
-	if (isFallback || !domain) {
+	if (isFallback) {
 		return (
 			<Globe
 				className={`${sizeClassName} text-neutral-400 shrink-0 object-contain align-middle`}

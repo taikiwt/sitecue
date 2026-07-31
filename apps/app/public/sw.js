@@ -72,24 +72,27 @@ self.addEventListener("fetch", (event) => {
 	}
 
 	event.respondWith(
-		caches.match(event.request).then((cachedResponse) => {
-			const fetchPromise = fetch(event.request)
-				.then((networkResponse) => {
-					if (networkResponse && networkResponse.status === 200) {
-						const responseToCache = networkResponse.clone();
-						caches.open(CACHE_NAME).then((cache) => {
-							cache.put(event.request, responseToCache);
-						});
-					}
-					return networkResponse;
-				})
-				.catch((_error) => {
-					return cachedResponse || new Response("", { status: 504 });
-				});
+		caches
+			.match(event.request)
+			.then((cachedResponse) => {
+				const fetchPromise = fetch(event.request)
+					.then((networkResponse) => {
+						if (networkResponse && networkResponse.status === 200) {
+							const responseToCache = networkResponse.clone();
+							caches.open(CACHE_NAME).then((cache) => {
+								cache.put(event.request, responseToCache);
+							});
+						}
+						return networkResponse;
+					})
+					.catch((_error) => {
+						return cachedResponse || new Response("", { status: 504 });
+					});
 
-			return cachedResponse || fetchPromise;
-		}).catch((_error) => {
-			return new Response("", { status: 504 });
-		}),
+				return cachedResponse || fetchPromise;
+			})
+			.catch((_error) => {
+				return new Response("", { status: 504 });
+			}),
 	);
 });
