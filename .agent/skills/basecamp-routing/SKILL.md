@@ -29,11 +29,11 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
   これを行わないと、OpenNext のビルドプロセス中の静的生成 (Prerendering) がクライアント側のパラメータに依存してしまい、ビルドが完全に失敗します。
 - **自己完結型Suspense境界の推奨**:
   パフォーマンス向上のためSSR/SSGの恩恵を最大化しつつ、CSRへの強制フォールバックエラーを防ぐため、可能な限りコンポーネント単位で `<Suspense>` を配置してください。
-- **引き算の美学 (Fallback) と体感速度向上の特例**:
-  `.agent/rules/ui-rules.md` に従い、Suspense の `fallback` には原則として `null` を指定し、レンダリング時のチラつきを最小限に抑えてください。
-  **【🚨特例許可と loading.tsx 配備の掟】**
-  ただし、体感速度向上を目的とした主要ページ（LaunchpadやStudio等）の初期ロードに限り、シマーエフェクト付きの Skeleton UI の使用を特例として許可・推奨する。その際、レイアウトシフト（CLS）をゼロに抑えるため、スケルトンは必ず「実データ表示時と同じ物理的な高さ（Fixed Height）」を明示的に確保すること。
-  さらに、ページ内部を `<Suspense>` でラップするだけでは、他ページからのクライアントナビゲーション（`<Link>` クリック等のSPA遷移）時に Next.js の Concurrent Mode による「画面維持ロック（数秒間の待機ハング）」が発生する。ユーザーがタップした瞬間に最速でスケルトンを展開する「クリック即スケルトン」の体験を強制貫通させるため、初期ロードコストが高い画面においては、対象ルート直下に `loading.tsx` を物理配備することを標準アーキテクチャとする。
+- **引き算の美学 (Fallback) と 0ms UI シェル ＆ SWRBoundary 局所保護の掟**:
+  `.agent/rules/ui-rules.md` に従い、Suspense の `fallback` には原則として `null` または最最小限の表示を指定し、レンダリング時のチラつきを最小限に抑えてください。
+  **【🚨 loading.tsx 物理削除と 0ms UI シェル常時露出の原則】**
+  主要ページ（Launchpad, Studio, Notes等）において、ルート直下に `loading.tsx` を配備してはならない。`loading.tsx` が存在すると、SPA遷移や `router.replace` 実行時に Next.js が画面全体のコンテナ（AppShellや枠組み）ごとアンマウントして全画面スケルトンへ強制置換し、画面の激しいチラつきやレイアウトシフトを発生させるためである。
+  初期ロードコストが高い画面においては、RSC（`page.tsx`）側で重い DB 通信を `await` せずに最速で認証ガードのみを通過させて外殻（ヘッダーや枠組み）を 0ms で即時レンダリング返却（Unblocked Shell）し、内部の動的コンテンツ領域のみを `<SWRBoundary>` で部分保護・スケルトン化することを絶対標準アーキテクチャとする。
 
 
 ## 5. Server Component Constraints (RSCの掟)
@@ -57,3 +57,9 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 
 ## 8. 0ms Tab Navigation Rule
 App Basecamp の同一画面内におけるタブ切替・ローカルコンテキスト切替（ドリルダウン・戻る操作）時は、`startTransition` や `replaceState` 直書きハックを行わず、Next.js 標準の `router.replace(url, { scroll: false })` を用いて一貫してナビゲーションを行うこと。これにより Next.js の `useSearchParams()` を唯一の SSOT として維持しつつ、インメモリキャッシュから 0ms で即時UI描画を行うこと。また、タブ切替時には対象ペインのスクロールリセット（`scrollTop = 0`）を同時に実行すること。
+
+## 9. Studio画面における0msシェル描画とSWRBoundary適用規則
+Studio 画面（Draft / Diary）への画面遷移時、Server Component 側で詳細データのフェッチ待機を行って画面全体を Suspense/`loading.tsx` でブロックしてはならない。
+- **UIシェルの即時返却**: RSC 側は最速で認証ガード (`requireUser`) のみを通過させ、ヘッダーやレイアウト枠組み（UIシェル）を 0ms で即時レンダリング返却すること。
+- **データ依存部の保護**: エディタ本文やレビュー領域などの動的コンテンツ領域のみを `<SWRBoundary>` で保護する。キャッシュが存在する場合はスケルトンをバイパスして 0ms 表示し、キャッシュ無しのフェッチ時は 200ms ホールドによる視覚的チラつき防止を行う。
+- **router.refresh() の完全排除**: 保存処理（Save Draft / Save Diary）における `router.refresh()` や Server Component の再検証を完全に排除し、TanStack Query の `setQueriesData`（プレフィックス一致）による手元キャッシュ一括分配でUIとサーバー状態の同期を完結させること。

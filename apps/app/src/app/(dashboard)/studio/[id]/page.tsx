@@ -1,45 +1,5 @@
-import type { Draft } from "@sitecue/shared";
-import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { requireUser } from "@/utils/supabase/server";
 import DraftEditor from "../../_components/DraftEditor";
-import { StudioEditorSkeleton } from "../_components/StudioSkeletons";
-
-async function DraftEditorLoader({
-	id,
-	currentPath,
-}: {
-	id: string;
-	currentPath: string;
-}) {
-	const { supabase } = await requireUser(currentPath);
-
-	const { data: draft, error } = await supabase
-		.from("sitecue_drafts")
-		.select("*, sitecue_templates(*)")
-		.eq("id", id)
-		.single();
-
-	if (error || !draft) {
-		notFound();
-	}
-
-	const formattedDraft: Draft = {
-		...draft,
-		metadata: draft.metadata as Draft["metadata"],
-		sitecue_templates:
-			draft.sitecue_templates as unknown as Draft["sitecue_templates"],
-	};
-
-	return (
-		<Suspense fallback={<StudioEditorSkeleton hasDraftId={true} />}>
-			<DraftEditor
-				initialDraft={formattedDraft}
-				template={formattedDraft.sitecue_templates}
-			/>
-		</Suspense>
-	);
-}
 
 interface DraftPageProps {
 	params: Promise<{
@@ -47,24 +7,12 @@ interface DraftPageProps {
 	}>;
 }
 
-export default function DraftEditPageWrapper(props: DraftPageProps) {
-	return (
-		<Suspense fallback={<StudioEditorSkeleton hasDraftId={true} />}>
-			<DraftEditPage params={props.params} />
-		</Suspense>
-	);
-}
-
-async function DraftEditPage({ params }: DraftPageProps) {
+export default async function DraftEditPage({ params }: DraftPageProps) {
 	const { id } = await params;
 	const currentPath = `/studio/${id}`;
 
-	// 最速で認証ガードのみ通過させる
+	// 最速で認証ガードのみ通過させ、UIシェルを 0ms で即時返却
 	await requireUser(currentPath);
 
-	return (
-		<Suspense fallback={<StudioEditorSkeleton hasDraftId={true} />}>
-			<DraftEditorLoader id={id} currentPath={currentPath} />
-		</Suspense>
-	);
+	return <DraftEditor draftId={id} />;
 }

@@ -14,7 +14,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { cn } from "@/lib/utils";
@@ -29,7 +29,7 @@ interface NoteCardProps {
 	rightAction?: React.ReactNode;
 }
 
-export default function NoteCard({
+function NoteCardBase({
 	note,
 	onUpdate,
 	onDelete,
@@ -231,3 +231,6 @@ export default function NoteCard({
 		</div>
 	);
 }
+
+export const NoteCard = memo(NoteCardBase);
+export default NoteCard;

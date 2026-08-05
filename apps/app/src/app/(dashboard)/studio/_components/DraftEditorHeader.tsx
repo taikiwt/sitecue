@@ -1,4 +1,5 @@
 import { ArrowLeft, Check, MoreHorizontal } from "lucide-react";
+import { CustomLink } from "@/components/ui/custom-link";
 import { Button } from "@/components/ui/button";
 import {
 	Popover,
@@ -20,7 +21,7 @@ interface DraftEditorHeaderProps {
 	onSaveAsTemplate: () => void;
 	onDeleteDraft: () => void;
 	isOverLimit?: boolean;
-	onBack: () => void;
+	backHref: string;
 }
 
 export function DraftEditorHeader({
@@ -35,7 +36,7 @@ export function DraftEditorHeader({
 	onSaveAsTemplate,
 	onDeleteDraft,
 	isOverLimit = false,
-	onBack,
+	backHref,
 }: DraftEditorHeaderProps) {
 	return (
 		<header
@@ -45,18 +46,13 @@ export function DraftEditorHeader({
 			)}
 		>
 			<div className="flex items-center gap-4">
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
-					onClick={onBack}
-					className={cn(
-						"text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer",
-					)}
+				<CustomLink
+					href={backHref}
+					className="text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer inline-flex items-center text-sm font-medium"
 				>
 					<ArrowLeft className="w-4 h-4" aria-hidden="true" />
 					{hasDraftId ? "Back" : "Cancel"}
-				</Button>
+				</CustomLink>
 			</div>
 
 			<div className="flex items-center gap-4">

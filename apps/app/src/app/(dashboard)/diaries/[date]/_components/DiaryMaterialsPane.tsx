@@ -32,30 +32,31 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 
 	const notes = materials?.notes || [];
 	const drafts = materials?.drafts || [];
-
-	if (isLoading) {
-		return (
-			<div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-6 bg-base-surface h-full">
-				<p className="text-sm">Loading materials...</p>
-			</div>
-		);
-	}
-
 	const hasMaterials = notes.length > 0 || drafts.length > 0;
 
 	return (
 		<div className="w-full h-full flex flex-col overflow-hidden bg-base-surface">
-			{/* 固定ヘッダー */}
+			{/* 💡 固定ヘッダー: 0ms で常時即時表示 */}
 			<div className="p-4 border-b border-base-border shrink-0 bg-base-surface/50 h-14 flex items-center">
 				<h2 className="text-xs font-bold text-action uppercase tracking-widest font-mono flex items-center gap-2">
 					<Calendar className="w-3.5 h-3.5 text-neutral-400" />
-					Materials of the Day ({notes.length + drafts.length})
+					Materials of the Day ({isLoading ? "..." : notes.length + drafts.length})
 				</h2>
 			</div>
 
 			{/* 独立スクロール領域 */}
 			<div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 custom-scrollbar">
-				{!hasMaterials ? (
+				{isLoading ? (
+					/* 💡 取得中: 枠組みを崩さずリスト領域内のみにスケルトンを表示 */
+					<div className="space-y-3">
+						{["mat-skel-1", "mat-skel-2", "mat-skel-3"].map((key) => (
+							<div
+								key={key}
+								className="h-24 animate-pulse rounded-xl border border-neutral-200 bg-neutral-100/50"
+							/>
+						))}
+					</div>
+				) : !hasMaterials ? (
 					<div className="text-center text-neutral-400 py-16 font-mono text-xs">
 						No footprints collected today.
 					</div>
