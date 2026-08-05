@@ -12,6 +12,11 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
 	useUpdateDiary: () => ({ mutateAsync: vi.fn() }),
+	useFetchDiaries: () => ({ data: undefined, isLoading: false }),
+	useFetchDiaryByDate: (_date?: string, initialData?: unknown) => ({
+		data: initialData ?? undefined,
+		isLoading: false,
+	}),
 }));
 
 // useMediaQuery のモック化 (デスクトップ表示をシミュレート)
@@ -91,7 +96,7 @@ describe("DiaryStudioClient", () => {
 			created_at: "",
 			updated_at: "",
 		});
-		const editor = screen.getByTestId("mock-editor");
+		const editor = screen.getAllByTestId("mock-editor")[0];
 		fireEvent.change(editor, { target: { value: "Modified Content" } });
 		const saveBtn = screen.getAllByRole("button", { name: /Save Diary/i })[0];
 		expect(saveBtn).not.toBeDisabled();
@@ -106,7 +111,7 @@ describe("DiaryStudioClient", () => {
 			created_at: "",
 			updated_at: "",
 		});
-		const editor = screen.getByTestId("mock-editor");
+		const editor = screen.getAllByTestId("mock-editor")[0];
 		const overLimitText = "a".repeat(50001);
 		fireEvent.change(editor, { target: { value: overLimitText } });
 		const saveBtn = screen.getAllByRole("button", { name: /Save Diary/i })[0];
@@ -124,7 +129,9 @@ describe("DiaryStudioClient", () => {
 		});
 		const insertBtns = screen.getAllByTestId("mock-insert-btn");
 		fireEvent.click(insertBtns[0]);
-		const editor = screen.getByTestId("mock-editor") as HTMLTextAreaElement;
+		const editor = screen.getAllByTestId(
+			"mock-editor",
+		)[0] as HTMLTextAreaElement;
 		expect(editor.value).toBe("Original\n\nInserted Text");
 	});
 });

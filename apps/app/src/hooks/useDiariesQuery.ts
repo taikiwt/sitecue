@@ -4,6 +4,7 @@ import type { Diary } from "@sitecue/shared";
 import {
 	appendDiaryLog,
 	fetchDiariesList,
+	fetchDiaryByDate,
 	updateDiaryContent,
 } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,31 @@ export function useFetchDiaries() {
 			if (!user) return [];
 			return fetchDiariesList(supabase, user.id);
 		},
+	});
+}
+
+export function useFetchDiaryByDate(date: string, initialData?: Diary | null) {
+	const queryClient = useQueryClient();
+
+	return useQuery({
+		queryKey: ["diaries", date],
+		enabled: !!date,
+		initialData: () => {
+			if (initialData) return initialData;
+			if (!date) return undefined;
+			const cachedDiaries = queryClient.getQueryData<Diary[]>(["diaries"]);
+			return cachedDiaries?.find((d) => d.date === date);
+		},
+		queryFn: async (): Promise<Diary | null> => {
+			if (!date) return null;
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) return null;
+			return fetchDiaryByDate(supabase, user.id, date);
+		},
+		staleTime: 5 * 60 * 1000,
 	});
 }
 

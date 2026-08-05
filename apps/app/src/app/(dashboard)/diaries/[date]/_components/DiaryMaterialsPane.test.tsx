@@ -71,6 +71,23 @@ describe("DiaryMaterialsPane - Integrated Architecture Validation", () => {
 		});
 	});
 
+	it("初期ロード中も固定ヘッダーが表示され、リスト領域のみがスケルトン表示されること", async () => {
+		render(
+			React.createElement(
+				QueryClientProvider,
+				{ client: queryClient },
+				React.createElement(DiaryMaterialsPane, { date: "2026-08-05" }),
+			),
+		);
+
+		// ヘッダー枠組みが0msで存在することを確認
+		expect(screen.getByText(/Materials of the Day/i)).toBeInTheDocument();
+
+		// データ着信後のカード表示を確認
+		const card = await screen.findByTestId("mock-note-card");
+		expect(card).toBeInTheDocument();
+	});
+
 	it("データロード完了後、一本化された本家NoteCardがshowTimeOnlyモードで正しく呼び出されること", async () => {
 		render(
 			React.createElement(

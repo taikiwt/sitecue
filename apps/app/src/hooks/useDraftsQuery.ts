@@ -31,6 +31,51 @@ export function useFetchDrafts(initialData?: Draft[]) {
 	});
 }
 
+export function useFetchDraft(id?: string, initialData?: Draft) {
+	const queryClient = useQueryClient();
+
+	return useQuery({
+		queryKey: [...DRAFTS_QUERY_KEY, id],
+		enabled: !!id,
+		initialData: () => {
+			if (initialData) return initialData;
+			if (!id) return undefined;
+			const cached = queryClient.getQueryData<
+				Draft[] | { drafts: Draft[]; notes: unknown[] }
+			>(DRAFTS_QUERY_KEY);
+
+			if (!cached) return undefined;
+			if (Array.isArray(cached)) {
+				return cached.find((d) => d.id === id);
+			}
+			if ("drafts" in cached && Array.isArray(cached.drafts)) {
+				return cached.drafts.find((d) => d.id === id);
+			}
+			return undefined;
+		},
+		queryFn: async (): Promise<Draft | undefined> => {
+			if (!id) return undefined;
+			const supabase = createClient();
+			const { data, error } = await supabase
+				.from("sitecue_drafts")
+				.select("*, sitecue_templates(*)")
+				.eq("id", id)
+				.maybeSingle();
+
+			if (error) throw error;
+			if (!data) return undefined;
+
+			return {
+				...data,
+				metadata: data.metadata as Draft["metadata"],
+				sitecue_templates:
+					data.sitecue_templates as unknown as Draft["sitecue_templates"],
+			} as Draft;
+		},
+		staleTime: 5 * 60 * 1000,
+	});
+}
+
 export function useCreateDraft() {
 	const queryClient = useQueryClient();
 
@@ -55,6 +100,7 @@ export function useCreateDraft() {
 			return data as Draft;
 		},
 		onSuccess: (newDraft) => {
+			queryClient.setQueryData([...DRAFTS_QUERY_KEY, newDraft.id], newDraft);
 			queryClient.setQueriesData<
 				Draft[] | { drafts: Draft[]; notes: unknown[] }
 			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {
@@ -103,6 +149,10 @@ export function useUpdateDraft() {
 			return data as Draft;
 		},
 		onSuccess: (updatedDraft) => {
+			queryClient.setQueryData(
+				[...DRAFTS_QUERY_KEY, updatedDraft.id],
+				updatedDraft,
+			);
 			queryClient.setQueriesData<
 				Draft[] | { drafts: Draft[]; notes: unknown[] }
 			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {

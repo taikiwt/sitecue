@@ -162,12 +162,9 @@ export default function StudioReviewPane({
 
 					<div className="grid gap-3">
 						{isLoadingReview ? (
-							Array.from({ length: 3 }).map((_, i) => (
+							["skel-1", "skel-2", "skel-3"].map((skelKey) => (
 								<div
-									key={`skeleton-${
-										// biome-ignore lint/suspicious/noArrayIndexKey: Skeletons are static
-										i
-									}`}
+									key={skelKey}
 									className="h-24 animate-pulse rounded-xl border border-neutral-100 bg-neutral-100/50"
 								/>
 							))
