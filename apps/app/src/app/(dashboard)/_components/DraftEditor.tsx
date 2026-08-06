@@ -81,8 +81,11 @@ export default function DraftEditor({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const supabase = createClient();
-	const activePane =
+	const initialPane =
 		searchParams.get("tab") === "materials" ? "materials" : "review";
+	const [activePane, setActivePane] = useState<"review" | "materials">(
+		initialPane,
+	);
 	const [isPanelOpen, setIsPanelOpen] = useState(false);
 
 	const togglePanel = () => {
@@ -316,6 +319,22 @@ export default function DraftEditor({
 		setHasUnsavedNotesChanges(true);
 	};
 
+	const handleUpdateNoteType = (id: string, newType: NoteType) => {
+		setReviewNotes((prev) =>
+			prev.map((n) => (n.id === id ? { ...n, note_type: newType } : n)),
+		);
+		setHasUnsavedNotesChanges(true);
+	};
+
+	const handleToggleNoteResolved = (id: string) => {
+		setReviewNotes((prev) =>
+			prev.map((n) =>
+				n.id === id ? { ...n, is_resolved: !n.is_resolved } : n,
+			),
+		);
+		setHasUnsavedNotesChanges(true);
+	};
+
 	const handleDeleteNote = (id: string) => {
 		const noteToDelete = reviewNotes.find((n) => n.id === id);
 		if (noteToDelete?.draft_id) {
@@ -351,9 +370,12 @@ export default function DraftEditor({
 		// Save current state before weave
 		pushToHistory(content);
 
+		// 未解決のノート（!is_resolved）のみを Weave の対象とする
+		const activeReviewNotes = reviewNotes.filter((n) => !n.is_resolved);
+
 		const { newContent, planError, error } = await generateWeave(
 			content,
-			reviewNotes,
+			activeReviewNotes,
 			activeTemplate,
 		);
 
@@ -370,12 +392,12 @@ export default function DraftEditor({
 			setContent(newContent);
 			pushToHistory(newContent);
 
-			// Auto-Consume Review Notes
-			const noteIdsToDelete = reviewNotes.map((note) => note.id);
+			// Auto-Consume only active review notes used in Weave
+			const noteIdsToDelete = activeReviewNotes.map((note) => note.id);
 			if (noteIdsToDelete.length > 0) {
 				deleteNotesMutation.mutate(noteIdsToDelete);
 			}
-			setReviewNotes([]);
+			setReviewNotes((prev) => prev.filter((n) => n.is_resolved));
 		}
 	};
 
@@ -522,11 +544,13 @@ export default function DraftEditor({
 		}
 	};
 
-	const updatePane = (pane: string) => {
-		const params = new URLSearchParams(searchParams.toString());
-		params.set("tab", pane);
+	const updatePane = (pane: "review" | "materials") => {
+		setActivePane(pane);
 		setIsPanelOpen(true);
-		router.replace(`?${params.toString()}`);
+		// Passive URL sync without trigger router re-render
+		const params = new URLSearchParams(window.location.search);
+		params.set("tab", pane);
+		window.history.replaceState(null, "", `?${params.toString()}`);
 	};
 
 	const handleTemplateSaved = async (newTemplate: Template) => {
@@ -706,6 +730,8 @@ export default function DraftEditor({
 									isLoadingReview={isLoadingReview}
 									onAddNote={handleAddNote}
 									onUpdateNote={handleUpdateNote}
+									onUpdateNoteType={handleUpdateNoteType}
+									onToggleNoteResolved={handleToggleNoteResolved}
 									onDeleteNote={handleDeleteNote}
 									onDeleteAllNotes={handleDeleteAllNotes}
 									onReorderNotes={handleReorderNotes}
@@ -931,6 +957,8 @@ export default function DraftEditor({
 										isLoadingReview={isLoadingReview}
 										onAddNote={handleAddNote}
 										onUpdateNote={handleUpdateNote}
+										onUpdateNoteType={handleUpdateNoteType}
+										onToggleNoteResolved={handleToggleNoteResolved}
 										onDeleteNote={handleDeleteNote}
 										onDeleteAllNotes={handleDeleteAllNotes}
 										onReorderNotes={handleReorderNotes}
@@ -1033,6 +1061,8 @@ export default function DraftEditor({
 											isLoadingReview={isLoadingReview}
 											onAddNote={handleAddNote}
 											onUpdateNote={handleUpdateNote}
+											onUpdateNoteType={handleUpdateNoteType}
+											onToggleNoteResolved={handleToggleNoteResolved}
 											onDeleteNote={handleDeleteNote}
 											onDeleteAllNotes={handleDeleteAllNotes}
 											onReorderNotes={handleReorderNotes}

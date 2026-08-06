@@ -182,4 +182,27 @@ describe("DraftEditor - Error Handling & Architecture", () => {
 			expect(mockRefresh).not.toHaveBeenCalled();
 		});
 	});
+
+	it("タブ切替（SELF REVIEW ⇔ GLOBAL MATERIALS）が即座にトグル可能であること", async () => {
+		const queryClient = createTestQueryClient();
+		const user = userEvent.setup();
+		render(
+			<QueryClientProvider client={queryClient}>
+				<DraftEditor />
+			</QueryClientProvider>,
+		);
+
+		const reviewTab = screen.getAllByRole("button", { name: "SELF REVIEW" })[0];
+		const materialsTab = screen.getAllByRole("button", {
+			name: "GLOBAL MATERIALS",
+		})[0];
+
+		expect(reviewTab).toBeInTheDocument();
+		expect(materialsTab).toBeInTheDocument();
+
+		await user.click(materialsTab);
+		expect(
+			screen.getAllByPlaceholderText(/search.*materials/i)[0],
+		).toBeInTheDocument();
+	});
 });

@@ -18,7 +18,7 @@ vi.mock("@/hooks/useNotesQuery", () => ({
 	useFetchNoteContents: () => ({ mutate: mockFetchNoteContents }),
 }));
 
-const mockFetchDiaries = vi.fn(() => ({ data: [] as any[] }));
+const mockFetchDiaries = vi.fn(() => ({ data: [] as unknown[] }));
 vi.mock("@/hooks/useDiariesQuery", () => ({
 	useFetchDiaries: () => mockFetchDiaries(),
 	useAppendDiary: () => ({ mutate: vi.fn() }),

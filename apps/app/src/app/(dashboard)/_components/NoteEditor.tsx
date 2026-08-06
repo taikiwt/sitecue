@@ -1,6 +1,6 @@
 "use client";
 
-import { APP_LIMITS } from "@sitecue/shared";
+import { SHARED_LIMITS } from "@sitecue/shared";
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -16,14 +16,20 @@ interface NoteEditorProps {
 }
 
 export default function NoteEditor({ onSubmit }: NoteEditorProps) {
+	const planState = useUserStore((state) => state.plan);
+	const userPlan = typeof planState === "string" ? planState : "free";
 	const openPaywall = useUserStore((state) => state.openPaywall);
 	const [content, setContent] = useState("");
 	const [noteType, setNoteType] = useState<NoteType>("info");
 	const [isSaving, setIsSaving] = useState(false);
 
+	const maxNoteLength =
+		SHARED_LIMITS.NOTE_LENGTH[userPlan.toUpperCase() as "FREE" | "PRO"] ||
+		SHARED_LIMITS.NOTE_LENGTH.FREE;
+
 	const charCount = content.length;
-	const isNearLimit = charCount >= APP_LIMITS.MAX_NOTE_LENGTH * 0.9;
-	const isOverLimit = charCount > APP_LIMITS.MAX_NOTE_LENGTH;
+	const isNearLimit = charCount >= maxNoteLength * 0.9;
+	const isOverLimit = charCount > maxNoteLength;
 
 	const handleSave = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -66,7 +72,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-neutral-400 hover-safe:text-note-info hover-safe:bg-neutral-100/50",
 						)}
 					>
-						<Info className="h-3 w-3" aria-hidden="true" />
+						<Info aria-hidden="true" className="h-3 w-3" />
 						Info
 					</FilterBadge>
 					<FilterBadge
@@ -79,7 +85,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-neutral-400 hover-safe:text-note-alert hover-safe:bg-neutral-100/50",
 						)}
 					>
-						<AlertTriangle className="h-3 w-3" aria-hidden="true" />
+						<AlertTriangle aria-hidden="true" className="h-3 w-3" />
 						Alert
 					</FilterBadge>
 					<FilterBadge
@@ -92,7 +98,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 								: "text-neutral-400 hover-safe:text-note-idea hover-safe:bg-neutral-100/50",
 						)}
 					>
-						<Lightbulb className="h-3 w-3" aria-hidden="true" />
+						<Lightbulb aria-hidden="true" className="h-3 w-3" />
 						Idea
 					</FilterBadge>
 				</div>
@@ -112,24 +118,25 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 					aria-label="Save note"
 					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
-					<Send className="h-4 w-4" aria-hidden="true" />
+					<Send aria-hidden="true" className="h-4 w-4" />
 				</button>
 			</div>
 			<div className="flex justify-between items-center">
 				<p className="text-[10px] text-gray-400">
 					{isSaving ? "Saving..." : "Markdown supported"}
 				</p>
-				{isNearLimit && (
-					<span
-						className={cn(
-							"text-[10px] font-bold transition-opacity duration-300",
-							isOverLimit ? "text-note-alert" : "text-note-idea",
-						)}
-					>
-						{charCount.toLocaleString()} /{" "}
-						{APP_LIMITS.MAX_NOTE_LENGTH.toLocaleString()}
-					</span>
-				)}
+				<span
+					className={cn(
+						"text-[10px] font-mono font-bold transition-opacity duration-300",
+						isOverLimit
+							? "text-note-alert"
+							: isNearLimit
+								? "text-note-idea"
+								: "text-neutral-400",
+					)}
+				>
+					{charCount.toLocaleString()} / {maxNoteLength.toLocaleString()}
+				</span>
 			</div>
 		</div>
 	);

@@ -1,4 +1,5 @@
 "use client";
+
 import {
 	Prec,
 	type StateCommand,
@@ -18,7 +19,6 @@ import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { type EditorProps, editorExtensions } from "./EditorBase";
 import { sitecueTheme } from "./sitecueTheme";
 
-// propsに onGenerateHint を追加
 interface StudioEditorProps extends EditorProps {
 	onGenerateHint?: (
 		context: string,
@@ -59,17 +59,25 @@ const hintField = StateField.define<DecorationSet>({
 				]);
 			}
 		}
-		if (tr.docChanged) return Decoration.none; // ユーザーが入力したらヒントを消す
+		if (tr.docChanged) return Decoration.none;
 		return nextHints;
 	},
 	provide: (f) => EditorView.decorations.from(f),
 });
 
-// basicSetup のオブジェクトをコンポーネントの外に出し、参照を完全に固定する
 const basicSetupConfig = {
 	lineNumbers: false,
 	foldGutter: false,
 };
+
+const studioScrollPaddingTheme = EditorView.theme({
+	".cm-scroller": {
+		paddingBottom: "40vh",
+	},
+	".cm-content": {
+		paddingBottom: "40vh",
+	},
+});
 
 export const StudioEditor = ({
 	value,
@@ -85,10 +93,8 @@ export const StudioEditor = ({
 		onGenerateHintRef.current = onGenerateHint;
 	}, [onGenerateHint]);
 
-	// 依存配列を「完全に空」にして、拡張機能自体は一度しか作られないようにする
 	const hintExtension = useMemo(() => {
 		const requestHint = (view: EditorView) => {
-			// 実行時にRefの中身を確認する（拡張機能自体を作り直す必要はない）
 			if (!onGenerateHintRef.current) return false;
 
 			const pos = view.state.selection.main.head;
@@ -139,8 +145,8 @@ export const StudioEditor = ({
 			Prec.highest(
 				keymap.of([
 					{ key: "Mod-j", run: requestHint, preventDefault: true },
-					{ key: "Alt-j", run: requestHint, preventDefault: true }, // Windows Fallback
-					{ key: "Tab", run: acceptHint }, // Tabでヒントを受け入れる
+					{ key: "Alt-j", run: requestHint, preventDefault: true },
+					{ key: "Tab", run: acceptHint },
 					{
 						key: "Escape",
 						run: ({ state, dispatch }) => {
@@ -153,11 +159,11 @@ export const StudioEditor = ({
 		];
 	}, []);
 
-	// すべての extensions を一つの安定した配列にまとめる
 	const extensions = React.useMemo(
 		() => [
 			...editorExtensions,
 			...(Array.isArray(sitecueTheme) ? sitecueTheme : [sitecueTheme]),
+			studioScrollPaddingTheme,
 			...hintExtension,
 		],
 		[hintExtension],

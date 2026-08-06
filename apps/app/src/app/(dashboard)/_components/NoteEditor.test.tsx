@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import NoteEditor from "./NoteEditor";
@@ -51,18 +51,18 @@ describe("NoteEditor Progressive Warning", () => {
 		render(<NoteEditor onSubmit={vi.fn()} />);
 		const input = screen.getByPlaceholderText(/Write down your thoughts/i);
 
-		// 90%以上の文字を入力 (90文字)
-		const nearLimitText = "a".repeat(90);
-		await userEvent.type(input, nearLimitText);
+		// 90%以上の文字を入力 (9000文字)
+		const nearLimitText = "a".repeat(9000);
+		fireEvent.change(input, { target: { value: nearLimitText } });
 
-		expect(screen.getByText(/90 \/ 100/)).toBeInTheDocument();
+		expect(screen.getByText(/9,000 \/ 10,000/)).toBeInTheDocument();
 
-		// 超過入力 (101文字)
-		const overLimitText = "a".repeat(11);
-		await userEvent.type(input, overLimitText);
+		// 超過入力 (10,001文字)
+		const overLimitText = "a".repeat(10001);
+		fireEvent.change(input, { target: { value: overLimitText } });
 
 		const submitButton = screen.getByRole("button", { name: /Save note/i });
 		expect(submitButton).toBeDisabled();
-		expect(screen.getByText(/101 \/ 100/)).toBeInTheDocument();
+		expect(screen.getByText(/10,001 \/ 10,000/)).toBeInTheDocument();
 	});
 });

@@ -4,6 +4,7 @@ import type { Note } from "@sitecue/shared";
 import { fetchDraftsByDate, fetchNotesByDate } from "@sitecue/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import NoteCard from "../../../studio/_components/NoteCard";
 
@@ -36,15 +37,16 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 
 	return (
 		<div className="w-full h-full flex flex-col overflow-hidden bg-base-surface">
-			{/* 💡 固定ヘッダー: 0ms で常時即時表示 */}
+			{/* 1. 固定ヘッダー (shrink-0) */}
 			<div className="p-4 border-b border-base-border shrink-0 bg-base-surface/50 h-14 flex items-center">
 				<h2 className="text-xs font-bold text-action uppercase tracking-widest font-mono flex items-center gap-2">
 					<Calendar className="w-3.5 h-3.5 text-neutral-400" />
-					Materials of the Day ({isLoading ? "..." : notes.length + drafts.length})
+					Materials of the Day (
+					{isLoading ? "..." : notes.length + drafts.length})
 				</h2>
 			</div>
 
-			{/* 独立スクロール領域 */}
+			{/* 2. 独立スクロール領域 (flex-1 overflow-y-auto min-h-0) */}
 			<div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 custom-scrollbar">
 				{isLoading ? (
 					/* 💡 取得中: 枠組みを崩さずリスト領域内のみにスケルトンを表示 */
@@ -73,7 +75,7 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 										<NoteCard
 											key={note.id}
 											note={note}
-											onInsert={onInsert}
+											onInsert={undefined}
 											showTimeOnly={true}
 										/>
 									))}
@@ -113,17 +115,19 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 											showTimeOnly={true}
 											rightAction={
 												onInsert && (
-													<button
+													<Button
 														type="button"
 														onClick={() => onInsert(draft.content || "")}
-														className="p-1 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-md transition-colors"
+														radius="full"
+														size="icon-sm"
+														variant="ghost"
 														title="Insert to Editor"
 													>
 														<ArrowLeft
 															className="w-3.5 h-3.5"
 															aria-hidden="true"
 														/>
-													</button>
+													</Button>
 												)
 											}
 										/>
