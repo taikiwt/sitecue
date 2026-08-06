@@ -10,6 +10,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
 	useFetchDiaries: vi.fn(() => ({ data: [] })),
+	useFetchDiaryByDate: vi.fn(() => ({ data: null, isLoading: false })),
 	useUpdateDiary: () => ({ mutateAsync: vi.fn() }),
 }));
 
@@ -57,10 +58,10 @@ describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
 			}),
 		);
 
-		expect(screen.getByText("Diary Studio")).toBeInTheDocument();
-		expect(screen.getByText("2026-06-21")).toBeInTheDocument();
-		expect(screen.getByText("Save Diary")).toBeInTheDocument();
-		expect(screen.getByText("5 chars")).toBeInTheDocument();
+		expect(screen.getAllByText("Diary Studio")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("2026-06-21")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("Save Diary")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("5 chars")[0]).toBeInTheDocument();
 	});
 
 	it("メインの執筆キャンバスが読み込まれ、グレー背景ではなくメイン背景（bg-base-bg）が担保されていること", () => {
@@ -80,7 +81,7 @@ describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
 			}),
 		);
 
-		const editor = screen.getByTestId("mock-code-editor");
+		const editor = screen.getAllByTestId("mock-code-editor")[0];
 		expect(editor).toBeInTheDocument();
 
 		// bg-base-bg がレイアウトに付与されていることの検証

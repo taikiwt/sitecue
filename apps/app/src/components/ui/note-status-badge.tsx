@@ -47,36 +47,45 @@ export function NoteStatusBadge({
 	return (
 		<button
 			type="button"
-			onClick={onClick}
+			onClick={(e) => {
+				e.stopPropagation();
+				onClick?.(e);
+			}}
 			className={cn(
-				"group/badge relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-colors overflow-hidden cursor-pointer pointer-events-auto",
+				"group/badge relative inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase transition-colors overflow-hidden cursor-pointer pointer-events-auto shrink-0",
 				bgClass,
 				textClass,
 				className,
 			)}
-			title={isResolved ? "Mark as unresolved" : "Mark as resolved"}
+			title={
+				onClick
+					? `Type: ${label} (Click to toggle)`
+					: isResolved
+						? "Mark as unresolved"
+						: "Mark as resolved"
+			}
 		>
 			<div className="relative w-3.5 h-3.5 flex items-center justify-center shrink-0 overflow-hidden">
 				{!isResolved ? (
 					<>
 						<BaseIcon
-							className="absolute inset-0 w-full h-full transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
 							aria-hidden="true"
+							className="absolute inset-0 w-full h-full transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
 						/>
 						<Check
-							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
 							aria-hidden="true"
+							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
 						/>
 					</>
 				) : (
 					<>
 						<Check
-							className="absolute inset-0 w-full h-full text-emerald-500 transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
 							aria-hidden="true"
+							className="absolute inset-0 w-full h-full text-emerald-500 transition-all duration-300 group-hover/badge:-translate-y-full group-hover/badge:opacity-0"
 						/>
 						<RotateCcw
-							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
 							aria-hidden="true"
+							className="absolute inset-0 w-full h-full translate-y-full opacity-0 transition-all duration-300 group-hover/badge:translate-y-0 group-hover/badge:opacity-100"
 						/>
 					</>
 				)}
