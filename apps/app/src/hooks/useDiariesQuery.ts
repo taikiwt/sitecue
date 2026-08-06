@@ -70,15 +70,37 @@ export function useAppendDiary() {
 			return appendDiaryLog(supabase, user.id, date, text, topics);
 		},
 		onSuccess: (newDiary) => {
-			// プレフィックス一致を用いて関連キャッシュを一括同期
-			queryClient.setQueriesData<Diary[]>({ queryKey: ["diaries"] }, (old) => {
-				if (!old) return [newDiary];
-				const exists = old.some((d) => d.date === newDiary.date);
-				if (exists) {
-					return old.map((d) => (d.date === newDiary.date ? newDiary : d));
-				}
-				return [newDiary, ...old].sort((a, b) => b.date.localeCompare(a.date));
-			});
+			// 1. 詳細キャッシュの明示的ハイドレーション
+			queryClient.setQueryData<Diary | null>(
+				["diaries", newDiary.date],
+				newDiary,
+			);
+
+			// 2. プレフィックス一致を用いて関連キャッシュを一括同期（配列 vs オブジェクトの型分岐）
+			queryClient.setQueriesData<Diary[] | Diary | null>(
+				{ queryKey: ["diaries"] },
+				(old) => {
+					if (!old) return old;
+
+					// 配列キャッシュ（一覧: ["diaries"]）の更新
+					if (Array.isArray(old)) {
+						const exists = old.some((d) => d.date === newDiary.date);
+						if (exists) {
+							return old.map((d) => (d.date === newDiary.date ? newDiary : d));
+						}
+						return [newDiary, ...old].sort((a, b) =>
+							b.date.localeCompare(a.date),
+						);
+					}
+
+					// 単一オブジェクトキャッシュ（詳細: ["diaries", date]）の更新
+					if (typeof old === "object" && "date" in old) {
+						return old.date === newDiary.date ? newDiary : old;
+					}
+
+					return old;
+				},
+			);
 		},
 	});
 }
@@ -104,14 +126,37 @@ export function useUpdateDiary() {
 			return updateDiaryContent(supabase, user.id, date, text, topics);
 		},
 		onSuccess: (newDiary) => {
-			queryClient.setQueriesData<Diary[]>({ queryKey: ["diaries"] }, (old) => {
-				if (!old) return [newDiary];
-				const exists = old.some((d) => d.date === newDiary.date);
-				if (exists) {
-					return old.map((d) => (d.date === newDiary.date ? newDiary : d));
-				}
-				return [newDiary, ...old].sort((a, b) => b.date.localeCompare(a.date));
-			});
+			// 1. 詳細キャッシュの明示的ハイドレーション
+			queryClient.setQueryData<Diary | null>(
+				["diaries", newDiary.date],
+				newDiary,
+			);
+
+			// 2. プレフィックス一致を用いて関連キャッシュを一括同期（配列 vs オブジェクトの型分岐）
+			queryClient.setQueriesData<Diary[] | Diary | null>(
+				{ queryKey: ["diaries"] },
+				(old) => {
+					if (!old) return old;
+
+					// 配列キャッシュ（一覧: ["diaries"]）の更新
+					if (Array.isArray(old)) {
+						const exists = old.some((d) => d.date === newDiary.date);
+						if (exists) {
+							return old.map((d) => (d.date === newDiary.date ? newDiary : d));
+						}
+						return [newDiary, ...old].sort((a, b) =>
+							b.date.localeCompare(a.date),
+						);
+					}
+
+					// 単一オブジェクトキャッシュ（詳細: ["diaries", date]）の更新
+					if (typeof old === "object" && "date" in old) {
+						return old.date === newDiary.date ? newDiary : old;
+					}
+
+					return old;
+				},
+			);
 		},
 	});
 }
