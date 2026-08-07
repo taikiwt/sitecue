@@ -1,13 +1,12 @@
-import { requireUser } from "@/utils/supabase/server";
+import { use } from "react";
 import { DiaryStudioClient } from "./_components/DiaryStudioClient";
 
 interface Props {
 	params: Promise<{ date: string }>;
 }
 
-export default async function DiaryStudioPage({ params }: Props) {
-	const { date } = await params;
-	await requireUser(`/diaries/${date}`);
+export default function DiaryStudioPage({ params }: Props) {
+	const { date } = use(params);
 
 	return <DiaryStudioClient date={date} />;
 }

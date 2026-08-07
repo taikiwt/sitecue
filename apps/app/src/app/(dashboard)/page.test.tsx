@@ -12,10 +12,9 @@ vi.mock("./_components/DashboardContainer", () => ({
 	),
 }));
 
-describe("LaunchpadPage Component", () => {
-	it("renders DashboardContainer correctly inside Suspense boundary", async () => {
-		const pageNode = await LaunchpadPage();
-		render(pageNode);
+describe("LaunchpadPage (0ms UI Shell)", () => {
+	it("Top-level Blocking なしで即時にレンダリングされること", async () => {
+		render(<LaunchpadPage />);
 
 		expect(
 			await screen.findByTestId("dashboard-container"),

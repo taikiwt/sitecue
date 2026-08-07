@@ -33,17 +33,16 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
   `.agent/rules/ui-rules.md` に従い、Suspense の `fallback` には原則として `null` または最最小限の表示を指定し、レンダリング時のチラつきを最小限に抑えてください。
   **【🚨 loading.tsx 物理削除と 0ms UI シェル常時露出の原則】**
   主要ページ（Launchpad, Studio, Notes等）において、ルート直下に `loading.tsx` を配備してはならない。`loading.tsx` が存在すると、SPA遷移や `router.replace` 実行時に Next.js が画面全体のコンテナ（AppShellや枠組み）ごとアンマウントして全画面スケルトンへ強制置換し、画面の激しいチラつきやレイアウトシフトを発生させるためである。
-  初期ロードコストが高い画面においては、RSC（`page.tsx`）側で重い DB 通信を `await` せずに最速で認証ガードのみを通過させて外殻（ヘッダーや枠組み）を 0ms で即時レンダリング返却（Unblocked Shell）し、内部の動的コンテンツ領域のみを `<SWRBoundary>` で部分保護・スケルトン化することを絶対標準アーキテクチャとする。
+  初期ロードコストが高い画面においては、RSC（`page.tsx`）側で重い DB 通信や `requireUser` などの同期通信・パラメータ待機を行わず、最速で外殻（ヘッダーや枠組み）を 0ms で即時レンダリング返却（Unblocked Shell）し、内部の動的コンテンツ領域のみを `<SWRBoundary>` で部分保護・スケルトン化することを絶対標準アーキテクチャとする。
 
 
 ## 5. Server Component Constraints (RSCの掟)
 - **イベントハンドラの禁止**: `page.tsx` や `layout.tsx` などの Server Component 内で、直接 `onClick` や `onChange` などのイベントハンドラを記述したり、`useState` などの React Hooks を呼び出したりすることは**厳禁**。
 - **解決策 (Expand & Contract)**: ボタンのクリックによるトースト通知や状態変更など、インタラクティブな処理が必要な場合は、そのボタン部分のみを純粋な Client Component (`"use client"`) として別ファイル（例: `_components/HogeButton.tsx`）に切り出し、Server Component にインポートして配置すること。
-- **RSC Top-level Blocking の禁止**: ダッシュボード等のポータルページにおいて、すべての通信フェッチを親の `page.tsx` 直下で一括 `await` してSSRレスポンスを止める実装を禁止する。必ずコンポーネント単位で `<Suspense>` を配置し、RSC Streaming を実現すること。
+- **RSC Top-level Blocking の禁止**: ダッシュボード等のポータルページにおいて、すべての通信フェッチや `requireUser` / `searchParams` 待機を親の `page.tsx` 直下で `await` してSSRレスポンスを止める実装を禁止する。RSCPayload の返却自体を遅延させないため、`page.tsx` 側での同期待機を全撤廃し、0ms で Client Component（UIシェル）を即時返却すること。
 - **ローカルURLに対する外部 Favicon API リクエストの遮断**: `localhost`, `127.0.0.1`, `0.0.0.0`, `.local` 等のローカルドメインに対しては、Google Favicon API 等の外部ネットワーク通信を呼び出さず、専用のフォールバックアイコン (`Laptop`) を返すこと。
-- **RSC Top-level Blocking 回避と認証パスの固定化 (0ms UI シェル即時返却)**:
-  `page.tsx` (RSC) 側で `searchParams` などの非同期パラメータを `await` して動的リダイレクトパス（`currentPath`）を構築してはならない。Next.js の Concurrent Navigation によりページ全体（RSC Payload）の返却自体がブロック（Top-level Blocking）され、画面遷移時に固定フリーズ感が生じるためである。
-  `page.tsx` 内の `requireUser()` などの認証ガードには、`searchParams` の解釈を待たずに基本パス（例: `/notes` や `/studio/new`）を渡し、最速で UI シェルを 0ms 返却すること。
+- **RSC Top-level Blocking 回避 (0ms UI シェル即時返却の掟)**:
+  `middleware.ts` が全ルート保護をエッジレベルで完結させ、Supabase RLS が DB 層で認可を絶対担保しているため、`page.tsx` (RSC) 側で `requireUser()` や `searchParams` などの非同期・同期待機を行ってはならない。Next.js の Concurrent Navigation によりページ全体（RSC Payload）の返却自体がブロック（Top-level Blocking）され、画面遷移時に固定フリーズ感が生じるのを防ぐため、最速で Client Component（UIシェル）を 0ms 即時返却すること。
 
 ## 6. Route Protection & Auth Constraints (多層防御の掟)
 - **オプトアウト方式の Middleware**:
