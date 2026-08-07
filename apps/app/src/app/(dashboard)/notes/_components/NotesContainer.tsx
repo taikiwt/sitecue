@@ -2,7 +2,7 @@
 
 import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useMemo } from "react";
 import { SWRBoundary } from "@/components/ui/swr-boundary";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
@@ -16,7 +16,6 @@ import { RightPaneDetail } from "./RightPaneDetail";
 
 export function NotesContainer() {
 	const searchParams = useSearchParams();
-	const router = useRouter();
 
 	const { data: notes = [], isLoading: isNotesLoading } = useFetchNotes();
 	const { data: drafts = [], isLoading: isDraftsLoading } = useFetchDrafts();
@@ -44,6 +43,9 @@ export function NotesContainer() {
 
 	const effectiveView = useMemo(() => {
 		const rawView = params.view as string | undefined;
+		if (params.domain === "inbox") {
+			return "inbox";
+		}
 		if (
 			rawView &&
 			["domains", "inbox", "drafts", "diaries"].includes(rawView)
@@ -51,7 +53,7 @@ export function NotesContainer() {
 			return rawView as SearchParams["view"] & string;
 		}
 		return "domains";
-	}, [params.view]);
+	}, [params.view, params.domain]);
 
 	// 1. 右ペイン用アイテムの最優先（0ms）ダイレクト抽出
 	// 中ペインの全件計算やフィルタリングの完了を待たず、キャッシュ（notes/drafts）から即時取得する
@@ -94,17 +96,6 @@ export function NotesContainer() {
 		if (isNotesLoading || isDraftsLoading) return null;
 		return groupNotes(notes, drafts);
 	}, [notes, drafts, isNotesLoading, isDraftsLoading]);
-
-	useEffect(() => {
-		if (params.domain === "inbox") {
-			const newParams = new URLSearchParams(searchParams.toString());
-			newParams.delete("domain");
-			newParams.set("view", "inbox");
-			router.replace(`${window.location.pathname}?${newParams.toString()}`, {
-				scroll: false,
-			});
-		}
-	}, [params.domain, searchParams, router]);
 
 	const isSearchActive = !!params.q || !!params.tags;
 	const query = params.q?.toLowerCase() || "";

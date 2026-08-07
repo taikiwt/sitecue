@@ -8,11 +8,8 @@ export default async function FocusModePage({
 }) {
 	const resolvedParams = await searchParams;
 	const templateId = resolvedParams.template_id;
-	const currentPath = templateId
-		? `/studio/new?template_id=${templateId}`
-		: "/studio/new";
 
-	await requireUser(currentPath);
+	await requireUser("/studio/new");
 
 	return <DraftEditor templateId={templateId} />;
 }
