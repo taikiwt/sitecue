@@ -3,7 +3,7 @@
 import type { Template } from "@sitecue/shared";
 import { APP_LIMITS } from "@sitecue/shared";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
@@ -32,12 +32,16 @@ export function TemplateManager({
 	initialTemplates,
 	selectedId,
 }: {
-	initialTemplates: Template[];
-	selectedId: string | null;
+	initialTemplates?: Template[];
+	selectedId?: string | null;
 }) {
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const isDesktop = useMediaQuery("(min-width: 768px)");
+
+	const effectiveSelectedId =
+		selectedId !== undefined ? selectedId : searchParams.get("id") || null;
 
 	const { data: templates = [], isLoading } =
 		useFetchTemplates(initialTemplates);
@@ -47,8 +51,8 @@ export function TemplateManager({
 	const deleteTemplateMutation = useDeleteTemplate();
 
 	// Form State
-	const activeTemplate = templates.find((t) => t.id === selectedId);
-	const isNew = selectedId === "new";
+	const activeTemplate = templates.find((t) => t.id === effectiveSelectedId);
+	const isNew = effectiveSelectedId === "new";
 	const isDrawerOpen = !isDesktop && (!!activeTemplate || isNew);
 
 	const [name, setName] = useState("");
@@ -134,7 +138,7 @@ export function TemplateManager({
 		if (!window.confirm("Are you sure you want to delete this template?"))
 			return;
 
-		if (selectedId === id) router.push("/templates");
+		if (effectiveSelectedId === id) router.push("/templates");
 
 		try {
 			await deleteTemplateMutation.mutateAsync(id);
@@ -278,7 +282,7 @@ export function TemplateManager({
 						{templates.map((t) => (
 							<div
 								key={t.id}
-								className={`flex items-center justify-between px-3 py-2 rounded-lg group ${selectedId === t.id ? "bg-base-bg shadow-sm" : "hover-safe:bg-base-bg/50"}`}
+								className={`flex items-center justify-between px-3 py-2 rounded-lg group ${effectiveSelectedId === t.id ? "bg-base-bg shadow-sm" : "hover-safe:bg-base-bg/50"}`}
 							>
 								<Link
 									href={`/templates?id=${t.id}`}

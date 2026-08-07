@@ -67,9 +67,12 @@ export default function DraftEditor({
 	);
 	const activeDraft = fetchedDraft || initialDraft;
 
+	const searchParams = useSearchParams();
+	const effectiveTemplateId =
+		templateId ?? searchParams.get("template_id") ?? undefined;
 	const { data: templates } = useFetchTemplates();
-	const fetchedTemplate = templateId
-		? templates?.find((t) => t.id === templateId)
+	const fetchedTemplate = effectiveTemplateId
+		? templates?.find((t) => t.id === effectiveTemplateId)
 		: null;
 
 	const [selectedTemplate, setSelectedTemplate] = useState<
@@ -79,7 +82,6 @@ export default function DraftEditor({
 		selectedTemplate ?? (fetchedTemplate || activeDraft?.sitecue_templates);
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
-	const searchParams = useSearchParams();
 	const supabase = createClient();
 	const initialPane =
 		searchParams.get("tab") === "materials" ? "materials" : "review";

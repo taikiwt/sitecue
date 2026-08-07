@@ -1,4 +1,4 @@
-import { requireUser } from "@/utils/supabase/server";
+import { use } from "react";
 import DraftEditor from "../../_components/DraftEditor";
 
 interface DraftPageProps {
@@ -7,12 +7,8 @@ interface DraftPageProps {
 	}>;
 }
 
-export default async function DraftEditPage({ params }: DraftPageProps) {
-	const { id } = await params;
-	const currentPath = `/studio/${id}`;
-
-	// 最速で認証ガードのみ通過させ、UIシェルを 0ms で即時返却
-	await requireUser(currentPath);
+export default function DraftEditPage({ params }: DraftPageProps) {
+	const { id } = use(params);
 
 	return <DraftEditor draftId={id} />;
 }
