@@ -41,6 +41,9 @@ App Basecamp（`apps/app/`）に新しい機能や画面を追加する場合、
 - **解決策 (Expand & Contract)**: ボタンのクリックによるトースト通知や状態変更など、インタラクティブな処理が必要な場合は、そのボタン部分のみを純粋な Client Component (`"use client"`) として別ファイル（例: `_components/HogeButton.tsx`）に切り出し、Server Component にインポートして配置すること。
 - **RSC Top-level Blocking の禁止**: ダッシュボード等のポータルページにおいて、すべての通信フェッチを親の `page.tsx` 直下で一括 `await` してSSRレスポンスを止める実装を禁止する。必ずコンポーネント単位で `<Suspense>` を配置し、RSC Streaming を実現すること。
 - **ローカルURLに対する外部 Favicon API リクエストの遮断**: `localhost`, `127.0.0.1`, `0.0.0.0`, `.local` 等のローカルドメインに対しては、Google Favicon API 等の外部ネットワーク通信を呼び出さず、専用のフォールバックアイコン (`Laptop`) を返すこと。
+- **RSC Top-level Blocking 回避と認証パスの固定化 (0ms UI シェル即時返却)**:
+  `page.tsx` (RSC) 側で `searchParams` などの非同期パラメータを `await` して動的リダイレクトパス（`currentPath`）を構築してはならない。Next.js の Concurrent Navigation によりページ全体（RSC Payload）の返却自体がブロック（Top-level Blocking）され、画面遷移時に固定フリーズ感が生じるためである。
+  `page.tsx` 内の `requireUser()` などの認証ガードには、`searchParams` の解釈を待たずに基本パス（例: `/notes` や `/studio/new`）を渡し、最速で UI シェルを 0ms 返却すること。
 
 ## 6. Route Protection & Auth Constraints (多層防御の掟)
 - **オプトアウト方式の Middleware**:
