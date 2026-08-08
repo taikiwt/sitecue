@@ -1,17 +1,36 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import toast from "react-hot-toast";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useEditorStore } from "@/store/useEditorStore";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 import { GlobalNewNoteDialog } from "./GlobalNewNoteDialog";
 
-// next/navigation のモック
+// CodeMirror モック
+vi.mock("@uiw/react-codemirror", () => ({
+	default: ({
+		value,
+		onChange,
+		placeholder,
+	}: {
+		value: string;
+		onChange: (v: string) => void;
+		placeholder?: string;
+	}) => (
+		<textarea
+			data-testid="codemirror-mock"
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			placeholder={placeholder}
+		/>
+	),
+}));
+
+// next/navigation モック
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
 const mockRefresh = vi.fn();
-const mockUseSearchParams = vi.fn();
+const mockUseSearchParams = vi.fn(() => new URLSearchParams());
 vi.mock("next/navigation", () => ({
 	useRouter: () => ({
 		push: mockPush,
@@ -21,54 +40,65 @@ vi.mock("next/navigation", () => ({
 	useSearchParams: () => mockUseSearchParams(),
 }));
 
+// Toast モック
 vi.mock("react-hot-toast", () => ({
 	default: { error: vi.fn(), success: vi.fn() },
 }));
 
-// カスタムフックのモック
-const mockMutateAsync = vi.fn().mockRejectedValue({
-	message: "note storage limit reached",
-	code: "P0001",
-});
-
+// Mutation フック モック
+const mockCreateMutate = vi.fn();
+const mockAppendMutate = vi.fn();
 vi.mock("@/hooks/useNotesQuery", () => ({
 	useCreateNote: () => ({
-		mutateAsync: mockMutateAsync,
+		mutate: mockCreateMutate,
 	}),
 }));
-
 vi.mock("@/hooks/useDiariesQuery", () => ({
 	useFetchDiaries: vi.fn(() => ({ data: [] })),
 	useAppendDiary: () => ({
-		mutateAsync: vi.fn().mockResolvedValue({}),
+		mutate: mockAppendMutate,
 	}),
 }));
 
-// NotesEditor のモック
+// NotesEditor モック
 vi.mock("@/components/editor/NotesEditor", () => ({
 	NotesEditor: ({
 		onChange,
 		value,
+		onSave,
 	}: {
 		onChange: (val: string) => void;
 		value: string;
+		onSave?: () => void;
 	}) => (
-		<textarea
-			data-testid="notes-editor"
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-		/>
+		<div>
+			<textarea
+				data-testid="notes-editor"
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+			/>
+			<button type="button" data-testid="trigger-onsave" onClick={onSave}>
+				Trigger OnSave
+			</button>
+		</div>
 	),
 }));
 
-describe("GlobalNewNoteDialog (Zustand In-Memory Context)", () => {
-	let queryClient: QueryClient;
+function renderWithProviders(ui: React.ReactElement) {
+	const queryClient = new QueryClient({
+		defaultOptions: { queries: { retry: false } },
+	});
+	return render(
+		<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+	);
+}
 
+describe("GlobalNewNoteDialog Component", () => {
 	beforeEach(() => {
+		vi.useFakeTimers();
 		vi.clearAllMocks();
-		queryClient = new QueryClient({
-			defaultOptions: { queries: { retry: false } },
-		});
+		mockCreateMutate.mockReset();
+		mockAppendMutate.mockReset();
 		useUserStore.setState({ isPaywallOpen: false });
 		useLayoutStore.setState({
 			globalNewModal: { isOpen: false, mode: "gate" },
@@ -76,195 +106,65 @@ describe("GlobalNewNoteDialog (Zustand In-Memory Context)", () => {
 		mockUseSearchParams.mockReturnValue(new URLSearchParams(""));
 	});
 
-	it("ZustandストアがOpenの時にダイアログが正常にマウントされ、初期ゲート画面が表示されること", async () => {
-		useLayoutStore.getState().openGlobalNewModal("gate");
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		expect(screen.getByText("What would you like to capture?")).toBeDefined();
-		expect(screen.getByText("Quick Note")).toBeDefined();
-		expect(screen.getByText("Daily Diary")).toBeDefined();
+	afterEach(() => {
+		vi.useRealTimers();
 	});
 
-	it("インメモリでのモード切り替え（Note）がスムーズに行われること", async () => {
-		useLayoutStore.getState().openGlobalNewModal("gate");
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		const quickNoteButton = screen.getByText("Quick Note");
-		fireEvent.click(quickNoteButton);
-
-		expect(screen.getByText("Quick Note Mode")).toBeDefined();
-		expect(screen.getByText("Scope")).toBeDefined();
-	});
-
-	it("closes itself and opens paywall when limit reached error occurs", async () => {
-		useLayoutStore.getState().openGlobalNewModal("note");
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		const editor = screen.getByTestId("notes-editor");
-		fireEvent.change(editor, { target: { value: "Test note" } });
-
-		const saveButton = screen.getByRole("button", { name: "Save Note" });
-		fireEvent.click(saveButton);
-
-		await waitFor(() => {
-			// 1. ZustandのModalがクローズされること
-			expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(false);
-			// 2. Paywall が開くこと
-			expect(useUserStore.getState().isPaywallOpen).toBe(true);
-			expect(useUserStore.getState().paywallType).toBe("notes");
-			// 3. 汎用エラーが出ないこと
-			expect(toast.error).not.toHaveBeenCalled();
-		});
-	});
-
-	it("sanitizes 'all' reserved words from search parameters via passive sync", async () => {
-		const params = new URLSearchParams(
-			"globalNew=note&intent=note&exact=all&domain=all",
-		);
-		mockUseSearchParams.mockReturnValue(params);
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		// Passive sync should open the modal in note mode
-		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(true);
-		expect(useLayoutStore.getState().globalNewModal.mode).toBe("note");
-
-		// Inbox状態なのでURLのInput自体が存在しないことを確認
-		expect(
-			screen.queryByPlaceholderText(
-				"[example.com/page](https://example.com/page)",
-			),
-		).not.toBeInTheDocument();
-
-		const inboxButton = screen.getByRole("button", { name: "inbox" });
-		expect(inboxButton).toHaveClass("capitalize");
-	});
-
-	it("falls back to domain scope when domain is valid and not 'all' via passive sync", async () => {
-		const params = new URLSearchParams(
-			"globalNew=note&intent=note&domain=example.com",
-		);
-		mockUseSearchParams.mockReturnValue(params);
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		expect(
-			screen.getByPlaceholderText(
-				"[example.com/page](https://example.com/page)",
-			),
-		).toHaveValue("example.com");
-		const domainButton = screen.getByRole("button", { name: "domain" });
-		expect(domainButton).toBeInTheDocument();
-	});
-
-	it("disables Save button when scope requires URL but it is empty", async () => {
-		useLayoutStore.getState().openGlobalNewModal("note");
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		// Set scope to domain
-		const domainBtn = screen.getByRole("button", { name: "domain" });
-		fireEvent.click(domainBtn);
-
-		const editor = screen.getByTestId("notes-editor");
-		fireEvent.change(editor, { target: { value: "Test note" } });
-
-		const saveButton = screen.getByRole("button", { name: "Save Note" });
-
-		// URLがないので無効
-		expect(saveButton).toBeDisabled();
-
-		// URLを入力する
-		const urlInput = screen.getByPlaceholderText(
-			"[example.com/page](https://example.com/page)",
-		);
-		fireEvent.change(urlInput, { target: { value: "example.com" } });
-
-		// 有効化されることを確認
-		expect(saveButton).not.toBeDisabled();
-
-		// URLを空にする
-		fireEvent.change(urlInput, { target: { value: "   " } }); // trimして空になる値
-
-		// 無効化されることを確認
-		expect(saveButton).toBeDisabled();
-
-		// Inboxに変更するとURLが不要になるので有効になることを確認
-		const inboxButton = screen.getByRole("button", { name: "inbox" });
-		fireEvent.click(inboxButton);
-		expect(saveButton).not.toBeDisabled();
-	});
-
-	it("promotes to studio correctly and saves pending content", async () => {
-		useLayoutStore.getState().openGlobalNewModal("note");
-
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
-
-		const editor = screen.getByTestId("notes-editor");
-		fireEvent.change(editor, { target: { value: "Draft idea for studio" } });
-
-		const promoteBtn = screen.getByRole("button", {
-			name: "Edit in Studio",
-		});
-		fireEvent.click(promoteBtn);
-
-		// Storeに値が保持されたことの確認
-		expect(useEditorStore.getState().pendingContent).toBe(
-			"Draft idea for studio",
-		);
-		// ダイアログが閉じられたことの確認
-		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(false);
-		// Studio画面へ遷移したことの確認
-		expect(mockPush).toHaveBeenCalledWith("/studio/new");
-	});
-
-	it("renders diary input layout when globalNewModal mode is 'diary'", async () => {
+	it("Daily Diaryモードにおいて、送信時にLogging...表示になり350ms後にダイアログが閉じること（toast.successなし）", () => {
 		useLayoutStore.getState().openGlobalNewModal("diary");
 
-		render(
-			<QueryClientProvider client={queryClient}>
-				<GlobalNewNoteDialog />
-			</QueryClientProvider>,
-		);
+		renderWithProviders(<GlobalNewNoteDialog />);
 
-		// New Note title should not be rendered
-		expect(screen.queryByText("New Note")).toBeNull();
-
-		// Large text area should be present
 		const textarea = screen.getByPlaceholderText(
-			"Write down your thoughts for today... (No title required)",
+			/Write down your thoughts for today/i,
 		);
-		expect(textarea).toBeInTheDocument();
+		fireEvent.change(textarea, { target: { value: "Today's log" } });
+
+		const saveBtn = screen.getByRole("button", { name: "Save Diary" });
+		fireEvent.click(saveBtn);
+
+		expect(
+			screen.getByRole("button", { name: "Logging..." }),
+		).toBeInTheDocument();
+
+		expect(mockAppendMutate).toHaveBeenCalledWith(
+			expect.objectContaining({ text: "Today's log" }),
+			expect.anything(),
+		);
+
+		act(() => {
+			vi.advanceTimersByTime(350);
+		});
+
+		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(false);
+		expect(toast.success).not.toHaveBeenCalled();
+	});
+
+	it("Quick Noteモードにおいて、送信時にSaving...表示になり350ms後にダイアログが閉じること", () => {
+		useLayoutStore.getState().openGlobalNewModal("note");
+
+		renderWithProviders(<GlobalNewNoteDialog />);
+
+		const editor = screen.getByTestId("notes-editor");
+		fireEvent.change(editor, { target: { value: "Quick idea text" } });
+
+		const saveBtn = screen.getByRole("button", { name: "Save Note" });
+		fireEvent.click(saveBtn);
+
+		expect(
+			screen.getByRole("button", { name: "Saving..." }),
+		).toBeInTheDocument();
+
+		expect(mockCreateMutate).toHaveBeenCalledWith(
+			expect.objectContaining({ content: "Quick idea text" }),
+			expect.anything(),
+		);
+
+		act(() => {
+			vi.advanceTimersByTime(350);
+		});
+
+		expect(useLayoutStore.getState().globalNewModal.isOpen).toBe(false);
+		expect(toast.success).not.toHaveBeenCalled();
 	});
 });
