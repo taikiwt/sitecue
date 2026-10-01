@@ -21,6 +21,9 @@ AI（Gemini / Claude / Antigravity等）は、いかなる理由であっても�
 - **Extension 通信:** 拡張機能は Supabase と直接通信する。自社 DB CRUD のために `apps/api/` (Hono) を経由させてはならない。
 - **Cloudflare Workers & OpenNext:** `export const runtime = "edge";` の記述は禁止。デプロイは `bun run deploy` を使用すること。
 - **DB Migration:** 既存スキーマを破壊しない「追加のみ（Additive Changes）」を原則とする。
+- **Workers Middleware 軽量化規約:** Cloudflare Workers 上の App Basecamp の Middleware において、ネットワーク通信や JWT 署名検証を伴う `supabase.auth.getUser()` の直接実行を禁止する。セッション保護ルーティングは「認証 Cookie の存在確認」のみで行い、完全検証は DAL（`requireUser`）に集約すること。
+- **TanStack Query フォーカス再フェッチ禁止:** `defaultOptions.queries` の `refetchOnWindowFocus` は原則として `false` に固定し、ブラウザのフォーカス移動によるサーバーリクエスト多発を防止すること。
+
 
 ---
 

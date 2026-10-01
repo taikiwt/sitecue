@@ -8,6 +8,7 @@ import {
 	updateDiaryContent,
 } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { broadcastCacheSync } from "@/hooks/useTabSync";
 import { createClient } from "@/utils/supabase/client";
 
 export function useFetchDiaries() {
@@ -101,6 +102,7 @@ export function useAppendDiary() {
 					return old;
 				},
 			);
+			broadcastCacheSync(["diaries"]);
 		},
 	});
 }
@@ -157,6 +159,7 @@ export function useUpdateDiary() {
 					return old;
 				},
 			);
+			broadcastCacheSync(["diaries"]);
 		},
 	});
 }

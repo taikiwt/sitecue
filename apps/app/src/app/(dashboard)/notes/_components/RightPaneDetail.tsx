@@ -51,6 +51,7 @@ import {
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
+import { useEditorStore } from "@/store/useEditorStore";
 import { useUserStore } from "@/store/useUserStore";
 import type { Draft, Note } from "../types";
 
@@ -73,6 +74,8 @@ export function RightPaneDetail({
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { plan, openPaywall } = useUserStore();
+	const { setDirtySource, removeDirtySource } = useEditorStore();
+	const prevNoteIdRef = useRef<string | undefined>(note?.id);
 
 	// 1. URLパラメータから現在の「主軸となるビューモード」をSSOTとして解決する
 	const viewParam = searchParams.get("view");
@@ -124,12 +127,37 @@ export function RightPaneDetail({
 				: draft?.content || "";
 	const deferredContent = useDeferredValue(content);
 
+	// 未保存変更フラグの算出
+	const isDirty = isEditing && editContent !== (note?.content || "");
+
+	// 💡 Self-trigger防止用: 最新の isEditing / isDirty を Ref で保持
+	const isEditingRef = useRef(isEditing);
+	isEditingRef.current = isEditing;
+
+	const isDirtyRef = useRef(isDirty);
+	isDirtyRef.current = isDirty;
+
+	// Zustand の EditorStore へ未保存状態を安全に登録・解除
+	useEffect(() => {
+		if (note?.id) {
+			setDirtySource(note.id, isDirty);
+		}
+		return () => {
+			if (note?.id) {
+				removeDirtySource(note.id);
+			}
+		};
+	}, [note?.id, isDirty, setDirtySource, removeDirtySource]);
+
 	// Sync edit states when note changes
 	useEffect(() => {
 		if (note) {
-			setEditUrl(note.url_pattern || "");
-			setEditScope(note.scope || "inbox");
-			setEditNoteType(note.note_type || "info");
+			// 編集中でない場合のみURL/Scope/Typeの外部同期を許可
+			if (!isEditingRef.current) {
+				setEditUrl(note.url_pattern || "");
+				setEditScope(note.scope || "inbox");
+				setEditNoteType(note.note_type || "info");
+			}
 		}
 	}, [note]);
 
@@ -172,6 +200,16 @@ export function RightPaneDetail({
 
 	// Reset state when note or draft changes
 	useEffect(() => {
+		const isSameNote = prevNoteIdRef.current === note?.id;
+		prevNoteIdRef.current = note?.id;
+
+		// 💡 Dirty Guard:
+		// 同一ノートで編集中（isEditingRef.current === true）の場合は、
+		// 外部タブからのキャッシュ更新や再フェッチによるフォームリセット・閲覧モード復帰を一切遮断する
+		if (isSameNote && isEditingRef.current) {
+			return;
+		}
+
 		setIsEditing(false);
 		setOptimisticContent(null);
 		setOptimisticResolved(null);
@@ -184,7 +222,7 @@ export function RightPaneDetail({
 			setIsEditing(true);
 			setEditContent("");
 		}
-	}, [note?.content, isNewNote]);
+	}, [note?.id, note?.content, isNewNote]);
 
 	// 2. 物理的な外殻コンテナ構造（Anti-CLS）を破壊しないトップレベルガードの構造化
 	// ① 何も選択されていない空状態のガード：isLoading が true の場合はスキップしてスケルトンを表示させる

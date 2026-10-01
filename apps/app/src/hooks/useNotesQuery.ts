@@ -15,6 +15,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Draft } from "@/app/(dashboard)/notes/types";
 import { DASHBOARD_QUERY_KEY } from "@/hooks/useDashboardQuery";
+import { broadcastCacheSync } from "@/hooks/useTabSync";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
@@ -110,6 +111,8 @@ export function useCreateNote() {
 			// 2. 関連キャッシュを一括バックグラウンド再検証
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
 }
@@ -180,6 +183,8 @@ export function useUpdateNote() {
 			);
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
 }
@@ -212,6 +217,8 @@ export function useDeleteNote() {
 
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
 }
@@ -273,6 +280,8 @@ export function useUpsertNotes() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
 }
@@ -288,6 +297,8 @@ export function useDeleteNotes() {
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
 }

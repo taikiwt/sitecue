@@ -4,6 +4,7 @@ import type { Draft } from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_QUERY_KEY } from "@/hooks/useDashboardQuery";
 import { NOTES_QUERY_KEY } from "@/hooks/useNotesQuery";
+import { broadcastCacheSync } from "@/hooks/useTabSync";
 import { createClient } from "@/utils/supabase/client";
 
 export const DRAFTS_QUERY_KEY = ["drafts"];
@@ -122,6 +123,9 @@ export function useCreateDraft() {
 			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			broadcastCacheSync(DRAFTS_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+			broadcastCacheSync(NOTES_QUERY_KEY);
 		},
 	});
 }
@@ -173,6 +177,9 @@ export function useUpdateDraft() {
 			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			broadcastCacheSync(DRAFTS_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+			broadcastCacheSync(NOTES_QUERY_KEY);
 		},
 	});
 }
@@ -210,6 +217,9 @@ export function useDeleteDraft() {
 			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			broadcastCacheSync(DRAFTS_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+			broadcastCacheSync(NOTES_QUERY_KEY);
 		},
 	});
 }

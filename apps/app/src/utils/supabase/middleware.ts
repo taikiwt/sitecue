@@ -1,48 +1,24 @@
-import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+// Supabase の Auth Cookie（単体および chunked cookie: sb-<project>-auth-token / sb-<project>-auth-token.0 等）に合致する正規表現
+const SB_AUTH_COOKIE_REGEX = /^sb-.*-auth-token(\.\d+)?$/;
+
 export async function updateSession(request: NextRequest) {
-	let supabaseResponse = NextResponse.next({
-		request,
-	});
-
-	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-		{
-			cookies: {
-				getAll() {
-					return request.cookies.getAll();
-				},
-				setAll(cookiesToSet) {
-					cookiesToSet.forEach(({ name, value, options }) => {
-						request.cookies.set({ name, value, ...options });
-					});
-					supabaseResponse = NextResponse.next({
-						request,
-					});
-					cookiesToSet.forEach(({ name, value, options }) => {
-						supabaseResponse.cookies.set(name, value, options);
-					});
-				},
-			},
-		},
-	);
-
-	// refresh session if expired - required for Server Components
-	// https://supabase.com/docs/guides/auth/server-side/nextjs
-	const {
-		data: { user },
-	} = await supabase.auth.getUser();
-
 	// オプトアウト方式: 認証不要な公開ルートをホワイトリストとして定義
 	const publicRoutes = ["/login", "/auth/callback", "/pricing"];
 	const isPublicRoute =
 		publicRoutes.includes(request.nextUrl.pathname) ||
 		request.nextUrl.pathname.startsWith("/api/");
 
-	if (!user && !isPublicRoute) {
-		// no user, potentially respond by redirecting the user to the login page
+	// 認証Cookieの存在確認（高速軽量チェック: <0.05ms）
+	const hasAuthCookie = request.cookies
+		.getAll()
+		.some(
+			(cookie) =>
+				SB_AUTH_COOKIE_REGEX.test(cookie.name) && Boolean(cookie.value),
+		);
+
+	if (!hasAuthCookie && !isPublicRoute) {
 		let baseUrl = request.url;
 		const host =
 			request.headers.get("x-forwarded-host") || request.headers.get("host");
@@ -58,15 +34,12 @@ export async function updateSession(request: NextRequest) {
 		// biome-ignore format: User preference for single line
 		redirectUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
 
-		const response = NextResponse.redirect(redirectUrl);
-		// ★ 重要: リダイレクト発生時にも supabaseResponse にセットされた最新 Cookie を完全に同期
-		supabaseResponse.cookies.getAll().forEach((cookie) => {
-			response.cookies.set(cookie.name, cookie.value, cookie);
-		});
-		return response;
+		return NextResponse.redirect(redirectUrl);
 	}
 
-	return supabaseResponse;
+	return NextResponse.next({
+		request,
+	});
 }
 
 // 静的アセット等の除外設定

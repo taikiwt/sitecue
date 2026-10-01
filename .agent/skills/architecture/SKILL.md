@@ -26,6 +26,7 @@ description: システム間連携、ネットワーク構成、Cloudflare Worke
 - **OAuth ボタンの BFCache 対策**: ログインボタンに `useState` のローカルローディング状態を持たせることは禁止（ブラウザバックでボタンが無効化固定されるため）。HTML `<form>` と Server Actions (`"use server"`) を用いること。
 - **SPA ナビゲーションの維持**: 認証転送時は `window.location.replace` を使わず、`router.replace()` または SSR リダイレクトを使用すること。
 - **認証境界ページの動的指定**: `/login` 等では Router Cache による古い状態表示を防ぐため `export const dynamic = "force-dynamic";` を明示すること。
+- **Middleware Lightweight Cookie Verification**: Cloudflare Workers 上の App Basecamp の Middleware において、ネットワーク通信や JWT 署名検証を伴う `supabase.auth.getUser()` の直接実行を禁止する。セッション保護ルーティングは「認証 Cookie の存在確認（<0.05ms）」のみで行い、完全検証は DAL（`requireUser`）に集約すること。
 
 ## 5. 生成AIクオータ・コストガード構造
 1. **DB管理**: `sitecue_profiles` で月間利用回数 (`usage_count`) とリセット日時を管理。
