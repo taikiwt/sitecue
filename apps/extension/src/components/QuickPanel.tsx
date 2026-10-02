@@ -5,8 +5,10 @@ import {
 	ChevronDown,
 	ChevronRight,
 	CircleX,
+	Code2,
 	Copy,
 	ExternalLink,
+	Eye,
 	FileText,
 	Link as LinkIcon,
 	Loader2,
@@ -23,8 +25,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAuth } from "../hooks/useAuth";
-import { useAutoIndent } from "../hooks/useAutoIndent";
+import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import { useQuickLinks } from "../hooks/useQuickLinks";
+import MarkdownRenderer from "./MarkdownRenderer";
 import { Button } from "./ui/button";
 
 interface QuickPanelProps {
@@ -38,6 +41,9 @@ interface QuickPanelProps {
 	onAppendDiary: (content: string) => Promise<boolean>;
 }
 
+export type QuickPanelTab = "none" | "note" | "code" | "links";
+export type QuickNoteViewMode = "edit" | "preview";
+
 export default function QuickPanel({
 	currentDomain,
 	userPlan,
@@ -45,37 +51,35 @@ export default function QuickPanel({
 	onAppendDiary,
 }: QuickPanelProps) {
 	const { authStatus } = useAuth();
-	const storageKey = `quick_note_text_${authStatus.userId || "guest"}`;
+	const userId = authStatus.userId || "guest";
+	const noteStorageKey = `quick_note_text_${userId}`;
+	const codeStorageKey = `quick_code_text_${userId}`;
+	const viewModeStorageKey = `quick_note_view_mode_${userId}`;
 
 	const { links, loading, addLink, updateLink, deleteLink } =
 		useQuickLinks(currentDomain);
-	const [activeSection, setActiveSection] = useState<"none" | "note" | "links">(
-		"none",
-	);
+	const [activeSection, setActiveSection] = useState<QuickPanelTab>("none");
+
+	// --- Note State ---
 	const [noteText, setNoteText] = useState("");
-	const [isQuickNoteMaximized, setIsQuickNoteMaximized] = useState(false);
-
-	const isPro = userPlan === "pro";
-
-	const maxNoteLength = isPro
-		? SHARED_LIMITS.NOTE_LENGTH.PRO
-		: SHARED_LIMITS.NOTE_LENGTH.FREE;
-
-	const maxDiaryLength = isPro
-		? SHARED_LIMITS.DIARY_LENGTH.PRO
-		: SHARED_LIMITS.DIARY_LENGTH.FREE;
-
-	const isNoteOverLimit = noteText.length > maxNoteLength;
-	const isDiaryOverLimit = noteText.length > maxDiaryLength;
-	const [copied, setCopied] = useState(false);
+	const [noteViewMode, setNoteViewMode] = useState<QuickNoteViewMode>("edit");
+	const [isNoteMaximized, setIsNoteMaximized] = useState(false);
+	const [noteCopied, setNoteCopied] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [isSliding, setIsSliding] = useState(false);
-	const pendingTextRef = useRef("");
-	const textRef = useRef("");
-	const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-	const isStorageLoadedRef = useRef(false); // 🚨 起動時データ復元未完了状態の強制上書き保存ロック（防壁）
+	const noteTextRef = useRef("");
+	const noteDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const isNoteStorageLoadedRef = useRef(false);
 
-	// 既存のQuickLinks用ステート
+	// --- Code State ---
+	const [codeText, setCodeText] = useState("");
+	const [isCodeMaximized, setIsCodeMaximized] = useState(false);
+	const [codeCopied, setCodeCopied] = useState(false);
+	const codeTextRef = useRef("");
+	const codeDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const isCodeStorageLoadedRef = useRef(false);
+
+	// --- Links State ---
 	const [isAdding, setIsAdding] = useState(false);
 	// biome-ignore lint/suspicious/noExplicitAny: Match existing useQuickLinks type definition
 	const [editingLink, setEditingLink] = useState<any | null>(null);
@@ -84,122 +88,192 @@ export default function QuickPanel({
 	const [formType, setFormType] = useState<"related" | "env">("related");
 	const [linkSubmitting, setLinkSubmitting] = useState(false);
 
-	const handleAutoIndent = useAutoIndent();
+	const isPro = userPlan === "pro";
+	const maxNoteLength = isPro
+		? SHARED_LIMITS.NOTE_LENGTH.PRO
+		: SHARED_LIMITS.NOTE_LENGTH.FREE;
+	const maxDiaryLength = isPro
+		? SHARED_LIMITS.DIARY_LENGTH.PRO
+		: SHARED_LIMITS.DIARY_LENGTH.FREE;
 
-	// 🛡️ ストレージへの強制書き込み安全装置（Flush）
-	const flushTextStorage = useCallback(() => {
-		// 🚨 防壁ロジック：ストレージからの非同期getが一度も完了していない初期化揺らぎ状態での書き込みを100%鉄壁ガード！
-		if (!isStorageLoadedRef.current) return;
+	const isNoteOverLimit = noteText.length > maxNoteLength;
+	const isDiaryOverLimit = noteText.length > maxDiaryLength;
 
-		if (debounceTimerRef.current) {
-			clearTimeout(debounceTimerRef.current);
-			debounceTimerRef.current = null;
+	const { onKeyDown: onNoteKeyDown, onPaste: onNotePaste } =
+		useMarkdownAssist();
+
+	// 🛡️ Note Storage Flush
+	const flushNoteStorage = useCallback(() => {
+		if (!isNoteStorageLoadedRef.current) return;
+		if (noteDebounceTimerRef.current) {
+			clearTimeout(noteDebounceTimerRef.current);
+			noteDebounceTimerRef.current = null;
 		}
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ [storageKey]: textRef.current });
+			chrome.storage.local.set({ [noteStorageKey]: noteTextRef.current });
 		}
-	}, [storageKey]);
+	}, [noteStorageKey]);
 
-	// 🛡️ ストレージからの自動復元時、State と Ref の双方に即時同期し、ロックを解除
+	// 🛡️ Code Storage Flush
+	const flushCodeStorage = useCallback(() => {
+		if (!isCodeStorageLoadedRef.current) return;
+		if (codeDebounceTimerRef.current) {
+			clearTimeout(codeDebounceTimerRef.current);
+			codeDebounceTimerRef.current = null;
+		}
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			chrome.storage.local.set({ [codeStorageKey]: codeTextRef.current });
+		}
+	}, [codeStorageKey]);
+
+	// Note 初期ロード & 復元
 	useEffect(() => {
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.get(storageKey, (result) => {
-				const val = (result as Record<string, unknown>)[storageKey];
-				if (typeof val === "string") {
-					setNoteText(val);
-					textRef.current = val; // 同期
+			chrome.storage.local.get(noteStorageKey, (result) => {
+				const storedText = (result as Record<string, unknown>)[noteStorageKey];
+				if (typeof storedText === "string") {
+					setNoteText(storedText);
+					noteTextRef.current = storedText;
 				} else {
 					setNoteText("");
-					textRef.current = "";
+					noteTextRef.current = "";
 				}
-				isStorageLoadedRef.current = true; // 🚨 復元が正常完了したため、ここで初めて書き込みロックを解除！
+				isNoteStorageLoadedRef.current = true;
+			});
+			chrome.storage.local.get(viewModeStorageKey, (result) => {
+				const storedMode = (result as Record<string, unknown>)[
+					viewModeStorageKey
+				];
+				if (storedMode === "preview" || storedMode === "edit") {
+					setNoteViewMode(storedMode);
+				}
 			});
 		}
-	}, [storageKey]);
+	}, [noteStorageKey, viewModeStorageKey]);
 
-	// 🛡️ 入力時：State と Ref を「完全同時（同期的）」に即時更新し、デバウンスを設定
-	const handleTextChange = (val: string) => {
-		// 🚨 まだ復元が完了していない起動時の一瞬の入力はガード（通常ありえないが安全弁として）
-		if (!isStorageLoadedRef.current) return;
-
-		setNoteText(val);
-		textRef.current = val; // 🚨 ここで 0ms 同期更新！useEffectでの遅延更新は全面廃止
-
-		if (debounceTimerRef.current) {
-			clearTimeout(debounceTimerRef.current);
+	// Code 初期ロード & 復元
+	useEffect(() => {
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			chrome.storage.local.get(codeStorageKey, (result) => {
+				const storedCode = (result as Record<string, unknown>)[codeStorageKey];
+				if (typeof storedCode === "string") {
+					setCodeText(storedCode);
+					codeTextRef.current = storedCode;
+				} else {
+					setCodeText("");
+					codeTextRef.current = "";
+				}
+				isCodeStorageLoadedRef.current = true;
+			});
 		}
-		debounceTimerRef.current = setTimeout(() => {
+	}, [codeStorageKey]);
+
+	// 入力ハンドラ: Note
+	const handleNoteTextChange = (val: string) => {
+		if (!isNoteStorageLoadedRef.current) return;
+		setNoteText(val);
+		noteTextRef.current = val;
+
+		if (noteDebounceTimerRef.current) {
+			clearTimeout(noteDebounceTimerRef.current);
+		}
+		noteDebounceTimerRef.current = setTimeout(() => {
 			if (typeof chrome !== "undefined" && chrome.storage?.local) {
-				chrome.storage.local.set({ [storageKey]: val });
+				chrome.storage.local.set({ [noteStorageKey]: val });
 			}
-			debounceTimerRef.current = null;
+			noteDebounceTimerRef.current = null;
 		}, 300);
 	};
 
-	// 🛡️ 多層防壁：アンマウントクリーンアップおよび急なプロセス切断（pagehide）への安全弁バインド
+	// 入力ハンドラ: Code
+	const handleCodeTextChange = (val: string) => {
+		if (!isCodeStorageLoadedRef.current) return;
+		setCodeText(val);
+		codeTextRef.current = val;
+
+		if (codeDebounceTimerRef.current) {
+			clearTimeout(codeDebounceTimerRef.current);
+		}
+		codeDebounceTimerRef.current = setTimeout(() => {
+			if (typeof chrome !== "undefined" && chrome.storage?.local) {
+				chrome.storage.local.set({ [codeStorageKey]: val });
+			}
+			codeDebounceTimerRef.current = null;
+		}, 300);
+	};
+
+	// ViewMode 切替と永続化
+	const toggleNoteViewMode = () => {
+		const nextMode: QuickNoteViewMode =
+			noteViewMode === "edit" ? "preview" : "edit";
+		setNoteViewMode(nextMode);
+		if (typeof chrome !== "undefined" && chrome.storage?.local) {
+			chrome.storage.local.set({ [viewModeStorageKey]: nextMode });
+		}
+	};
+
+	// クリーンアップ & 防壁
 	useEffect(() => {
 		const handlePageHide = () => {
-			flushTextStorage();
+			flushNoteStorage();
+			flushCodeStorage();
 		};
 		window.addEventListener("pagehide", handlePageHide);
-
 		return () => {
 			window.removeEventListener("pagehide", handlePageHide);
-			flushTextStorage();
+			flushNoteStorage();
+			flushCodeStorage();
 		};
-	}, [flushTextStorage]);
+	}, [flushNoteStorage, flushCodeStorage]);
 
+	// Zen Escape
 	useEffect(() => {
-		if (!isQuickNoteMaximized) return;
-
+		if (!isNoteMaximized && !isCodeMaximized) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
 				if (e.isComposing) return;
-				setIsQuickNoteMaximized(false);
+				setIsNoteMaximized(false);
+				setIsCodeMaximized(false);
 			}
 		};
-
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isQuickNoteMaximized]);
+	}, [isNoteMaximized, isCodeMaximized]);
 
-	const handleClearText = () => {
-		handleTextChange("");
-	};
-
-	const toggleSection = (section: "note" | "links") => {
+	const toggleSection = (section: QuickPanelTab) => {
 		setActiveSection((prev) => (prev === section ? "none" : section));
 	};
 
-	const handleCopy = async () => {
+	const handleCopyNote = async () => {
 		if (!noteText) return;
 		await navigator.clipboard.writeText(noteText);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+		setNoteCopied(true);
+		setTimeout(() => setNoteCopied(false), 2000);
+	};
+
+	const handleCopyCode = async () => {
+		if (!codeText) return;
+		await navigator.clipboard.writeText(codeText);
+		setCodeCopied(true);
+		setTimeout(() => setCodeCopied(false), 2000);
 	};
 
 	const handleSaveAsNote = async () => {
 		if (!noteText.trim() || submitting || isNoteOverLimit) return;
 		setSubmitting(true);
 		const textToSave = noteText.trim();
-		pendingTextRef.current = textToSave;
 
-		// 1. スライド発火
 		setIsSliding(true);
-
-		// 2. 300ms 待機
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
-		// 3. テキスト消去 & 0ms定位置復帰
-		handleClearText();
+		handleNoteTextChange("");
 		setIsSliding(false);
 
-		// 4. 通信実行
 		const success = await onAddNote(textToSave, "inbox", "info");
 		setSubmitting(false);
 
 		if (!success) {
-			handleTextChange(pendingTextRef.current);
+			handleNoteTextChange(textToSave);
 			toast.error("Failed to send text");
 		}
 	};
@@ -208,19 +282,18 @@ export default function QuickPanel({
 		if (!noteText.trim() || submitting || isDiaryOverLimit) return;
 		setSubmitting(true);
 		const textToSave = noteText.trim();
-		pendingTextRef.current = textToSave;
 
 		setIsSliding(true);
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
-		handleClearText();
+		handleNoteTextChange("");
 		setIsSliding(false);
 
 		const success = await onAppendDiary(textToSave);
 		setSubmitting(false);
 
 		if (!success) {
-			handleTextChange(pendingTextRef.current);
+			handleNoteTextChange(textToSave);
 			toast.error("Failed to send text");
 		}
 	};
@@ -252,40 +325,55 @@ export default function QuickPanel({
 		}
 	};
 
-	// 🔗 Quick Links の「ファビコン vs 数字バッジ」の完全な排他仕様ロジック（!isOpen を排除して常時固定化）
 	const showFavicons = links.length > 0 && links.length < 5;
 	const showNumberBadge = links.length >= 5;
 
 	return (
-		// 最外殻は flex-col の構造とし、全体の高さが間伸びしない防壁とする
 		<div
 			className={`border-b border-base-border bg-base-bg w-full font-sans flex flex-col min-h-0 ${!currentDomain ? "hidden" : ""}`}
 		>
-			{/* 【完全不動: shrink-0】 2連独立文字タブヘッダーアラインメント */}
+			{/* 🚀 3連カプセルヘッダー: [ Note ] [ Code ] --------- [ Links (n) ] */}
 			<div className="flex items-center justify-between p-3 py-2 text-xs font-semibold select-none border-b border-base-border/10 shrink-0">
-				{/* 左タブトリガー: Quick Note */}
-				<button
-					type="button"
-					onClick={() => toggleSection("note")}
-					className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "note" ? "text-action" : "text-muted-foreground hover:text-action"}`}
-				>
-					<FileText className="w-3.5 h-3.5" />
-					<span>Quick Note</span>
-					{activeSection === "note" ? (
-						<ChevronDown className="w-3.5 h-3.5" />
-					) : (
-						<ChevronRight className="w-3.5 h-3.5" />
-					)}
-				</button>
+				<div className="flex items-center gap-3">
+					{/* Note Tab */}
+					<button
+						type="button"
+						onClick={() => toggleSection("note")}
+						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "note" ? "text-action" : "text-muted-foreground hover:text-action"}`}
+					>
+						<FileText className="w-3.5 h-3.5" aria-hidden="true" />
+						<span>Quick Note</span>
+						{activeSection === "note" ? (
+							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+						) : (
+							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+						)}
+					</button>
 
-				{/* 右タブトリガー: Quick Links (!isOpen ガードを解除し、ファビコンを常時維持) */}
+					{/* Code Tab */}
+					<button
+						type="button"
+						onClick={() => toggleSection("code")}
+						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "code" ? "text-action" : "text-muted-foreground hover:text-action"}`}
+					>
+						<Code2 className="w-3.5 h-3.5" aria-hidden="true" />
+						<span>Code</span>
+						{activeSection === "code" ? (
+							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+						) : (
+							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+						)}
+					</button>
+				</div>
+
+				{/* Quick Links Tab */}
 				<button
 					type="button"
 					onClick={() => toggleSection("links")}
 					className={`cursor-pointer flex items-center gap-2 transition-colors ${activeSection === "links" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 				>
 					<div className="flex items-center gap-1">
-						<LinkIcon className="w-3.5 h-3.5" />
+						<LinkIcon className="w-3.5 h-3.5" aria-hidden="true" />
 						<span>Quick Links</span>
 						{showNumberBadge && (
 							<span className="bg-base-surface text-muted-foreground px-1.5 rounded-full text-[10px] border border-base-border font-mono ml-1">
@@ -307,53 +395,77 @@ export default function QuickPanel({
 									/>
 								))}
 						{activeSection === "links" ? (
-							<ChevronDown className="w-3.5 h-3.5" />
+							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
 						) : (
-							<ChevronRight className="w-3.5 h-3.5" />
+							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
 						)}
 					</div>
 				</button>
 			</div>
 
-			{/* --- Quick Note 展開体 --- */}
+			{/* --- Quick Note 画面 --- */}
 			{activeSection === "note" && (
 				<div
 					className={
-						isQuickNoteMaximized
+						isNoteMaximized
 							? "fixed inset-0 z-50 bg-base-bg p-3 flex flex-col h-full animate-fadeIn"
 							: "px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0"
 					}
 				>
-					{/* 【完全不動: shrink-0】 コックピット操作バー */}
+					{/* コックピット操作バー */}
 					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-base-border/30 pb-2">
 						<div className="flex items-center gap-1">
 							<Button
 								disabled={!noteText}
-								icon={<CircleX className="size-4" />}
+								icon={<CircleX className="size-4" aria-hidden="true" />}
 								size="sm"
 								variant="ghost"
-								onClick={handleClearText}
+								onClick={() => handleNoteTextChange("")}
 								title="Clear text"
 								className="w-7 h-7 p-0 rounded-full"
 							/>
 							<Button
 								disabled={!noteText}
 								icon={
-									copied ? (
-										<Check className="size-4 text-success" />
+									noteCopied ? (
+										<Check className="size-4 text-success" aria-hidden="true" />
 									) : (
-										<Copy className="size-4" />
+										<Copy className="size-4" aria-hidden="true" />
 									)
 								}
 								size="sm"
 								variant="ghost"
-								onClick={handleCopy}
+								onClick={handleCopyNote}
 								title="Copy text"
+								className="w-7 h-7 p-0 rounded-full"
+							/>
+							{/* Edit / Preview 切り替えボタン */}
+							<Button
+								icon={
+									noteViewMode === "preview" ? (
+										<Pencil className="size-4" aria-hidden="true" />
+									) : (
+										<Eye className="size-4" aria-hidden="true" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={toggleNoteViewMode}
+								title={
+									noteViewMode === "preview"
+										? "Switch to Edit"
+										: "Switch to Preview"
+								}
+								aria-label={
+									noteViewMode === "preview"
+										? "Switch to Edit"
+										: "Switch to Preview"
+								}
 								className="w-7 h-7 p-0 rounded-full"
 							/>
 							<Button
 								icon={
-									isQuickNoteMaximized ? (
+									isNoteMaximized ? (
 										<Minimize2 aria-hidden="true" className="size-4" />
 									) : (
 										<Maximize2 aria-hidden="true" className="size-4" />
@@ -361,30 +473,29 @@ export default function QuickPanel({
 								}
 								size="sm"
 								variant="ghost"
-								onClick={() => setIsQuickNoteMaximized((prev) => !prev)}
+								onClick={() => setIsNoteMaximized((prev) => !prev)}
 								title={
-									isQuickNoteMaximized
-										? "Exit full view"
-										: "Maximize Quick Note"
+									isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
 								}
 								aria-label={
-									isQuickNoteMaximized
-										? "Exit full view"
-										: "Maximize Quick Note"
+									isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
 								}
 								className="w-7 h-7 p-0 rounded-full"
 							/>
 						</div>
 
-						{/* 右側: 紙飛行機アイコンを内包した等高カプセルボタン群 */}
+						{/* 右側: Note / Diary カプセルボタン */}
 						<div className="flex items-center gap-1.5">
 							<Button
 								disabled={!noteText.trim() || submitting || isNoteOverLimit}
 								icon={
 									submitting ? (
-										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+										<Loader2
+											className="w-3.5 h-3.5 animate-spin"
+											aria-hidden="true"
+										/>
 									) : (
-										<Send className="w-3.5 h-3.5" />
+										<Send className="w-3.5 h-3.5" aria-hidden="true" />
 									)
 								}
 								onClick={handleSaveAsNote}
@@ -403,9 +514,12 @@ export default function QuickPanel({
 								disabled={!noteText.trim() || submitting || isDiaryOverLimit}
 								icon={
 									submitting ? (
-										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+										<Loader2
+											className="w-3.5 h-3.5 animate-spin"
+											aria-hidden="true"
+										/>
 									) : (
-										<Send className="w-3.5 h-3.5" />
+										<Send className="w-3.5 h-3.5" aria-hidden="true" />
 									)
 								}
 								onClick={handleSaveToDiary}
@@ -423,50 +537,149 @@ export default function QuickPanel({
 						</div>
 					</div>
 
-					{/* 【中央隔離スクロール領域】 1. 固定マスク親ラッパー */}
+					{/* Note エディタ / プレビュー領域 */}
 					<div
 						className={
-							isQuickNoteMaximized
+							isNoteMaximized
 								? "w-full pt-1 flex-1 min-h-0 overflow-y-auto scrollbar-none"
 								: "w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none overflow-hidden"
 						}
 					>
-						{/* 🌟 2. スライド駆動子コンテナ (isSliding に連動) */}
 						<div
 							className={
 								isSliding
 									? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
-									: isQuickNoteMaximized
+									: isNoteMaximized
 										? "h-full flex flex-col transition-none"
 										: "transition-none"
 							}
 						>
-							<TextareaAutosize
-								onChange={(e) => handleTextChange(e.target.value)}
-								onBlur={flushTextStorage}
-								value={noteText}
-								placeholder="Temporary text scratchpad... (Cross-site session persistent)"
-								className={`w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
-									isQuickNoteMaximized ? "h-full" : ""
-								}`}
-								minRows={isQuickNoteMaximized ? 10 : 3}
-								onKeyDown={(e) => {
-									if (e.nativeEvent.isComposing) return;
-									handleAutoIndent(e);
-								}}
-							/>
+							{noteViewMode === "preview" ? (
+								<div className="p-1 min-h-[4rem]">
+									{noteText.trim() ? (
+										<MarkdownRenderer content={noteText} />
+									) : (
+										<span className="text-xs text-muted-foreground italic">
+											Nothing to preview.
+										</span>
+									)}
+								</div>
+							) : (
+								<TextareaAutosize
+									onChange={(e) => handleNoteTextChange(e.target.value)}
+									onBlur={flushNoteStorage}
+									value={noteText}
+									placeholder="Temporary text scratchpad... (Cross-site session persistent)"
+									className={`w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
+										isNoteMaximized ? "h-full" : ""
+									}`}
+									minRows={isNoteMaximized ? 10 : 3}
+									onKeyDown={onNoteKeyDown}
+									onPaste={onNotePaste}
+								/>
+							)}
 						</div>
 					</div>
 				</div>
 			)}
 
-			{/* --- Quick Links 展開体 (入力画面のカプセル型アラインへの格上げ刷新) --- */}
+			{/* --- Code 専用ターミナル画面 --- */}
+			{activeSection === "code" && (
+				<div
+					className={
+						isCodeMaximized
+							? "fixed inset-0 z-50 bg-neutral-900 p-3 flex flex-col h-full animate-fadeIn"
+							: "px-3 py-2.5 flex flex-col gap-2 animate-fadeIn bg-neutral-900 shrink-0 text-neutral-100"
+					}
+				>
+					{/* 操作バー: クリア・ワンクリック全文コピー・最大化のみ */}
+					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-neutral-800 pb-2">
+						<div className="flex items-center gap-1">
+							<Button
+								disabled={!codeText}
+								icon={<CircleX className="size-4" aria-hidden="true" />}
+								size="sm"
+								variant="ghost"
+								onClick={() => handleCodeTextChange("")}
+								title="Clear code"
+								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+							/>
+							<Button
+								disabled={!codeText}
+								icon={
+									codeCopied ? (
+										<Check
+											className="size-4 text-note-info"
+											aria-hidden="true"
+										/>
+									) : (
+										<Copy className="size-4" aria-hidden="true" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={handleCopyCode}
+								title="Copy code"
+								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+							/>
+							<Button
+								icon={
+									isCodeMaximized ? (
+										<Minimize2 aria-hidden="true" className="size-4" />
+									) : (
+										<Maximize2 aria-hidden="true" className="size-4" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={() => setIsCodeMaximized((prev) => !prev)}
+								title={
+									isCodeMaximized ? "Exit full view" : "Maximize Code View"
+								}
+								aria-label={
+									isCodeMaximized ? "Exit full view" : "Maximize Code View"
+								}
+								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+							/>
+						</div>
+						<div className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider px-1">
+							TERMINAL / CODE
+						</div>
+					</div>
+
+					{/* 直接編集ターミナルコンソール */}
+					<div
+						className={
+							isCodeMaximized
+								? "w-full pt-1 flex-1 min-h-0 overflow-y-auto scrollbar-none"
+								: "w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none overflow-hidden"
+						}
+					>
+						<TextareaAutosize
+							onChange={(e) => handleCodeTextChange(e.target.value)}
+							onBlur={flushCodeStorage}
+							value={codeText}
+							placeholder="$ repomix --style xml ..."
+							className={`w-full resize-none border-none p-0 text-xs bg-neutral-900 text-neutral-100 focus:outline-none focus:ring-0 placeholder:text-neutral-500 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
+								isCodeMaximized ? "h-full" : ""
+							}`}
+							minRows={isCodeMaximized ? 10 : 3}
+							spellCheck={false}
+						/>
+					</div>
+				</div>
+			)}
+
+			{/* --- Quick Links 画面 --- */}
 			{activeSection === "links" && (
 				<div className="pb-3 px-3 animate-fadeIn bg-base-bg overflow-y-auto max-h-[40vh] scrollbar-none shrink-0">
 					<div className="space-y-1">
 						{loading ? (
 							<div className="flex justify-center py-2">
-								<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+								<Loader2
+									className="w-4 h-4 animate-spin text-muted-foreground"
+									aria-hidden="true"
+								/>
 							</div>
 						) : links.length === 0 ? (
 							!isAdding && (
@@ -501,16 +714,24 @@ export default function QuickPanel({
 													className="w-4 h-4 rounded-sm shrink-0"
 												/>
 											) : (
-												<ArrowRightLeft className="w-4 h-4 text-action shrink-0" />
+												<ArrowRightLeft
+													className="w-4 h-4 text-action shrink-0"
+													aria-hidden="true"
+												/>
 											)}
 											<span className="truncate text-action">{link.label}</span>
 											{link.type === "related" && (
-												<ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
+												<ExternalLink
+													className="w-3 h-3 text-muted-foreground shrink-0"
+													aria-hidden="true"
+												/>
 											)}
 											{link.type === "env" && (
 												<span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-1 shrink-0 border border-base-border px-1.5 rounded-full bg-base-surface">
 													ENV
-													{isIncoming && <Lock className="w-3 h-3" />}
+													{isIncoming && (
+														<Lock className="w-3 h-3" aria-hidden="true" />
+													)}
 												</span>
 											)}
 										</a>
@@ -527,14 +748,14 @@ export default function QuickPanel({
 													}}
 													className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-base-surface rounded-full transition-colors"
 												>
-													<Pencil className="w-3.5 h-3.5" />
+													<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
 												</button>
 												<button
 													type="button"
 													onClick={() => deleteLink(link.id)}
 													className="cursor-pointer p-1 text-muted-foreground hover:text-note-alert hover:bg-note-alert/10 rounded-full transition-colors"
 												>
-													<Trash2 className="w-3.5 h-3.5" />
+													<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
 												</button>
 											</div>
 										)}
@@ -543,7 +764,6 @@ export default function QuickPanel({
 							})
 						)}
 
-						{/* 🎨 Add Link フォーム全体のデザインを丸みのある現在の設定に完全アライン */}
 						{isAdding ? (
 							<form
 								onSubmit={async (e) => {
@@ -611,7 +831,7 @@ export default function QuickPanel({
 								</div>
 								<div className="flex justify-end gap-1.5 pt-1.5 border-t border-base-border/30">
 									<Button
-										icon={<X className="w-3.5 h-3.5" />}
+										icon={<X className="w-3.5 h-3.5" aria-hidden="true" />}
 										size="xs"
 										variant="ghost"
 										onClick={() => {
@@ -625,9 +845,12 @@ export default function QuickPanel({
 										disabled={linkSubmitting}
 										icon={
 											linkSubmitting ? (
-												<Loader2 className="w-3.5 h-3.5 animate-spin" />
+												<Loader2
+													className="w-3.5 h-3.5 animate-spin"
+													aria-hidden="true"
+												/>
 											) : (
-												<Check className="w-3.5 h-3.5" />
+												<Check className="w-3.5 h-3.5" aria-hidden="true" />
 											)
 										}
 										size="xs"
@@ -650,7 +873,7 @@ export default function QuickPanel({
 								}}
 								className="cursor-pointer w-full text-left p-2 px-3 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40 mt-1"
 							>
-								<Plus className="w-3.5 h-3.5" />
+								<Plus className="w-3.5 h-3.5" aria-hidden="true" />
 								<span>Add Link</span>
 							</button>
 						)}

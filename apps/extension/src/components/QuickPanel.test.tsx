@@ -249,8 +249,7 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		);
 
 		// コンポーネントが物理消滅（return null）せず、DOM上に構造（hidden状態のdiv）として生き残っていることを検証
-		const headerContainer = screen.getByText("Quick Note").closest("div");
-		const container = headerContainer?.parentElement;
+		const container = screen.getByText("Quick Note").closest(".w-full");
 		expect(container).toHaveClass("hidden");
 
 		// この極限状態（pagehide等の発火）において、空文字ではなく正しい値がストレージへ Flush されることを証明
@@ -435,5 +434,92 @@ describe("QuickPanel - Zen Quick Note Mode", () => {
 
 		// 最大化が解除され通常ボタンに戻っていること
 		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
+	});
+});
+
+describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockGet.mockImplementation((_keys, cb) => cb({}));
+	});
+
+	it("Note / Code / Links の3連タブが存在し、Codeタブを開くと専用コンソールが描画されること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn().mockResolvedValue(true)}
+				onAppendDiary={vi.fn().mockResolvedValue(true)}
+				userPlan="free"
+			/>,
+		);
+
+		expect(screen.getByText("Quick Note")).toBeInTheDocument();
+		expect(screen.getByText("Code")).toBeInTheDocument();
+		expect(screen.getByText("Quick Links")).toBeInTheDocument();
+
+		// Code タブを開く
+		fireEvent.click(screen.getByText("Code"));
+
+		expect(screen.getByText("TERMINAL / CODE")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("$ repomix --style xml ..."),
+		).toBeInTheDocument();
+
+		// Code 画面には Note / Diary 送信ボタンが存在しないこと
+		expect(screen.queryByTitle("Save as Inbox Note")).not.toBeInTheDocument();
+		expect(
+			screen.queryByTitle("Append to Today's Diary"),
+		).not.toBeInTheDocument();
+	});
+
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: intentional test title
+	it("Code画面でテキストを入力すると quick_code_text_${userId} にデバウンス保存されること", () => {
+		vi.useFakeTimers();
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn()}
+				onAppendDiary={vi.fn()}
+				userPlan="free"
+			/>,
+		);
+		fireEvent.click(screen.getByText("Code"));
+
+		const textarea = screen.getByPlaceholderText("$ repomix --style xml ...");
+		fireEvent.change(textarea, { target: { value: "npm test" } });
+
+		expect(mockSet).not.toHaveBeenCalledWith({
+			"quick_code_text_user-123": "npm test",
+		});
+
+		vi.advanceTimersByTime(300);
+
+		expect(mockSet).toHaveBeenCalledWith({
+			"quick_code_text_user-123": "npm test",
+		});
+		vi.useRealTimers();
+	});
+
+	it("Quick Note で Edit / Preview 切り替えボタンを押すと表示モードが切り替わり storage に保存されること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn()}
+				onAppendDiary={vi.fn()}
+				userPlan="free"
+			/>,
+		);
+		fireEvent.click(screen.getByText("Quick Note"));
+
+		const previewBtn = screen.getByTitle("Switch to Preview");
+		expect(previewBtn).toBeInTheDocument();
+
+		// プレビューへ切り替え
+		fireEvent.click(previewBtn);
+
+		expect(mockSet).toHaveBeenCalledWith({
+			"quick_note_view_mode_user-123": "preview",
+		});
+		expect(screen.getByTitle("Switch to Edit")).toBeInTheDocument();
 	});
 });

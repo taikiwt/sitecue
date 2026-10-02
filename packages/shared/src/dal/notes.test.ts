@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
 	deleteNoteEntity,
+	fetchExtensionInboxMetadatas,
+	fetchExtensionNoteMetadatas,
 	fetchNoteContents,
 	fetchNoteMetadatas,
 	getMatchingNoteCount,
@@ -86,5 +88,49 @@ describe("Shared DAL: notes", () => {
 		);
 
 		expect(count).toBe(0);
+	});
+});
+
+describe("Shared DAL: Extension Notes Isolation", () => {
+	it("fetchExtensionNoteMetadatasのデフォルトでは Inbox スコープが含まれず、オプション指定時のみ含まれること", async () => {
+		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
+		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
+		const mockOr = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockSelect = vi.fn().mockReturnValue({ or: mockOr });
+		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
+		const supabase: AnyClient = { from: mockFrom };
+
+		// 1. デフォルト呼び出し
+		await fetchExtensionNoteMetadatas(supabase, {
+			domain: "example.com",
+			exact: "https://example.com/page",
+		});
+		expect(mockOr).toHaveBeenCalledWith(
+			expect.not.stringContaining("scope.eq.inbox"),
+		);
+
+		// 2. includeInbox: true 呼び出し
+		await fetchExtensionNoteMetadatas(
+			supabase,
+			{ domain: "example.com", exact: "https://example.com/page" },
+			{ includeInbox: true },
+		);
+		expect(mockOr).toHaveBeenCalledWith(
+			expect.stringContaining("scope.eq.inbox"),
+		);
+	});
+
+	it("fetchExtensionInboxMetadatasがscope=inboxで絞り込みクエリを構築すること", async () => {
+		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
+		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
+		const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
+		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
+		const supabase: AnyClient = { from: mockFrom };
+
+		await fetchExtensionInboxMetadatas(supabase);
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
+		expect(mockEq).toHaveBeenCalledWith("scope", "inbox");
 	});
 });

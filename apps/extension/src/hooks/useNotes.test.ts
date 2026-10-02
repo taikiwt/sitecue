@@ -50,6 +50,8 @@ vi.mock("@sitecue/shared", async (importOriginal) => {
 		...actual,
 		fetchExtensionNoteMetadatas: vi.fn(),
 		fetchExtensionNoteContents: vi.fn(),
+		fetchExtensionInboxMetadatas: vi.fn(),
+		fetchExtensionInboxContents: vi.fn(),
 		updateNoteEntity: vi.fn(),
 		deleteNoteEntity: vi.fn(),
 		createNoteEntity: vi.fn(),
@@ -58,6 +60,8 @@ vi.mock("@sitecue/shared", async (importOriginal) => {
 
 import {
 	createNoteEntity,
+	fetchExtensionInboxContents,
+	fetchExtensionInboxMetadatas,
 	fetchExtensionNoteContents,
 	fetchExtensionNoteMetadatas,
 	type Note,
@@ -141,52 +145,133 @@ describe("useNotes hook (Hybrid Fetching)", () => {
 			{ timeout: 2000 },
 		);
 	});
+});
 
-	it("Inbox閲覧中にURLが変化しても、再フェッチ（supabase.from呼び出し）が走らないこと", async () => {
-		const mockInboxNotes = [
+describe("useNotes - Inbox Cache Isolation & On-demand Fetching", () => {
+	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockAuthStatus: AuthStatus = {
+		mode: "authenticated",
+		session: mockSession,
+		userId: "user-1",
+	};
+
+	it("初期ロード時（exact/domain）は Inbox をフェッチせず、Inboxタブ選択時にオンデマンド取得されること", async () => {
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue([]);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
+		vi.mocked(fetchExtensionInboxMetadatas).mockResolvedValue([
 			{
 				id: "inbox-1",
 				scope: "inbox",
-				content: "Inbox Note",
+				content: "Inbox Text",
 				created_at: new Date().toISOString(),
-			},
-		];
-
-		// Supabaseモックの初期設定
-		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue(
-			mockInboxNotes as unknown as Note[],
-		);
-		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
+			} as unknown as Note,
+		]);
+		vi.mocked(fetchExtensionInboxContents).mockResolvedValue([]);
 
 		const { result, rerender } = renderHook(
-			({ url, scope }) => useNotes(mockAuthStatus, url, vi.fn(), scope),
+			({ scope }: { scope: "exact" | "domain" | "inbox" }) =>
+				useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), scope),
 			{
 				initialProps: {
-					url: mockUrl,
-					scope: "inbox" as "exact" | "domain" | "inbox",
+					scope: "exact" as "exact" | "domain" | "inbox",
 				},
 			},
 		);
 
-		// 初回ロード待ち
-		await waitFor(() => {
-			expect(result.current.notes.length).toBe(1);
-		});
-
-		// from の呼び出し回数をリセット
-		vi.clearAllMocks();
-
-		// URLのみを変更して再レンダリング
-		rerender({ url: "https://another-page.com", scope: "inbox" as const });
-
-		// 少し待っても fetchExtensionNoteMetadatas が呼ばれていないことを確認
-		await new Promise((resolve) => setTimeout(resolve, 100));
-		expect(fetchExtensionNoteMetadatas).not.toHaveBeenCalled();
-
-		// 逆に、スコープが domain に変わった場合はフェッチが走るはず
-		rerender({ url: "https://another-page.com", scope: "domain" as const });
 		await waitFor(() => {
 			expect(fetchExtensionNoteMetadatas).toHaveBeenCalled();
+		});
+
+		// exact 表示時点では Inbox フェッチが走っていないことを検証
+		expect(fetchExtensionInboxMetadatas).not.toHaveBeenCalled();
+
+		// Inbox タブへ切り替え
+		rerender({ scope: "inbox" });
+
+		await waitFor(() => {
+			expect(fetchExtensionInboxMetadatas).toHaveBeenCalledTimes(1);
+			expect(result.current.notes.some((n) => n.id === "inbox-1")).toBe(true);
+		});
+	});
+
+	it("ブラウザURL変更時、Pageノートのみ再取得され、Inboxキャッシュが破棄されず保護されること", async () => {
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValue([]);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValue([]);
+		vi.mocked(fetchExtensionInboxMetadatas).mockResolvedValue([
+			{
+				id: "inbox-1",
+				scope: "inbox",
+				content: "Keep Me",
+				created_at: new Date().toISOString(),
+			} as unknown as Note,
+		]);
+		vi.mocked(fetchExtensionInboxContents).mockResolvedValue([]);
+
+		const { result, rerender } = renderHook(
+			({ url, scope }) =>
+				useNotes(
+					mockAuthStatus,
+					url,
+					vi.fn(),
+					scope as "exact" | "domain" | "inbox",
+				),
+			{
+				initialProps: {
+					url: "https://example.com/p1",
+					scope: "inbox" as const,
+				},
+			},
+		);
+
+		await waitFor(() => {
+			expect(result.current.notes.some((n) => n.id === "inbox-1")).toBe(true);
+		});
+
+		vi.clearAllMocks();
+
+		// URL を変更
+		rerender({
+			url: "https://example.com/p2",
+			scope: "inbox" as const,
+		});
+
+		// Page用フェッチは走るが、Inboxの再取得は走らず、キャッシュが残っていること
+		await waitFor(() => {
+			expect(fetchExtensionNoteMetadatas).toHaveBeenCalled();
+		});
+		expect(fetchExtensionInboxMetadatas).not.toHaveBeenCalled();
+		expect(result.current.notes.some((n) => n.id === "inbox-1")).toBe(true);
+	});
+
+	it("fetchInboxNotes実行時、isInboxLoadingが適切にトグルされること", async () => {
+		let resolveInbox: (value: Note[]) => void = () => {};
+		const inboxPromise = new Promise<Note[]>((resolve) => {
+			resolveInbox = resolve;
+		});
+
+		vi.mocked(fetchExtensionInboxMetadatas).mockReturnValueOnce(inboxPromise);
+		vi.mocked(fetchExtensionInboxContents).mockResolvedValueOnce([]);
+
+		const { result } = renderHook(() =>
+			useNotes(mockAuthStatus, "https://example.com", vi.fn(), "exact"),
+		);
+
+		expect(result.current.isInboxLoading).toBe(false);
+
+		// 手動で fetchInboxNotes を発火
+		act(() => {
+			result.current.fetchInboxNotes();
+		});
+
+		expect(result.current.isInboxLoading).toBe(true);
+
+		// 通信解決
+		await act(async () => {
+			resolveInbox([]);
+		});
+
+		await waitFor(() => {
+			expect(result.current.isInboxLoading).toBe(false);
 		});
 	});
 });
@@ -209,8 +294,8 @@ describe("useNotes - Silent Refetching", () => {
 		);
 
 		const { result, rerender } = renderHook(
-			({ scope }) => useNotes(mockAuthStatus, mockUrl, vi.fn(), scope),
-			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
+			({ url }) => useNotes(mockAuthStatus, url, vi.fn(), "exact"),
+			{ initialProps: { url: mockUrl } },
 		);
 
 		// 初回フェッチ待ち
@@ -220,8 +305,8 @@ describe("useNotes - Silent Refetching", () => {
 		// 一旦モックのカウントをクリア
 		vi.clearAllMocks();
 
-		// スコープを変えて再フェッチをトリガー
-		rerender({ scope: "domain" as const });
+		// URLを変えて再フェッチをトリガー
+		rerender({ url: "https://example.com/another-page" });
 
 		// Silent Refetching: loading は false のままのはず
 		expect(result.current.loading).toBe(false);
@@ -241,8 +326,8 @@ describe("useNotes - Silent Refetching", () => {
 		);
 
 		const { result, rerender } = renderHook(
-			({ scope }) => useNotes(mockAuthStatus, mockUrl, vi.fn(), scope),
-			{ initialProps: { scope: "exact" as "exact" | "domain" | "inbox" } },
+			({ url }) => useNotes(mockAuthStatus, url, vi.fn(), "exact"),
+			{ initialProps: { url: mockUrl } },
 		);
 
 		// 初回フェッチ完了を待つ
@@ -252,7 +337,6 @@ describe("useNotes - Silent Refetching", () => {
 		vi.clearAllMocks();
 
 		// ユーザーがテキストを入力したと仮定して、直接 State を更新（楽観的UIの模倣）
-		// ※実際はhydrateContentで埋まるかaddNote等で埋まる想定
 		result.current.notes[0].content = "User typed this text";
 
 		// 再フェッチを発生させるためのモック準備（DBからは content なしのメタデータが返ってくる）
@@ -263,13 +347,13 @@ describe("useNotes - Silent Refetching", () => {
 				is_pinned: true,
 				created_at: new Date().toISOString(),
 			},
-		]; // ピン留めされたと仮定
+		];
 		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce(
 			newMetadatas as unknown as Note[],
 		);
 
-		// スコープを変えて再フェッチをトリガー
-		rerender({ scope: "domain" as const });
+		// URLを変えて再フェッチをトリガー
+		rerender({ url: "https://example.com/another-page" });
 
 		await waitFor(() => {
 			expect(fetchExtensionNoteMetadatas).toHaveBeenCalledTimes(1);
@@ -464,6 +548,15 @@ describe("useNotes - Length limit and error mapping", () => {
 
 	it("updateNoteでDBがチェック制約違反（文字数超過等）を返した際、適切なエラーメッセージをtoastすること", async () => {
 		const mockToastError = vi.spyOn(toast, "error");
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce([
+			{
+				id: "note-1",
+				url_pattern: "https://example.com/page",
+				scope: "exact",
+				content: "old content",
+				created_at: new Date().toISOString(),
+			} as unknown as Note,
+		]);
 		vi.mocked(updateNoteEntity).mockRejectedValue(
 			new Error("sitecue_notes_content_len_check constraint violation"),
 		);
@@ -471,6 +564,10 @@ describe("useNotes - Length limit and error mapping", () => {
 		const { result } = renderHook(() =>
 			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
 		);
+
+		await waitFor(() => {
+			expect(result.current.notes.length).toBe(1);
+		});
 
 		let success = true;
 		await act(async () => {

@@ -122,6 +122,7 @@ vi.mock("./hooks/useNotes", () => ({
 	useNotes: vi.fn(() => ({
 		notes: mockNotes,
 		loading: false,
+		isInboxLoading: false,
 		addNote: vi.fn(),
 		updateNote: vi.fn(),
 		deleteNote: vi.fn(),
@@ -248,6 +249,7 @@ describe("SidePanel Component", () => {
 			mockUseNotes.mockReturnValue({
 				notes: updatedNotes,
 				loading: false,
+				isInboxLoading: false,
 				addNote: vi.fn(),
 				updateNote: vi.fn(),
 				deleteNote: vi.fn(),
@@ -424,5 +426,54 @@ describe("SidePanel - Zen Notes Mode", () => {
 		// 3. Escapeキーを押下 -> 最大化は解除されず Exit full view のままであること
 		fireEvent.keyDown(window, { key: "Escape" });
 		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+	});
+});
+
+describe("SidePanel - Inbox Skeleton Minimum Hold Test", () => {
+	it("Inbox初回選択時にスケルトンが最低300ms表示され、タイマー経過後にノートが表示されること", async () => {
+		vi.useFakeTimers();
+		try {
+			render(<SidePanel />);
+
+			// 初期は Exact (Page)
+			expect(screen.getByText("Exact Note")).toBeInTheDocument();
+
+			// Inbox タブをクリック
+			const inboxTab = screen.getByRole("button", { name: /Inbox/ });
+			fireEvent.click(inboxTab);
+
+			// 0ms時点: スケルトンが表示されていること（NoteSkeletonの存在検証）
+			const skeletons = screen.getAllByTestId("note-skeleton");
+			expect(skeletons.length).toBeGreaterThan(0);
+			expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
+
+			// 200ms経過時点: まだ最低300msホールド中のためスケルトンが維持されていること
+			act(() => {
+				vi.advanceTimersByTime(200);
+			});
+			expect(screen.getAllByTestId("note-skeleton").length).toBeGreaterThan(0);
+			expect(screen.queryByText("Inbox Note")).not.toBeInTheDocument();
+
+			// 300ms経過時点: ホールドタイマーが完了し、Inbox Note が表示されること
+			act(() => {
+				vi.advanceTimersByTime(100);
+			});
+			expect(screen.queryByTestId("note-skeleton")).not.toBeInTheDocument();
+			expect(screen.getByText("Inbox Note")).toBeInTheDocument();
+
+			// 2回目以降（Warm State）: 他タブから再度Inboxへ切り替えた際は0msで即時表示されること
+			const pageTab = screen.getByRole("button", { name: /Page/ });
+			fireEvent.click(pageTab);
+			act(() => {
+				vi.advanceTimersByTime(600);
+			});
+
+			fireEvent.click(inboxTab);
+			// 0ms でスケルトンが出ず即時表示されること
+			expect(screen.queryByTestId("note-skeleton")).not.toBeInTheDocument();
+			expect(screen.getByText("Inbox Note")).toBeInTheDocument();
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

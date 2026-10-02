@@ -2,6 +2,8 @@ import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
 import {
 	createNoteEntity,
 	deleteNoteEntity,
+	fetchExtensionInboxContents,
+	fetchExtensionInboxMetadatas,
 	fetchExtensionNoteContents,
 	fetchExtensionNoteMetadatas,
 	getScopeUrls,
@@ -20,10 +22,12 @@ export function useNotes(
 	authStatus: AuthStatus,
 	currentFullUrl: string,
 	setTotalNoteCount: React.Dispatch<React.SetStateAction<number>>,
-	_viewScope: "exact" | "domain" | "inbox",
+	viewScope: "exact" | "domain" | "inbox",
 ) {
-	const [notes, setNotes] = useState<Note[]>([]);
+	const [pageNotes, setPageNotes] = useState<Note[]>([]);
+	const [inboxNotes, setInboxNotes] = useState<Note[]>([]);
 	const [loading, setLoading] = useState(false);
+	const [isInboxLoading, setIsInboxLoading] = useState(false);
 	const [processingNoteIds, setProcessingNoteIds] = useState<Set<string>>(
 		new Set(),
 	);
@@ -32,7 +36,6 @@ export function useNotes(
 		authStatus.mode === "authenticated" ? authStatus.session : null;
 	const client = authStatus.mode === "guest" ? localClient : supabase;
 
-	// ソート条件式の共通化ヘルパー（DB側 order("sort_order").order("created_at") と100%同期）
 	const sortNotesConsistent = (a: Note, b: Note) => {
 		if ((a.sort_order ?? 0) !== (b.sort_order ?? 0)) {
 			return (a.sort_order ?? 0) - (b.sort_order ?? 0);
@@ -40,22 +43,23 @@ export function useNotes(
 		return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
 	};
 
-	const prevUrlRef = useRef<string>(currentFullUrl);
+	const hasInitialPageFetchRef = useRef(false);
+	const hasFetchedInboxRef = useRef(false);
+	const isFetchingInboxRef = useRef(false);
 
-	// 危険な notesRef を排除し、「初回フェッチが完了したか」だけを追跡する安全なフラグを導入
-	const hasInitialFetchRef = useRef(false);
-
-	const hydrateContent = useCallback(async () => {
+	// Page/Domain ノートの Hydration
+	const hydratePageContent = useCallback(async () => {
 		if (!currentFullUrl || authStatus.mode === "loading") return;
 		try {
 			const scopeUrls = getScopeUrls(currentFullUrl);
 			const data = await fetchExtensionNoteContents(
 				client as unknown as typeof supabase,
 				scopeUrls,
+				{ includeInbox: false },
 			);
 
 			if (data) {
-				setNotes((prevNotes) =>
+				setPageNotes((prevNotes) =>
 					prevNotes.map((note) => {
 						const hydrated = data.find((d) => d.id === note.id);
 						return hydrated ? { ...note, content: hydrated.content } : note;
@@ -63,18 +67,15 @@ export function useNotes(
 				);
 			}
 		} catch (error) {
-			console.error("Failed to hydrate notes", error);
+			console.error("Failed to hydrate page notes", error);
 		}
 	}, [currentFullUrl, authStatus.mode, client]);
 
-	const fetchNotes = useCallback(async () => {
+	// Page/Domain ノートのフェッチ（URL変更でトリガー）
+	const fetchPageNotes = useCallback(async () => {
 		if (!currentFullUrl || authStatus.mode === "loading") return;
 
-		prevUrlRef.current = currentFullUrl;
-
-		// 初回のフェッチ時のみローディングUIを発動する（それ以降のURL変更時は裏側で静かにフェッチする）
-		// ゲストモード時は通信オーバーヘッドがないため、loadingスピナーを完全にバイパス
-		if (authStatus.mode !== "guest" && !hasInitialFetchRef.current) {
+		if (authStatus.mode !== "guest" && !hasInitialPageFetchRef.current) {
 			setLoading(true);
 		}
 
@@ -83,10 +84,10 @@ export function useNotes(
 			const data = await fetchExtensionNoteMetadatas(
 				client as unknown as typeof supabase,
 				scopeUrls,
+				{ includeInbox: false },
 			);
 
-			// 既存 of content（入力中のテキスト等）をマージして保護する
-			setNotes((prevNotes) => {
+			setPageNotes((prevNotes) => {
 				return (data || []).map((newNote) => {
 					const existing = prevNotes.find((n) => n.id === newNote.id);
 					return existing?.content
@@ -95,20 +96,81 @@ export function useNotes(
 				});
 			});
 
-			// Fetch full content in background
-			hydrateContent();
+			hydratePageContent();
 		} catch (error) {
-			console.error("Failed to fetch notes", error);
+			console.error("Failed to fetch page notes", error);
 		} finally {
-			// フェッチ完了後、初回フラグを true にして以降 of setLoading(true) をブロックする
-			hasInitialFetchRef.current = true;
+			hasInitialPageFetchRef.current = true;
 			setLoading(false);
 		}
-	}, [currentFullUrl, authStatus.mode, hydrateContent, client]);
+	}, [currentFullUrl, authStatus.mode, hydratePageContent, client]);
 
+	// Inbox ノートのオンデマンドフェッチ & Hydration
+	const fetchInboxNotes = useCallback(async () => {
+		if (authStatus.mode === "loading" || isFetchingInboxRef.current) return;
+		isFetchingInboxRef.current = true;
+		setIsInboxLoading(true);
+
+		try {
+			const metadatas = await fetchExtensionInboxMetadatas(
+				client as unknown as typeof supabase,
+			);
+			setInboxNotes((prevNotes) => {
+				return (metadatas || []).map((newNote) => {
+					const existing = prevNotes.find((n) => n.id === newNote.id);
+					return existing?.content
+						? ({ ...newNote, content: existing.content } as Note)
+						: (newNote as Note);
+				});
+			});
+
+			// 背景で Inbox コンテンツを取得
+			const contents = await fetchExtensionInboxContents(
+				client as unknown as typeof supabase,
+			);
+			if (contents) {
+				setInboxNotes((prevNotes) =>
+					prevNotes.map((note) => {
+						const hydrated = contents.find((d) => d.id === note.id);
+						return hydrated ? { ...note, content: hydrated.content } : note;
+					}),
+				);
+			}
+			hasFetchedInboxRef.current = true;
+		} catch (error) {
+			console.error("Failed to fetch inbox notes", error);
+		} finally {
+			isFetchingInboxRef.current = false;
+			setIsInboxLoading(false);
+		}
+	}, [authStatus.mode, client]);
+
+	// URL変更監視: Pageノートのみ再フェッチ。Inboxキャッシュは温存。
 	useEffect(() => {
-		fetchNotes();
-	}, [fetchNotes]);
+		fetchPageNotes();
+	}, [fetchPageNotes]);
+
+	// viewScope 監視: Inbox 初回アクセス時にオンデマンドフェッチ
+	useEffect(() => {
+		if (viewScope === "inbox" && !hasFetchedInboxRef.current) {
+			fetchInboxNotes();
+		}
+	}, [viewScope, fetchInboxNotes]);
+
+	// 統合 notes 配列
+	const notes = [...pageNotes, ...inboxNotes].sort(sortNotesConsistent);
+
+	// CRUD操作時のヘルパー
+	const updateLocalNoteState = (
+		updater: (prev: Note[]) => Note[],
+		scope: NoteScope,
+	) => {
+		if (scope === "inbox") {
+			setInboxNotes(updater);
+		} else {
+			setPageNotes(updater);
+		}
+	};
 
 	const addNote = async (
 		content: string,
@@ -117,7 +179,6 @@ export function useNotes(
 	) => {
 		if (authStatus.mode === "loading" || !content.trim()) return false;
 
-		// ゲストモード時の50件制限
 		if (
 			authStatus.mode === "guest" &&
 			notes.filter((n) => n.scope !== "inbox").length >= 50
@@ -139,10 +200,10 @@ export function useNotes(
 			currentUrl: currentFullUrl,
 		});
 
-		// 💡 【ワープ現象の完全封殺】昇順ソートに対応し、仮ノートも最初から「最上部（最小値 - 1.0）」に差し込む
+		const targetList = selectedScope === "inbox" ? inboxNotes : pageNotes;
 		const newSortOrder =
-			notes.length > 0
-				? Math.min(...notes.map((n) => n.sort_order || 0)) - 1.0
+			targetList.length > 0
+				? Math.min(...targetList.map((n) => n.sort_order || 0)) - 1.0
 				: 0.0;
 
 		const tempId = crypto.randomUUID();
@@ -162,13 +223,14 @@ export function useNotes(
 			tags: resolved.tags,
 		} as Note;
 
-		// 楽観的に仮ノートを即時マウント（ガタつかず最上部に綺麗に固定されます）
-		setNotes((prev) => [...prev, tempNote].sort(sortNotesConsistent));
+		updateLocalNoteState(
+			(prev) => [...prev, tempNote].sort(sortNotesConsistent),
+			selectedScope,
+		);
 
 		try {
 			let data: Note;
 			if (authStatus.mode === "guest") {
-				// 💡 【ゲストモードDALクラッシュ回避】localClient のメソッドチェーン崩壊を防ぐため、DALをバイパス
 				const guestClient = client as unknown as typeof localClient;
 				if (typeof guestClient.from === "function") {
 					try {
@@ -179,9 +241,8 @@ export function useNotes(
 						console.warn("localClient insertion fell back", e);
 					}
 				}
-				data = tempNote; // 確定データとして tempNote をそのまま昇格
+				data = tempNote;
 			} else {
-				// ログインモード時は従来通り完璧なSupabase共通DALを安全に実行
 				data = await createNoteEntity(
 					client as unknown as typeof supabase,
 					currentUserId,
@@ -194,20 +255,25 @@ export function useNotes(
 				);
 			}
 
-			// 確定データで上書き
-			setNotes((prev) =>
-				prev.map((n) => (n.id === tempId ? data : n)).sort(sortNotesConsistent),
+			updateLocalNoteState(
+				(prev) =>
+					prev
+						.map((n) => (n.id === tempId ? data : n))
+						.sort(sortNotesConsistent),
+				selectedScope,
 			);
 
 			if (selectedScope !== "inbox") {
 				setTotalNoteCount((prev) => prev + 1);
 			}
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
-
 			return true;
 		} catch (error) {
 			console.error("Failed to create note", error);
-			setNotes((prev) => prev.filter((n) => n.id !== tempId));
+			updateLocalNoteState(
+				(prev) => prev.filter((n) => n.id !== tempId),
+				selectedScope,
+			);
 			toast.error("Failed to create note");
 			return false;
 		}
@@ -220,16 +286,18 @@ export function useNotes(
 		editScope?: NoteScope,
 	) => {
 		if (!editContent.trim()) return false;
+		const existingNote = notes.find((n) => n.id === id);
+		if (!existingNote) return false;
+
+		const targetScope = editScope ?? existingNote.scope;
+
 		try {
 			let data: Note;
 			if (authStatus.mode === "guest") {
-				const existingNote = notes.find((n) => n.id === id);
-				if (!existingNote) return false;
-
 				const resolved = resolveNotePayload({
 					content: editContent,
 					note_type: editType,
-					scope: editScope ?? existingNote.scope,
+					scope: targetScope,
 					currentUrl: currentFullUrl,
 				});
 
@@ -237,7 +305,7 @@ export function useNotes(
 					...existingNote,
 					content: editContent,
 					note_type: editType,
-					scope: editScope ?? existingNote.scope,
+					scope: targetScope,
 					url_pattern: resolved.url_pattern,
 					tags: resolved.tags,
 					updated_at: new Date().toISOString(),
@@ -268,12 +336,26 @@ export function useNotes(
 				);
 			}
 
-			setNotes((prevNotes) => prevNotes.map((n) => (n.id === id ? data : n)));
+			// スコープが跨いだ場合の再配置
+			if (existingNote.scope !== data.scope) {
+				if (existingNote.scope === "inbox") {
+					setInboxNotes((prev) => prev.filter((n) => n.id !== id));
+					setPageNotes((prev) => [...prev, data].sort(sortNotesConsistent));
+				} else {
+					setPageNotes((prev) => prev.filter((n) => n.id !== id));
+					setInboxNotes((prev) => [...prev, data].sort(sortNotesConsistent));
+				}
+			} else {
+				updateLocalNoteState(
+					(prev) => prev.map((n) => (n.id === id ? data : n)),
+					data.scope,
+				);
+			}
+
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			return true;
 		} catch (error: unknown) {
 			console.error("Failed to update note", error);
-
 			let errorMsg = "Failed to update note";
 			if (typeof error === "object" && error !== null && "message" in error) {
 				const msg = String((error as { message: unknown }).message);
@@ -293,19 +375,21 @@ export function useNotes(
 
 	const deleteNote = async (id: string) => {
 		if (!window.confirm("このメモを削除しますか？")) return false;
-
 		const noteToDelete = notes.find((n) => n.id === id);
+		if (!noteToDelete) return false;
 
 		try {
 			await deleteNoteEntity(client as unknown as typeof supabase, id);
 
-			setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
+			updateLocalNoteState(
+				(prev) => prev.filter((note) => note.id !== id),
+				noteToDelete.scope,
+			);
 
-			if (noteToDelete?.scope !== "inbox") {
+			if (noteToDelete.scope !== "inbox") {
 				setTotalNoteCount((prev) => Math.max(0, prev - 1));
 				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			}
-
 			return true;
 		} catch (error) {
 			console.error("Failed to delete note", error);
@@ -319,6 +403,9 @@ export function useNotes(
 		currentStatus: boolean | undefined,
 	) => {
 		const nextStatus = !currentStatus;
+		const targetNote = notes.find((n) => n.id === id);
+		if (!targetNote) return false;
+
 		try {
 			if (authStatus.mode === "guest") {
 				const guestClient = client as unknown as typeof localClient;
@@ -338,10 +425,12 @@ export function useNotes(
 				});
 			}
 
-			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === id ? { ...n, is_resolved: nextStatus } : n,
-				),
+			updateLocalNoteState(
+				(prev) =>
+					prev.map((n) =>
+						n.id === id ? { ...n, is_resolved: nextStatus } : n,
+					),
+				targetNote.scope,
 			);
 			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
 			return true;
@@ -354,12 +443,12 @@ export function useNotes(
 
 	const toggleFavorite = async (note: Note) => {
 		const nextStatus = !note.is_favorite;
-
-		// 楽観的UI更新
-		setNotes((prevNotes) =>
-			prevNotes.map((n) =>
-				n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
-			),
+		updateLocalNoteState(
+			(prev) =>
+				prev.map((n) =>
+					n.id === note.id ? { ...n, is_favorite: nextStatus } : n,
+				),
+			note.scope,
 		);
 
 		try {
@@ -383,11 +472,12 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle favorite status", error);
-			// ロールバック
-			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === note.id ? { ...n, is_favorite: note.is_favorite } : n,
-				),
+			updateLocalNoteState(
+				(prev) =>
+					prev.map((n) =>
+						n.id === note.id ? { ...n, is_favorite: note.is_favorite } : n,
+					),
+				note.scope,
 			);
 			toast.error("Failed to update status");
 			return false;
@@ -415,10 +505,12 @@ export function useNotes(
 				});
 			}
 
-			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === note.id ? { ...n, is_pinned: nextStatus } : n,
-				),
+			updateLocalNoteState(
+				(prev) =>
+					prev.map((n) =>
+						n.id === note.id ? { ...n, is_pinned: nextStatus } : n,
+					),
+				note.scope,
 			);
 			return true;
 		} catch (error) {
@@ -430,19 +522,18 @@ export function useNotes(
 
 	const updateNoteOrder = async (id: string, newOrder: number) => {
 		if (processingNoteIds.has(id)) return false;
+		const targetNote = notes.find((n) => n.id === id);
+		if (!targetNote) return false;
 
-		setProcessingNoteIds((prev) => {
-			const next = new Set(prev);
-			next.add(id);
-			return next;
-		});
+		setProcessingNoteIds((prev) => new Set(prev).add(id));
 
-		setNotes((prevNotes) => {
-			const newNotes = prevNotes.map((n) =>
-				n.id === id ? { ...n, sort_order: newOrder } : n,
-			);
-			return newNotes.sort(sortNotesConsistent);
-		});
+		updateLocalNoteState(
+			(prev) =>
+				prev
+					.map((n) => (n.id === id ? { ...n, sort_order: newOrder } : n))
+					.sort(sortNotesConsistent),
+			targetNote.scope,
+		);
 
 		try {
 			if (authStatus.mode === "guest") {
@@ -466,7 +557,11 @@ export function useNotes(
 		} catch (error) {
 			console.error("Failed to update note order", error);
 			toast.error("Failed to reorder notes");
-			fetchNotes(); // ロールバック
+			if (targetNote.scope === "inbox") {
+				fetchInboxNotes();
+			} else {
+				fetchPageNotes();
+			}
 			return false;
 		} finally {
 			setProcessingNoteIds((prev) => {
@@ -479,11 +574,15 @@ export function useNotes(
 
 	const toggleNoteExpansion = async (id: string, currentValue: boolean) => {
 		const nextValue = !currentValue;
-		setNotes((prevNotes) =>
-			prevNotes.map((n) =>
-				n.id === id ? { ...n, is_expanded: nextValue } : n,
-			),
+		const targetNote = notes.find((n) => n.id === id);
+		if (!targetNote) return false;
+
+		updateLocalNoteState(
+			(prev) =>
+				prev.map((n) => (n.id === id ? { ...n, is_expanded: nextValue } : n)),
+			targetNote.scope,
 		);
+
 		try {
 			if (authStatus.mode === "guest") {
 				const guestClient = client as unknown as typeof localClient;
@@ -505,10 +604,12 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle expansion", error);
-			setNotes((prevNotes) =>
-				prevNotes.map((n) =>
-					n.id === id ? { ...n, is_expanded: currentValue } : n,
-				),
+			updateLocalNoteState(
+				(prev) =>
+					prev.map((n) =>
+						n.id === id ? { ...n, is_expanded: currentValue } : n,
+					),
+				targetNote.scope,
 			);
 			toast.error("Failed to update note");
 			return false;
@@ -518,7 +619,9 @@ export function useNotes(
 	return {
 		notes,
 		loading,
-		fetchNotes,
+		isInboxLoading,
+		fetchNotes: fetchPageNotes,
+		fetchInboxNotes,
 		addNote,
 		updateNote,
 		deleteNote,
