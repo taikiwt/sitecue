@@ -226,21 +226,34 @@ export async function fetchNotesByUrlPattern(
 	return data as Note[];
 }
 
+export interface FetchExtensionNotesOptions {
+	includeInbox?: boolean;
+}
+
 /**
- * 拡張機能用のノートメタデータ一覧を取得する
+ * 拡張機能用のノートメタデータ一覧を取得する (デフォルトではInboxを除外して超軽量化)
  */
 export async function fetchExtensionNoteMetadatas(
 	supabase: SupabaseClient,
 	scopeUrls: { domain: string; exact: string },
+	options?: FetchExtensionNotesOptions,
 ): Promise<Note[]> {
+	const orConditions = [
+		`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain)`,
+		`and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact)`,
+		"is_favorite.eq.true",
+	];
+
+	if (options?.includeInbox) {
+		orConditions.push("scope.eq.inbox");
+	}
+
 	const { data, error } = await supabase
 		.from("sitecue_notes")
 		.select(
 			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
 		)
-		.or(
-			`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
-		)
+		.or(orConditions.join(","))
 		.order("sort_order", { ascending: true })
 		.order("created_at", { ascending: true });
 
@@ -254,13 +267,56 @@ export async function fetchExtensionNoteMetadatas(
 export async function fetchExtensionNoteContents(
 	supabase: SupabaseClient,
 	scopeUrls: { domain: string; exact: string },
+	options?: FetchExtensionNotesOptions,
+): Promise<{ id: string; content: string }[]> {
+	const orConditions = [
+		`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain)`,
+		`and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact)`,
+		"is_favorite.eq.true",
+	];
+
+	if (options?.includeInbox) {
+		orConditions.push("scope.eq.inbox");
+	}
+
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select("id, content")
+		.or(orConditions.join(","));
+
+	if (error) throw error;
+	return data || [];
+}
+
+/**
+ * Inboxノートのメタデータを単独オンデマンド取得する
+ */
+export async function fetchExtensionInboxMetadatas(
+	supabase: SupabaseClient,
+): Promise<Note[]> {
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select(
+			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
+		)
+		.eq("scope", "inbox")
+		.order("sort_order", { ascending: true })
+		.order("created_at", { ascending: true });
+
+	if (error) throw error;
+	return data as Note[];
+}
+
+/**
+ * Inboxノートの本文を単独Hydration取得する
+ */
+export async function fetchExtensionInboxContents(
+	supabase: SupabaseClient,
 ): Promise<{ id: string; content: string }[]> {
 	const { data, error } = await supabase
 		.from("sitecue_notes")
 		.select("id, content")
-		.or(
-			`and(url_pattern.eq."${scopeUrls.domain}",scope.eq.domain),and(url_pattern.eq."${scopeUrls.exact}",scope.eq.exact),scope.eq.inbox,is_favorite.eq.true`,
-		);
+		.eq("scope", "inbox");
 
 	if (error) throw error;
 	return data || [];

@@ -15,10 +15,18 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronRight, Ghost } from "lucide-react";
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import NoteItem from "./NoteItem";
 import NoteSkeleton from "./NoteSkeleton";
+
+const PAGE_SIZE = 20;
 
 interface NoteListProps {
 	scope?: "exact" | "domain" | "inbox";
@@ -122,9 +130,41 @@ function NoteList({
 		return sortedAllNotes.filter((n) => !n.is_favorite && n.is_pinned);
 	}, [sortedAllNotes]);
 
+	const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
+	const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+	// ノート配列の変更時に表示件数を20件にリセット
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset visibleLimit whenever notes reference changes
+	useEffect(() => {
+		setVisibleLimit(PAGE_SIZE);
+	}, [notes]);
+
+	// スクロール監視と段階マウント（ドラッグ中はロック）
+	useEffect(() => {
+		const sentinel = sentinelRef.current;
+		if (!sentinel) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const first = entries[0];
+				if (first.isIntersecting && !activeDragNote) {
+					setVisibleLimit((prev) => prev + PAGE_SIZE);
+				}
+			},
+			{ threshold: 0.1 },
+		);
+
+		observer.observe(sentinel);
+		return () => observer.disconnect();
+	}, [activeDragNote]);
+
 	const normalNotes = useMemo(() => {
 		return sortedAllNotes.filter((n) => !n.is_favorite && !n.is_pinned);
 	}, [sortedAllNotes]);
+
+	const displayedNormalNotes = useMemo(() => {
+		return normalNotes.slice(0, visibleLimit);
+	}, [normalNotes, visibleLimit]);
 
 	const handleDragStart = (event: DragStartEvent) => {
 		const note = notes.find((n) => n.id === event.active.id);
@@ -409,13 +449,20 @@ function NoteList({
 							</div>
 						)}
 						<SortableContext
-							items={normalNotes.map((n) => n.id)}
+							items={displayedNormalNotes.map((n) => n.id)}
 							strategy={verticalListSortingStrategy}
 						>
 							<div className="space-y-3">
-								{normalNotes.map((note) => renderItem(note, false))}
+								{displayedNormalNotes.map((note) => renderItem(note, false))}
 							</div>
 						</SortableContext>
+						{displayedNormalNotes.length < normalNotes.length && (
+							<div
+								ref={sentinelRef}
+								className="h-4 w-full"
+								aria-hidden="true"
+							/>
+						)}
 					</div>
 				)}
 			</div>

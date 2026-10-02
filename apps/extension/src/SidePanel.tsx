@@ -45,6 +45,7 @@ import { useNotes } from "./hooks/useNotes";
 import { useUserStats } from "./hooks/useUserStats";
 
 const MAX_FREE_NOTES = 500;
+const SKELETON_HOLD_MS = 300;
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
@@ -470,6 +471,7 @@ function NotesUI({
 	const {
 		notes,
 		loading,
+		isInboxLoading,
 		addNote: originalAddNote,
 		updateNote,
 		deleteNote,
@@ -523,14 +525,16 @@ function NotesUI({
 			const isVisited = visitedScopesRef.current.has(scope);
 			const targetCount = getScopeNoteCount(scope);
 
-			// 2. 未訪問（Cold Tab）かつ 1件以上ノートが存在する場合のみ 200ms スケルトンで裏側構築
-			//    0件と分かっている場合や訪問済み（Warm Tab）はスケルトンを出さず 0ms で即座に切替
-			if (!isVisited && targetCount > 0) {
+			// 💡 Inbox未訪問（Cold State）時は手元件数判定をバイパスして確実に300msスケルトンを起動
+			const shouldShowSkeleton =
+				!isVisited && (scope === "inbox" || targetCount > 0);
+
+			if (shouldShowSkeleton) {
 				visitedScopesRef.current.add(scope);
 				setIsScopeSwitching(true);
 				setTimeout(() => {
 					setIsScopeSwitching(false);
-				}, 200);
+				}, SKELETON_HOLD_MS);
 			} else {
 				visitedScopesRef.current.add(scope);
 			}
@@ -634,7 +638,16 @@ function NotesUI({
 		};
 	}, [isCopyMenuOpen]);
 
-	const isNotesLoading = (loading && notes.length === 0) || isScopeSwitching;
+	// 💡 isNotesLoading に Inbox オンデマンド待機の防壁を追加
+	const isInboxInitialLoading =
+		viewScope === "inbox" &&
+		isInboxLoading &&
+		notes.filter((n) => n.scope === "inbox").length === 0;
+
+	const isNotesLoading =
+		(loading && notes.length === 0) ||
+		isScopeSwitching ||
+		isInboxInitialLoading;
 
 	const handleUpdateNoteOrder = useCallback(
 		(id: string, newOrder: number) => {

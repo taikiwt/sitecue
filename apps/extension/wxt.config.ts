@@ -21,6 +21,11 @@ export default defineConfig({
 		},
 	},
 
+	// ブラウザを自動起動させない設定
+  webExt: {
+    disabled: true,
+  },
+
 	// manifest.json の完全な代わり
 	manifest: ({ command }) => ({
 		name: command === "serve" ? "[DEV] sitecue" : "sitecue",

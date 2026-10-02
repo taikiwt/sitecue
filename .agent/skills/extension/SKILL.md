@@ -22,3 +22,9 @@ description: Chrome拡張機能（WXT/Manifest V3）、OAuth認証、ゲスト�
 - **極上エディタ入力補助**: リスト行（`- `, `1. `）での Tab は行頭インデント、空バレットでの Enter はクリーンな改行（`\n`）スライド着地とすること。バッククォート（` ` `）の自動閉じはコードブロック保護のため除外すること。
 - **IMEキーダウン防壁:** 日本語環境での記号自動補完暴発を防ぐため、`useMarkdownAssist` のキー判定先頭には必ず `if (e.nativeEvent.isComposing || e.keyCode === 229 || e.key === "Process") return;` を配置すること。
 - **記号自動閉じの引き算原則:** バッククォート（`）に加えてアンダースコア（`_`）も自動補完・自動削除の対象から除外すること。
+
+## 4. Quick Note & Storage Isolation Rules
+- **Quick Storage 分離原則:** `quick_note_text_${userId}`, `quick_code_text_${userId}`, `quick_note_view_mode_${userId}` の各ストレージキーは完全に独立して管理し、相互に上書きしてはならない。
+- **URL非依存キャッシュ原則:** `inbox` スコープのノートはURLに依存しないグローバルリソースである。URL変更イベント（`currentFullUrl` の変更）で Inbox キャッシュを破棄・再フェッチしてはならない。
+- **D&D ドラッグ中マウントロック原則:** リストのドラッグソート実行中（`activeDragNote !== null`）は、スクロール等によるDOM要素の動的追加マウントを一時的に物理ロックすること。
+
