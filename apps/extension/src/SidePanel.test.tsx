@@ -351,3 +351,78 @@ describe("SidePanel Component", () => {
 		expect(textarea).toBeInTheDocument();
 	});
 });
+
+describe("SidePanel - Zen Notes Mode", () => {
+	it("アクションバー左端の最大化ボタンをクリックすると上部シェルが非表示になり、縮小ボタンまたはEscapeで復帰すること", () => {
+		render(<SidePanel />);
+
+		// 初期状態: ヘッダーやフィルターバーの要素が存在する
+		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+
+		const maximizeBtn = screen.getByTitle("Maximize notes view");
+		expect(maximizeBtn).toBeInTheDocument();
+
+		// 最大化を実行
+		fireEvent.click(maximizeBtn);
+
+		// 上部シェルを包括するラッパーに hidden クラスが付与されていること
+		const searchInput = screen.getByPlaceholderText("Search...");
+		const wrapper = searchInput.closest(".hidden");
+		expect(wrapper).toHaveClass("hidden");
+
+		// ボタンのタイトルが縮小モードに変わっていること
+		const exitBtn = screen.getByTitle("Exit full view");
+		expect(exitBtn).toBeInTheDocument();
+
+		// Escapeキーを押下して復帰
+		fireEvent.keyDown(window, { key: "Escape" });
+
+		expect(screen.getByTitle("Maximize notes view")).toBeInTheDocument();
+		expect(wrapper).not.toHaveClass("hidden");
+	});
+
+	it("最大化中に新規ノートモーダルが開いている場合、Escapeキーはモーダルを優先して閉じ、最大化は維持されること", () => {
+		render(<SidePanel />);
+
+		// 1. 最大化
+		fireEvent.click(screen.getByTitle("Maximize notes view"));
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+
+		// 2. 「＋」ボタンを押して新規ノートモーダルを開く
+		fireEvent.click(screen.getByTitle("Create new note"));
+		expect(screen.getByLabelText("Close input overlay")).toBeInTheDocument();
+
+		// 3. Escapeキーを押下 -> モーダルが閉じる
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(
+			screen.queryByLabelText("Close input overlay"),
+		).not.toBeInTheDocument();
+
+		// 最大化は維持されていること（タイトルが Exit full view のまま）
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+
+		// 4. もう一度 Escapeキーを押下 -> 最大化が解除される
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.getByTitle("Maximize notes view")).toBeInTheDocument();
+	});
+
+	it("最大化中にノート一覧内でインライン編集中（textareaが存在）の場合、Escapeキーを押下しても最大化は維持されること", () => {
+		render(<SidePanel />);
+
+		// 1. 最大化
+		fireEvent.click(screen.getByTitle("Maximize notes view"));
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+
+		// 2. ノートの編集ボタン（Edit）をクリックして編集モードを起動
+		const editButtons = screen.getAllByTitle("Edit");
+		fireEvent.click(editButtons[0]);
+
+		// 編集用textareaが出現していることを確認
+		const textareas = screen.getAllByRole("textbox");
+		expect(textareas.length).toBeGreaterThan(0);
+
+		// 3. Escapeキーを押下 -> 最大化は解除されず Exit full view のままであること
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+	});
+});

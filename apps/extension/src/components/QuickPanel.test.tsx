@@ -383,3 +383,57 @@ describe("QuickPanel Pro Plan Limit Validation Test", () => {
 		expect(diaryButton).not.toBeDisabled();
 	});
 });
+
+describe("QuickPanel - Zen Quick Note Mode", () => {
+	it("最大化ボタンをクリックすると全画面オーバーレイクラスが適用され、縮小ボタンで復帰すること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn().mockResolvedValue(true)}
+				onAppendDiary={vi.fn().mockResolvedValue(true)}
+				userPlan="free"
+			/>,
+		);
+
+		// Quick Note を展開
+		fireEvent.click(screen.getByText("Quick Note"));
+
+		const maximizeBtn = screen.getByTitle("Maximize Quick Note");
+		expect(maximizeBtn).toBeInTheDocument();
+
+		// 最大化を実行
+		fireEvent.click(maximizeBtn);
+
+		// 全画面クラス fixed inset-0 z-50 が適用されていること
+		const overlay = screen.getByTitle("Exit full view").closest(".fixed");
+		expect(overlay).toHaveClass("fixed", "inset-0", "z-50");
+
+		// 縮小ボタンをクリックして復帰
+		const exitBtn = screen.getByTitle("Exit full view");
+		fireEvent.click(exitBtn);
+
+		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
+	});
+
+	it("最大化中にEscapeキーを押下すると最大化が解除されること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn().mockResolvedValue(true)}
+				onAppendDiary={vi.fn().mockResolvedValue(true)}
+				userPlan="free"
+			/>,
+		);
+
+		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByTitle("Maximize Quick Note"));
+
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+
+		// Escapeキーを押下
+		fireEvent.keyDown(window, { key: "Escape" });
+
+		// 最大化が解除され通常ボタンに戻っていること
+		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
+	});
+});

@@ -11,7 +11,15 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { Check, Copy, Loader2, Plus, X } from "lucide-react";
+import {
+	Check,
+	Copy,
+	Loader2,
+	Maximize2,
+	Minimize2,
+	Plus,
+	X,
+} from "lucide-react";
 import {
 	useCallback,
 	useDeferredValue,
@@ -138,6 +146,7 @@ function NotesUI({
 	// 💡 React Concurrent Rendering で全フィルター操作と重いリスト描画を一括非同期分離
 	const deferredFilterState = useDeferredValue(rawFilterState);
 
+	const [isNotesMaximized, setIsNotesMaximized] = useState(false);
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -563,16 +572,52 @@ function NotesUI({
 		setIsCopyMenuOpen(false);
 	};
 
-	// Close search and menu when pressing Escape
+	// Close search, modals, and exit maximized mode when pressing Escape (LIFO)
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
-				setIsCopyMenuOpen(false);
+				if (e.isComposing) return;
+
+				// 1. コピーメニュー展開中ならメニューを閉じる
+				if (isCopyMenuOpen) {
+					setIsCopyMenuOpen(false);
+					return;
+				}
+
+				// 2. 新規ノート入力モーダル展開中ならモーダルを閉じる
+				if (isInputModeOpen) {
+					setIsInputModeOpen(false);
+					return;
+				}
+
+				// 3. input/textarea にフォーカス中、または一覧内でノート編集中（textareaが存在）なら最大化解除をブロック
+				const isEditingInList = Boolean(
+					listContainerRef.current?.querySelector("textarea"),
+				);
+				if (
+					document.activeElement instanceof HTMLInputElement ||
+					document.activeElement instanceof HTMLTextAreaElement ||
+					isEditingInList
+				) {
+					if (document.activeElement instanceof HTMLElement) {
+						document.activeElement.blur();
+					}
+					return;
+				}
+
+				// 4. ノート一覧最大化中なら通常表示に復帰（フォーカスも安全に解放）
+				if (isNotesMaximized) {
+					if (document.activeElement instanceof HTMLElement) {
+						document.activeElement.blur();
+					}
+					setIsNotesMaximized(false);
+					return;
+				}
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, []);
+	}, [isCopyMenuOpen, isInputModeOpen, isNotesMaximized]);
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -713,46 +758,64 @@ function NotesUI({
 					},
 				}}
 			/>
-			<Header
-				url={url}
-				title={title}
-				domain={currentFullUrl ? getScopeUrls(currentFullUrl).domain : ""}
-				session={session}
-				onLogout={onLogout}
-				authStatus={authStatus}
-				onDiaryClick={() => {
-					setIsDiaryOpen(true);
-					setIsEditingDiary(false);
-				}}
-			/>
+			<div className={isNotesMaximized ? "hidden" : "contents"}>
+				<Header
+					url={url}
+					title={title}
+					domain={currentFullUrl ? getScopeUrls(currentFullUrl).domain : ""}
+					session={session}
+					onLogout={onLogout}
+					authStatus={authStatus}
+					onDiaryClick={() => {
+						setIsDiaryOpen(true);
+						setIsEditingDiary(false);
+					}}
+				/>
 
-			<QuickPanel
-				currentDomain={
-					currentFullUrl ? getScopeUrls(currentFullUrl).domain : null
-				}
-				onAddNote={handleAddNote}
-				onAppendDiary={handleAppendDiary}
-				userPlan={userPlan}
-			/>
+				<QuickPanel
+					currentDomain={
+						currentFullUrl ? getScopeUrls(currentFullUrl).domain : null
+					}
+					onAddNote={handleAddNote}
+					onAppendDiary={handleAppendDiary}
+					userPlan={userPlan}
+				/>
 
-			<FilterBar
-				filterType={filterType}
-				setFilterType={setFilterType}
-				showResolved={showResolved}
-				setShowResolved={setShowResolved}
-				viewScope={viewScope}
-				setViewScope={handleViewScopeChange}
-				searchQuery={searchQuery}
-				setSearchQuery={setSearchQuery}
-				selectedTag={selectedTag}
-				setSelectedTag={setSelectedTag}
-				availableTags={availableTags}
-			/>
+				<FilterBar
+					filterType={filterType}
+					setFilterType={setFilterType}
+					showResolved={showResolved}
+					setShowResolved={setShowResolved}
+					viewScope={viewScope}
+					setViewScope={handleViewScopeChange}
+					searchQuery={searchQuery}
+					setSearchQuery={setSearchQuery}
+					selectedTag={selectedTag}
+					setSelectedTag={setSelectedTag}
+					availableTags={availableTags}
+				/>
+			</div>
 
 			{/* 🚀 等幅3カラム中央集権型アクションバー (グレー背景を白背景 bg-base-bg へ融和) */}
 			<div className="grid grid-cols-3 items-center px-4 py-2 bg-base-bg shrink-0 border-b border-base-border/40 shadow-xs">
-				{/* 左カラム：拡張用スペース */}
-				<div className="flex justify-start" />
+				{/* 左カラム：ノート一覧最大化ボタン */}
+				<div className="flex justify-start">
+					<button
+						type="button"
+						onClick={() => setIsNotesMaximized((prev) => !prev)}
+						className="cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border focus:outline-none focus-visible:outline-none"
+						title={isNotesMaximized ? "Exit full view" : "Maximize notes view"}
+						aria-label={
+							isNotesMaximized ? "Exit full view" : "Maximize notes view"
+						}
+					>
+						{isNotesMaximized ? (
+							<Minimize2 aria-hidden="true" className="w-3.5 h-3.5" />
+						) : (
+							<Maximize2 aria-hidden="true" className="w-3.5 h-3.5" />
+						)}
+					</button>
+				</div>
 
 				{/* 一角カラム：「＋」ボタンを物理的中心に完全ロック */}
 				<div className="flex justify-center">
