@@ -11,6 +11,8 @@ import {
 	Link as LinkIcon,
 	Loader2,
 	Lock,
+	Maximize2,
+	Minimize2,
 	Pencil,
 	Plus,
 	Send,
@@ -51,6 +53,7 @@ export default function QuickPanel({
 		"none",
 	);
 	const [noteText, setNoteText] = useState("");
+	const [isQuickNoteMaximized, setIsQuickNoteMaximized] = useState(false);
 
 	const isPro = userPlan === "pro";
 
@@ -145,6 +148,20 @@ export default function QuickPanel({
 			flushTextStorage();
 		};
 	}, [flushTextStorage]);
+
+	useEffect(() => {
+		if (!isQuickNoteMaximized) return;
+
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape") {
+				if (e.isComposing) return;
+				setIsQuickNoteMaximized(false);
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isQuickNoteMaximized]);
 
 	const handleClearText = () => {
 		handleTextChange("");
@@ -300,7 +317,13 @@ export default function QuickPanel({
 
 			{/* --- Quick Note 展開体 --- */}
 			{activeSection === "note" && (
-				<div className="px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0">
+				<div
+					className={
+						isQuickNoteMaximized
+							? "fixed inset-0 z-50 bg-base-bg p-3 flex flex-col h-full animate-fadeIn"
+							: "px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0"
+					}
+				>
 					{/* 【完全不動: shrink-0】 コックピット操作バー */}
 					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-base-border/30 pb-2">
 						<div className="flex items-center gap-1">
@@ -326,6 +349,29 @@ export default function QuickPanel({
 								variant="ghost"
 								onClick={handleCopy}
 								title="Copy text"
+								className="w-7 h-7 p-0 rounded-full"
+							/>
+							<Button
+								icon={
+									isQuickNoteMaximized ? (
+										<Minimize2 aria-hidden="true" className="size-4" />
+									) : (
+										<Maximize2 aria-hidden="true" className="size-4" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={() => setIsQuickNoteMaximized((prev) => !prev)}
+								title={
+									isQuickNoteMaximized
+										? "Exit full view"
+										: "Maximize Quick Note"
+								}
+								aria-label={
+									isQuickNoteMaximized
+										? "Exit full view"
+										: "Maximize Quick Note"
+								}
 								className="w-7 h-7 p-0 rounded-full"
 							/>
 						</div>
@@ -378,13 +424,21 @@ export default function QuickPanel({
 					</div>
 
 					{/* 【中央隔離スクロール領域】 1. 固定マスク親ラッパー */}
-					<div className="w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none overflow-hidden">
+					<div
+						className={
+							isQuickNoteMaximized
+								? "w-full pt-1 flex-1 min-h-0 overflow-y-auto scrollbar-none"
+								: "w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none overflow-hidden"
+						}
+					>
 						{/* 🌟 2. スライド駆動子コンテナ (isSliding に連動) */}
 						<div
 							className={
 								isSliding
 									? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
-									: "transition-none"
+									: isQuickNoteMaximized
+										? "h-full flex flex-col transition-none"
+										: "transition-none"
 							}
 						>
 							<TextareaAutosize
@@ -392,8 +446,10 @@ export default function QuickPanel({
 								onBlur={flushTextStorage}
 								value={noteText}
 								placeholder="Temporary text scratchpad... (Cross-site session persistent)"
-								className="w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out"
-								minRows={3}
+								className={`w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
+									isQuickNoteMaximized ? "h-full" : ""
+								}`}
+								minRows={isQuickNoteMaximized ? 10 : 3}
 								onKeyDown={(e) => {
 									if (e.nativeEvent.isComposing) return;
 									handleAutoIndent(e);
