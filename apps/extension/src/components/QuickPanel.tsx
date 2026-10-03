@@ -4,9 +4,8 @@ import {
 	Check,
 	ChevronDown,
 	ChevronRight,
-	CircleX,
-	Code2,
 	Copy,
+	Eraser,
 	ExternalLink,
 	Eye,
 	FileText,
@@ -18,6 +17,8 @@ import {
 	Pencil,
 	Plus,
 	Send,
+	SquareTerminal,
+	Terminal,
 	Trash2,
 	X,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAuth } from "../hooks/useAuth";
+import { useAutoIndent } from "../hooks/useAutoIndent";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import { useQuickLinks } from "../hooks/useQuickLinks";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -41,7 +43,7 @@ interface QuickPanelProps {
 	onAppendDiary: (content: string) => Promise<boolean>;
 }
 
-export type QuickPanelTab = "none" | "note" | "code" | "links";
+export type QuickPanelTab = "none" | "note" | "command" | "links";
 export type QuickNoteViewMode = "edit" | "preview";
 
 export default function QuickPanel({
@@ -71,7 +73,7 @@ export default function QuickPanel({
 	const noteDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const isNoteStorageLoadedRef = useRef(false);
 
-	// --- Code State ---
+	// --- Command State (Backward compatible with quick_code_text storage) ---
 	const [codeText, setCodeText] = useState("");
 	const [isCodeMaximized, setIsCodeMaximized] = useState(false);
 	const [codeCopied, setCodeCopied] = useState(false);
@@ -101,6 +103,7 @@ export default function QuickPanel({
 
 	const { onKeyDown: onNoteKeyDown, onPaste: onNotePaste } =
 		useMarkdownAssist();
+	const { onKeyDown: onCommandKeyDown } = useAutoIndent();
 
 	// 🛡️ Note Storage Flush
 	const flushNoteStorage = useCallback(() => {
@@ -114,7 +117,7 @@ export default function QuickPanel({
 		}
 	}, [noteStorageKey]);
 
-	// 🛡️ Code Storage Flush
+	// 🛡️ Command Storage Flush
 	const flushCodeStorage = useCallback(() => {
 		if (!isCodeStorageLoadedRef.current) return;
 		if (codeDebounceTimerRef.current) {
@@ -151,7 +154,7 @@ export default function QuickPanel({
 		}
 	}, [noteStorageKey, viewModeStorageKey]);
 
-	// Code 初期ロード & 復元
+	// Command 初期ロード & 復元
 	useEffect(() => {
 		if (typeof chrome !== "undefined" && chrome.storage?.local) {
 			chrome.storage.local.get(codeStorageKey, (result) => {
@@ -185,7 +188,7 @@ export default function QuickPanel({
 		}, 300);
 	};
 
-	// 入力ハンドラ: Code
+	// 入力ハンドラ: Command
 	const handleCodeTextChange = (val: string) => {
 		if (!isCodeStorageLoadedRef.current) return;
 		setCodeText(val);
@@ -332,36 +335,38 @@ export default function QuickPanel({
 		<div
 			className={`border-b border-base-border bg-base-bg w-full font-sans flex flex-col min-h-0 ${!currentDomain ? "hidden" : ""}`}
 		>
-			{/* 🚀 3連カプセルヘッダー: [ Note ] [ Code ] --------- [ Links (n) ] */}
+			{/* 🚀 3連カプセルヘッダー: [ Note ] [ Command ] --------- [ Links (n) ] */}
 			<div className="flex items-center justify-between p-3 py-2 text-xs font-semibold select-none border-b border-base-border/10 shrink-0">
 				<div className="flex items-center gap-3">
 					{/* Note Tab */}
 					<button
 						type="button"
 						onClick={() => toggleSection("note")}
+						title="Scratchpad for temporary notes (Markdown supported)"
 						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "note" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 					>
-						<FileText className="w-3.5 h-3.5" aria-hidden="true" />
-						<span>Quick Note</span>
+						<FileText aria-hidden="true" className="w-3.5 h-3.5" />
+						<span>Note</span>
 						{activeSection === "note" ? (
-							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
 						) : (
-							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+							<ChevronRight aria-hidden="true" className="w-3.5 h-3.5" />
 						)}
 					</button>
 
-					{/* Code Tab */}
+					{/* Command Tab */}
 					<button
 						type="button"
-						onClick={() => toggleSection("code")}
-						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "code" ? "text-action" : "text-muted-foreground hover:text-action"}`}
+						onClick={() => toggleSection("command")}
+						title="Draft and edit multi-line commands or code snippets"
+						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "command" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 					>
-						<Code2 className="w-3.5 h-3.5" aria-hidden="true" />
-						<span>Code</span>
-						{activeSection === "code" ? (
-							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+						<SquareTerminal aria-hidden="true" className="w-3.5 h-3.5" />
+						<span>Command</span>
+						{activeSection === "command" ? (
+							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
 						) : (
-							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+							<ChevronRight aria-hidden="true" className="w-3.5 h-3.5" />
 						)}
 					</button>
 				</div>
@@ -370,11 +375,12 @@ export default function QuickPanel({
 				<button
 					type="button"
 					onClick={() => toggleSection("links")}
+					title="Quick links for this domain"
 					className={`cursor-pointer flex items-center gap-2 transition-colors ${activeSection === "links" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 				>
 					<div className="flex items-center gap-1">
-						<LinkIcon className="w-3.5 h-3.5" aria-hidden="true" />
-						<span>Quick Links</span>
+						<LinkIcon aria-hidden="true" className="w-3.5 h-3.5" />
+						<span>Links</span>
 						{showNumberBadge && (
 							<span className="bg-base-surface text-muted-foreground px-1.5 rounded-full text-[10px] border border-base-border font-mono ml-1">
 								{links.length}
@@ -395,15 +401,15 @@ export default function QuickPanel({
 									/>
 								))}
 						{activeSection === "links" ? (
-							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
 						) : (
-							<ChevronRight className="w-3.5 h-3.5" aria-hidden="true" />
+							<ChevronRight aria-hidden="true" className="w-3.5 h-3.5" />
 						)}
 					</div>
 				</button>
 			</div>
 
-			{/* --- Quick Note 画面 --- */}
+			{/* --- Note 画面 --- */}
 			{activeSection === "note" && (
 				<div
 					className={
@@ -412,79 +418,95 @@ export default function QuickPanel({
 							: "px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0"
 					}
 				>
-					{/* コックピット操作バー */}
+					{/* ツールバー (3ゾーン分離: 編集操作系 | 状態・表示系 | 送信アクション系) */}
 					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-base-border/30 pb-2">
-						<div className="flex items-center gap-1">
-							<Button
-								disabled={!noteText}
-								icon={<CircleX className="size-4" aria-hidden="true" />}
-								size="sm"
-								variant="ghost"
-								onClick={() => handleNoteTextChange("")}
-								title="Clear text"
-								className="w-7 h-7 p-0 rounded-full"
+						{/* 左側: 編集操作系 + 中央: 状態・表示系 */}
+						<div className="flex items-center">
+							{/* [左側: 編集操作系] */}
+							<div className="flex items-center gap-1">
+								<Button
+									disabled={!noteText}
+									icon={<Eraser className="size-4" aria-hidden="true" />}
+									size="sm"
+									variant="ghost"
+									onClick={() => handleNoteTextChange("")}
+									title="Clear scratchpad"
+									className="w-7 h-7 p-0 rounded-full"
+								/>
+								<Button
+									disabled={!noteText}
+									icon={
+										noteCopied ? (
+											<Check
+												className="size-4 text-success"
+												aria-hidden="true"
+											/>
+										) : (
+											<Copy className="size-4" aria-hidden="true" />
+										)
+									}
+									size="sm"
+									variant="ghost"
+									onClick={handleCopyNote}
+									title="Copy text"
+									className="w-7 h-7 p-0 rounded-full"
+								/>
+							</div>
+
+							{/* (Divider) */}
+							<div
+								className="h-4 w-px bg-base-border/60 mx-1 shrink-0"
+								aria-hidden="true"
 							/>
-							<Button
-								disabled={!noteText}
-								icon={
-									noteCopied ? (
-										<Check className="size-4 text-success" aria-hidden="true" />
-									) : (
-										<Copy className="size-4" aria-hidden="true" />
-									)
-								}
-								size="sm"
-								variant="ghost"
-								onClick={handleCopyNote}
-								title="Copy text"
-								className="w-7 h-7 p-0 rounded-full"
-							/>
-							{/* Edit / Preview 切り替えボタン */}
-							<Button
-								icon={
-									noteViewMode === "preview" ? (
-										<Pencil className="size-4" aria-hidden="true" />
-									) : (
-										<Eye className="size-4" aria-hidden="true" />
-									)
-								}
-								size="sm"
-								variant="ghost"
-								onClick={toggleNoteViewMode}
-								title={
-									noteViewMode === "preview"
-										? "Switch to Edit"
-										: "Switch to Preview"
-								}
-								aria-label={
-									noteViewMode === "preview"
-										? "Switch to Edit"
-										: "Switch to Preview"
-								}
-								className="w-7 h-7 p-0 rounded-full"
-							/>
-							<Button
-								icon={
-									isNoteMaximized ? (
-										<Minimize2 aria-hidden="true" className="size-4" />
-									) : (
-										<Maximize2 aria-hidden="true" className="size-4" />
-									)
-								}
-								size="sm"
-								variant="ghost"
-								onClick={() => setIsNoteMaximized((prev) => !prev)}
-								title={
-									isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
-								}
-								aria-label={
-									isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
-								}
-								className="w-7 h-7 p-0 rounded-full"
-							/>
+
+							{/* [中央: 状態・表示系] */}
+							<div className="flex items-center gap-1">
+								{/* 状態明示型プレビュートグル */}
+								<Button
+									icon={<Eye className="size-4" aria-hidden="true" />}
+									size="sm"
+									variant="ghost"
+									onClick={toggleNoteViewMode}
+									title={
+										noteViewMode === "preview"
+											? "Exit preview"
+											: "Preview Markdown"
+									}
+									aria-label={
+										noteViewMode === "preview"
+											? "Exit preview"
+											: "Preview Markdown"
+									}
+									aria-pressed={noteViewMode === "preview"}
+									className={`w-7 h-7 p-0 rounded-full ${
+										noteViewMode === "preview"
+											? "bg-action text-action-text hover:bg-action-hover"
+											: ""
+									}`}
+								/>
+								<Button
+									icon={
+										isNoteMaximized ? (
+											<Minimize2 aria-hidden="true" className="size-4" />
+										) : (
+											<Maximize2 aria-hidden="true" className="size-4" />
+										)
+									}
+									size="sm"
+									variant="ghost"
+									onClick={() => setIsNoteMaximized((prev) => !prev)}
+									title={
+										isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
+									}
+									aria-label={
+										isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
+									}
+									className="w-7 h-7 p-0 rounded-full"
+								/>
+							</div>
 						</div>
 
-						{/* 右側: Note / Diary カプセルボタン */}
+						{/* [右側: 送信アクション系] */}
 						<div className="flex items-center gap-1.5">
 							<Button
 								disabled={!noteText.trim() || submitting || isNoteOverLimit}
@@ -569,7 +591,7 @@ export default function QuickPanel({
 									onChange={(e) => handleNoteTextChange(e.target.value)}
 									onBlur={flushNoteStorage}
 									value={noteText}
-									placeholder="Temporary text scratchpad... (Cross-site session persistent)"
+									placeholder="Temporary text scratchpad..."
 									className={`w-full resize-none border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
 										isNoteMaximized ? "h-full" : ""
 									}`}
@@ -583,8 +605,8 @@ export default function QuickPanel({
 				</div>
 			)}
 
-			{/* --- Code 専用ターミナル画面 --- */}
-			{activeSection === "code" && (
+			{/* --- Command 専用ターミナル画面 --- */}
+			{activeSection === "command" && (
 				<div
 					className={
 						isCodeMaximized
@@ -592,62 +614,72 @@ export default function QuickPanel({
 							: "px-3 py-2.5 flex flex-col gap-2 animate-fadeIn bg-neutral-900 shrink-0 text-neutral-100"
 					}
 				>
-					{/* 操作バー: クリア・ワンクリック全文コピー・最大化のみ */}
+					{/* 操作バー: [Eraser] [Copy] | (Divider) [Maximize/Minimize] ----------- COMMAND / CODE */}
 					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-neutral-800 pb-2">
-						<div className="flex items-center gap-1">
-							<Button
-								disabled={!codeText}
-								icon={<CircleX className="size-4" aria-hidden="true" />}
-								size="sm"
-								variant="ghost"
-								onClick={() => handleCodeTextChange("")}
-								title="Clear code"
-								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+						<div className="flex items-center">
+							<div className="flex items-center gap-1">
+								<Button
+									disabled={!codeText}
+									icon={<Eraser className="size-4" aria-hidden="true" />}
+									size="sm"
+									variant="ghost"
+									onClick={() => handleCodeTextChange("")}
+									title="Clear command"
+									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+								/>
+								<Button
+									disabled={!codeText}
+									icon={
+										codeCopied ? (
+											<Check
+												className="size-4 text-note-info"
+												aria-hidden="true"
+											/>
+										) : (
+											<Copy className="size-4" aria-hidden="true" />
+										)
+									}
+									size="sm"
+									variant="ghost"
+									onClick={handleCopyCode}
+									title="Copy code"
+									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+								/>
+							</div>
+
+							<div
+								className="h-4 w-px bg-neutral-800 mx-1 shrink-0"
+								aria-hidden="true"
 							/>
-							<Button
-								disabled={!codeText}
-								icon={
-									codeCopied ? (
-										<Check
-											className="size-4 text-note-info"
-											aria-hidden="true"
-										/>
-									) : (
-										<Copy className="size-4" aria-hidden="true" />
-									)
-								}
-								size="sm"
-								variant="ghost"
-								onClick={handleCopyCode}
-								title="Copy code"
-								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-							/>
-							<Button
-								icon={
-									isCodeMaximized ? (
-										<Minimize2 aria-hidden="true" className="size-4" />
-									) : (
-										<Maximize2 aria-hidden="true" className="size-4" />
-									)
-								}
-								size="sm"
-								variant="ghost"
-								onClick={() => setIsCodeMaximized((prev) => !prev)}
-								title={
-									isCodeMaximized ? "Exit full view" : "Maximize Code View"
-								}
-								aria-label={
-									isCodeMaximized ? "Exit full view" : "Maximize Code View"
-								}
-								className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-							/>
+
+							<div className="flex items-center gap-1">
+								<Button
+									icon={
+										isCodeMaximized ? (
+											<Minimize2 aria-hidden="true" className="size-4" />
+										) : (
+											<Maximize2 aria-hidden="true" className="size-4" />
+										)
+									}
+									size="sm"
+									variant="ghost"
+									onClick={() => setIsCodeMaximized((prev) => !prev)}
+									title={
+										isCodeMaximized ? "Exit full view" : "Maximize Code View"
+									}
+									aria-label={
+										isCodeMaximized ? "Exit full view" : "Maximize Code View"
+									}
+									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+								/>
+							</div>
 						</div>
-						<div className="text-[10px] font-mono text-neutral-400 uppercase tracking-wider px-1">
-							TERMINAL / CODE
+						<div className="text-[10px] font-['Hack'] font-mono text-neutral-400 uppercase tracking-wider px-1">
+							COMMAND / CODE
 						</div>
 					</div>
 
-					{/* 直接編集ターミナルコンソール */}
+					{/* 直接編集ターミナルコンソール (オートインデント有効化) */}
 					<div
 						className={
 							isCodeMaximized
@@ -659,26 +691,27 @@ export default function QuickPanel({
 							onChange={(e) => handleCodeTextChange(e.target.value)}
 							onBlur={flushCodeStorage}
 							value={codeText}
-							placeholder="$ repomix --style xml ..."
+							placeholder="$ docker run -it --rm ..."
 							className={`w-full resize-none border-none p-0 text-xs bg-neutral-900 text-neutral-100 focus:outline-none focus:ring-0 placeholder:text-neutral-500 font-['Hack'] font-mono leading-[1.6] scrollbar-none transition-[height] duration-300 ease-out ${
 								isCodeMaximized ? "h-full" : ""
 							}`}
 							minRows={isCodeMaximized ? 10 : 3}
 							spellCheck={false}
+							onKeyDown={onCommandKeyDown}
 						/>
 					</div>
 				</div>
 			)}
 
-			{/* --- Quick Links 画面 --- */}
+			{/* --- Links 画面 --- */}
 			{activeSection === "links" && (
 				<div className="pb-3 px-3 animate-fadeIn bg-base-bg overflow-y-auto max-h-[40vh] scrollbar-none shrink-0">
 					<div className="space-y-1">
 						{loading ? (
 							<div className="flex justify-center py-2">
 								<Loader2
-									className="w-4 h-4 animate-spin text-muted-foreground"
 									aria-hidden="true"
+									className="w-4 h-4 animate-spin text-muted-foreground"
 								/>
 							</div>
 						) : links.length === 0 ? (
@@ -715,22 +748,22 @@ export default function QuickPanel({
 												/>
 											) : (
 												<ArrowRightLeft
-													className="w-4 h-4 text-action shrink-0"
 													aria-hidden="true"
+													className="w-4 h-4 text-action shrink-0"
 												/>
 											)}
 											<span className="truncate text-action">{link.label}</span>
 											{link.type === "related" && (
 												<ExternalLink
-													className="w-3 h-3 text-muted-foreground shrink-0"
 													aria-hidden="true"
+													className="w-3 h-3 text-muted-foreground shrink-0"
 												/>
 											)}
 											{link.type === "env" && (
 												<span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-1 shrink-0 border border-base-border px-1.5 rounded-full bg-base-surface">
 													ENV
 													{isIncoming && (
-														<Lock className="w-3 h-3" aria-hidden="true" />
+														<Lock aria-hidden="true" className="w-3 h-3" />
 													)}
 												</span>
 											)}
@@ -748,14 +781,14 @@ export default function QuickPanel({
 													}}
 													className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-base-surface rounded-full transition-colors"
 												>
-													<Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+													<Pencil aria-hidden="true" className="w-3.5 h-3.5" />
 												</button>
 												<button
 													type="button"
 													onClick={() => deleteLink(link.id)}
 													className="cursor-pointer p-1 text-muted-foreground hover:text-note-alert hover:bg-note-alert/10 rounded-full transition-colors"
 												>
-													<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+													<Trash2 aria-hidden="true" className="w-3.5 h-3.5" />
 												</button>
 											</div>
 										)}
@@ -831,7 +864,7 @@ export default function QuickPanel({
 								</div>
 								<div className="flex justify-end gap-1.5 pt-1.5 border-t border-base-border/30">
 									<Button
-										icon={<X className="w-3.5 h-3.5" aria-hidden="true" />}
+										icon={<X aria-hidden="true" className="w-3.5 h-3.5" />}
 										size="xs"
 										variant="ghost"
 										onClick={() => {
@@ -846,11 +879,11 @@ export default function QuickPanel({
 										icon={
 											linkSubmitting ? (
 												<Loader2
-													className="w-3.5 h-3.5 animate-spin"
 													aria-hidden="true"
+													className="w-3.5 h-3.5 animate-spin"
 												/>
 											) : (
-												<Check className="w-3.5 h-3.5" aria-hidden="true" />
+												<Check aria-hidden="true" className="w-3.5 h-3.5" />
 											)
 										}
 										size="xs"
@@ -873,7 +906,7 @@ export default function QuickPanel({
 								}}
 								className="cursor-pointer w-full text-left p-2 px-3 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40 mt-1"
 							>
-								<Plus className="w-3.5 h-3.5" aria-hidden="true" />
+								<Plus aria-hidden="true" className="w-3.5 h-3.5" />
 								<span>Add Link</span>
 							</button>
 						)}
