@@ -27,4 +27,7 @@ description: Chrome拡張機能（WXT/Manifest V3）、OAuth認証、ゲスト�
 - **Quick Storage 分離原則:** `quick_note_text_${userId}`, `quick_code_text_${userId}`, `quick_note_view_mode_${userId}` の各ストレージキーは完全に独立して管理し、相互に上書きしてはならない。
 - **URL非依存キャッシュ原則:** `inbox` スコープのノートはURLに依存しないグローバルリソースである。URL変更イベント（`currentFullUrl` の変更）で Inbox キャッシュを破棄・再フェッチしてはならない。
 - **D&D ドラッグ中マウントロック原則:** リストのドラッグソート実行中（`activeDragNote !== null`）は、スクロール等によるDOM要素の動的追加マウントを一時的に物理ロックすること。
+- **Quickタブ命名規約:** タブ表示名は原則として `Note` / `Command` / `Links` の名詞1語で統一し、接頭辞 `Quick` の重複を避ける。
+- **Command専用入力補助規約:** コマンド・コード入力領域の入力補助は「スペース2つのインデント・アウトデント」および「前行インデント深さの継承」に限定し、Markdown記号補完を混入させてはならない。
+
 

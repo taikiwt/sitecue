@@ -57,14 +57,14 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
-		const clearBtn = screen.getByTitle("Clear text");
+		const clearBtn = screen.getByTitle("Clear scratchpad");
 		const copyBtn = screen.getByTitle("Copy text");
 
 		expect(clearBtn).toBeDisabled();
@@ -75,12 +75,12 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const noteBtn = screen.getByTitle("Save as Inbox Note");
 		const diaryBtn = screen.getByTitle("Append to Today's Diary");
@@ -91,13 +91,13 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		expect(diaryBtn).toHaveTextContent("Diary");
 	});
 
-	it("Quick Linksアコーディオンが開いていても閉じていても、リンク数が4件以下の時はヘッダー右側にファビコン画像が常時維持されること", () => {
+	it("Linksアコーディオンが開いていても閉じていても、リンク数が4件以下の時はヘッダー右側にファビコン画像が常時維持されること", () => {
 		const { container } = render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
 
@@ -109,24 +109,24 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		);
 
 		// 2. 開いた状態（展開時）でも画像がパージされず維持されることを検証
-		const linksTrigger = screen.getByText("Quick Links");
+		const linksTrigger = screen.getByText("Links");
 		fireEvent.click(linksTrigger);
 		expect(container.querySelector("img")).toBeInTheDocument();
 	});
 
-	it("Quick Note展開時、エディタを内包するコンテナが max-h-[30vh] と overflow-y-auto クラスで物理隔離されていること", () => {
+	it("Note展開時、エディタを内包するコンテナが max-h-[30vh] と overflow-y-auto クラスで物理隔離されていること", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(
-			"Temporary text scratchpad... (Cross-site session persistent)",
+			"Temporary text scratchpad...",
 		);
 		const scrollContainer = textarea.closest(".max-h-\\[30vh\\]");
 
@@ -139,22 +139,20 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: "Hello Antigravity" } });
 
-		// 300ms 未満の時点では chrome.storage.local.set は呼ばれていないことを検証
 		expect(mockSet).not.toHaveBeenCalledWith({
 			"quick_note_text_user-123": "Hello Antigravity",
 		});
 
-		// タイマーを 300ms 進めることで初めて実行されることの証明
 		vi.advanceTimersByTime(300);
 		expect(mockSet).toHaveBeenCalledWith({
 			"quick_note_text_user-123": "Hello Antigravity",
@@ -167,20 +165,18 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: "Flush Me Immediately" } });
 
-		// デバウンス時間を待たずにフォーカスアウトイベントを発火
 		fireEvent.blur(textarea);
 
-		// 0ms で即座にストレージへ書き込まれていることをアサーション
 		expect(mockSet).toHaveBeenCalledWith({
 			"quick_note_text_user-123": "Flush Me Immediately",
 		});
@@ -189,28 +185,23 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 
 	it("文字入力直後にコンポーネントがアンマウントされた際、レースコンディションを起こさず最新の入力値でストレージに即時 Flush 保存すること", async () => {
 		vi.useFakeTimers();
-		const mockOnAddNote = vi.fn().mockResolvedValue(true);
-		const mockOnAppendDiary = vi.fn().mockResolvedValue(true);
 		const { unmount } = render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
-		// 高速入力アクションを発火
 		fireEvent.change(textarea, {
 			target: { value: "Save this before unmount!" },
 		});
 
-		// 300msデバウンスの消化を待たずに、即座にアンマウント（サイドパネル閉鎖をエミュレート）
 		unmount();
 
-		// 安全装置が作動し、最新値で正しく物理保存されていることを厳密に検証
 		expect(mockSet).toHaveBeenCalledWith({
 			"quick_note_text_user-123": "Save this before unmount!",
 		});
@@ -219,40 +210,34 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 
 	it("サイドパネル閉鎖時に currentDomain が null へ揺らいでも、コンポーネントがアンマウント（自己破壊）されず、最新の Ref バッファが保護されること", async () => {
 		vi.useFakeTimers();
-		const mockOnAddNote = vi.fn().mockResolvedValue(true);
-		const mockOnAppendDiary = vi.fn().mockResolvedValue(true);
 
-		// 初期状態（ドメインが存在する状態）でレンダリング
 		const { rerender } = render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, {
 			target: { value: "Protect this absolute lifeline!" },
 		});
 
-		// サイドパネル閉鎖の瞬間（currentDomain が null になる揺らぎ）をエミュレートして再レンダリング（rerender）
 		rerender(
 			<QuickPanel
 				currentDomain={null}
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
 
-		// コンポーネントが物理消滅（return null）せず、DOM上に構造（hidden状態のdiv）として生き残っていることを検証
-		const container = screen.getByText("Quick Note").closest(".w-full");
+		const container = screen.getAllByText("Note")[0].closest(".w-full");
 		expect(container).toHaveClass("hidden");
 
-		// この極限状態（pagehide等の発火）において、空文字ではなく正しい値がストレージへ Flush されることを証明
 		fireEvent.blur(textarea);
 		expect(mockSet).not.toHaveBeenCalledWith({
 			"quick_note_text_user-123": "",
@@ -266,28 +251,21 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 
 	it("ストレージからの非同期 get がまだ完了していない起動初期化フェーズにおいて、不意に Flush が走っても、防壁が作動して空文字による上書き破壊を物理的に100%ロックすること", async () => {
 		vi.useFakeTimers();
-		const mockOnAddNote = vi.fn().mockResolvedValue(true);
-		const mockOnAppendDiary = vi.fn().mockResolvedValue(true);
-
-		// get のコールバックがまだ解決されていない（＝ロード未完了）状態を作るため、mockGetの実装を一時的にコールバックを呼ばない形にする
 		mockGet.mockImplementation(() => {});
 
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
 			/>,
 		);
 
-		// このロード未完了の隙（isStorageLoadedRef.current === false）に、強制的に外部からアンマウントやBlur等でFlushを誘発
-		// テキストエリアを取得して blur をエミュレート
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.blur(textarea);
 
-		// ロック（防壁）が正常作動し、空文字での上書き保存（chrome.storage.local.set）が絶対に実行されていないことを厳密に実証！
 		expect(mockSet).not.toHaveBeenCalled();
 
 		vi.useRealTimers();
@@ -307,9 +285,9 @@ describe("QuickPanel Component - Namespace Separation Test", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={vi.fn().mockResolvedValue(true)}
 				onAppendDiary={vi.fn().mockResolvedValue(true)}
+				userPlan="free"
 			/>,
 		);
 
@@ -322,26 +300,23 @@ describe("QuickPanel Component - Namespace Separation Test", () => {
 
 describe("QuickPanel Limit Validation Test", () => {
 	it("10,001文字を入力した際、Noteボタンはdisabledになり、Diaryボタンは活性のままであること", async () => {
-		// 10,001文字のテキストを用意
 		const longText = "a".repeat(10001);
 
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="free"
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
+				userPlan="free"
 			/>,
 		);
 
-		// Quick Noteセクションを開くトリガーを押下
-		const quickNoteTab = screen.getByText("Quick Note");
-		fireEvent.click(quickNoteTab);
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: longText } });
 
-		const noteButton = screen.getByRole("button", { name: /^Note$/i });
+		const noteButton = screen.getAllByRole("button", { name: /^Note$/i })[1];
 		const diaryButton = screen.getByRole("button", { name: /^Diary$/i });
 
 		expect(noteButton).toBeDisabled();
@@ -358,19 +333,18 @@ describe("QuickPanel Pro Plan Limit Validation Test", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
-				userPlan="pro"
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
+				userPlan="pro"
 			/>,
 		);
 
-		const quickNoteTab = screen.getByText("Quick Note");
-		fireEvent.click(quickNoteTab);
+		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: longText10k } });
 
-		const noteButton = screen.getByRole("button", { name: /^Note$/i });
+		const noteButton = screen.getAllByRole("button", { name: /^Note$/i })[1];
 		const diaryButton = screen.getByRole("button", { name: /^Diary$/i });
 
 		expect(noteButton).not.toBeDisabled();
@@ -394,20 +368,16 @@ describe("QuickPanel - Zen Quick Note Mode", () => {
 			/>,
 		);
 
-		// Quick Note を展開
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
 		const maximizeBtn = screen.getByTitle("Maximize Quick Note");
 		expect(maximizeBtn).toBeInTheDocument();
 
-		// 最大化を実行
 		fireEvent.click(maximizeBtn);
 
-		// 全画面クラス fixed inset-0 z-50 が適用されていること
 		const overlay = screen.getByTitle("Exit full view").closest(".fixed");
 		expect(overlay).toHaveClass("fixed", "inset-0", "z-50");
 
-		// 縮小ボタンをクリックして復帰
 		const exitBtn = screen.getByTitle("Exit full view");
 		fireEvent.click(exitBtn);
 
@@ -424,26 +394,24 @@ describe("QuickPanel - Zen Quick Note Mode", () => {
 			/>,
 		);
 
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 		fireEvent.click(screen.getByTitle("Maximize Quick Note"));
 
 		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
 
-		// Escapeキーを押下
 		fireEvent.keyDown(window, { key: "Escape" });
 
-		// 最大化が解除され通常ボタンに戻っていること
 		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
 	});
 });
 
-describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
+describe("QuickPanel - 3-Tab Header & Command / Preview Integration", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGet.mockImplementation((_keys, cb) => cb({}));
 	});
 
-	it("Note / Code / Links の3連タブが存在し、Codeタブを開くと専用コンソールが描画されること", () => {
+	it("Note / Command / Links の3連タブが存在し、Commandタブを開くと専用コンソールが描画されること", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
@@ -453,19 +421,19 @@ describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
 			/>,
 		);
 
-		expect(screen.getByText("Quick Note")).toBeInTheDocument();
-		expect(screen.getByText("Code")).toBeInTheDocument();
-		expect(screen.getByText("Quick Links")).toBeInTheDocument();
+		expect(screen.getByText("Note")).toBeInTheDocument();
+		expect(screen.getByText("Command")).toBeInTheDocument();
+		expect(screen.getByText("Links")).toBeInTheDocument();
 
-		// Code タブを開く
-		fireEvent.click(screen.getByText("Code"));
+		// Command タブを開く
+		fireEvent.click(screen.getByText("Command"));
 
-		expect(screen.getByText("TERMINAL / CODE")).toBeInTheDocument();
+		expect(screen.getByText("COMMAND / CODE")).toBeInTheDocument();
 		expect(
-			screen.getByPlaceholderText("$ repomix --style xml ..."),
+			screen.getByPlaceholderText("$ docker run -it --rm ..."),
 		).toBeInTheDocument();
 
-		// Code 画面には Note / Diary 送信ボタンが存在しないこと
+		// Command 画面には Note / Diary 送信ボタンが存在しないこと
 		expect(screen.queryByTitle("Save as Inbox Note")).not.toBeInTheDocument();
 		expect(
 			screen.queryByTitle("Append to Today's Diary"),
@@ -473,7 +441,7 @@ describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
 	});
 
 	// biome-ignore lint/suspicious/noTemplateCurlyInString: intentional test title
-	it("Code画面でテキストを入力すると quick_code_text_${userId} にデバウンス保存されること", () => {
+	it("Command画面でテキストを入力すると quick_code_text_${userId} にデバウンス保存されること", () => {
 		vi.useFakeTimers();
 		render(
 			<QuickPanel
@@ -483,24 +451,24 @@ describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
 				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Code"));
+		fireEvent.click(screen.getByText("Command"));
 
-		const textarea = screen.getByPlaceholderText("$ repomix --style xml ...");
-		fireEvent.change(textarea, { target: { value: "npm test" } });
+		const textarea = screen.getByPlaceholderText("$ docker run -it --rm ...");
+		fireEvent.change(textarea, { target: { value: "docker ps -a" } });
 
 		expect(mockSet).not.toHaveBeenCalledWith({
-			"quick_code_text_user-123": "npm test",
+			"quick_code_text_user-123": "docker ps -a",
 		});
 
 		vi.advanceTimersByTime(300);
 
 		expect(mockSet).toHaveBeenCalledWith({
-			"quick_code_text_user-123": "npm test",
+			"quick_code_text_user-123": "docker ps -a",
 		});
 		vi.useRealTimers();
 	});
 
-	it("Quick Note で Edit / Preview 切り替えボタンを押すと表示モードが切り替わり storage に保存されること", () => {
+	it("Note で Preview ボタンを押すとアクティブスタイル(bg-action)が適用され、表示モードが storage に保存されること", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
@@ -509,10 +477,12 @@ describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
 				userPlan="free"
 			/>,
 		);
-		fireEvent.click(screen.getByText("Quick Note"));
+		fireEvent.click(screen.getByText("Note"));
 
-		const previewBtn = screen.getByTitle("Switch to Preview");
+		const previewBtn = screen.getByTitle("Preview Markdown");
 		expect(previewBtn).toBeInTheDocument();
+		expect(previewBtn).toHaveAttribute("aria-pressed", "false");
+		expect(previewBtn).not.toHaveClass("bg-action");
 
 		// プレビューへ切り替え
 		fireEvent.click(previewBtn);
@@ -520,6 +490,41 @@ describe("QuickPanel - 3-Tab Header & Code / Preview Integration", () => {
 		expect(mockSet).toHaveBeenCalledWith({
 			"quick_note_view_mode_user-123": "preview",
 		});
-		expect(screen.getByTitle("Switch to Edit")).toBeInTheDocument();
+		const exitPreviewBtn = screen.getByTitle("Exit preview");
+		expect(exitPreviewBtn).toBeInTheDocument();
+		expect(exitPreviewBtn).toHaveAttribute("aria-pressed", "true");
+		expect(exitPreviewBtn).toHaveClass("bg-action", "text-action-text");
+	});
+
+	it("Command画面で Tab キー押下時にスペース2つが挿入され、Enter押下時に前行のインデントが継承されること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={vi.fn()}
+				onAppendDiary={vi.fn()}
+				userPlan="free"
+			/>,
+		);
+		fireEvent.click(screen.getByText("Command"));
+
+		const textarea = screen.getByPlaceholderText(
+			"$ docker run -it --rm ...",
+		) as HTMLTextAreaElement;
+
+		// 1. Tabキー押下の検証
+		textarea.value = "echo hello";
+		textarea.selectionStart = 0;
+		textarea.selectionEnd = 0;
+
+		fireEvent.keyDown(textarea, { key: "Tab" });
+		expect(textarea.value).toBe("  echo hello");
+
+		// 2. Enterキー押下時のインデント継承の検証
+		textarea.value = "  line1";
+		textarea.selectionStart = 7;
+		textarea.selectionEnd = 7;
+
+		fireEvent.keyDown(textarea, { key: "Enter" });
+		expect(textarea.value).toBe("  line1\n  ");
 	});
 });
