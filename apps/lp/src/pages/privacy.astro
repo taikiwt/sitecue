@@ -1,0 +1,142 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout 
+  title="Privacy Policy — sitecue" 
+  description="Privacy Policy for sitecue Chrome Extension and Base Camp Web Application."
+>
+  <main class="max-w-3xl mx-auto px-6 py-16 md:py-24">
+    <!-- Back Link -->
+    <div class="mb-10">
+      <a 
+        href="/" 
+        class="text-sm font-medium text-zinc-500 hover:text-[#062032] transition-colors inline-flex items-center gap-1.5"
+      >
+        &larr; Back to Home
+      </a>
+    </div>
+
+    <!-- Header -->
+    <header class="border-b border-zinc-100 pb-8 mb-12">
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-[#062032] leading-tight">
+        Privacy Policy for sitecue
+      </h1>
+      <p class="mt-4 text-sm font-medium text-zinc-400">
+        Effective Date: October 30, 2026
+      </p>
+      <p class="mt-6 text-zinc-600 leading-relaxed text-base">
+        sitecue ("we," "our," or "the service") respects your privacy and is committed to protecting your personal data. This Privacy Policy applies to both the sitecue Chrome Extension and the sitecue Web Application (Base Camp).
+      </p>
+    </header>
+
+    <!-- Content Sections -->
+    <article class="space-y-12 text-zinc-600 leading-relaxed text-base">
+      <!-- Section 1 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          1. Information We Collect
+        </h2>
+        <p class="mb-4">
+          To provide and maintain our services, we only collect the following types of information:
+        </p>
+        <ul class="list-disc pl-5 space-y-2">
+          <li>
+            <strong class="font-semibold text-zinc-800">Account & Authentication Data:</strong> When you sign in (via Google or other OAuth providers), we collect your email address and authentication identifier to create and manage your account.
+          </li>
+          <li>
+            <strong class="font-semibold text-zinc-800">User-Generated Content:</strong> The notes, drafts, and templates you create using the extension or the web application.
+          </li>
+          <li>
+            <strong class="font-semibold text-zinc-800">Note Metadata (URLs):</strong> When you anchor a note to a page or domain, we store the specific URL pattern associated with that note. <span class="font-semibold text-zinc-800">We do not track your general browsing history.</span> We only collect URLs where you explicitly create notes.
+          </li>
+          <li>
+            <strong class="font-semibold text-zinc-800">Guest Mode Data (Local Only):</strong> If you use the extension in Guest Mode (without signing in), your notes and settings are stored strictly in your browser's local storage (<code class="text-xs bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-800">chrome.storage.local</code>). This data is never sent to or stored on our servers.
+          </li>
+          <li>
+            <strong class="font-semibold text-zinc-800">Billing & Subscription Identifiers:</strong> When you subscribe to sitecue Pro, we store customer and subscription identifiers (such as Polar customer ID and subscription ID) to manage your subscription tier. We do not collect or store your payment card numbers or banking credentials.
+          </li>
+        </ul>
+      </section>
+
+      <!-- Section 2 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          2. How We Use Your Information
+        </h2>
+        <p class="mb-4">
+          We use the collected information solely for the following purposes:
+        </p>
+        <ul class="list-disc pl-5 space-y-2">
+          <li>To authenticate your identity and maintain your account.</li>
+          <li>To securely sync your context-aware notes and drafts across your devices.</li>
+          <li>To automatically surface your saved notes when you revisit specific URLs or domains.</li>
+          <li>To verify your subscription status and grant access to Pro tier features.</li>
+        </ul>
+      </section>
+
+      <!-- Section 3 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          3. Payment Processing and Billing (Merchant of Record)
+        </h2>
+        <p class="mb-4">
+          Our order and payment process is conducted and managed by our Merchant of Record, <strong class="font-semibold text-zinc-800">Polar Software, Inc. (polar.sh)</strong>.
+        </p>
+        <p class="mb-4">
+          Polar handles all payment transactions, invoicing, tax collection, and compliance. All payment credentials and financial transactions are securely processed directly by Polar and are governed by <a href="https://polar.sh/legal/privacy" target="_blank" rel="noopener noreferrer" class="text-[#062032] underline underline-offset-4 hover:opacity-80 transition-opacity">Polar's Privacy Policy</a>. We never collect, process, or store credit card details or other sensitive financial information on our servers.
+        </p>
+      </section>
+
+      <!-- Section 4 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          4. Data Sharing and Disclosure
+        </h2>
+        <p class="mb-4">
+          We do not sell, rent, trade, or transfer your personal information, notes, or browsing activity to any outside parties. We only share information with trusted third-party service providers strictly necessary to operate our service:
+        </p>
+        <ul class="list-disc pl-5 space-y-2">
+          <li><strong class="font-semibold text-zinc-800">Supabase:</strong> For authentication, secure database hosting, and data synchronization.</li>
+          <li><strong class="font-semibold text-zinc-800">Polar:</strong> For Merchant of Record payment processing and subscription tier management.</li>
+          <li><strong class="font-semibold text-zinc-800">Cloudflare:</strong> For global edge routing, static asset delivery, and application hosting.</li>
+        </ul>
+      </section>
+
+      <!-- Section 5 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          5. Data Security
+        </h2>
+        <p>
+          Your data is protected using industry-standard security measures. Database access is strictly governed by PostgreSQL Row Level Security (RLS) policies, ensuring that only authenticated users can access or modify their own data.
+        </p>
+      </section>
+
+      <!-- Section 6 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          6. Data Access, Retention, and Deletion
+        </h2>
+        <p>
+          You may discontinue using sitecue or uninstall the extension at any time. If you wish to permanently delete your account and all associated notes and drafts, please contact us using the information below. We will promptly remove your account and data from our active databases.
+        </p>
+      </section>
+
+      <!-- Section 7 -->
+      <section>
+        <h2 class="text-xl md:text-2xl font-bold text-[#062032] mb-4">
+          7. Contact Us
+        </h2>
+        <p class="mb-4">
+          If you have any questions about this Privacy Policy or wish to request data deletion, please contact:
+        </p>
+        <ul class="space-y-1 text-sm bg-zinc-50 border border-zinc-100 p-4 rounded-lg">
+          <li><span class="text-zinc-400">Service:</span> <span class="font-medium text-zinc-800">sitecue</span></li>
+          <li><span class="text-zinc-400">Developer:</span> <span class="font-medium text-zinc-800">taikiwt</span></li>
+          <li><span class="text-zinc-400">Contact:</span> <a href="mailto:support@sitecue.app" class="font-medium text-[#062032] underline underline-offset-4">support@sitecue.app</a></li>
+        </ul>
+      </section>
+    </article>
+  </main>
+</Layout>
