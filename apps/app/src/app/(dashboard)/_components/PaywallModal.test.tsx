@@ -85,4 +85,13 @@ describe("PaywallModal", () => {
 		expect(onClose).toHaveBeenCalled();
 		windowOpenSpy.mockRestore();
 	});
+
+	it("renders Pro features checklist when plan is free", async () => {
+		render(<PaywallModal isOpen={true} onClose={vi.fn()} plan="free" />);
+		expect(screen.getByText("Everything in Pro:")).toBeInTheDocument();
+		expect(screen.getByText(/100 AI generations/)).toBeInTheDocument();
+		expect(screen.getByText(/Unlimited notes/)).toBeInTheDocument();
+		expect(screen.getByText(/Unlimited studio drafts/)).toBeInTheDocument();
+		expect(screen.getByText(/30,000 chars/)).toBeInTheDocument();
+	});
 });

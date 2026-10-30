@@ -152,4 +152,22 @@ describe("UserMenu", () => {
 		expect(portalLink.getAttribute("target")).toBe("_blank");
 		expect(portalLink.getAttribute("rel")).toBe("noopener noreferrer");
 	});
+
+	it("Privacy Policy リンクが表示され、正しい属性を持つこと", async () => {
+		render(<UserMenu />);
+
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "User menu" })).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "User menu" }));
+
+		const privacyLink = screen.getByRole("link", { name: /Privacy Policy/i });
+		expect(privacyLink).toBeDefined();
+		expect(privacyLink.getAttribute("href")).toBe(
+			"https://sitecue.app/privacy",
+		);
+		expect(privacyLink.getAttribute("target")).toBe("_blank");
+		expect(privacyLink.getAttribute("rel")).toBe("noopener noreferrer");
+	});
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, Sparkles, X } from "lucide-react";
+import { Check, Crown, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
@@ -109,6 +109,64 @@ export default function PaywallModal({
 							"Please wait for the next billing cycle to continue using AI features."
 						)}
 					</p>
+
+					{plan === "free" && (
+						<div className="bg-neutral-50 border border-neutral-100 rounded-2xl p-4 mb-6 text-left">
+							<p className="text-xs font-bold text-neutral-900 mb-2.5">
+								Everything in Pro:
+							</p>
+							<ul className="space-y-2 text-xs text-neutral-600">
+								<li className="flex items-center gap-2">
+									<Check
+										className="size-3.5 text-amber-500 shrink-0"
+										aria-hidden="true"
+									/>
+									<span>
+										<strong className="text-neutral-900 font-semibold">
+											100 AI generations
+										</strong>{" "}
+										/ month (vs 3 in Free)
+									</span>
+								</li>
+								<li className="flex items-center gap-2">
+									<Check
+										className="size-3.5 text-amber-500 shrink-0"
+										aria-hidden="true"
+									/>
+									<span>
+										<strong className="text-neutral-900 font-semibold">
+											Unlimited notes
+										</strong>{" "}
+										(vs 500 in Free)
+									</span>
+								</li>
+								<li className="flex items-center gap-2">
+									<Check
+										className="size-3.5 text-amber-500 shrink-0"
+										aria-hidden="true"
+									/>
+									<span>
+										<strong className="text-neutral-900 font-semibold">
+											Unlimited studio drafts
+										</strong>{" "}
+										(vs 50 in Free)
+									</span>
+								</li>
+								<li className="flex items-center gap-2">
+									<Check
+										className="size-3.5 text-amber-500 shrink-0"
+										aria-hidden="true"
+									/>
+									<span>
+										<strong className="text-neutral-900 font-semibold">
+											30,000 chars
+										</strong>{" "}
+										per note (vs 10,000 in Free)
+									</span>
+								</li>
+							</ul>
+						</div>
+					)}
 
 					{plan === "free" && (
 						<div className="space-y-2.5 mb-3">

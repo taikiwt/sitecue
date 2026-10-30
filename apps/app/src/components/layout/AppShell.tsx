@@ -2,8 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
+import PaywallModal from "@/app/(dashboard)/_components/PaywallModal";
 import { SearchModal } from "@/app/(dashboard)/notes/_components/SearchModal";
-import PaywallModal from "@/app/(dashboard)/studio/_components/PaywallModal";
 import { GlobalNewNoteDialog } from "@/components/dialogs/GlobalNewNoteDialog";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
