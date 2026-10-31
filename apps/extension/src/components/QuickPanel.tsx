@@ -572,19 +572,19 @@ export default function QuickPanel({
 						}}
 						className={
 							isNoteMaximized
-								? "w-full pt-1 flex-1 min-h-0 overflow-y-auto overscroll-contain cursor-text"
-								: "w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto"
+								? "w-full min-w-0 pt-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] overscroll-contain cursor-text"
+								: "w-full min-w-0 pt-1 max-h-[30vh] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto"
 						}
 					>
 						<div
 							className={
 								isSliding
 									? "transition-all duration-300 ease-out translate-x-full opacity-0 pointer-events-none"
-									: "w-full"
+									: "w-full min-w-0 max-w-full"
 							}
 						>
 							{noteViewMode === "preview" ? (
-								<div className="p-1 min-h-[4rem] cursor-auto">
+								<div className="p-1 min-h-[4rem] min-w-0 max-w-full overflow-x-hidden cursor-auto">
 									{noteText.trim() ? (
 										<MarkdownRenderer content={noteText} />
 									) : (
@@ -598,9 +598,14 @@ export default function QuickPanel({
 									ref={noteTextareaRef}
 									onChange={(e) => handleNoteTextChange(e.target.value)}
 									onBlur={flushNoteStorage}
+									onScroll={(e) => {
+										if (e.currentTarget.scrollTop !== 0) {
+											e.currentTarget.scrollTop = 0;
+										}
+									}}
 									value={noteText}
 									placeholder="Temporary text scratchpad..."
-									className="w-full resize-none overflow-hidden border-none p-0 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6]"
+									className="w-full resize-none overflow-hidden border-none p-0 pb-8 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6]"
 									minRows={isNoteMaximized ? 15 : 3}
 									onKeyDown={(e) => {
 										if (e.nativeEvent.isComposing) return;
@@ -626,7 +631,17 @@ export default function QuickPanel({
 										}
 										onNoteKeyDown(e);
 									}}
-									onPaste={onNotePaste}
+									onPaste={(e) => {
+										onNotePaste(e);
+										const target = e.currentTarget;
+										// 💡 ペースト完了後の次Tickで scrollTop をゼロリセットし、input イベントで高さを再評価
+										setTimeout(() => {
+											target.scrollTop = 0;
+											target.dispatchEvent(
+												new Event("input", { bubbles: true }),
+											);
+										}, 0);
+									}}
 								/>
 							)}
 						</div>

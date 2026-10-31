@@ -165,6 +165,7 @@ function NotesUI({
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
 
 	// 💡 全フィルター状態を1つのオブジェクトに集約
 	const rawFilterState = useMemo(
@@ -600,21 +601,6 @@ function NotesUI({
 		}
 	};
 
-	const handleCopyText = async () => {
-		const text = finalFilteredNotes.map((n) => n.content ?? "").join("\n\n");
-		await copyToClipboard(text);
-		setIsCopyMenuOpen(false);
-	};
-
-	const handleCopyJson = async () => {
-		const json = finalFilteredNotes.map((n) => ({
-			type: n.note_type || "info",
-			content: n.content,
-		}));
-		await copyToClipboard(JSON.stringify(json, null, 2));
-		setIsCopyMenuOpen(false);
-	};
-
 	// Close search, modals, and exit maximized mode when pressing Escape (LIFO)
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
@@ -772,14 +758,21 @@ function NotesUI({
 	}, [notes, deferredFilterState, scopeUrls.domain, scopeUrls.exact]);
 
 	const availableTags = useMemo(() => {
+		const targetNotes = isFavoritesOpen
+			? filteredNotesForTags
+			: filteredNotesForTags.filter((n) => !n.is_favorite);
 		return Array.from(
 			new Set(
-				filteredNotesForTags.flatMap(
-					(n) => (n as { tags?: string[] }).tags || [],
-				),
+				targetNotes.flatMap((n) => (n as { tags?: string[] }).tags || []),
 			),
 		).sort();
-	}, [filteredNotesForTags]);
+	}, [filteredNotesForTags, isFavoritesOpen]);
+
+	useEffect(() => {
+		if (selectedTag && !availableTags.includes(selectedTag)) {
+			setSelectedTag(null);
+		}
+	}, [availableTags, selectedTag]);
 
 	const finalFilteredNotes = useMemo(() => {
 		return filteredNotesForTags.filter((n) => {
@@ -793,6 +786,27 @@ function NotesUI({
 			return true;
 		});
 	}, [filteredNotesForTags, deferredFilterState.selectedTag]);
+
+	const copyTargetNotes = useMemo(() => {
+		return isFavoritesOpen
+			? finalFilteredNotes
+			: finalFilteredNotes.filter((n) => !n.is_favorite);
+	}, [finalFilteredNotes, isFavoritesOpen]);
+
+	const handleCopyText = async () => {
+		const text = copyTargetNotes.map((n) => n.content ?? "").join("\n\n");
+		await copyToClipboard(text);
+		setIsCopyMenuOpen(false);
+	};
+
+	const handleCopyJson = async () => {
+		const json = copyTargetNotes.map((n) => ({
+			type: n.note_type || "info",
+			content: n.content,
+		}));
+		await copyToClipboard(JSON.stringify(json, null, 2));
+		setIsCopyMenuOpen(false);
+	};
 
 	return (
 		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_auto_1fr] relative font-sans">
@@ -952,6 +966,8 @@ function NotesUI({
 						onUpdateNoteOrder={handleUpdateNoteOrder}
 						onToggleExpansion={toggleNoteExpansion}
 						showResolved={deferredFilterState.showResolved}
+						isFavoritesOpen={isFavoritesOpen}
+						onToggleFavoritesOpen={setIsFavoritesOpen}
 					/>
 				)}
 			</div>
