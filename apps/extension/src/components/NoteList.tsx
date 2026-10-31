@@ -49,6 +49,8 @@ interface NoteListProps {
 	onUpdateNoteOrder: (id: string, newOrder: number) => Promise<boolean>;
 	onToggleExpansion: (id: string, current: boolean) => Promise<boolean>;
 	showResolved?: boolean;
+	isFavoritesOpen?: boolean;
+	onToggleFavoritesOpen?: (open: boolean) => void;
 }
 
 interface SortableWrapperProps {
@@ -100,9 +102,18 @@ function NoteList({
 	onUpdateNoteOrder,
 	onToggleExpansion,
 	showResolved = false,
+	isFavoritesOpen: controlledFavoritesOpen,
+	onToggleFavoritesOpen,
 }: NoteListProps) {
 	const [_isSorting, setIsSorting] = useState(false);
-	const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+	const [internalFavoritesOpen, setInternalFavoritesOpen] = useState(false);
+	const isFavoritesOpen = controlledFavoritesOpen ?? internalFavoritesOpen;
+
+	const handleToggleFavorites = useCallback(() => {
+		const next = !isFavoritesOpen;
+		setInternalFavoritesOpen(next);
+		onToggleFavoritesOpen?.(next);
+	}, [isFavoritesOpen, onToggleFavoritesOpen]);
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 	const [isEditDirty, setIsEditDirty] = useState(false);
 	const [activeDragNote, setActiveDragNote] = useState<Note | null>(null);
@@ -410,7 +421,7 @@ function NoteList({
 					<div className="space-y-3">
 						<button
 							type="button"
-							onClick={() => setIsFavoritesOpen(!isFavoritesOpen)}
+							onClick={handleToggleFavorites}
 							className="flex items-center gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 hover:text-action transition-colors cursor-pointer"
 						>
 							{isFavoritesOpen ? (

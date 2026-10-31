@@ -96,7 +96,7 @@ function CodeBlock({
 	};
 
 	return (
-		<div className="relative group my-3">
+		<div className="relative group my-3 min-w-0 max-w-full">
 			<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-base-surface/90 rounded shadow-sm border border-base-border z-1">
 				<button
 					type="button"
@@ -111,7 +111,7 @@ function CodeBlock({
 					)}
 				</button>
 			</div>
-			<div className="rounded-lg overflow-hidden text-xs font-['Hack'] monospace leading-relaxed relative">
+			<div className="rounded-lg overflow-hidden text-xs font-['Hack'] monospace leading-relaxed relative min-w-0 max-w-full">
 				<SyntaxHighlighter
 					{...rest}
 					style={oneLight}
@@ -121,9 +121,18 @@ function CodeBlock({
 						margin: 0,
 						padding: "0.75rem",
 						fontFamily: "var(--font-hack, 'Hack', monospace)",
+						whiteSpace: "pre-wrap",
+						wordBreak: "break-all",
+						overflowWrap: "anywhere",
+						maxWidth: "100%",
 					}}
 					codeTagProps={{
-						style: { fontFamily: "inherit" },
+						style: {
+							fontFamily: "inherit",
+							whiteSpace: "pre-wrap",
+							wordBreak: "break-all",
+							overflowWrap: "anywhere",
+						},
 					}}
 					wrapLongLines={true}
 				>
@@ -144,7 +153,7 @@ export default function MarkdownRenderer({
 	if (markdownCache.has(content)) {
 		return (
 			<div
-				className={`prose prose-sm prose-neutral max-w-none ${className} break-words [&>*:first-child]:mt-0`}
+				className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
 			>
 				{markdownCache.get(content)}
 			</div>
@@ -279,7 +288,7 @@ export default function MarkdownRenderer({
 
 	return (
 		<div
-			className={`prose prose-sm prose-neutral max-w-none ${className} break-words [&>*:first-child]:mt-0`}
+			className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
 		>
 			{parsedElement}
 		</div>

@@ -76,8 +76,10 @@ describe("NoteItem Component", () => {
 		const copyButton = screen.getByTitle("Copy note");
 		const editButton = screen.getByTitle("Edit");
 		const deleteButton = screen.getByTitle("Delete");
-		const favoriteButton = screen.getByTitle("Add to favorites");
-		const pinButton = screen.getByTitle("Pin note");
+		const favoriteButton = screen.getByTitle(
+			"Add to favorites (shown across all pages)",
+		);
+		const pinButton = screen.getByTitle("Pin note to top of this page");
 
 		expect(copyButton).toBeInTheDocument();
 		expect(editButton).toBeInTheDocument();

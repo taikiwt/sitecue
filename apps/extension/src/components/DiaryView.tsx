@@ -47,30 +47,15 @@ export default function DiaryView({
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const { onKeyDown, onPaste } = useMarkdownAssist();
 
-	// 💡 日付変更検知用の Ref 保持
-	const prevDateRef = useRef(selectedDiaryDate);
-	const isDateChanged = prevDateRef.current !== selectedDiaryDate;
-
-	useEffect(() => {
-		prevDateRef.current = selectedDiaryDate;
-	}, [selectedDiaryDate]);
-
 	// 💡 カプセルボタンUI着色（selectedDiaryDate: 0ms）と重いコンテンツ描画を Concurrent 非同期分離
 	const deferredSelectedDiaryDate = useDeferredValue(selectedDiaryDate);
 
 	// 💡 diaryData 全体（トピック ＋ 本文）を一括で useDeferredValue にバインド
 	const deferredDiaryData = useDeferredValue(diaryData);
 
-	// 💡 新旧本文の文字数差分を判定
-	const rawContent = diaryData?.content ?? "";
-	const deferredContent = deferredDiaryData?.content ?? "";
-	const charDelta = Math.abs(rawContent.length - deferredContent.length);
-
-	// 💡 初回読み込み（Cold State）または 同一日付内での編集保存時（!isDateChanged）かつ文字数差分500文字以上の遅延描画時（Large Delta）にスケルトンを発動
+	// 💡 初回読み込み（Cold State）かつ非編集中のみスケルトンを発動（長文ペーストや自動保存時の再描画フラッシュを完全防止）
 	const isColdLoading = isDiaryLoading && !diaryData;
-	const isLargeDeltaDeferred =
-		!isDateChanged && charDelta >= 500 && rawContent !== deferredContent;
-	const needsSkeleton = isColdLoading || isLargeDeltaDeferred;
+	const needsSkeleton = isColdLoading && !isEditingDiary;
 
 	const [stableLoading, setStableLoading] = useState(needsSkeleton);
 	const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

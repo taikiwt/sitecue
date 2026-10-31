@@ -566,7 +566,7 @@ function NoteItem({
 										title={
 											note.is_favorite
 												? "Remove from favorites"
-												: "Add to favorites"
+												: "Add to favorites (shown across all pages)"
 										}
 									/>
 									<Button
@@ -579,7 +579,11 @@ function NoteItem({
 											/>
 										}
 										onClick={() => onTogglePinned(note)}
-										title={note.is_pinned ? "Unpin note" : "Pin note"}
+										title={
+											note.is_pinned
+												? "Unpin note from top"
+												: "Pin note to top of this page"
+										}
 									/>
 								</div>
 							</div>

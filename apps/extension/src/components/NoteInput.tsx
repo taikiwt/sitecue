@@ -76,19 +76,18 @@ export default function NoteInput({
 		// 2. 300ms アニメーション完了を優雅に待機
 		await new Promise((resolve) => setTimeout(resolve, 300));
 
-		// 3. 通信実行
+		// 🌟 3. アニメーション完了と同時にダイアログを即時閉鎖（Optimistic Close）
+		onClose();
+
+		// 4. バックグラウンド通信実行
 		const success = await onAppendDiary(content);
 		setSubmitting(false);
 
 		if (!success) {
-			// 失敗時のみロールバック（復元）
+			// 失敗時のみロールバック・エラートースト通知
 			setIsSlidingDiary(false);
 			setDiaryText(pendingDiaryRef.current);
 			toast.error("Failed to send text");
-		} else {
-			// 🌟 成功時: フォームをリセット（isSlidingDiary=false）せず、消えた状態(opacity-0)のままダイアログを即時閉鎖！
-			// これにより、閉じる直前の「空フォーム露出フラッシュ」を100%防止。
-			onClose();
 		}
 	};
 
