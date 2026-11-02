@@ -94,4 +94,47 @@ describe("PaywallModal", () => {
 		expect(screen.getByText(/Unlimited studio drafts/)).toBeInTheDocument();
 		expect(screen.getByText(/30,000 chars/)).toBeInTheDocument();
 	});
+
+	it("renders sitecue Pro modal when limitType is 'menu'", async () => {
+		render(<PaywallModal isOpen={true} onClose={vi.fn()} limitType="menu" />);
+		expect(screen.getByText("sitecue Pro")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/Unlock unlimited notes, drafts, and higher AI quota to power your workflow\./,
+			),
+		).toBeInTheDocument();
+
+		await waitFor(() => {
+			expect(mockGetUser).toHaveBeenCalled();
+		});
+	});
+
+	it("toggles Polar trust accordion when clicking the trust trigger", async () => {
+		render(<PaywallModal isOpen={true} onClose={vi.fn()} plan="free" />);
+
+		const trustTrigger = screen.getByRole("button", {
+			name: /Secure checkout powered by Polar/i,
+		});
+		expect(trustTrigger).toBeInTheDocument();
+		expect(
+			screen.queryByText(/Payments are securely processed by Polar/),
+		).not.toBeInTheDocument();
+
+		// 開く
+		fireEvent.click(trustTrigger);
+		expect(
+			screen.getByText(/Payments are securely processed by Polar/),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/sitecue never sees, accesses, or stores your credit card details\./,
+			),
+		).toBeInTheDocument();
+
+		// 閉じる
+		fireEvent.click(trustTrigger);
+		expect(
+			screen.queryByText(/Payments are securely processed by Polar/),
+		).not.toBeInTheDocument();
+	});
 });

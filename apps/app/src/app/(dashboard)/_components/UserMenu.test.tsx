@@ -170,4 +170,23 @@ describe("UserMenu", () => {
 		expect(privacyLink.getAttribute("target")).toBe("_blank");
 		expect(privacyLink.getAttribute("rel")).toBe("noopener noreferrer");
 	});
+
+	it("Free プランのとき、Upgrade to Pro とサブテキストが表示され、クリックで openPaywall('menu') が呼ばれること", async () => {
+		currentStoreState.plan = "free";
+		render(<UserMenu />);
+
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "User menu" })).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "User menu" }));
+
+		expect(screen.getByText("Upgrade to Pro")).toBeDefined();
+		expect(screen.getByText("See what Pro offers")).toBeDefined();
+
+		const upgradeBtn = screen.getByRole("button", { name: /Upgrade to Pro/i });
+		fireEvent.click(upgradeBtn);
+
+		expect(currentStoreState.openPaywall).toHaveBeenCalledWith("menu");
+	});
 });

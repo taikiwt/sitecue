@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type LimitType = "notes" | "drafts" | "ai";
+export type LimitType = "notes" | "drafts" | "ai" | "menu";
 
 export interface UserState {
 	aiUsageCount: number;
