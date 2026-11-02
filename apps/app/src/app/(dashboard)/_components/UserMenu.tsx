@@ -139,19 +139,27 @@ export function UserMenu({
 							</a>
 						</div>
 					) : (
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => {
-								setIsMenuOpen(false);
-								openPaywall("notes");
-							}}
-							className="w-full rounded-full py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-action/30 hover-safe:bg-action/5 cursor-pointer text-action"
-						>
-							<Sparkles className="size-3 text-amber-500" aria-hidden="true" />
-							<span>Upgrade to Pro</span>
-						</Button>
+						<div className="flex flex-col items-center gap-1.5 w-full">
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => {
+									setIsMenuOpen(false);
+									openPaywall("menu");
+								}}
+								className="w-full rounded-full py-1.5 text-xs font-semibold flex items-center justify-center gap-1.5 border-action/30 hover-safe:bg-action/5 cursor-pointer text-action"
+							>
+								<Sparkles
+									className="size-3 text-amber-500"
+									aria-hidden="true"
+								/>
+								<span>Upgrade to Pro</span>
+							</Button>
+							<span className="text-[11px] text-neutral-400 select-none">
+								See what Pro offers
+							</span>
+						</div>
 					)}
 				</div>
 

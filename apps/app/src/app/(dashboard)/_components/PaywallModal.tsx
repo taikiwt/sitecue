@@ -1,6 +1,15 @@
 "use client";
 
-import { Check, Crown, Sparkles, X } from "lucide-react";
+import {
+	Check,
+	ChevronDown,
+	ChevronUp,
+	Crown,
+	ExternalLink,
+	Lock,
+	Sparkles,
+	X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
@@ -9,7 +18,7 @@ interface PaywallModalProps {
 	isOpen: boolean;
 	onClose: () => void;
 	plan?: "free" | "pro";
-	limitType?: "ai" | "notes" | "drafts";
+	limitType?: "ai" | "notes" | "drafts" | "menu";
 }
 
 export default function PaywallModal({
@@ -20,6 +29,7 @@ export default function PaywallModal({
 }: PaywallModalProps) {
 	const [userId, setUserId] = useState<string | null>(null);
 	const [userEmail, setUserEmail] = useState<string | null>(null);
+	const [isPolarTrustOpen, setIsPolarTrustOpen] = useState(false);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -58,10 +68,46 @@ export default function PaywallModal({
 		}
 	};
 
+	const modalTitle =
+		limitType === "menu"
+			? "sitecue Pro"
+			: limitType === "notes"
+				? "Storage Limit Reached"
+				: limitType === "drafts"
+					? "Draft Limit Reached"
+					: plan === "free"
+						? "Monthly Generation Limit"
+						: "Usage Limit Reached";
+
+	const modalDescription =
+		limitType === "menu" ? (
+			"Unlock unlimited notes, drafts, and higher AI quota to power your workflow."
+		) : limitType === "notes" ? (
+			<>
+				{"You've reached the free limit (500 notes)."}
+				<br />
+				{"Upgrade to Pro for unlimited notes & 30,000 chars per note."}
+			</>
+		) : limitType === "drafts" ? (
+			<>
+				{"Draft storage limit reached (50/50)."}
+				<br />
+				{"Upgrade to Pro to create unlimited studio drafts."}
+			</>
+		) : plan === "free" ? (
+			<>
+				{"You've used all your AI generations (3/month)."}
+				<br />
+				{"Upgrade to Pro for 100 generations per month."}
+			</>
+		) : (
+			"Please wait for the next billing cycle to continue using AI features."
+		);
+
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/30 backdrop-blur-sm animate-in fade-in duration-200">
-			<div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-				<div className="relative p-8 text-center text-neutral-900">
+			<div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-200">
+				<div className="relative p-8 text-center text-neutral-900 overflow-y-auto flex-1">
 					<Button
 						type="button"
 						variant="ghost"
@@ -78,36 +124,10 @@ export default function PaywallModal({
 					</div>
 
 					<h2 className="text-2xl font-bold mb-2 tracking-tight">
-						{limitType === "notes"
-							? "Storage Limit Reached"
-							: limitType === "drafts"
-								? "Draft Limit Reached"
-								: plan === "free"
-									? "Monthly Generation Limit"
-									: "Usage Limit Reached"}
+						{modalTitle}
 					</h2>
 					<p className="text-neutral-500 mb-6 leading-relaxed text-sm">
-						{limitType === "notes" ? (
-							<>
-								{"You've reached the free limit (500 notes)."}
-								<br />
-								{"Upgrade to Pro for unlimited notes & 30,000 chars per note."}
-							</>
-						) : limitType === "drafts" ? (
-							<>
-								{"Draft storage limit reached (50/50)."}
-								<br />
-								{"Upgrade to Pro to create unlimited studio drafts."}
-							</>
-						) : plan === "free" ? (
-							<>
-								{"You've used all your AI generations (3/month)."}
-								<br />
-								{"Upgrade to Pro for 100 generations per month."}
-							</>
-						) : (
-							"Please wait for the next billing cycle to continue using AI features."
-						)}
+						{modalDescription}
 					</p>
 
 					{plan === "free" && (
@@ -116,18 +136,6 @@ export default function PaywallModal({
 								Everything in Pro:
 							</p>
 							<ul className="space-y-2 text-xs text-neutral-600">
-								<li className="flex items-center gap-2">
-									<Check
-										className="size-3.5 text-amber-500 shrink-0"
-										aria-hidden="true"
-									/>
-									<span>
-										<strong className="text-neutral-900 font-semibold">
-											100 AI generations
-										</strong>{" "}
-										/ month (vs 3 in Free)
-									</span>
-								</li>
 								<li className="flex items-center gap-2">
 									<Check
 										className="size-3.5 text-amber-500 shrink-0"
@@ -164,6 +172,18 @@ export default function PaywallModal({
 										per note (vs 10,000 in Free)
 									</span>
 								</li>
+								<li className="flex items-center gap-2">
+									<Check
+										className="size-3.5 text-amber-500 shrink-0"
+										aria-hidden="true"
+									/>
+									<span>
+										<strong className="text-neutral-900 font-semibold">
+											100 AI generations
+										</strong>{" "}
+										/ month (vs 3 in Free)
+									</span>
+								</li>
 							</ul>
 						</div>
 					)}
@@ -177,6 +197,10 @@ export default function PaywallModal({
 								onClick={() => handleCheckout(getCheckoutUrl(monthlyBaseUrl))}
 							>
 								<span>Monthly Plan ($5/month)</span>
+								<ExternalLink
+									className="size-3.5 text-white/70 ml-0.5"
+									aria-hidden="true"
+								/>
 							</Button>
 							<Button
 								type="button"
@@ -189,7 +213,59 @@ export default function PaywallModal({
 									aria-hidden="true"
 								/>
 								<span>Yearly Plan ($48/year - Save 20%)</span>
+								<ExternalLink
+									className="size-3.5 text-neutral-400 ml-0.5"
+									aria-hidden="true"
+								/>
 							</Button>
+						</div>
+					)}
+
+					{plan === "free" && (
+						<div className="mb-4">
+							<button
+								type="button"
+								onClick={() => setIsPolarTrustOpen(!isPolarTrustOpen)}
+								aria-expanded={isPolarTrustOpen}
+								aria-controls="polar-trust-details"
+								className="text-[11px] text-neutral-400 hover-safe:text-neutral-600 flex items-center justify-center gap-1.5 cursor-pointer py-1 mx-auto transition-colors"
+							>
+								<Lock className="size-3 text-neutral-400" aria-hidden="true" />
+								<span>Secure checkout powered by Polar</span>
+								{isPolarTrustOpen ? (
+									<ChevronUp
+										className="size-3 text-neutral-400"
+										aria-hidden="true"
+									/>
+								) : (
+									<ChevronDown
+										className="size-3 text-neutral-400"
+										aria-hidden="true"
+									/>
+								)}
+							</button>
+
+							{isPolarTrustOpen && (
+								<div
+									id="polar-trust-details"
+									className="bg-neutral-50 border border-neutral-100 rounded-xl p-3 mt-1.5 text-left text-[11px] text-neutral-500 leading-normal animate-in fade-in duration-150"
+								>
+									<ul className="space-y-1.5 list-disc list-inside">
+										<li>
+											Payments are securely processed by Polar using
+											Stripe&apos;s infrastructure.
+										</li>
+										<li>
+											sitecue never sees, accesses, or stores your credit card
+											details.
+										</li>
+										<li>
+											Subscriptions can be managed or canceled anytime from your
+											account.
+										</li>
+									</ul>
+								</div>
+							)}
 						</div>
 					)}
 
@@ -203,7 +279,7 @@ export default function PaywallModal({
 					</Button>
 				</div>
 
-				<div className="bg-neutral-50 px-8 py-3.5 text-center border-t border-neutral-100">
+				<div className="bg-neutral-50 px-8 py-3.5 text-center border-t border-neutral-100 shrink-0">
 					<p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400">
 						Stay creative with sitecue Pro
 					</p>
