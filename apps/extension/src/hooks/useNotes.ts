@@ -14,6 +14,7 @@ import {
 } from "@sitecue/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import i18n from "../locales/i18n";
 import { localClient, supabase } from "../supabaseClient";
 import type { AuthStatus } from "./useAuth";
 
@@ -232,9 +233,7 @@ export function useNotes(
 			authStatus.mode === "guest" &&
 			notes.filter((n) => n.scope !== "inbox").length >= 50
 		) {
-			toast.error(
-				"Note storage limit reached (Max 50 notes). Please sign in for unlimited cloud sync.",
-			);
+			toast.error(i18n.t("toast.guestNoteLimitReached"));
 			return false;
 		}
 
@@ -323,7 +322,7 @@ export function useNotes(
 				(prev) => prev.filter((n) => n.id !== tempId),
 				selectedScope,
 			);
-			toast.error("Failed to create note");
+			toast.error(i18n.t("toast.createNoteFailed"));
 			return false;
 		}
 	};
@@ -448,7 +447,7 @@ export function useNotes(
 			setInboxNotes(previousInboxNotes);
 			setFavoriteNotes(previousFavoriteNotes);
 
-			let errorMsg = "Failed to update note";
+			let errorMsg = i18n.t("toast.updateNoteFailed");
 			if (typeof error === "object" && error !== null && "message" in error) {
 				const msg = String((error as { message: unknown }).message);
 				if (
@@ -456,8 +455,7 @@ export function useNotes(
 					msg.includes("length") ||
 					msg.includes("limit")
 				) {
-					errorMsg =
-						"Failed to save: Content exceeds the 10,000 character limit.";
+					errorMsg = i18n.t("toast.noteLengthExceeded", { max: "10,000" });
 				}
 			}
 			toast.error(errorMsg);
@@ -466,7 +464,7 @@ export function useNotes(
 	};
 
 	const deleteNote = async (id: string) => {
-		if (!window.confirm("このメモを削除しますか？")) return false;
+		if (!window.confirm(i18n.t("item.confirmDelete"))) return false;
 		const noteToDelete = notes.find((n) => n.id === id);
 		if (!noteToDelete) return false;
 
@@ -486,7 +484,7 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to delete note", error);
-			toast.error("Failed to delete note");
+			toast.error(i18n.t("toast.deleteNoteFailed"));
 			return false;
 		}
 	};
@@ -532,7 +530,7 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle resolved status", error);
-			toast.error("Failed to update status");
+			toast.error(i18n.t("toast.updateStatusFailed"));
 			return false;
 		}
 	};
@@ -595,7 +593,7 @@ export function useNotes(
 			} else {
 				setPageNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
 			}
-			toast.error("Failed to update status");
+			toast.error(i18n.t("toast.updateStatusFailed"));
 			return false;
 		}
 	};
@@ -636,7 +634,7 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to toggle pinned status", error);
-			toast.error("Failed to update status");
+			toast.error(i18n.t("toast.updateStatusFailed"));
 			return false;
 		}
 	};
@@ -682,7 +680,7 @@ export function useNotes(
 			return true;
 		} catch (error) {
 			console.error("Failed to update note order", error);
-			toast.error("Failed to reorder notes");
+			toast.error(i18n.t("toast.reorderFailed"));
 			if (targetNote.scope === "inbox") {
 				fetchInboxNotes();
 			} else {
@@ -746,7 +744,7 @@ export function useNotes(
 					n.id === id ? { ...n, is_expanded: currentValue } : n,
 				),
 			);
-			toast.error("Failed to update note");
+			toast.error(i18n.t("toast.updateStatusFailed"));
 			return false;
 		}
 	};

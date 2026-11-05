@@ -1,5 +1,10 @@
 import "@testing-library/jest-dom";
-import { vi } from "vitest";
+import { beforeEach, vi } from "vitest";
+import i18n from "./locales/i18n";
+
+beforeEach(async () => {
+	await i18n.changeLanguage("en");
+});
 
 // 環境変数のデフォルトモック
 const env = import.meta.env as unknown as Record<string, string>;

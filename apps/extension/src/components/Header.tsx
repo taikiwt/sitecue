@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { AuthStatus } from "../hooks/useAuth";
+import { type SupportedLanguage, setUserLanguage } from "../locales/i18n";
 import { localClient, supabase } from "../supabaseClient";
 
 interface HeaderProps {
@@ -62,6 +64,11 @@ export default function Header({
 	const [saving, setSaving] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const profileMenuRef = useRef<HTMLDivElement>(null);
+
+	const { t, i18n } = useTranslation();
+	const currentLang: SupportedLanguage = i18n.language.startsWith("ja")
+		? "ja"
+		: "en";
 
 	const client = authStatus.mode === "guest" ? localClient : supabase;
 
@@ -151,10 +158,10 @@ export default function Header({
 
 			setIsSettingsOpen(false);
 			fetchSettings();
-			toast.success("Settings saved");
+			toast.success(t("toast.settingsSaved"));
 		} catch (error) {
 			console.error("Failed to save domain settings", error);
-			toast.error("Failed to save settings");
+			toast.error(t("toast.settingsSaveFailed"));
 		} finally {
 			setSaving(false);
 		}
@@ -188,12 +195,10 @@ export default function Header({
 									? `shadow-xs ${!colorHex ? "bg-action text-action-text" : "text-white"}`
 									: `hover:bg-base-surface ${!colorHex ? "text-muted-foreground/50 hover:text-action" : ""}`
 							}`}
-							title={
-								isLocked
-									? "Unlock URL (currently locked)"
-									: "Lock URL (keep current notes visible across tabs)"
+							title={isLocked ? t("header.unlockUrl") : t("header.lockUrl")}
+							aria-label={
+								isLocked ? t("header.unlockAria") : t("header.lockAria")
 							}
-							aria-label={isLocked ? "Unlock URL" : "Lock URL"}
 						>
 							{isLocked ? (
 								<Lock className="size-3.5" aria-hidden="true" />
@@ -207,7 +212,7 @@ export default function Header({
 							type="button"
 							onClick={() => setIsSettingsOpen(!isSettingsOpen)}
 							className="truncate flex-1 min-w-0 text-left cursor-pointer hover:bg-base-surface/80 rounded px-1 -mx-1 transition-colors"
-							title="Click to edit label & color"
+							title={t("header.editSettingsTooltip")}
 						>
 							<span className="truncate block font-semibold text-action">
 								{title || "sitecue"}
@@ -220,7 +225,7 @@ export default function Header({
 								type="button"
 								onClick={() => setIsSettingsOpen(!isSettingsOpen)}
 								className="text-[10px] bg-action text-action-text px-1.5 py-0.5 rounded border border-base-border font-mono shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-								title="Click to edit label & color"
+								title={t("header.editSettingsTooltip")}
 							>
 								{settings.label}
 							</button>
@@ -232,7 +237,7 @@ export default function Header({
 						}`}
 						title={url}
 					>
-						{url || "Waiting..."}
+						{url || t("header.waiting")}
 					</p>
 				</div>
 
@@ -242,7 +247,7 @@ export default function Header({
 							type="button"
 							onClick={onDiaryClick}
 							className="cursor-pointer p-1.5 rounded-full border border-base-border text-muted-foreground bg-base-bg hover:text-action hover:bg-base-border transition-colors"
-							title="Open diary"
+							title={t("header.openDiary")}
 						>
 							<CalendarDays className="size-4" aria-hidden="true" />
 						</button>
@@ -259,7 +264,7 @@ export default function Header({
 									? "bg-neutral-800 text-neutral-200 px-2.5 py-1 gap-1 text-xs font-medium rounded-full border-neutral-700 shadow-sm"
 									: "w-6.5 h-6.5 rounded-full overflow-hidden"
 							}`}
-							title="Account & Status"
+							title={t("header.accountStatus")}
 						>
 							{authStatus.mode === "guest" ? (
 								<>
@@ -267,7 +272,7 @@ export default function Header({
 										className="w-3.5 h-3.5 text-neutral-400"
 										aria-hidden="true"
 									/>
-									<span>Guest</span>
+									<span>{t("header.guest")}</span>
 								</>
 							) : avatarUrl ? (
 								<img
@@ -284,19 +289,45 @@ export default function Header({
 
 						{isProfileOpen && (
 							<div className="absolute right-0 top-full mt-2 bg-base-surface border border-base-border rounded-md shadow-md z-20 py-1 min-w-[210px] animate-in fade-in slide-in-from-top-1 duration-200">
+								{/* 🌐 言語切り替えセクション */}
+								<div className="flex items-center justify-between px-3 py-1.5 border-b border-base-border/50 text-xs">
+									<span className="text-muted-foreground font-medium">
+										{t("header.language")}
+									</span>
+									<div className="flex items-center bg-base-bg p-0.5 rounded-full border border-base-border/60">
+										<button
+											type="button"
+											onClick={() => setUserLanguage("en")}
+											className={`cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
+												currentLang === "en"
+													? "bg-action text-action-text"
+													: "text-muted-foreground hover:text-action"
+											}`}
+										>
+											EN
+										</button>
+										<button
+											type="button"
+											onClick={() => setUserLanguage("ja")}
+											className={`cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
+												currentLang === "ja"
+													? "bg-action text-action-text"
+													: "text-muted-foreground hover:text-action"
+											}`}
+										>
+											JA
+										</button>
+									</div>
+								</div>
+
 								{authStatus.mode === "guest" ? (
-									// 🛡️ 英語化されたリスク・免責の3段特設インライン構成
 									<div className="p-3 space-y-2.5">
 										<div className="text-[11px] text-note-alert font-medium leading-normal flex gap-1 items-start">
 											<span>⚠️</span>
-											<span>
-												Local Storage Only: Data may be lost if browser cache or
-												extension data is cleared.
-											</span>
+											<span>{t("header.guestWarning")}</span>
 										</div>
 										<div className="text-[11px] text-muted-foreground leading-normal border-t border-base-border/50 pt-2 font-normal">
-											*Signing in switches to the cloud environment. Current
-											local notes will not be synced.
+											{t("header.guestNotice")}
 										</div>
 										<div className="pt-1">
 											<button
@@ -307,7 +338,7 @@ export default function Header({
 												}}
 												className="cursor-pointer text-action border border-base-border rounded-full w-full py-1.5 text-center text-xs font-semibold bg-base-bg hover:bg-base-border transition-colors block"
 											>
-												Sign in
+												{t("header.signIn")}
 											</button>
 										</div>
 									</div>
@@ -320,7 +351,7 @@ export default function Header({
 											className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
 											onClick={() => setIsProfileOpen(false)}
 										>
-											Open Basecamp{" "}
+											{t("header.openBasecamp")}{" "}
 											<ExternalLink
 												className="w-3.5 h-3.5 ml-auto text-muted-foreground"
 												aria-hidden="true"
@@ -334,7 +365,7 @@ export default function Header({
 											}}
 											className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-note-alert hover:bg-note-alert/10 transition-colors"
 										>
-											Log out{" "}
+											{t("header.logout")}{" "}
 											<LogOut
 												className="w-3.5 h-3.5 ml-auto"
 												aria-hidden="true"
@@ -357,14 +388,14 @@ export default function Header({
 								htmlFor="label-input"
 								className="text-xs font-medium text-muted-foreground mb-1.5 block"
 							>
-								Label
+								{t("header.label")}
 							</label>
 							<input
 								id="label-input"
 								type="text"
 								value={editLabel}
 								onChange={(e) => setEditLabel(e.target.value.slice(0, 10))}
-								placeholder="e.g. PROD, DEV"
+								placeholder={t("header.labelPlaceholder")}
 								className="w-full text-xs text-action border border-base-border rounded-full p-1.5 focus:outline-none focus:ring-1 focus:ring-action placeholder-muted-foreground"
 							/>
 						</div>
@@ -373,7 +404,7 @@ export default function Header({
 								htmlFor="color-button"
 								className="text-xs font-medium text-muted-foreground mb-1.5 block"
 							>
-								Color
+								{t("header.color")}
 							</label>
 							<div className="flex gap-2 items-center">
 								<button
@@ -381,7 +412,7 @@ export default function Header({
 									type="button"
 									onClick={() => setEditColor("")}
 									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-muted-foreground hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
-									title="Clear Settings"
+									title={t("header.clearSettings")}
 								>
 									<CircleOff className="w-3.5 h-3.5" aria-hidden="true" />
 								</button>
@@ -403,7 +434,7 @@ export default function Header({
 								onClick={() => setIsSettingsOpen(false)}
 								className="cursor-pointer px-3 py-1 text-xs text-muted-foreground hover:text-action hover:bg-base-border rounded-full"
 							>
-								Cancel
+								{t("header.cancel")}
 							</button>
 							<button
 								type="button"
@@ -411,7 +442,7 @@ export default function Header({
 								disabled={saving}
 								className="cursor-pointer px-3 py-1 bg-action text-action-text text-xs rounded-full hover:bg-action-hover disabled:opacity-50 flex items-center gap-1"
 							>
-								{saving ? "Saving..." : "Save"}
+								{saving ? t("header.saving") : t("header.save")}
 							</button>
 						</div>
 					</div>

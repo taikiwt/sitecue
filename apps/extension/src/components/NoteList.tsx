@@ -22,6 +22,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
+import { useTranslation } from "react-i18next";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
 import NoteItem from "./NoteItem";
 import NoteSkeleton from "./NoteSkeleton";
@@ -105,6 +106,7 @@ function NoteList({
 	isFavoritesOpen: controlledFavoritesOpen,
 	onToggleFavoritesOpen,
 }: NoteListProps) {
+	const { t } = useTranslation();
 	const [_isSorting, setIsSorting] = useState(false);
 	const [internalFavoritesOpen, setInternalFavoritesOpen] = useState(false);
 	const isFavoritesOpen = controlledFavoritesOpen ?? internalFavoritesOpen;
@@ -210,15 +212,13 @@ function NoteList({
 	const handleRequestEdit = useCallback(
 		(id: string) => {
 			if (id && editingNoteId && editingNoteId !== id && isEditDirty) {
-				const confirmLeave = window.confirm(
-					"You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
-				);
+				const confirmLeave = window.confirm(t("item.confirmDiscard"));
 				if (!confirmLeave) return;
 			}
 			setEditingNoteId(id);
 			setIsEditDirty(false);
 		},
-		[editingNoteId, isEditDirty],
+		[editingNoteId, isEditDirty, t],
 	);
 
 	const handleToggleResolved = useCallback(
@@ -368,10 +368,10 @@ function NoteList({
 					<Ghost className="w-8 h-8 text-muted-foreground" />
 				</div>
 				<h3 className="text-sm font-medium text-action mb-1">
-					No notes for this page yet
+					{t("list.emptyTitle")}
 				</h3>
 				<p className="text-xs text-muted-foreground mb-4 max-w-50">
-					Capture your thoughts for this page.
+					{t("list.emptyDesc")}
 				</p>
 			</div>
 		);
@@ -429,7 +429,9 @@ function NoteList({
 							) : (
 								<ChevronRight className="w-3 h-3" />
 							)}
-							<span>FAVORITES ({favoriteNotes.length})</span>
+							<span>
+								{t("list.favorites")} ({favoriteNotes.length})
+							</span>
 						</button>
 						<div className={isFavoritesOpen ? "block" : "hidden"}>
 							<SortableContext
@@ -452,7 +454,7 @@ function NoteList({
 					<div className="space-y-3">
 						{favoriteNotes.length > 0 && (
 							<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-								<span>Current Page</span>
+								<span>{t("list.currentPage")}</span>
 							</div>
 						)}
 						<SortableContext
@@ -471,7 +473,7 @@ function NoteList({
 					<div className="space-y-3">
 						{favoriteNotes.length > 0 && pinnedNotes.length === 0 && (
 							<div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">
-								<span>Current Page</span>
+								<span>{t("list.currentPage")}</span>
 							</div>
 						)}
 						<SortableContext

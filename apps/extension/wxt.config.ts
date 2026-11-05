@@ -28,12 +28,12 @@ export default defineConfig({
 
 	// manifest.json の完全な代わり
 	manifest: ({ command }) => ({
-		name: command === "serve" ? "[DEV] sitecue" : "sitecue",
+		default_locale: "en",
+		name: command === "serve" ? "[DEV] sitecue" : "__MSG_extName__",
 		// version: "1.2.0", // package.jsonの記載が反映されるので不要
-		description:
-			"Leave notes linked to websites in the side panel. A simple way to keep the notes you need exactly where you need them.",
+		description: "__MSG_extDescription__",
 		action: {
-			default_title: "Open sitecue",
+			default_title: "__MSG_actionTitle__",
 		},
 		// 動的アイコン切り替え（開発時は _dev_ アイコンを使用）
 		icons:

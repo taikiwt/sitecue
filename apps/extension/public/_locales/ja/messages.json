@@ -1,0 +1,14 @@
+{
+	"extName": {
+		"message": "sitecue - Webサイトを見ながら使えるサイドパネル型ノートアプリ",
+		"description": "拡張機能のタイトル"
+	},
+	"extDescription": {
+		"message": "Webサイトを開きながら手軽にメモが残せるサイドパネル型ノートアプリ。閲覧中のURLに自動で紐づく「サイト連動メモ」と、下書きなどに自由に使える「一時メモ」の2つの使い道で、日々のブラウジングを快適にします。",
+		"description": "拡張機能の簡単な説明"
+	},
+	"actionTitle": {
+		"message": "sitecueのサイドパネルを開く",
+		"description": "ツールバーアクションのツールチップ"
+	}
+}
