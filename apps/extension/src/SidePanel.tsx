@@ -29,6 +29,7 @@ import {
 	useState,
 } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import DiaryView from "./components/DiaryView";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
@@ -106,6 +107,7 @@ function NotesUI({
 	authStatus: AuthStatus;
 	onLogout: () => void;
 }) {
+	const { t } = useTranslation();
 	const session =
 		authStatus.mode === "authenticated" ? authStatus.session : null;
 	const { currentFullUrl, url, title } = useCurrentTab();
@@ -432,7 +434,9 @@ function NotesUI({
 		// 2. 事前バリデーション（文字数上限チェック）
 		if (editDiaryContent.length > maxDiaryLength) {
 			toast.error(
-				`Diary content exceeds limit (${maxDiaryLength.toLocaleString()} chars). Reverted.`,
+				t("sidepanel.diaryLimitExceeded", {
+					max: maxDiaryLength.toLocaleString(),
+				}),
 			);
 			if (typeof chrome !== "undefined" && chrome.storage?.local) {
 				await chrome.storage.local.remove(`diary-temp-${selectedDiaryDate}`);
@@ -489,7 +493,7 @@ function NotesUI({
 				topics: editDiaryTopics,
 			});
 		} catch (_err) {
-			toast.error("Failed to save diary. Reverted.");
+			toast.error(t("sidepanel.diarySaveFailed"));
 			// 通信失敗時のみ以前のデータへロールバック
 			queryClient.setQueryData(queryKey, previousData);
 			setEditDiaryContent(previousData?.content ?? "");
@@ -535,12 +539,10 @@ function NotesUI({
 
 	const checkLeaveGuard = useCallback((): boolean => {
 		if (hasDiaryChanges) {
-			return confirm(
-				"You have unsaved diary changes. Are you sure you want to discard them?",
-			);
+			return confirm(t("sidepanel.unsavedDiaryChanges"));
 		}
 		return true;
-	}, [hasDiaryChanges]);
+	}, [hasDiaryChanges, t]);
 
 	// 💡 スコープごとの対象ノート件数を事前計算（0件スケルトンスキップ用）
 	const getScopeNoteCount = useCallback(
@@ -868,9 +870,15 @@ function NotesUI({
 						type="button"
 						onClick={() => setIsNotesMaximized((prev) => !prev)}
 						className="cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border focus:outline-none focus-visible:outline-none"
-						title={isNotesMaximized ? "Exit full view" : "Maximize notes view"}
+						title={
+							isNotesMaximized
+								? t("sidepanel.exitFullView")
+								: t("sidepanel.maximizeNotes")
+						}
 						aria-label={
-							isNotesMaximized ? "Exit full view" : "Maximize notes view"
+							isNotesMaximized
+								? t("sidepanel.exitFullView")
+								: t("sidepanel.maximizeNotes")
 						}
 					>
 						{isNotesMaximized ? (
@@ -890,7 +898,7 @@ function NotesUI({
 							setTimeout(() => textareaRef.current?.focus(), 50);
 						}}
 						className="cursor-pointer w-9 h-9 rounded-full bg-action text-action-text shadow-md hover:bg-action-hover transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center border border-action-hover/10"
-						title="Create new note"
+						title={t("sidepanel.createNote")}
 					>
 						<Plus aria-hidden="true" className="w-4 h-4" />
 					</button>
@@ -908,8 +916,12 @@ function NotesUI({
 									? "text-action bg-base-border"
 									: "text-muted-foreground bg-base-surface hover:text-action hover:bg-base-border"
 						}`}
-						title={isCopied ? "Copied!" : "Copy options"}
-						aria-label={isCopied ? "Copied!" : "Open copy options menu"}
+						title={
+							isCopied ? t("sidepanel.copied") : t("sidepanel.copyOptions")
+						}
+						aria-label={
+							isCopied ? t("sidepanel.copied") : t("sidepanel.openCopyMenuAria")
+						}
 					>
 						{isCopied ? (
 							<Check className="w-3.5 h-3.5" />
@@ -925,14 +937,14 @@ function NotesUI({
 								onClick={handleCopyText}
 								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
 							>
-								Copy as Text
+								{t("sidepanel.copyAsText")}
 							</button>
 							<button
 								type="button"
 								onClick={handleCopyJson}
 								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
 							>
-								Copy as JSON
+								{t("sidepanel.copyAsJson")}
 							</button>
 						</div>
 					)}
@@ -990,10 +1002,10 @@ function NotesUI({
 							<>
 								{/* 🚨 ゲスト用 Note Limit 警告アラート（90%にあたる45件以上で露出） */}
 								{isGuest && totalNoteCount >= 45 && (
-									<div className="text-[11px] text-note-alert bg-note-alert/10 border border-note-alert/20 p-2.5 rounded-xl mb-2 text-center font-medium shadow-sm animate-in fade-in duration-200">
-										Note storage limit approaching ({totalNoteCount}/50).
-										<br />
-										Please sign in to enjoy unlimited cloud sync.
+									<div className="text-[11px] text-note-alert bg-note-alert/10 border border-note-alert/20 p-2.5 rounded-xl mb-2 text-center font-medium shadow-sm animate-in fade-in duration-200 whitespace-pre-line">
+										{t("sidepanel.guestLimitWarning", {
+											count: totalNoteCount,
+										})}
 									</div>
 								)}
 								<NoteInput
@@ -1022,12 +1034,14 @@ function NotesUI({
 				{/* 1. 最上部ヘッダー：完全不動固定マウント */}
 				<div className="flex items-center justify-between px-4 py-3 border-b border-base-border/40 shrink-0">
 					<div className="flex items-center justify-between gap-4 w-full">
-						<h1 className="text-lg font-bold text-base-text">Diary</h1>
+						<h1 className="text-lg font-bold text-base-text">
+							{t("sidepanel.diaryTitle")}
+						</h1>
 						<button
 							type="button"
 							onClick={handleCloseDiary}
 							className="cursor-pointer size-8 flex items-center justify-center rounded-full bg-base-bg hover:bg-base-surface text-muted-foreground border border-base-border"
-							title="Close diary"
+							title={t("sidepanel.closeDiary")}
 						>
 							<X aria-hidden="true" className="size-5" />
 						</button>

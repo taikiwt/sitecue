@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { NoteScope, NoteType } from "../hooks/useNotes";
@@ -40,6 +41,7 @@ export default function NoteInput({
 	onClose,
 	textareaRef,
 }: NoteInputProps) {
+	const { t } = useTranslation();
 	const [activeType, setActiveType] = useState<"note" | "diary">("note");
 	const [selectedScope, setSelectedScope] = useState<NoteScope>(
 		initialScope === "inbox" ? "inbox" : initialScope,
@@ -87,7 +89,7 @@ export default function NoteInput({
 			// 失敗時のみロールバック・エラートースト通知
 			setIsSlidingDiary(false);
 			setDiaryText(pendingDiaryRef.current);
-			toast.error("Failed to send text");
+			toast.error(t("toast.sendTextFailed"));
 		}
 	};
 
@@ -124,7 +126,7 @@ export default function NoteInput({
 
 		if (!success) {
 			setNewNote(pendingNoteRef.current);
-			toast.error("Failed to send text");
+			toast.error(t("toast.sendTextFailed"));
 		}
 	};
 
@@ -144,7 +146,7 @@ export default function NoteInput({
 				type="button"
 				onClick={onClose}
 				className="absolute top-1 right-1 p-1.5 rounded-full text-muted-foreground hover:text-base-text hover:bg-base-border transition-all z-50 cursor-pointer"
-				title="Close input"
+				title={t("input.closeInput")}
 			>
 				<X aria-hidden="true" className="w-3.5 h-3.5" />
 			</button>
@@ -182,9 +184,9 @@ export default function NoteInput({
 								onClick={(e) => e.stopPropagation()}
 								className="cursor-pointer appearance-none bg-transparent pr-3 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
 							>
-								<option value="exact">Page Note</option>
-								<option value="domain">Domain Note</option>
-								<option value="inbox">Inbox Note</option>
+								<option value="exact">{t("input.scopePage")}</option>
+								<option value="domain">{t("input.scopeDomain")}</option>
+								<option value="inbox">{t("input.scopeInbox")}</option>
 							</select>
 							<div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-[8px]">
 								▼
@@ -255,12 +257,15 @@ export default function NoteInput({
 									aria-hidden="true"
 								/>
 								<p>
-									Approaching limit ({totalNoteCount}/{maxFreeNotes}). Please
-									visit
 									{userPlan === "guest"
-										? " Login screen to sign in"
-										: " Basecamp"}{" "}
-									to free up space or unlock unlimited notes.
+										? t("input.nearLimitGuest", {
+												count: totalNoteCount,
+												max: maxFreeNotes,
+											})
+										: t("input.nearLimitBasecamp", {
+												count: totalNoteCount,
+												max: maxFreeNotes,
+											})}
 								</p>
 							</div>
 						)}
@@ -272,13 +277,17 @@ export default function NoteInput({
 								aria-hidden="true"
 							/>
 							<div>
-								<div className="font-bold mb-1">Note Limit Reached</div>
+								<div className="font-bold mb-1">
+									{t("input.limitReachedTitle")}
+								</div>
 								<p className="text-xs opacity-90">
-									You have reached the {maxFreeNotes}-note limit. Please visit
 									{userPlan === "guest"
-										? " Login screen to sign in"
-										: " Basecamp"}{" "}
-									to free up space or upgrade for unlimited access.
+										? t("input.limitReachedDescGuest", {
+												max: maxFreeNotes,
+											})
+										: t("input.limitReachedDescBasecamp", {
+												max: maxFreeNotes,
+											})}
 								</p>
 							</div>
 						</div>
@@ -296,13 +305,13 @@ export default function NoteInput({
 									value={newNote}
 									onFocus={() => setActiveType("note")}
 									onChange={(e) => setNewNote(e.target.value)}
-									placeholder={`Add a cue to ${
+									placeholder={
 										selectedScope === "inbox"
-											? "Inbox"
+											? t("input.placeholderInbox")
 											: selectedScope === "domain"
-												? "this domain"
-												: "this page"
-									}...`}
+												? t("input.placeholderDomain")
+												: t("input.placeholderPage")
+									}
 									className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
 									minRows={1}
 									onKeyDown={(e) => {
@@ -347,7 +356,7 @@ export default function NoteInput({
 					type="button"
 					onClick={handleSubmit}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
-					title="Add Note"
+					title={t("input.addNote")}
 				>
 					<Send aria-hidden="true" className="w-3.5 h-3.5" />
 				</button>
@@ -378,7 +387,7 @@ export default function NoteInput({
 				{/* 中央エリア */}
 				<div className="flex flex-col min-w-0 w-full gap-0.5">
 					<div className="text-xs font-bold text-neutral-800 tracking-wide select-none px-0.5 mb-1">
-						Today's Diary
+						{t("input.diaryTitle")}
 					</div>
 					{/* 🌟 1. 固定マスク親ラッパー (overflow-hidden) */}
 					<div className="w-full overflow-hidden">
@@ -394,7 +403,7 @@ export default function NoteInput({
 								value={diaryText}
 								onFocus={() => setActiveType("diary")}
 								onChange={(e) => setDiaryText(e.target.value)}
-								placeholder="Append log text..."
+								placeholder={t("input.diaryPlaceholder")}
 								className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
 								minRows={1}
 								onKeyDown={(e) => {
@@ -420,7 +429,7 @@ export default function NoteInput({
 					onClick={handleDiarySubmit}
 					disabled={activeType !== "diary" || !diaryText.trim() || submitting}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
-					title="Append to Diary"
+					title={t("input.appendDiary")}
 				>
 					<Send aria-hidden="true" className="w-3.5 h-3.5" />
 				</button>

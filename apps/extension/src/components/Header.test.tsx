@@ -33,7 +33,7 @@ describe("Header Component - Guest Mode UI & Disclaimer", () => {
 		expect(guestButton.className).toContain("bg-neutral-800");
 	});
 
-	it("Guestボタンクリックで展開されるメニュー内に、リスク警告・免責事項・サインイン昇格ボタンが正しく3段構成で存在すること", () => {
+	it("Guestボタンクリックで展開されるメニュー内に、言語切替・リスク警告・免責事項・サインイン昇格ボタンが正しく存在すること", () => {
 		const authStatus: AuthStatus = {
 			mode: "guest",
 			session: null,
@@ -53,9 +53,14 @@ describe("Header Component - Guest Mode UI & Disclaimer", () => {
 		const guestButton = screen.getByRole("button", { name: /guest/i });
 		fireEvent.click(guestButton);
 
-		// 1段目: 警告セクション
+		// 言語切替セクションの確認
+		expect(screen.getByText("Language")).toBeInTheDocument();
+		const jaButton = screen.getByRole("button", { name: "JA" });
+		expect(jaButton).toBeInTheDocument();
+
+		// 1段目: 警告セクション（改訂後の英語文言）
 		expect(
-			screen.getByText(/Local Storage Only: Data may be lost/i),
+			screen.getByText(/Local Storage Only: Temporary local storage/i),
 		).toBeInTheDocument();
 
 		// 2段目: 免責セクション
@@ -70,8 +75,18 @@ describe("Header Component - Guest Mode UI & Disclaimer", () => {
 		expect(signInButton).toBeInTheDocument();
 		expect(signInButton.className).toContain("rounded-full");
 
-		// ボタンクリックでonLogout（サインイン画面回帰）が発火すること
-		fireEvent.click(signInButton);
+		// JAボタンクリックで日本語UIへリアルタイムに切り替わることを検証
+		fireEvent.click(jaButton);
+		expect(screen.getByText("言語")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				/ローカル保存のみ: ブラウザのキャッシュを使った一時的な保存状態/i,
+			),
+		).toBeInTheDocument();
+
+		// サインインボタンクリックでonLogoutが発火すること
+		const jaSignInButton = screen.getByRole("button", { name: "サインイン" });
+		fireEvent.click(jaSignInButton);
 		expect(onLogoutMock).toHaveBeenCalledTimes(1);
 	});
 });

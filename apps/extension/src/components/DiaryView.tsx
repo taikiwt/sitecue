@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -39,6 +40,7 @@ export default function DiaryView({
 	handleSaveDiaryEdit,
 	handleStartEdit,
 }: DiaryViewProps) {
+	const { t } = useTranslation();
 	const [newTopic, setNewTopic] = useState("");
 	const [editingTopicIndex, setEditingTopicIndex] = useState<number | null>(
 		null,
@@ -182,7 +184,7 @@ export default function DiaryView({
 									: "bg-base-bg text-muted-foreground hover:bg-base-border/40"
 							}`}
 						>
-							{i === 0 ? "Today" : dateStr.substring(5)}
+							{i === 0 ? t("diary.today") : dateStr.substring(5)}
 						</button>
 					);
 				})}
@@ -246,7 +248,7 @@ export default function DiaryView({
 						>
 							<div className="relative flex flex-col gap-2 w-full border border-neutral-200 bg-neutral-50/60 p-3 rounded-xl mb-1 text-neutral-900 shrink-0">
 								<span className="text-[10px] font-bold font-['Hack'] text-neutral-400 uppercase tracking-wider">
-									Key Events ({editDiaryTopics.length}/10)
+									{t("diary.keyEvents")} ({editDiaryTopics.length}/10)
 								</span>
 								<div className="flex flex-col gap-1.5 w-full">
 									{editDiaryTopics.map((topic, index) => (
@@ -285,7 +287,7 @@ export default function DiaryView({
 												type="button"
 												onClick={() => handleRemoveTopic(index)}
 												className="p-1 rounded-full hover:bg-neutral-100 text-muted-foreground hover:text-note-alert transition-colors cursor-pointer"
-												title="Remove topic"
+												title={t("diary.removeTopic")}
 											>
 												<X aria-hidden="true" className="w-3 h-3" />
 											</button>
@@ -296,7 +298,7 @@ export default function DiaryView({
 									<div className="flex gap-2 items-center mt-1">
 										<input
 											type="text"
-											placeholder="Add a key event..."
+											placeholder={t("diary.addEventPlaceholder")}
 											value={newTopic}
 											onChange={(e) => setNewTopic(e.target.value)}
 											onKeyDown={(e) => {
@@ -314,7 +316,7 @@ export default function DiaryView({
 											disabled={!newTopic.trim()}
 											className="cursor-pointer px-2.5 py-1 rounded-full bg-action text-action-text font-bold text-xs hover:bg-action-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
 										>
-											Add
+											{t("diary.add")}
 										</button>
 									</div>
 								)}
@@ -324,7 +326,7 @@ export default function DiaryView({
 								ref={textareaRef}
 								value={editDiaryContent}
 								onChange={(e) => setEditDiaryContent(e.target.value)}
-								placeholder="Write down your thoughts... (Markdown supported)"
+								placeholder={t("diary.contentPlaceholder")}
 								className="w-full flex-1 resize-none border-none rounded-xl p-2 text-sm bg-transparent text-neutral-800 antialiased min-h-[200px] font-['Hack'] leading-[1.6] trahking-[0.02em] focus:outline-none focus:ring-0"
 								onKeyDown={onKeyDown}
 								onPaste={onPaste}
@@ -357,7 +359,7 @@ export default function DiaryView({
 									<MarkdownRenderer content={deferredDiaryData.content} />
 								) : (
 									<div className="text-xs text-neutral-400 italic">
-										No logs written for this day.
+										{t("diary.noLogs")}
 									</div>
 								)}
 							</div>

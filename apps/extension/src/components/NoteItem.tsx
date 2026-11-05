@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
 import type { Note, NoteScope, NoteType } from "../hooks/useNotes";
@@ -88,6 +89,7 @@ function NoteItem({
 	sortableListeners,
 	dragHandleRef,
 }: NoteItemProps) {
+	const { t } = useTranslation();
 	const [editContent, setEditContent] = useState("");
 	const [editType, setEditType] = useState<NoteType>("info");
 	const [editScope, setEditScope] = useState<NoteScope>(note.scope);
@@ -228,7 +230,9 @@ function NoteItem({
 		// 1. フロント事前文字数ガード
 		if (editContent.length > maxLen) {
 			toast.error(
-				`Failed to save: Content exceeds the ${maxLen.toLocaleString()} character limit.`,
+				t("toast.noteLengthExceeded", {
+					max: maxLen.toLocaleString(),
+				}),
 			);
 			return;
 		}
@@ -252,7 +256,7 @@ function NoteItem({
 	const handleCopyNote = () => {
 		navigator.clipboard.writeText(note.content);
 		setCopiedNoteId(note.id);
-		toast("Copied to clipboard");
+		toast(t("toast.copiedToClipboard"));
 		setTimeout(() => setCopiedNoteId(null), 2000);
 	};
 
@@ -321,7 +325,7 @@ function NoteItem({
 					<div className="sticky top-0 z-20 bg-base-bg flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20">
 						<div className="flex items-center justify-between w-full min-h-[40px] px-2">
 							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none opacity-0">
-								Editing note...
+								{t("item.editing")}
 							</div>
 							<div className="flex items-center gap-1.5">
 								<Button
@@ -330,7 +334,7 @@ function NoteItem({
 									icon={<X className="w-3.5 h-3.5" />}
 									onClick={cancelEditing}
 								>
-									Cancel
+									{t("item.cancel")}
 								</Button>
 								<Button
 									variant="default"
@@ -339,7 +343,7 @@ function NoteItem({
 									onClick={handleUpdate}
 									disabled={isUnchanged}
 								>
-									Save
+									{t("item.save")}
 								</Button>
 							</div>
 						</div>
@@ -359,9 +363,9 @@ function NoteItem({
 									}}
 									className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
 								>
-									<option value="exact">Page Note</option>
-									<option value="domain">Domain Note</option>
-									<option value="inbox">Inbox Note</option>
+									<option value="exact">{t("input.scopePage")}</option>
+									<option value="domain">{t("input.scopeDomain")}</option>
+									<option value="inbox">{t("input.scopeInbox")}</option>
 								</select>
 								<div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-[10px] select-none">
 									▼
@@ -471,7 +475,7 @@ function NoteItem({
 										{...sortableListeners}
 										style={{ touchAction: "none" }}
 										className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/40 hover:text-action transition-colors shrink-0"
-										title="Drag to reorder"
+										title={t("item.dragToReorder")}
 									>
 										<GripVertical className="size-4" aria-hidden="true" />
 									</div>
@@ -481,7 +485,7 @@ function NoteItem({
 									onClick={() => onToggleResolved(note.id, note.is_resolved)}
 									className={`group/icon relative flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer transition-all ${badgeBgColor} ${badgeTextColor} hover:opacity-80 shrink-0`}
 									title={
-										note.is_resolved ? "Mark as unresolved" : "Mark as resolved"
+										note.is_resolved ? t("item.unresolve") : t("item.resolve")
 									}
 								>
 									<div className="relative w-3.5 h-3.5 shrink-0">
@@ -525,7 +529,7 @@ function NoteItem({
 											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
 											icon={<Pencil className="size-4" />}
 											onClick={startEditing}
-											title="Edit"
+											title={t("item.edit")}
 										/>
 										<Button
 											variant="ghost"
@@ -539,7 +543,7 @@ function NoteItem({
 												)
 											}
 											onClick={handleCopyNote}
-											title="Copy note"
+											title={t("item.copy")}
 										/>
 										<Button
 											variant="destructive2"
@@ -547,7 +551,7 @@ function NoteItem({
 											className="size-7 p-0 rounded-full text-muted-foreground/60"
 											icon={<Trash2 className="w-3.5 h-3.5" />}
 											onClick={() => onDelete(note.id)}
-											title="Delete"
+											title={t("item.delete")}
 										/>
 									</div>
 								)}
@@ -565,8 +569,8 @@ function NoteItem({
 										onClick={() => onToggleFavorite(note)}
 										title={
 											note.is_favorite
-												? "Remove from favorites"
-												: "Add to favorites (shown across all pages)"
+												? t("item.unfavorite")
+												: t("item.favorite")
 										}
 									/>
 									<Button
@@ -579,11 +583,7 @@ function NoteItem({
 											/>
 										}
 										onClick={() => onTogglePinned(note)}
-										title={
-											note.is_pinned
-												? "Unpin note from top"
-												: "Pin note to top of this page"
-										}
+										title={note.is_pinned ? t("item.unpin") : t("item.pin")}
 									/>
 								</div>
 							</div>
@@ -600,7 +600,7 @@ function NoteItem({
 									className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action hover:bg-base-surface/80 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-base-border/50 bg-base-bg/90 shadow-sm"
 								>
 									<ChevronDown className="w-3.5 h-3.5 shrink-0 rotate-180" />
-									<span>Show less</span>
+									<span>{t("item.showLess")}</span>
 								</button>
 							</div>
 						)}
@@ -634,7 +634,7 @@ function NoteItem({
 											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-bg hover:bg-base-surface px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
 										>
 											<ChevronDown className="w-3.5 h-3.5 shrink-0" />
-											<span>Read more</span>
+											<span>{t("item.readMore")}</span>
 										</button>
 									</div>
 								</>
@@ -647,7 +647,7 @@ function NoteItem({
 							<span
 								className={`px-2 py-0.5 rounded-full border ${note.scope === "exact" ? "bg-base-bg border-base-border text-gray-500" : "bg-base-surface border-base-border text-muted-foreground"}`}
 							>
-								{note.scope === "exact" ? "Page" : "Domain"}
+								{note.scope === "exact" ? t("filter.page") : t("filter.domain")}
 							</span>
 							{note.url_pattern !==
 								(note.scope === "domain"

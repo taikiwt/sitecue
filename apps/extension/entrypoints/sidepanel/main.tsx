@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import "../../src/locales/i18n";
 import SidePanel from "../../src/SidePanel";
 import "../../src/index.css";
 

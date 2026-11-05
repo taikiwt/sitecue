@@ -7,6 +7,7 @@ import {
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface FilterBarProps {
 	filterType: "all" | "info" | "alert" | "idea";
@@ -35,6 +36,7 @@ export default function FilterBar({
 	setSelectedTag,
 	availableTags,
 }: FilterBarProps) {
+	const { t } = useTranslation();
 	const [isSearchOpen, setIsSearchOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 
@@ -69,7 +71,7 @@ export default function FilterBar({
 							: "text-muted-foreground hover:bg-base-surface"
 					}`}
 				>
-					Page
+					{t("filter.page")}
 				</button>
 				<button
 					type="button"
@@ -80,7 +82,7 @@ export default function FilterBar({
 							: "text-muted-foreground hover:bg-base-surface"
 					}`}
 				>
-					Domain
+					{t("filter.domain")}
 				</button>
 				<button
 					type="button"
@@ -91,7 +93,7 @@ export default function FilterBar({
 							: "text-muted-foreground hover:bg-base-surface"
 					}`}
 				>
-					Inbox
+					{t("filter.inbox")}
 				</button>
 			</div>
 
@@ -107,7 +109,7 @@ export default function FilterBar({
 								: "text-muted-foreground hover:text-action hover:bg-base-surface"
 						}`}
 					>
-						All
+						{t("filter.all")}
 					</button>
 					<button
 						type="button"
@@ -117,7 +119,7 @@ export default function FilterBar({
 								? "bg-note-info text-action-text shadow-sm"
 								: "text-muted-foreground hover:text-note-info hover:bg-base-surface"
 						}`}
-						title="Filter by Info"
+						title={t("filter.tooltipInfo")}
 					>
 						<Info className="size-4" />
 					</button>
@@ -129,7 +131,7 @@ export default function FilterBar({
 								? "bg-note-alert text-action-text shadow-sm"
 								: "text-muted-foreground hover:text-note-alert hover:bg-base-surface"
 						}`}
-						title="Filter by Alert"
+						title={t("filter.tooltipAlert")}
 					>
 						<AlertTriangle className="size-4" />
 					</button>
@@ -141,7 +143,7 @@ export default function FilterBar({
 								? "bg-note-idea text-action-text shadow-sm"
 								: "text-muted-foreground hover:text-note-idea hover:bg-base-surface"
 						}`}
-						title="Filter by Idea"
+						title={t("filter.tooltipIdea")}
 					>
 						<Lightbulb className="size-4" />
 					</button>
@@ -155,7 +157,7 @@ export default function FilterBar({
 						<input
 							ref={inputRef}
 							type="text"
-							placeholder="Search..."
+							placeholder={t("filter.searchPlaceholder")}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							className="w-full min-w-0 text-xs pl-1.5 bg-transparent border-none focus:outline-none placeholder:text-muted-foreground text-action h-full"
@@ -171,7 +173,7 @@ export default function FilterBar({
 									inputRef.current?.focus();
 								}}
 								className="absolute right-1 cursor-pointer p-1 text-muted-foreground hover:text-action transition-colors shrink-0"
-								title="Clear search"
+								title={t("filter.clearSearch")}
 							>
 								<X className="w-3 h-3" />
 							</button>
@@ -187,7 +189,7 @@ export default function FilterBar({
 								? "bg-action border-action text-action-text"
 								: "bg-base-surface border-base-border text-muted-foreground hover:bg-base-bg"
 						}`}
-						title="Show/Hide Resolved Notes"
+						title={t("filter.toggleResolved")}
 					>
 						<CheckSquare className="size-4" />
 					</button>

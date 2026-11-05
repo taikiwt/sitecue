@@ -1,0 +1,14 @@
+{
+	"extName": {
+		"message": "sitecue - Side Panel Note App for Websites & Quick Scratchpad",
+		"description": "Extension title"
+	},
+	"extDescription": {
+		"message": "A side panel note app for browsing. Keep URL-linked notes that appear automatically, plus a quick scratchpad for fast drafts.",
+		"description": "Extension short description"
+	},
+	"actionTitle": {
+		"message": "Open sitecue",
+		"description": "Toolbar action tooltip"
+	}
+}

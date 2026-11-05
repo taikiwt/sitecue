@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAuth } from "../hooks/useAuth";
 import { useAutoIndent } from "../hooks/useAutoIndent";
@@ -51,6 +52,7 @@ export default function QuickPanel({
 	onAddNote,
 	onAppendDiary,
 }: QuickPanelProps) {
+	const { t } = useTranslation();
 	const { authStatus } = useAuth();
 	const userId = authStatus.userId || "guest";
 	const noteStorageKey = `quick_note_text_${userId}`;
@@ -278,7 +280,7 @@ export default function QuickPanel({
 
 		if (!success) {
 			handleNoteTextChange(textToSave);
-			toast.error("Failed to send text");
+			toast.error(t("toast.sendTextFailed"));
 		}
 	};
 
@@ -298,7 +300,7 @@ export default function QuickPanel({
 
 		if (!success) {
 			handleNoteTextChange(textToSave);
-			toast.error("Failed to send text");
+			toast.error(t("toast.sendTextFailed"));
 		}
 	};
 
@@ -343,11 +345,11 @@ export default function QuickPanel({
 					<button
 						type="button"
 						onClick={() => toggleSection("note")}
-						title="Scratchpad for temporary notes (Markdown supported)"
+						title={t("quick.tabNoteTooltip")}
 						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "note" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 					>
 						<FileText aria-hidden="true" className="w-3.5 h-3.5" />
-						<span>Note</span>
+						<span>{t("quick.tabNote")}</span>
 						{activeSection === "note" ? (
 							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
 						) : (
@@ -359,11 +361,11 @@ export default function QuickPanel({
 					<button
 						type="button"
 						onClick={() => toggleSection("command")}
-						title="Draft and edit multi-line commands or code snippets"
+						title={t("quick.tabCommandTooltip")}
 						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "command" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 					>
 						<SquareTerminal aria-hidden="true" className="w-3.5 h-3.5" />
-						<span>Command</span>
+						<span>{t("quick.tabCommand")}</span>
 						{activeSection === "command" ? (
 							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
 						) : (
@@ -376,12 +378,12 @@ export default function QuickPanel({
 				<button
 					type="button"
 					onClick={() => toggleSection("links")}
-					title="Quick links for this domain"
+					title={t("quick.tabLinksTooltip")}
 					className={`cursor-pointer flex items-center gap-2 transition-colors ${activeSection === "links" ? "text-action" : "text-muted-foreground hover:text-action"}`}
 				>
 					<div className="flex items-center gap-1">
 						<LinkIcon aria-hidden="true" className="w-3.5 h-3.5" />
-						<span>Links</span>
+						<span>{t("quick.tabLinks")}</span>
 						{showNumberBadge && (
 							<span className="bg-base-surface text-muted-foreground px-1.5 rounded-full text-[10px] border border-base-border font-mono ml-1">
 								{links.length}
@@ -431,7 +433,7 @@ export default function QuickPanel({
 									size="sm"
 									variant="ghost"
 									onClick={() => handleNoteTextChange("")}
-									title="Clear scratchpad"
+									title={t("quick.clear")}
 									className="w-7 h-7 p-0 rounded-full"
 								/>
 								<Button
@@ -449,7 +451,7 @@ export default function QuickPanel({
 									size="sm"
 									variant="ghost"
 									onClick={handleCopyNote}
-									title="Copy text"
+									title={t("quick.copy")}
 									className="w-7 h-7 p-0 rounded-full"
 								/>
 							</div>
@@ -470,13 +472,13 @@ export default function QuickPanel({
 									onClick={toggleNoteViewMode}
 									title={
 										noteViewMode === "preview"
-											? "Exit preview"
-											: "Preview Markdown"
+											? t("quick.exitPreview")
+											: t("quick.preview")
 									}
 									aria-label={
 										noteViewMode === "preview"
-											? "Exit preview"
-											: "Preview Markdown"
+											? t("quick.exitPreview")
+											: t("quick.preview")
 									}
 									aria-pressed={noteViewMode === "preview"}
 									className={`w-7 h-7 p-0 rounded-full ${
@@ -497,10 +499,14 @@ export default function QuickPanel({
 									variant="ghost"
 									onClick={() => setIsNoteMaximized((prev) => !prev)}
 									title={
-										isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
+										isNoteMaximized
+											? t("quick.exitFullView")
+											: t("quick.maximize")
 									}
 									aria-label={
-										isNoteMaximized ? "Exit full view" : "Maximize Quick Note"
+										isNoteMaximized
+											? t("quick.exitFullView")
+											: t("quick.maximize")
 									}
 									className="w-7 h-7 p-0 rounded-full"
 								/>
@@ -526,12 +532,14 @@ export default function QuickPanel({
 								variant="outline"
 								title={
 									isNoteOverLimit
-										? `Exceeds Note limit (${maxNoteLength.toLocaleString()} chars)`
-										: "Save as Inbox Note"
+										? t("quick.exceedsNoteLimit", {
+												max: maxNoteLength.toLocaleString(),
+											})
+										: t("quick.saveToInbox")
 								}
 								className="text-muted-foreground hover:text-action"
 							>
-								Note
+								{t("quick.noteBtn")}
 							</Button>
 							<Button
 								disabled={!noteText.trim() || submitting || isDiaryOverLimit}
@@ -550,12 +558,14 @@ export default function QuickPanel({
 								variant="outline"
 								title={
 									isDiaryOverLimit
-										? `Exceeds Diary limit (${maxDiaryLength.toLocaleString()} chars)`
-										: "Append to Today's Diary"
+										? t("quick.exceedsDiaryLimit", {
+												max: maxDiaryLength.toLocaleString(),
+											})
+										: t("quick.appendToDiary")
 								}
 								className="text-muted-foreground hover:text-action"
 							>
-								Diary
+								{t("quick.diaryBtn")}
 							</Button>
 						</div>
 					</div>
@@ -589,7 +599,7 @@ export default function QuickPanel({
 										<MarkdownRenderer content={noteText} />
 									) : (
 										<span className="text-xs text-muted-foreground italic">
-											Nothing to preview.
+											{t("quick.nothingToPreview")}
 										</span>
 									)}
 								</div>
@@ -604,7 +614,7 @@ export default function QuickPanel({
 										}
 									}}
 									value={noteText}
-									placeholder="Temporary text scratchpad..."
+									placeholder={t("quick.placeholderNote")}
 									className="w-full resize-none overflow-hidden border-none p-0 pb-8 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6]"
 									minRows={isNoteMaximized ? 15 : 3}
 									onKeyDown={(e) => {
@@ -668,7 +678,7 @@ export default function QuickPanel({
 									size="sm"
 									variant="ghost"
 									onClick={() => handleCodeTextChange("")}
-									title="Clear command"
+									title={t("quick.clearCommand")}
 									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
 								/>
 								<Button
@@ -686,7 +696,7 @@ export default function QuickPanel({
 									size="sm"
 									variant="ghost"
 									onClick={handleCopyCode}
-									title="Copy code"
+									title={t("quick.copyCode")}
 									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
 								/>
 							</div>
@@ -709,10 +719,14 @@ export default function QuickPanel({
 									variant="ghost"
 									onClick={() => setIsCodeMaximized((prev) => !prev)}
 									title={
-										isCodeMaximized ? "Exit full view" : "Maximize Code View"
+										isCodeMaximized
+											? t("quick.exitFullView")
+											: t("quick.maximizeCode")
 									}
 									aria-label={
-										isCodeMaximized ? "Exit full view" : "Maximize Code View"
+										isCodeMaximized
+											? t("quick.exitFullView")
+											: t("quick.maximizeCode")
 									}
 									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
 								/>
@@ -761,7 +775,7 @@ export default function QuickPanel({
 						) : links.length === 0 ? (
 							!isAdding && (
 								<div className="text-center text-muted-foreground text-xs py-2 italic">
-									No links added yet.
+									{t("quick.noLinks")}
 								</div>
 							)
 						) : (
@@ -873,7 +887,7 @@ export default function QuickPanel({
 									autoFocus
 									type="text"
 									required
-									placeholder="URL"
+									placeholder={t("quick.urlPlaceholder")}
 									value={formUrl}
 									onChange={(e) => setFormUrl(e.target.value)}
 									className="w-full p-2 px-3.5 border border-base-border rounded-full bg-base-surface text-action text-xs focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-neutral-400"
@@ -881,7 +895,7 @@ export default function QuickPanel({
 								<input
 									type="text"
 									required
-									placeholder="Label"
+									placeholder={t("quick.labelPlaceholder")}
 									value={formLabel}
 									onChange={(e) => setFormLabel(e.target.value)}
 									className="w-full p-2 px-3.5 border border-base-border rounded-full bg-base-surface text-action text-xs focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-neutral-400"
@@ -894,7 +908,7 @@ export default function QuickPanel({
 											onChange={() => setFormType("related")}
 											className="accent-action"
 										/>
-										<span>Related</span>
+										<span>{t("quick.related")}</span>
 									</label>
 									<label className="flex items-center gap-1.5 cursor-pointer select-none">
 										<input
@@ -903,7 +917,7 @@ export default function QuickPanel({
 											onChange={() => setFormType("env")}
 											className="accent-action"
 										/>
-										<span>Env Switch</span>
+										<span>{t("quick.envSwitch")}</span>
 									</label>
 								</div>
 								<div className="flex justify-end gap-1.5 pt-1.5 border-t border-base-border/30">
@@ -916,7 +930,7 @@ export default function QuickPanel({
 											setEditingLink(null);
 										}}
 									>
-										Cancel
+										{t("quick.cancel")}
 									</Button>
 									<Button
 										disabled={linkSubmitting}
@@ -934,7 +948,7 @@ export default function QuickPanel({
 										variant="default"
 										type="submit"
 									>
-										{editingLink ? "Update" : "Add"}
+										{editingLink ? t("quick.update") : t("quick.add")}
 									</Button>
 								</div>
 							</form>
@@ -951,7 +965,7 @@ export default function QuickPanel({
 								className="cursor-pointer w-full text-left p-2 px-3 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40 mt-1"
 							>
 								<Plus aria-hidden="true" className="w-3.5 h-3.5" />
-								<span>Add Link</span>
+								<span>{t("quick.addLink")}</span>
 							</button>
 						)}
 					</div>
