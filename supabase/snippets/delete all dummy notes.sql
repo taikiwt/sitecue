@@ -1,1 +1,0 @@
-DELETE FROM public.sitecue_notes WHERE 'dummy' = ANY(tags);
