@@ -29,6 +29,13 @@ import NoteSkeleton from "./NoteSkeleton";
 
 const PAGE_SIZE = 20;
 
+export interface EditingDraft {
+	id: string;
+	content: string;
+	type: NoteType;
+	scope: NoteScope;
+}
+
 interface NoteListProps {
 	scope?: "exact" | "domain" | "inbox";
 	notes: Note[];
@@ -117,7 +124,14 @@ function NoteList({
 		onToggleFavoritesOpen?.(next);
 	}, [isFavoritesOpen, onToggleFavoritesOpen]);
 	const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+	const [editingDraft, setEditingDraft] = useState<EditingDraft | null>(null);
 	const [isEditDirty, setIsEditDirty] = useState(false);
+	const editingNoteIdRef = useRef<string | null>(null);
+
+	const handleDraftChange = useCallback((draft: EditingDraft | null) => {
+		if (draft && editingNoteIdRef.current !== draft.id) return;
+		setEditingDraft(draft);
+	}, []);
 	const [activeDragNote, setActiveDragNote] = useState<Note | null>(null);
 
 	const [resolvingNoteIds, setResolvingNoteIds] = useState<Set<string>>(
@@ -143,14 +157,30 @@ function NoteList({
 		return sortedAllNotes.filter((n) => !n.is_favorite && n.is_pinned);
 	}, [sortedAllNotes]);
 
+	const normalNotes = useMemo(() => {
+		return sortedAllNotes.filter((n) => !n.is_favorite && !n.is_pinned);
+	}, [sortedAllNotes]);
+
+	const currentNormalNoteIds = useMemo(() => {
+		return normalNotes.map((n) => n.id).join(",");
+	}, [normalNotes]);
+
 	const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
 	const observerRef = useRef<IntersectionObserver | null>(null);
+	const prevScopeRef = useRef(scope);
+	const prevNormalNoteIdsRef = useRef(currentNormalNoteIds);
 
-	// ノート配列の変更時に表示件数を20件にリセット
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset visibleLimit whenever notes reference changes
+	// 💡 visibleLimit の安全なリセット（スコープ切替または対象通常ノートID構成変更時のみリセット）
 	useEffect(() => {
-		setVisibleLimit(PAGE_SIZE);
-	}, [notes]);
+		if (
+			prevScopeRef.current !== scope ||
+			prevNormalNoteIdsRef.current !== currentNormalNoteIds
+		) {
+			prevScopeRef.current = scope;
+			prevNormalNoteIdsRef.current = currentNormalNoteIds;
+			setVisibleLimit(PAGE_SIZE);
+		}
+	}, [scope, currentNormalNoteIds]);
 
 	// スクロール監視と段階マウント（Callback Ref により DOM 出現時に確実にバインド、ドラッグ中はロック）
 	const setSentinelRef = useCallback(
@@ -186,10 +216,6 @@ function NoteList({
 		};
 	}, []);
 
-	const normalNotes = useMemo(() => {
-		return sortedAllNotes.filter((n) => !n.is_favorite && !n.is_pinned);
-	}, [sortedAllNotes]);
-
 	const displayedNormalNotes = useMemo(() => {
 		return normalNotes.slice(0, visibleLimit);
 	}, [normalNotes, visibleLimit]);
@@ -215,8 +241,13 @@ function NoteList({
 				const confirmLeave = window.confirm(t("item.confirmDiscard"));
 				if (!confirmLeave) return;
 			}
-			setEditingNoteId(id);
+			const nextId = id || null;
+			editingNoteIdRef.current = nextId;
+			setEditingNoteId(nextId);
 			setIsEditDirty(false);
+			if (!id) {
+				setEditingDraft(null);
+			}
 		},
 		[editingNoteId, isEditDirty, t],
 	);
@@ -390,6 +421,8 @@ function NoteList({
 							isEditing={note.id === editingNoteId}
 							onRequestEdit={handleRequestEdit}
 							onSetIsEditDirty={setIsEditDirty}
+							editingDraft={editingNoteId === note.id ? editingDraft : null}
+							onDraftChange={handleDraftChange}
 							onUpdate={onUpdate}
 							onDelete={onDelete}
 							onToggleResolved={handleToggleResolved}

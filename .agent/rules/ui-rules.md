@@ -34,3 +34,8 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
 ## 6. Stacking Context & Layer Hierarchy Rules
 - **カード内スタッキングコンテキスト階層規約:** ノートカードの `sticky` 固定ヘッダーは `z-20`、本文内のフローティングボタン（コードブロックコピー等）は `z-1` とし、スクロール時の要素突き抜けを物理排除すること。
 
+## 7. Dynamic Height & Infinite Scroll Pagination Rules
+- **`TextareaAutosize` トランジション禁止規約:** `TextareaAutosize` コンポーネントには動的高さ計算の遅延を防ぐため、高さに関する CSS トランジション（`transition-[height]`, `transition-all`）を付与してはならない。
+- **無限スクロール表示件数リセット規約:** 無限スクロールの表示件数（`visibleLimit`）は、アクティブスコープの切り替え時または対象スコープのデータ変更時のみリセットすること。
+
+

@@ -30,6 +30,32 @@ interface NoteInputProps {
 	textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
+const scrollToCaret = (el: HTMLTextAreaElement) => {
+	const scroll = () => {
+		const isNearBottom = el.selectionStart >= el.value.length - 2;
+		if (isNearBottom) {
+			el.scrollTop = el.scrollHeight;
+		} else {
+			const textBefore = el.value.slice(0, el.selectionStart);
+			const lineCount = textBefore.split("\n").length;
+			const lineHeight = 20;
+			const cursorY = lineCount * lineHeight;
+			if (cursorY > el.scrollTop + el.clientHeight) {
+				el.scrollTop = cursorY - el.clientHeight + lineHeight;
+			}
+		}
+	};
+
+	if (typeof requestAnimationFrame !== "undefined") {
+		requestAnimationFrame(() => {
+			scroll();
+			requestAnimationFrame(scroll); // Autosizeの高さ確定を確実に捕捉
+		});
+	} else {
+		setTimeout(scroll, 0);
+	}
+};
+
 export default function NoteInput({
 	userPlan,
 	totalNoteCount,
@@ -127,6 +153,26 @@ export default function NoteInput({
 		if (!success) {
 			setNewNote(pendingNoteRef.current);
 			toast.error(t("toast.sendTextFailed"));
+		}
+	};
+
+	const handleTextareaKeyDown = (
+		e: React.KeyboardEvent<HTMLTextAreaElement>,
+		canSubmit: boolean,
+		onSubmit: () => void,
+	) => {
+		if (e.nativeEvent.isComposing) return; // IME Guard
+		if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+			e.preventDefault();
+			if (canSubmit) {
+				onSubmit();
+			}
+			return;
+		}
+		const target = e.currentTarget;
+		handleMarkdownKeyDown(e);
+		if (e.key === "Enter") {
+			scrollToCaret(target);
 		}
 	};
 
@@ -312,19 +358,13 @@ export default function NoteInput({
 												? t("input.placeholderDomain")
 												: t("input.placeholderPage")
 									}
-									className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
+									className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
 									minRows={1}
-									onKeyDown={(e) => {
-										if (e.nativeEvent.isComposing) return; // IME Guard
-										if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-											e.preventDefault();
-											if (newNote.trim()) {
-												handleSubmit(e);
-											}
-										} else {
-											handleMarkdownKeyDown(e);
-										}
-									}}
+									onKeyDown={(e) =>
+										handleTextareaKeyDown(e, Boolean(newNote.trim()), () => {
+											void handleSubmit(e);
+										})
+									}
 									onPaste={handleMarkdownPaste}
 								/>
 								{isCharNearLimit && (
@@ -404,19 +444,13 @@ export default function NoteInput({
 								onFocus={() => setActiveType("diary")}
 								onChange={(e) => setDiaryText(e.target.value)}
 								placeholder={t("input.diaryPlaceholder")}
-								className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none transition-[height] duration-300 ease-out"
+								className="w-full resize-none border-none p-0 text-sm focus:outline-none bg-transparent text-neutral-900 focus:ring-0 placeholder:text-neutral-400 max-h-24 overflow-y-auto scrollbar-none"
 								minRows={1}
-								onKeyDown={(e) => {
-									if (e.nativeEvent.isComposing) return; // IME Guard
-									if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-										e.preventDefault();
-										if (diaryText.trim()) {
-											handleDiarySubmit();
-										}
-									} else {
-										handleMarkdownKeyDown(e);
-									}
-								}}
+								onKeyDown={(e) =>
+									handleTextareaKeyDown(e, Boolean(diaryText.trim()), () => {
+										void handleDiarySubmit();
+									})
+								}
 								onPaste={handleMarkdownPaste}
 							/>
 						</div>

@@ -431,4 +431,107 @@ describe("NoteInput Component - Markdown Assist Integration", () => {
 
 		expect(diaryTextarea.value).toBe("[]");
 	});
+
+	it("TextareaAutosizeにtransition-[height]クラスが付与されていないこと", () => {
+		render(
+			<NoteInput
+				userPlan="free"
+				totalNoteCount={10}
+				maxFreeNotes={500}
+				initialScope="exact"
+				initialType="info"
+				onAddNote={vi.fn().mockResolvedValue(true)}
+				onAppendDiary={vi.fn().mockResolvedValue(true)}
+				onClose={vi.fn()}
+			/>,
+		);
+
+		const noteTextarea = screen.getByPlaceholderText(/Add a cue to/i);
+		expect(noteTextarea.className).not.toContain("transition-[height]");
+
+		const diaryTextarea = screen.getByPlaceholderText(/Append log text/i);
+		expect(diaryTextarea.className).not.toContain("transition-[height]");
+	});
+
+	it("4〜5行以上の入力後にEnterキーを押下しても例外が発生せず、末尾付近でキャレット位置へスクロール追従すること", async () => {
+		const rafCallbacks: FrameRequestCallback[] = [];
+		const rafSpy = vi
+			.spyOn(window, "requestAnimationFrame")
+			.mockImplementation((cb) => {
+				rafCallbacks.push(cb);
+				return rafCallbacks.length;
+			});
+
+		try {
+			render(
+				<NoteInput
+					userPlan="free"
+					totalNoteCount={10}
+					maxFreeNotes={500}
+					initialScope="exact"
+					initialType="info"
+					onAddNote={vi.fn().mockResolvedValue(true)}
+					onAppendDiary={vi.fn().mockResolvedValue(true)}
+					onClose={vi.fn()}
+				/>,
+			);
+
+			const noteTextarea = screen.getByPlaceholderText(
+				/Add a cue to/i,
+			) as HTMLTextAreaElement;
+			const multilineNote = "line1\nline2\nline3\nline4\nline5";
+			fireEvent.focus(noteTextarea);
+			fireEvent.change(noteTextarea, { target: { value: multilineNote } });
+			noteTextarea.setSelectionRange(
+				multilineNote.length,
+				multilineNote.length,
+			);
+
+			Object.defineProperty(noteTextarea, "scrollHeight", {
+				configurable: true,
+				value: 140,
+			});
+			Object.defineProperty(noteTextarea, "clientHeight", {
+				configurable: true,
+				value: 96,
+			});
+			noteTextarea.scrollTop = 0;
+
+			fireEvent.keyDown(noteTextarea, { key: "Enter" });
+			while (rafCallbacks.length > 0) {
+				const cb = rafCallbacks.shift();
+				cb?.(performance.now());
+			}
+			expect(noteTextarea.scrollTop).toBe(140);
+
+			const diaryTextarea = screen.getByPlaceholderText(
+				/Append log text/i,
+			) as HTMLTextAreaElement;
+			fireEvent.focus(diaryTextarea);
+			fireEvent.change(diaryTextarea, { target: { value: multilineNote } });
+			diaryTextarea.setSelectionRange(
+				multilineNote.length,
+				multilineNote.length,
+			);
+
+			Object.defineProperty(diaryTextarea, "scrollHeight", {
+				configurable: true,
+				value: 140,
+			});
+			Object.defineProperty(diaryTextarea, "clientHeight", {
+				configurable: true,
+				value: 96,
+			});
+			diaryTextarea.scrollTop = 0;
+
+			fireEvent.keyDown(diaryTextarea, { key: "Enter" });
+			while (rafCallbacks.length > 0) {
+				const cb = rafCallbacks.shift();
+				cb?.(performance.now());
+			}
+			expect(diaryTextarea.scrollTop).toBe(140);
+		} finally {
+			rafSpy.mockRestore();
+		}
+	});
 });
