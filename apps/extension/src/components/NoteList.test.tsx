@@ -777,4 +777,153 @@ describe("NoteList Infinite Scroll Callback Ref Verification", () => {
 
 		window.IntersectionObserver = OriginalIntersectionObserver;
 	});
+
+	it("scopeがinboxの時、表示対象の通常ノートIDが変わらない限りvisibleLimitがリセットされないこと", () => {
+		let intersectCallback: IntersectionObserverCallback | null = null;
+		const OriginalIntersectionObserver = window.IntersectionObserver;
+		// biome-ignore lint/complexity/useArrowFunction: function required for constructor call via 'new'
+		window.IntersectionObserver = vi.fn().mockImplementation(function (cb) {
+			intersectCallback = cb;
+			return {
+				observe: vi.fn(),
+				disconnect: vi.fn(),
+				unobserve: vi.fn(),
+			};
+		}) as unknown as typeof IntersectionObserver;
+
+		const inboxNotes = Array.from({ length: 25 }, (_, i) => ({
+			id: `inbox-note-${i + 1}`,
+			content: `Inbox Note ${i + 1}`,
+			note_type: "info" as const,
+			scope: "inbox" as const,
+			url_pattern: "inbox",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: i + 1,
+			created_at: new Date(2026, 0, 1, 0, i).toISOString(),
+		})) as unknown as Note[];
+
+		const { rerender } = render(
+			<NoteList {...baseProps} notes={inboxNotes} scope="inbox" />,
+		);
+
+		// 初期表示は20件
+		expect(screen.getByText("Inbox Note 20")).toBeInTheDocument();
+		expect(screen.queryByText("Inbox Note 25")).not.toBeInTheDocument();
+
+		// スクロール交差で表示件数を40件へ拡張（25件目まで表示）
+		act(() => {
+			if (intersectCallback) {
+				intersectCallback(
+					[{ isIntersecting: true } as IntersectionObserverEntry],
+					{} as IntersectionObserver,
+				);
+			}
+		});
+		expect(screen.getByText("Inbox Note 25")).toBeInTheDocument();
+
+		// 別タブ移動をシミュレート（新配列参照・URL変更・お気に入り等のみでInbox通常ノートのID構成は同一）
+		const updatedNotes = [
+			...inboxNotes,
+			{
+				id: "fav-page-note",
+				content: "Favorite Page Note",
+				note_type: "info" as const,
+				scope: "exact" as const,
+				url_pattern: "example.com/new-page",
+				is_resolved: false,
+				is_pinned: false,
+				is_favorite: true,
+				is_expanded: false,
+				sort_order: 100,
+				created_at: new Date().toISOString(),
+			} as unknown as Note,
+		];
+
+		rerender(
+			<NoteList
+				{...baseProps}
+				currentFullUrl="https://example.com/new-page"
+				notes={updatedNotes}
+				scope="inbox"
+			/>,
+		);
+
+		// inboxの通常ノート一覧表示件数はリセットされず25件目まで維持される
+		expect(screen.getByText("Inbox Note 20")).toBeInTheDocument();
+		expect(screen.getByText("Inbox Note 25")).toBeInTheDocument();
+
+		window.IntersectionObserver = OriginalIntersectionObserver;
+	});
+
+	it("ページノート編集中に別タブへ遷移して戻った際、再マウント後も編集ドラフトが保持されること", () => {
+		const pageNote = {
+			id: "page-note-1",
+			content: "Original page note",
+			note_type: "info" as const,
+			scope: "exact" as const,
+			url_pattern: "example.com/page-a",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 1,
+			created_at: "2026-01-01T00:00:00.000Z",
+		} as unknown as Note;
+
+		const mockOnUpdate = vi.fn().mockResolvedValue(true);
+
+		const { rerender } = render(
+			<NoteList
+				{...baseProps}
+				currentFullUrl="https://example.com/page-a"
+				notes={[pageNote]}
+				onUpdate={mockOnUpdate}
+				scope="exact"
+			/>,
+		);
+
+		// 編集開始して内容を書き換える
+		fireEvent.click(screen.getByTitle("Edit"));
+		const textarea = screen.getByRole("textbox");
+		fireEvent.change(textarea, {
+			target: { value: "Edited draft before tab switch" },
+		});
+
+		// 別タブへ遷移（対象ノートがフィルタアウトされ NoteItem がアンマウントされる）
+		rerender(
+			<NoteList
+				{...baseProps}
+				currentFullUrl="https://example.com/page-b"
+				notes={[]}
+				onUpdate={mockOnUpdate}
+				scope="exact"
+			/>,
+		);
+		expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+
+		// 元のタブへ復帰（NoteItem が再マウントされる）
+		rerender(
+			<NoteList
+				{...baseProps}
+				currentFullUrl="https://example.com/page-a"
+				notes={[pageNote]}
+				onUpdate={mockOnUpdate}
+				scope="exact"
+			/>,
+		);
+
+		const restoredTextarea = screen.getByRole("textbox");
+		expect(restoredTextarea).toHaveValue("Edited draft before tab switch");
+
+		fireEvent.click(screen.getByRole("button", { name: /Save/i }));
+		expect(mockOnUpdate).toHaveBeenCalledWith(
+			"page-note-1",
+			"Edited draft before tab switch",
+			"info",
+			"exact",
+		);
+	});
 });

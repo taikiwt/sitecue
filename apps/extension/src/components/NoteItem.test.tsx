@@ -281,6 +281,34 @@ describe("NoteItem Component", () => {
 		}
 		window.ResizeObserver = OriginalResizeObserver;
 	});
+
+	it("再マウント時、親からeditingDraftが渡された場合はそのドラフトテキストが復元されること", () => {
+		const draft = {
+			id: "note-999",
+			content: "Draft content preserved across tabs",
+			type: "idea" as const,
+			scope: "exact" as const,
+		};
+		render(
+			<NoteItem
+				note={mockNote}
+				currentFullUrl="https://example.com/page"
+				isEditing={true}
+				editingDraft={draft}
+				onRequestEdit={vi.fn()}
+				onSetIsEditDirty={vi.fn()}
+				onUpdate={vi.fn()}
+				onDelete={vi.fn()}
+				onToggleResolved={vi.fn()}
+				onToggleFavorite={vi.fn()}
+				onTogglePinned={vi.fn()}
+				onToggleExpansion={vi.fn()}
+			/>,
+		);
+
+		const textarea = screen.getByRole("textbox");
+		expect(textarea).toHaveValue("Draft content preserved across tabs");
+	});
 });
 
 describe("Header - Lock Button & Title Settings Trigger", () => {

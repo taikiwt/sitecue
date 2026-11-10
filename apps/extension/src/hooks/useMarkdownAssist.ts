@@ -35,6 +35,15 @@ export function useMarkdownAssist() {
 				textarea.dispatchEvent(new Event("input", { bubbles: true }));
 			}
 			textarea.setSelectionRange(selectStart, selectEnd);
+
+			// 💡 改行挿入時、キャレット位置が見えるように追従スクロール
+			if (text.includes("\n") && typeof requestAnimationFrame !== "undefined") {
+				requestAnimationFrame(() => {
+					if (selectStart >= textarea.value.length - 5) {
+						textarea.scrollTop = textarea.scrollHeight;
+					}
+				});
+			}
 		};
 
 		// --- 1. Tabキーによるインデント補助 (スペース2つ) ---

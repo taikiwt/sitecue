@@ -40,7 +40,7 @@ const COLLAPSE_THRESHOLD = 160;
 const ANIM_STAGE1_DELAY = 300; // 前半：チェックマークだけを表示してカード形状を維持する時間
 const ANIM_STAGE2_DURATION = 200; // 後半：カードが物理的に縮んでスライドして消える時間
 
-interface NoteItemProps {
+export interface NoteItemProps {
 	note: Note;
 	currentFullUrl: string;
 	userPlan?: "free" | "pro" | "guest";
@@ -62,6 +62,20 @@ interface NoteItemProps {
 	isEditing: boolean;
 	onRequestEdit: (id: string) => void;
 	onSetIsEditDirty: (dirty: boolean) => void;
+	editingDraft?: {
+		id: string;
+		content: string;
+		type: NoteType;
+		scope: NoteScope;
+	} | null;
+	onDraftChange?: (
+		draft: {
+			id: string;
+			content: string;
+			type: NoteType;
+			scope: NoteScope;
+		} | null,
+	) => void;
 	isPreview?: boolean;
 	isResolving?: boolean;
 	sortableAttributes?: Record<string, unknown>;
@@ -83,6 +97,8 @@ function NoteItem({
 	isEditing,
 	onRequestEdit,
 	onSetIsEditDirty,
+	editingDraft,
+	onDraftChange,
 	isPreview = false,
 	isResolving = false,
 	sortableAttributes,
@@ -90,9 +106,19 @@ function NoteItem({
 	dragHandleRef,
 }: NoteItemProps) {
 	const { t } = useTranslation();
-	const [editContent, setEditContent] = useState("");
-	const [editType, setEditType] = useState<NoteType>("info");
-	const [editScope, setEditScope] = useState<NoteScope>(note.scope);
+	// 💡 ドラフトが親から提供されている場合は優先して初期化（タブ復帰時の復元）
+	const hasMatchingDraft = isEditing && editingDraft?.id === note.id;
+	const [editContent, setEditContent] = useState<string>(() =>
+		hasMatchingDraft ? (editingDraft?.content ?? "") : (note.content ?? ""),
+	);
+	const [editType, setEditType] = useState<NoteType>(() =>
+		hasMatchingDraft
+			? (editingDraft?.type ?? "info")
+			: note.note_type || "info",
+	);
+	const [editScope, setEditScope] = useState<NoteScope>(() =>
+		hasMatchingDraft ? (editingDraft?.scope ?? note.scope) : note.scope,
+	);
 	const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
 	const [isOverflowing, setIsOverflowing] = useState(() => {
 		return (note.content ?? "").length > 120;
@@ -204,12 +230,39 @@ function NoteItem({
 		};
 	}, [note.content, isPreview]);
 
+	const syncDraftState = (
+		nextContent: string,
+		nextType: NoteType,
+		nextScope: NoteScope,
+	) => {
+		const dirty =
+			nextContent !== note.content ||
+			nextScope !== note.scope ||
+			nextType !== (note.note_type || "info");
+		onSetIsEditDirty(dirty);
+		onDraftChange?.({
+			id: note.id,
+			content: nextContent,
+			type: nextType,
+			scope: nextScope,
+		});
+	};
+
 	const startEditing = () => {
 		onRequestEdit(note.id);
-		setEditContent(note.content);
-		setEditType(note.note_type || "info");
-		setEditScope(note.scope);
+		const initialContent = note.content ?? "";
+		const initialType = note.note_type || "info";
+		const initialScope = note.scope;
+		setEditContent(initialContent);
+		setEditType(initialType);
+		setEditScope(initialScope);
 		onSetIsEditDirty(false);
+		onDraftChange?.({
+			id: note.id,
+			content: initialContent,
+			type: initialType,
+			scope: initialScope,
+		});
 	};
 
 	const cancelEditing = () => {
@@ -218,6 +271,22 @@ function NoteItem({
 		setEditType("info");
 		setEditScope(note.scope);
 		onSetIsEditDirty(false);
+		onDraftChange?.(null);
+	};
+
+	const handleContentChange = (newContent: string) => {
+		setEditContent(newContent);
+		syncDraftState(newContent, editType, editScope);
+	};
+
+	const handleScopeChange = (newScope: NoteScope) => {
+		setEditScope(newScope);
+		syncDraftState(editContent, editType, newScope);
+	};
+
+	const handleTypeChange = (newType: NoteType) => {
+		setEditType(newType);
+		syncDraftState(editContent, newType, editScope);
 	};
 
 	const handleUpdate = async () => {
@@ -243,6 +312,7 @@ function NoteItem({
 		const currentEditScope = editScope;
 		onRequestEdit("");
 		onSetIsEditDirty(false);
+		onDraftChange?.(null);
 
 		// 3. 非同期でバックグラウンド保存を実行（エラーハンドリング・ロールバックは useNotes に委譲）
 		void onUpdate(
@@ -352,15 +422,9 @@ function NoteItem({
 							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
 								<select
 									value={editScope}
-									onChange={(e) => {
-										const newScope = e.target.value as NoteScope;
-										setEditScope(newScope);
-										onSetIsEditDirty(
-											editContent !== note.content ||
-												newScope !== note.scope ||
-												editType !== (note.note_type || "info"),
-										);
-									}}
+									onChange={(e) =>
+										handleScopeChange(e.target.value as NoteScope)
+									}
 									className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
 								>
 									<option value="exact">{t("input.scopePage")}</option>
@@ -375,14 +439,7 @@ function NoteItem({
 							<div className="flex p-1 rounded-full bg-base-surface border border-base-border/50 shrink-0 scale-85 origin-right">
 								<button
 									type="button"
-									onClick={() => {
-										setEditType("info");
-										onSetIsEditDirty(
-											editContent !== note.content ||
-												editScope !== note.scope ||
-												"info" !== (note.note_type || "info"),
-										);
-									}}
+									onClick={() => handleTypeChange("info")}
 									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ${
 										editType === "info"
 											? "bg-note-info text-action-text shadow-2xs"
@@ -394,14 +451,7 @@ function NoteItem({
 								</button>
 								<button
 									type="button"
-									onClick={() => {
-										setEditType("alert");
-										onSetIsEditDirty(
-											editContent !== note.content ||
-												editScope !== note.scope ||
-												"alert" !== (note.note_type || "info"),
-										);
-									}}
+									onClick={() => handleTypeChange("alert")}
 									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ml-0.5 ${
 										editType === "alert"
 											? "bg-note-alert text-action-text shadow-2xs"
@@ -413,14 +463,7 @@ function NoteItem({
 								</button>
 								<button
 									type="button"
-									onClick={() => {
-										setEditType("idea");
-										onSetIsEditDirty(
-											editContent !== note.content ||
-												editScope !== note.scope ||
-												"idea" !== (note.note_type || "info"),
-										);
-									}}
+									onClick={() => handleTypeChange("idea")}
 									className={`cursor-pointer flex items-center justify-center rounded-full size-6 transition-colors ml-0.5 ${
 										editType === "idea"
 											? "bg-note-idea text-action-text shadow-2xs"
@@ -437,15 +480,7 @@ function NoteItem({
 					<div className="flex-1 min-w-0 w-full px-2">
 						<TextareaAutosize
 							value={editContent}
-							onChange={(e) => {
-								const newContent = e.target.value;
-								setEditContent(newContent);
-								onSetIsEditDirty(
-									newContent !== note.content ||
-										editScope !== note.scope ||
-										editType !== (note.note_type || "info"),
-								);
-							}}
+							onChange={(e) => handleContentChange(e.target.value)}
 							className="w-full resize-none overflow-hidden scrollbar-none border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-800 antialiased font-['Hack'] font-mono leading-[1.6] tracking-[0.03em] focus:outline-none focus:ring-0"
 							autoFocus
 							onKeyDown={(e) => {
@@ -689,8 +724,15 @@ function arePropsEqual(prevProps: NoteItemProps, nextProps: NoteItemProps) {
 			prevNote.note_type === nextNote.note_type &&
 			prevNote.scope === nextNote.scope);
 
+	const isDraftEqual =
+		prevProps.editingDraft?.id === nextProps.editingDraft?.id &&
+		prevProps.editingDraft?.content === nextProps.editingDraft?.content &&
+		prevProps.editingDraft?.type === nextProps.editingDraft?.type &&
+		prevProps.editingDraft?.scope === nextProps.editingDraft?.scope;
+
 	return (
 		isNoteEqual &&
+		isDraftEqual &&
 		prevProps.currentFullUrl === nextProps.currentFullUrl &&
 		prevProps.isFavoriteList === nextProps.isFavoriteList &&
 		prevProps.isEditing === nextProps.isEditing &&
@@ -698,6 +740,7 @@ function arePropsEqual(prevProps: NoteItemProps, nextProps: NoteItemProps) {
 		prevProps.isPreview === nextProps.isPreview &&
 		prevProps.onRequestEdit === nextProps.onRequestEdit &&
 		prevProps.onSetIsEditDirty === nextProps.onSetIsEditDirty &&
+		prevProps.onDraftChange === nextProps.onDraftChange &&
 		prevProps.onUpdate === nextProps.onUpdate &&
 		prevProps.onDelete === nextProps.onDelete &&
 		prevProps.onToggleResolved === nextProps.onToggleResolved &&
