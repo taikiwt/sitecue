@@ -9,7 +9,11 @@
 		"db:stop": "supabase stop",
 		"stop": "supabase stop",
 		"repomix:app": "tree -I \"node_modules|.git|.next|dist|build|.turbo|coverage|public|migrations|snippets|test_output.txt\" > project-tree.txt && repomix -c repomix-app.config.json && rm project-tree.txt",
-		"repomix:ext": "tree -I \"node_modules|.git|.next|dist|build|.turbo|coverage|public|migrations|snippets|test_output.txt\" > project-tree.txt && repomix -c repomix-ext.config.json && rm project-tree.txt"
+		"repomix:ext": "tree -I \"node_modules|.git|.next|dist|build|.turbo|coverage|public|migrations|snippets|test_output.txt\" > project-tree.txt && repomix -c repomix-ext.config.json && rm project-tree.txt",
+		"pack": "./scripts/pack.sh",
+    "pack:ext": "./scripts/pack.sh ext",
+    "pack:app": "./scripts/pack.sh app",
+    "pack:api": "./scripts/pack.sh api"
 	},
 	"workspaces": [
 		"apps/*",
