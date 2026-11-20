@@ -33,7 +33,8 @@
 		"tooltipIdea": "Filter by Idea",
 		"searchPlaceholder": "Search...",
 		"clearSearch": "Clear search",
-		"toggleResolved": "Show/Hide Resolved Notes"
+		"toggleResolved": "Show/Hide Resolved Notes",
+		"toggleFilters": "Toggle filters and search"
 	},
 	"input": {
 		"closeInput": "Close input",
@@ -110,6 +111,7 @@
 		"exitPreview": "Exit preview",
 		"maximize": "Maximize Quick Note",
 		"maximizeCode": "Maximize Code View",
+		"maximizePanel": "Maximize Quick Panel",
 		"exitFullView": "Exit full view",
 		"noLinks": "No links added yet.",
 		"urlPlaceholder": "URL",

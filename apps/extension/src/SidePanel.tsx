@@ -11,15 +11,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import {
-	Check,
-	Copy,
-	Loader2,
-	Maximize2,
-	Minimize2,
-	Plus,
-	X,
-} from "lucide-react";
+import { Check, Copy, Loader2, Plus, X } from "lucide-react";
 import {
 	useCallback,
 	useDeferredValue,
@@ -44,6 +36,8 @@ import { useCurrentTab } from "./hooks/useCurrentTab";
 import type { NoteScope, NoteType } from "./hooks/useNotes";
 import { useNotes } from "./hooks/useNotes";
 import { useUserStats } from "./hooks/useUserStats";
+
+export type MaximizedPane = "none" | "quick" | "notes";
 
 const MAX_FREE_NOTES = 500;
 const SKELETON_HOLD_MS = 300;
@@ -184,7 +178,7 @@ function NotesUI({
 	// 💡 React Concurrent Rendering で全フィルター操作と重いリスト描画を一括非同期分離
 	const deferredFilterState = useDeferredValue(rawFilterState);
 
-	const [isNotesMaximized, setIsNotesMaximized] = useState(false);
+	const [maximizedPane, setMaximizedPane] = useState<MaximizedPane>("none");
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -636,19 +630,19 @@ function NotesUI({
 					return;
 				}
 
-				// 4. ノート一覧最大化中なら通常表示に復帰（フォーカスも安全に解放）
-				if (isNotesMaximized) {
+				// 4. 最大化中なら通常表示に復帰（フォーカスも安全に解放）
+				if (maximizedPane !== "none") {
 					if (document.activeElement instanceof HTMLElement) {
 						document.activeElement.blur();
 					}
-					setIsNotesMaximized(false);
+					setMaximizedPane("none");
 					return;
 				}
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isCopyMenuOpen, isInputModeOpen, isNotesMaximized]);
+	}, [isCopyMenuOpen, isInputModeOpen, maximizedPane]);
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -811,7 +805,7 @@ function NotesUI({
 	};
 
 	return (
-		<div className="w-full h-screen bg-base-surface grid grid-rows-[auto_auto_auto_auto_1fr] relative font-sans">
+		<div className="w-full h-screen bg-base-surface flex flex-col overflow-hidden relative font-sans">
 			<Toaster
 				position="top-center"
 				toastOptions={{
@@ -824,7 +818,7 @@ function NotesUI({
 					},
 				}}
 			/>
-			<div className={isNotesMaximized ? "hidden" : "contents"}>
+			{maximizedPane === "none" && (
 				<Header
 					url={effectiveTabInfo.url}
 					title={effectiveTabInfo.title}
@@ -839,150 +833,149 @@ function NotesUI({
 						setIsEditingDiary(false);
 					}}
 				/>
+			)}
 
+			{maximizedPane !== "notes" && (
 				<QuickPanel
 					currentDomain={effectiveDomain || null}
 					onAddNote={handleAddNote}
 					onAppendDiary={handleAppendDiary}
 					userPlan={userPlan}
+					isMaximized={maximizedPane === "quick"}
+					onToggleMaximize={() =>
+						setMaximizedPane((prev) => (prev === "quick" ? "none" : "quick"))
+					}
 				/>
+			)}
 
-				<FilterBar
-					filterType={filterType}
-					setFilterType={setFilterType}
-					showResolved={showResolved}
-					setShowResolved={setShowResolved}
-					viewScope={viewScope}
-					setViewScope={handleViewScopeChange}
-					searchQuery={searchQuery}
-					setSearchQuery={setSearchQuery}
-					selectedTag={selectedTag}
-					setSelectedTag={setSelectedTag}
-					availableTags={availableTags}
-				/>
-			</div>
-
-			{/* 🚀 等幅3カラム中央集権型アクションバー (グレー背景を白背景 bg-base-bg へ融和) */}
-			<div className="grid grid-cols-3 items-center px-4 py-2 bg-base-bg shrink-0 border-b border-base-border/40 shadow-xs">
-				{/* 左カラム：ノート一覧最大化ボタン */}
-				<div className="flex justify-start">
-					<button
-						type="button"
-						onClick={() => setIsNotesMaximized((prev) => !prev)}
-						className="cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 text-muted-foreground hover:text-action bg-base-surface hover:bg-base-border focus:outline-none focus-visible:outline-none"
-						title={
-							isNotesMaximized
-								? t("sidepanel.exitFullView")
-								: t("sidepanel.maximizeNotes")
+			{maximizedPane !== "quick" && (
+				<div className="flex-1 min-h-0 flex flex-col">
+					<FilterBar
+						filterType={filterType}
+						setFilterType={setFilterType}
+						showResolved={showResolved}
+						setShowResolved={setShowResolved}
+						viewScope={viewScope}
+						setViewScope={handleViewScopeChange}
+						searchQuery={searchQuery}
+						setSearchQuery={setSearchQuery}
+						selectedTag={selectedTag}
+						setSelectedTag={setSelectedTag}
+						availableTags={availableTags}
+						isMaximized={maximizedPane === "notes"}
+						onToggleMaximize={() =>
+							setMaximizedPane((prev) => (prev === "notes" ? "none" : "notes"))
 						}
-						aria-label={
-							isNotesMaximized
-								? t("sidepanel.exitFullView")
-								: t("sidepanel.maximizeNotes")
-						}
-					>
-						{isNotesMaximized ? (
-							<Minimize2 aria-hidden="true" className="w-3.5 h-3.5" />
-						) : (
-							<Maximize2 aria-hidden="true" className="w-3.5 h-3.5" />
-						)}
-					</button>
-				</div>
+					/>
 
-				{/* 一角カラム：「＋」ボタンを物理的中心に完全ロック */}
-				<div className="flex justify-center">
-					<button
-						type="button"
-						onClick={() => {
-							setIsInputModeOpen(true);
-							setTimeout(() => textareaRef.current?.focus(), 50);
-						}}
-						className="cursor-pointer w-9 h-9 rounded-full bg-action text-action-text shadow-md hover:bg-action-hover transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center border border-action-hover/10"
-						title={t("sidepanel.createNote")}
-					>
-						<Plus aria-hidden="true" className="w-4 h-4" />
-					</button>
-				</div>
+					{/* 🚀 等幅3カラム中央集権型アクションバー */}
+					<div className="grid grid-cols-3 items-center px-2.5 py-1.5 bg-base-surface shrink-0">
+						{/* 左カラム：スペーサー */}
+						<div />
 
-				{/* 右カラム：移設された一括コピーボタン (ドロップダウン) */}
-				<div className="flex justify-end relative" ref={menuRef}>
-					<button
-						type="button"
-						onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
-						className={`cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 ${
-							isCopied
-								? "text-note-info bg-note-info/10"
-								: isCopyMenuOpen
-									? "text-action bg-base-border"
-									: "text-muted-foreground bg-base-surface hover:text-action hover:bg-base-border"
-						}`}
-						title={
-							isCopied ? t("sidepanel.copied") : t("sidepanel.copyOptions")
-						}
-						aria-label={
-							isCopied ? t("sidepanel.copied") : t("sidepanel.openCopyMenuAria")
-						}
-					>
-						{isCopied ? (
-							<Check className="w-3.5 h-3.5" />
-						) : (
-							<Copy className="w-3.5 h-3.5" />
-						)}
-					</button>
-
-					{isCopyMenuOpen && (
-						<div className="absolute right-0 top-full mt-1 bg-base-surface border border-base-border rounded shadow-md z-40 py-1 min-w-[120px]">
+						{/* 中央カラム：「＋」ボタンを物理的中心に完全ロック */}
+						<div className="flex justify-center">
 							<button
 								type="button"
-								onClick={handleCopyText}
-								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+								onClick={() => {
+									setIsInputModeOpen(true);
+									setTimeout(() => textareaRef.current?.focus(), 50);
+								}}
+								className="cursor-pointer w-9 h-9 rounded-full bg-action text-action-text shadow-md hover:bg-action-hover transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center border border-action-hover/10"
+								title={t("sidepanel.createNote")}
 							>
-								{t("sidepanel.copyAsText")}
-							</button>
-							<button
-								type="button"
-								onClick={handleCopyJson}
-								className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
-							>
-								{t("sidepanel.copyAsJson")}
+								<Plus aria-hidden="true" className="w-4 h-4" />
 							</button>
 						</div>
-					)}
-				</div>
-			</div>
 
-			<div
-				ref={listContainerRef}
-				className="overflow-y-auto px-4 pb-4 pt-0 relative"
-			>
-				{/* 💡 スティッキー吸着時の上部隙間をゼロにしつつ、初期状態の窮屈さを防ぐ空気感スペーサー */}
-				<div className="h-2 shrink-0" aria-hidden="true" />
+						{/* 右カラム：一括コピーボタン (ドロップダウン) */}
+						<div className="flex justify-end relative" ref={menuRef}>
+							<button
+								type="button"
+								onClick={() => setIsCopyMenuOpen(!isCopyMenuOpen)}
+								className={`cursor-pointer flex items-center justify-center rounded-full transition-colors shrink-0 size-7 ${
+									isCopied
+										? "text-note-info bg-note-info/10"
+										: isCopyMenuOpen
+											? "text-action bg-base-border"
+											: "text-muted-foreground bg-base-bg border border-base-border/60 hover:text-action hover:bg-base-border"
+								}`}
+								title={
+									isCopied ? t("sidepanel.copied") : t("sidepanel.copyOptions")
+								}
+								aria-label={
+									isCopied
+										? t("sidepanel.copied")
+										: t("sidepanel.openCopyMenuAria")
+								}
+							>
+								{isCopied ? (
+									<Check aria-hidden="true" className="w-3.5 h-3.5" />
+								) : (
+									<Copy aria-hidden="true" className="w-3.5 h-3.5" />
+								)}
+							</button>
 
-				{isNotesLoading ? (
-					<div className="space-y-3 pt-2">
-						{["skel-1", "skel-2", "skel-3"].map((key) => (
-							<NoteSkeleton key={key} />
-						))}
+							{isCopyMenuOpen && (
+								<div className="absolute right-0 top-full mt-1 bg-base-surface border border-base-border rounded shadow-md z-40 py-1 min-w-[120px]">
+									<button
+										type="button"
+										onClick={handleCopyText}
+										className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+									>
+										{t("sidepanel.copyAsText")}
+									</button>
+									<button
+										type="button"
+										onClick={handleCopyJson}
+										className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+									>
+										{t("sidepanel.copyAsJson")}
+									</button>
+								</div>
+							)}
+						</div>
 					</div>
-				) : (
-					<NoteList
-						scope={deferredFilterState.viewScope}
-						notes={finalFilteredNotes}
-						loading={loading}
-						currentFullUrl={effectiveTabInfo.currentFullUrl}
-						onUpdate={updateNote}
-						onDelete={deleteNote}
-						onToggleResolved={toggleResolved}
-						onToggleFavorite={toggleFavorite}
-						onTogglePinned={togglePinned}
-						onUpdateNoteOrder={handleUpdateNoteOrder}
-						onToggleExpansion={toggleNoteExpansion}
-						showResolved={deferredFilterState.showResolved}
-						isFavoritesOpen={isFavoritesOpen}
-						onToggleFavoritesOpen={setIsFavoritesOpen}
-					/>
-				)}
-			</div>
+
+					<div
+						className={
+							maximizedPane === "notes"
+								? "flex-1 min-h-0 bg-base-bg flex flex-col overflow-hidden"
+								: "mx-2.5 mb-2.5 flex-1 min-h-0 rounded-2xl bg-base-bg border border-base-border shadow-2xs flex flex-col overflow-hidden"
+						}
+					>
+						<div
+							ref={listContainerRef}
+							className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 pt-3 relative"
+						>
+							{isNotesLoading ? (
+								<div className="space-y-3">
+									{["skel-1", "skel-2", "skel-3"].map((key) => (
+										<NoteSkeleton key={key} />
+									))}
+								</div>
+							) : (
+								<NoteList
+									scope={deferredFilterState.viewScope}
+									notes={finalFilteredNotes}
+									loading={loading}
+									currentFullUrl={effectiveTabInfo.currentFullUrl}
+									onUpdate={updateNote}
+									onDelete={deleteNote}
+									onToggleResolved={toggleResolved}
+									onToggleFavorite={toggleFavorite}
+									onTogglePinned={togglePinned}
+									onUpdateNoteOrder={handleUpdateNoteOrder}
+									onToggleExpansion={toggleNoteExpansion}
+									showResolved={deferredFilterState.showResolved}
+									isFavoritesOpen={isFavoritesOpen}
+									onToggleFavoritesOpen={setIsFavoritesOpen}
+								/>
+							)}
+						</div>
+					</div>
+				</div>
+			)}
 
 			{isInputModeOpen && (
 				<>

@@ -1,36 +1,34 @@
 import { SHARED_LIMITS } from "@sitecue/shared";
 import {
-	ArrowRightLeft,
 	Check,
 	ChevronDown,
 	ChevronRight,
 	Copy,
 	Eraser,
-	ExternalLink,
 	Eye,
 	FileText,
-	Link as LinkIcon,
 	Loader2,
-	Lock,
 	Maximize2,
 	Minimize2,
-	Pencil,
-	Plus,
 	Send,
 	SquareTerminal,
-	Trash2,
-	X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { useAuth } from "../hooks/useAuth";
 import { useAutoIndent } from "../hooks/useAutoIndent";
 import { useMarkdownAssist } from "../hooks/useMarkdownAssist";
-import { useQuickLinks } from "../hooks/useQuickLinks";
+import {
+	type QuickNoteViewMode,
+	type QuickPanelTab,
+	useQuickStorage,
+} from "../hooks/useQuickStorage";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { Button } from "./ui/button";
+
+export type { QuickNoteViewMode, QuickPanelTab };
 
 interface QuickPanelProps {
 	currentDomain: string | null;
@@ -41,57 +39,41 @@ interface QuickPanelProps {
 		type: "info" | "alert" | "idea",
 	) => Promise<boolean>;
 	onAppendDiary: (content: string) => Promise<boolean>;
+	isMaximized: boolean;
+	onToggleMaximize: () => void;
 }
-
-export type QuickPanelTab = "none" | "note" | "command" | "links";
-export type QuickNoteViewMode = "edit" | "preview";
 
 export default function QuickPanel({
 	currentDomain,
 	userPlan,
 	onAddNote,
 	onAppendDiary,
+	isMaximized,
+	onToggleMaximize,
 }: QuickPanelProps) {
 	const { t } = useTranslation();
 	const { authStatus } = useAuth();
 	const userId = authStatus.userId || "guest";
-	const noteStorageKey = `quick_note_text_${userId}`;
-	const codeStorageKey = `quick_code_text_${userId}`;
-	const viewModeStorageKey = `quick_note_view_mode_${userId}`;
 
-	const { links, loading, addLink, updateLink, deleteLink } =
-		useQuickLinks(currentDomain);
-	const [activeSection, setActiveSection] = useState<QuickPanelTab>("none");
+	const {
+		activeSection,
+		updateActiveSection,
+		noteText,
+		handleNoteTextChange,
+		flushNoteStorage,
+		codeText,
+		handleCodeTextChange,
+		flushCodeStorage,
+		noteViewMode,
+		toggleNoteViewMode,
+	} = useQuickStorage(userId);
 
-	// --- Note State ---
-	const [noteText, setNoteText] = useState("");
-	const [noteViewMode, setNoteViewMode] = useState<QuickNoteViewMode>("edit");
-	const [isNoteMaximized, setIsNoteMaximized] = useState(false);
 	const [noteCopied, setNoteCopied] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const [isSliding, setIsSliding] = useState(false);
-	const noteTextRef = useRef("");
-	const noteDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-	const isNoteStorageLoadedRef = useRef(false);
+	const [codeCopied, setCodeCopied] = useState(false);
 	const noteScrollContainerRef = useRef<HTMLDivElement>(null);
 	const noteTextareaRef = useRef<HTMLTextAreaElement>(null);
-
-	// --- Command State (Backward compatible with quick_code_text storage) ---
-	const [codeText, setCodeText] = useState("");
-	const [isCodeMaximized, setIsCodeMaximized] = useState(false);
-	const [codeCopied, setCodeCopied] = useState(false);
-	const codeTextRef = useRef("");
-	const codeDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-	const isCodeStorageLoadedRef = useRef(false);
-
-	// --- Links State ---
-	const [isAdding, setIsAdding] = useState(false);
-	// biome-ignore lint/suspicious/noExplicitAny: Match existing useQuickLinks type definition
-	const [editingLink, setEditingLink] = useState<any | null>(null);
-	const [formUrl, setFormUrl] = useState("");
-	const [formLabel, setFormLabel] = useState("");
-	const [formType, setFormType] = useState<"related" | "env">("related");
-	const [linkSubmitting, setLinkSubmitting] = useState(false);
 
 	const isPro = userPlan === "pro";
 	const maxNoteLength = isPro
@@ -108,146 +90,12 @@ export default function QuickPanel({
 		useMarkdownAssist();
 	const { onKeyDown: onCommandKeyDown } = useAutoIndent();
 
-	// 🛡️ Note Storage Flush
-	const flushNoteStorage = useCallback(() => {
-		if (!isNoteStorageLoadedRef.current) return;
-		if (noteDebounceTimerRef.current) {
-			clearTimeout(noteDebounceTimerRef.current);
-			noteDebounceTimerRef.current = null;
+	const toggleSection = (section: Exclude<QuickPanelTab, "none">) => {
+		const nextTab: QuickPanelTab = activeSection === section ? "none" : section;
+		updateActiveSection(nextTab);
+		if (nextTab === "none" && isMaximized) {
+			onToggleMaximize();
 		}
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ [noteStorageKey]: noteTextRef.current });
-		}
-	}, [noteStorageKey]);
-
-	// 🛡️ Command Storage Flush
-	const flushCodeStorage = useCallback(() => {
-		if (!isCodeStorageLoadedRef.current) return;
-		if (codeDebounceTimerRef.current) {
-			clearTimeout(codeDebounceTimerRef.current);
-			codeDebounceTimerRef.current = null;
-		}
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ [codeStorageKey]: codeTextRef.current });
-		}
-	}, [codeStorageKey]);
-
-	// Note 初期ロード & 復元
-	useEffect(() => {
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.get(noteStorageKey, (result) => {
-				const storedText = (result as Record<string, unknown>)[noteStorageKey];
-				if (typeof storedText === "string") {
-					setNoteText(storedText);
-					noteTextRef.current = storedText;
-				} else {
-					setNoteText("");
-					noteTextRef.current = "";
-				}
-				isNoteStorageLoadedRef.current = true;
-			});
-			chrome.storage.local.get(viewModeStorageKey, (result) => {
-				const storedMode = (result as Record<string, unknown>)[
-					viewModeStorageKey
-				];
-				if (storedMode === "preview" || storedMode === "edit") {
-					setNoteViewMode(storedMode);
-				}
-			});
-		}
-	}, [noteStorageKey, viewModeStorageKey]);
-
-	// Command 初期ロード & 復元
-	useEffect(() => {
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.get(codeStorageKey, (result) => {
-				const storedCode = (result as Record<string, unknown>)[codeStorageKey];
-				if (typeof storedCode === "string") {
-					setCodeText(storedCode);
-					codeTextRef.current = storedCode;
-				} else {
-					setCodeText("");
-					codeTextRef.current = "";
-				}
-				isCodeStorageLoadedRef.current = true;
-			});
-		}
-	}, [codeStorageKey]);
-
-	// 入力ハンドラ: Note
-	const handleNoteTextChange = (val: string) => {
-		if (!isNoteStorageLoadedRef.current) return;
-		setNoteText(val);
-		noteTextRef.current = val;
-
-		if (noteDebounceTimerRef.current) {
-			clearTimeout(noteDebounceTimerRef.current);
-		}
-		noteDebounceTimerRef.current = setTimeout(() => {
-			if (typeof chrome !== "undefined" && chrome.storage?.local) {
-				chrome.storage.local.set({ [noteStorageKey]: val });
-			}
-			noteDebounceTimerRef.current = null;
-		}, 300);
-	};
-
-	// 入力ハンドラ: Command
-	const handleCodeTextChange = (val: string) => {
-		if (!isCodeStorageLoadedRef.current) return;
-		setCodeText(val);
-		codeTextRef.current = val;
-
-		if (codeDebounceTimerRef.current) {
-			clearTimeout(codeDebounceTimerRef.current);
-		}
-		codeDebounceTimerRef.current = setTimeout(() => {
-			if (typeof chrome !== "undefined" && chrome.storage?.local) {
-				chrome.storage.local.set({ [codeStorageKey]: val });
-			}
-			codeDebounceTimerRef.current = null;
-		}, 300);
-	};
-
-	// ViewMode 切替と永続化
-	const toggleNoteViewMode = () => {
-		const nextMode: QuickNoteViewMode =
-			noteViewMode === "edit" ? "preview" : "edit";
-		setNoteViewMode(nextMode);
-		if (typeof chrome !== "undefined" && chrome.storage?.local) {
-			chrome.storage.local.set({ [viewModeStorageKey]: nextMode });
-		}
-	};
-
-	// クリーンアップ & 防壁
-	useEffect(() => {
-		const handlePageHide = () => {
-			flushNoteStorage();
-			flushCodeStorage();
-		};
-		window.addEventListener("pagehide", handlePageHide);
-		return () => {
-			window.removeEventListener("pagehide", handlePageHide);
-			flushNoteStorage();
-			flushCodeStorage();
-		};
-	}, [flushNoteStorage, flushCodeStorage]);
-
-	// Zen Escape
-	useEffect(() => {
-		if (!isNoteMaximized && !isCodeMaximized) return;
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape") {
-				if (e.isComposing) return;
-				setIsNoteMaximized(false);
-				setIsCodeMaximized(false);
-			}
-		};
-		window.addEventListener("keydown", handleKeyDown);
-		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isNoteMaximized, isCodeMaximized]);
-
-	const toggleSection = (section: QuickPanelTab) => {
-		setActiveSection((prev) => (prev === section ? "none" : section));
 	};
 
 	const handleCopyNote = async () => {
@@ -304,49 +152,31 @@ export default function QuickPanel({
 		}
 	};
 
-	const handleLinkClick = (
-		e: React.MouseEvent,
-		// biome-ignore lint/suspicious/noExplicitAny: Match existing hook type
-		link: any,
-	) => {
-		if (link.type === "env" && typeof chrome !== "undefined" && chrome.tabs) {
-			e.preventDefault();
-			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-				const currentTab = tabs[0];
-				if (currentTab?.id && currentTab.url) {
-					try {
-						const currentUrlObj = new URL(currentTab.url);
-						const targetOrigin = new URL(link.target_url).origin;
-						const newUrl =
-							targetOrigin +
-							currentUrlObj.pathname +
-							currentUrlObj.search +
-							currentUrlObj.hash;
-						chrome.tabs.update(currentTab.id, { url: newUrl });
-					} catch {
-						window.open(link.target_url, "_blank");
-					}
-				}
-			});
-		}
-	};
-
-	const showFavicons = links.length > 0 && links.length < 5;
-	const showNumberBadge = links.length >= 5;
-
 	return (
 		<div
-			className={`border-b border-base-border bg-base-bg w-full font-sans flex flex-col min-h-0 ${!currentDomain ? "hidden" : ""}`}
+			className={`${
+				isMaximized
+					? "flex-1 min-h-0 m-0 rounded-none bg-base-bg flex flex-col font-sans"
+					: "mx-2.5 mt-2.5 rounded-2xl bg-base-bg border border-base-border shadow-2xs flex flex-col min-h-0 font-sans"
+			} ${!currentDomain ? "hidden" : ""}`}
 		>
-			{/* 🚀 3連カプセルヘッダー: [ Note ] [ Command ] --------- [ Links (n) ] */}
-			<div className="flex items-center justify-between p-3 py-2 text-xs font-semibold select-none border-b border-base-border/10 shrink-0">
-				<div className="flex items-center gap-3">
-					{/* Note Tab */}
+			{/* 1段目：タブ＆器の操作バー（通常時・最大化時ともに常時表示） */}
+			<div
+				className={`flex items-center justify-between px-3 py-2 text-xs font-semibold select-none shrink-0 ${
+					activeSection !== "none" ? "border-b border-base-border/30" : ""
+				}`}
+			>
+				<div className="flex items-center gap-1.5 min-w-0">
+					{/* Note（主役） */}
 					<button
 						type="button"
 						onClick={() => toggleSection("note")}
 						title={t("quick.tabNoteTooltip")}
-						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "note" ? "text-action" : "text-muted-foreground hover:text-action"}`}
+						className={`cursor-pointer flex items-center gap-1.5 rounded-full px-3 py-1 shrink-0 ${
+							activeSection === "note"
+								? "bg-action text-action-text shadow-2xs"
+								: "bg-transparent text-muted-foreground hover:text-action hover:bg-base-surface"
+						}`}
 					>
 						<FileText aria-hidden="true" className="w-3.5 h-3.5" />
 						<span>{t("quick.tabNote")}</span>
@@ -357,12 +187,16 @@ export default function QuickPanel({
 						)}
 					</button>
 
-					{/* Command Tab */}
+					{/* Command（サブ） */}
 					<button
 						type="button"
 						onClick={() => toggleSection("command")}
 						title={t("quick.tabCommandTooltip")}
-						className={`cursor-pointer flex items-center gap-1 transition-colors ${activeSection === "command" ? "text-action" : "text-muted-foreground hover:text-action"}`}
+						className={`cursor-pointer flex items-center gap-1.5 rounded-full px-2.5 py-1 shrink-0 ${
+							activeSection === "command"
+								? "bg-action text-action-text shadow-2xs"
+								: "bg-transparent text-muted-foreground hover:text-action hover:bg-base-surface"
+						}`}
 					>
 						<SquareTerminal aria-hidden="true" className="w-3.5 h-3.5" />
 						<span>{t("quick.tabCommand")}</span>
@@ -374,146 +208,93 @@ export default function QuickPanel({
 					</button>
 				</div>
 
-				{/* Quick Links Tab */}
-				<button
-					type="button"
-					onClick={() => toggleSection("links")}
-					title={t("quick.tabLinksTooltip")}
-					className={`cursor-pointer flex items-center gap-2 transition-colors ${activeSection === "links" ? "text-action" : "text-muted-foreground hover:text-action"}`}
-				>
-					<div className="flex items-center gap-1">
-						<LinkIcon aria-hidden="true" className="w-3.5 h-3.5" />
-						<span>{t("quick.tabLinks")}</span>
-						{showNumberBadge && (
-							<span className="bg-base-surface text-muted-foreground px-1.5 rounded-full text-[10px] border border-base-border font-mono ml-1">
-								{links.length}
-							</span>
+				{/* 右側（器の操作・右端統一） */}
+				{activeSection !== "none" && (
+					<div className="flex items-center gap-1 shrink-0">
+						{activeSection === "note" && (
+							<Button
+								icon={<Eye className="size-4" aria-hidden="true" />}
+								size="sm"
+								variant="ghost"
+								onClick={toggleNoteViewMode}
+								title={
+									noteViewMode === "preview"
+										? t("quick.exitPreview")
+										: t("quick.preview")
+								}
+								aria-label={
+									noteViewMode === "preview"
+										? t("quick.exitPreview")
+										: t("quick.preview")
+								}
+								aria-pressed={noteViewMode === "preview"}
+								className={`size-7 p-0 rounded-full ${
+									noteViewMode === "preview"
+										? "bg-action text-action-text hover:bg-action-hover"
+										: ""
+								}`}
+							/>
 						)}
+						<Button
+							icon={
+								isMaximized ? (
+									<Minimize2 aria-hidden="true" className="size-4" />
+								) : (
+									<Maximize2 aria-hidden="true" className="size-4" />
+								)
+							}
+							size="sm"
+							variant="ghost"
+							onClick={onToggleMaximize}
+							title={
+								isMaximized ? t("quick.exitFullView") : t("quick.maximizePanel")
+							}
+							aria-label={
+								isMaximized ? t("quick.exitFullView") : t("quick.maximizePanel")
+							}
+							className="size-7 p-0 rounded-full"
+						/>
 					</div>
-					<div className="flex items-center gap-1">
-						{showFavicons &&
-							links
-								.filter((l) => l.type === "related")
-								.slice(0, 4)
-								.map((link) => (
-									<img
-										key={link.id}
-										src={`https://www.google.com/s2/favicons?domain=${new URL(link.target_url).hostname}`}
-										alt=""
-										className="w-3 h-3 rounded-sm shrink-0"
-									/>
-								))}
-						{activeSection === "links" ? (
-							<ChevronDown aria-hidden="true" className="w-3.5 h-3.5" />
-						) : (
-							<ChevronRight aria-hidden="true" className="w-3.5 h-3.5" />
-						)}
-					</div>
-				</button>
+				)}
 			</div>
 
 			{/* --- Note 画面 --- */}
 			{activeSection === "note" && (
 				<div
-					className={
-						isNoteMaximized
-							? "fixed inset-0 z-50 bg-base-bg p-3 flex flex-col h-screen h-[100dvh] animate-fadeIn"
-							: "px-3 py-2.5 flex flex-col gap-2.5 animate-fadeIn bg-base-bg shrink-0"
-					}
+					className={`flex flex-col min-h-0 ${isMaximized ? "flex-1" : "pb-2.5"}`}
 				>
-					{/* ツールバー (3ゾーン分離: 編集操作系 | 状態・表示系 | 送信アクション系) */}
-					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-base-border/30 pb-2">
-						{/* 左側: 編集操作系 + 中央: 状態・表示系 */}
-						<div className="flex items-center">
-							{/* [左側: 編集操作系] */}
-							<div className="flex items-center gap-1">
-								<Button
-									disabled={!noteText}
-									icon={<Eraser className="size-4" aria-hidden="true" />}
-									size="sm"
-									variant="ghost"
-									onClick={() => handleNoteTextChange("")}
-									title={t("quick.clear")}
-									className="w-7 h-7 p-0 rounded-full"
-								/>
-								<Button
-									disabled={!noteText}
-									icon={
-										noteCopied ? (
-											<Check
-												className="size-4 text-success"
-												aria-hidden="true"
-											/>
-										) : (
-											<Copy className="size-4" aria-hidden="true" />
-										)
-									}
-									size="sm"
-									variant="ghost"
-									onClick={handleCopyNote}
-									title={t("quick.copy")}
-									className="w-7 h-7 p-0 rounded-full"
-								/>
-							</div>
-
-							{/* (Divider) */}
-							<div
-								className="h-4 w-px bg-base-border/60 mx-1 shrink-0"
-								aria-hidden="true"
+					{/* テキスト操作バー */}
+					<div className="shrink-0 border-b border-base-border/30 px-3 py-2 flex items-center justify-between gap-2">
+						<div className="flex items-center gap-1">
+							<Button
+								disabled={!noteText}
+								icon={<Eraser className="size-4" aria-hidden="true" />}
+								size="sm"
+								variant="ghost"
+								onClick={() => handleNoteTextChange("")}
+								title={t("quick.clear")}
+								className="size-7 p-0 rounded-full"
 							/>
-
-							{/* [中央: 状態・表示系] */}
-							<div className="flex items-center gap-1">
-								{/* 状態明示型プレビュートグル */}
-								<Button
-									icon={<Eye className="size-4" aria-hidden="true" />}
-									size="sm"
-									variant="ghost"
-									onClick={toggleNoteViewMode}
-									title={
-										noteViewMode === "preview"
-											? t("quick.exitPreview")
-											: t("quick.preview")
-									}
-									aria-label={
-										noteViewMode === "preview"
-											? t("quick.exitPreview")
-											: t("quick.preview")
-									}
-									aria-pressed={noteViewMode === "preview"}
-									className={`w-7 h-7 p-0 rounded-full ${
-										noteViewMode === "preview"
-											? "bg-action text-action-text hover:bg-action-hover"
-											: ""
-									}`}
-								/>
-								<Button
-									icon={
-										isNoteMaximized ? (
-											<Minimize2 aria-hidden="true" className="size-4" />
-										) : (
-											<Maximize2 aria-hidden="true" className="size-4" />
-										)
-									}
-									size="sm"
-									variant="ghost"
-									onClick={() => setIsNoteMaximized((prev) => !prev)}
-									title={
-										isNoteMaximized
-											? t("quick.exitFullView")
-											: t("quick.maximize")
-									}
-									aria-label={
-										isNoteMaximized
-											? t("quick.exitFullView")
-											: t("quick.maximize")
-									}
-									className="w-7 h-7 p-0 rounded-full"
-								/>
-							</div>
+							<Button
+								disabled={!noteText}
+								icon={
+									noteCopied ? (
+										<Check
+											className="size-4 text-note-info"
+											aria-hidden="true"
+										/>
+									) : (
+										<Copy className="size-4" aria-hidden="true" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={handleCopyNote}
+								title={t("quick.copy")}
+								className="size-7 p-0 rounded-full"
+							/>
 						</div>
 
-						{/* [右側: 送信アクション系] */}
 						<div className="flex items-center gap-1.5">
 							<Button
 								disabled={!noteText.trim() || submitting || isNoteOverLimit}
@@ -570,7 +351,7 @@ export default function QuickPanel({
 						</div>
 					</div>
 
-					{/* Note エディタ / プレビュー領域 */}
+					{/* エディタ / プレビュー領域 */}
 					{/* biome-ignore lint/a11y/useKeyWithClickEvents: focus delegation to inner textarea */}
 					{/* biome-ignore lint/a11y/noStaticElementInteractions: focus delegation to inner textarea */}
 					<div
@@ -581,9 +362,9 @@ export default function QuickPanel({
 							}
 						}}
 						className={
-							isNoteMaximized
-								? "w-full min-w-0 pt-1 flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] overscroll-contain cursor-text"
-								: "w-full min-w-0 pt-1 max-h-[30vh] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto"
+							isMaximized
+								? "w-full min-w-0 px-3 pt-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] overscroll-contain cursor-text"
+								: "w-full min-w-0 px-3 pt-2 max-h-[30vh] overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto cursor-text"
 						}
 					>
 						<div
@@ -615,11 +396,10 @@ export default function QuickPanel({
 									}}
 									value={noteText}
 									placeholder={t("quick.placeholderNote")}
-									className="w-full resize-none overflow-hidden border-none p-0 pb-8 text-sm bg-base-bg text-neutral-900 focus:outline-none focus:ring-0 placeholder:text-neutral-400 font-['Hack'] font-mono leading-[1.6]"
-									minRows={isNoteMaximized ? 15 : 3}
+									className="w-full resize-none overflow-hidden border-none p-0 pb-2 text-sm bg-base-bg text-action focus:outline-none focus:ring-0 placeholder:text-muted-foreground font-['Hack'] font-mono leading-[1.6]"
+									minRows={isMaximized ? 15 : 2}
 									onKeyDown={(e) => {
 										if (e.nativeEvent.isComposing) return;
-										// 末尾行でのEnter改行時にスクロール追従を発火
 										if (
 											e.key === "Enter" &&
 											!e.ctrlKey &&
@@ -644,7 +424,6 @@ export default function QuickPanel({
 									onPaste={(e) => {
 										onNotePaste(e);
 										const target = e.currentTarget;
-										// 💡 ペースト完了後の次Tickで scrollTop をゼロリセットし、input イベントで高さを再評価
 										setTimeout(() => {
 											target.scrollTop = 0;
 											target.dispatchEvent(
@@ -659,90 +438,53 @@ export default function QuickPanel({
 				</div>
 			)}
 
-			{/* --- Command 専用ターミナル画面 --- */}
+			{/* --- Command 専用ターミナル画面（インセット型ダークコンソール） --- */}
 			{activeSection === "command" && (
 				<div
-					className={
-						isCodeMaximized
-							? "fixed inset-0 z-50 bg-neutral-900 p-3 flex flex-col h-screen h-[100dvh] animate-fadeIn"
-							: "px-3 py-2.5 flex flex-col gap-2 animate-fadeIn bg-neutral-900 shrink-0 text-neutral-100"
-					}
+					className={`mx-2.5 mb-2.5 rounded-xl bg-neutral-900 text-neutral-100 flex flex-col min-h-0 ${
+						isMaximized ? "flex-1 mt-2.5" : "mt-2"
+					}`}
 				>
-					{/* 操作バー: [Eraser] [Copy] | (Divider) [Maximize/Minimize] ----------- COMMAND / CODE */}
-					<div className="flex justify-between items-center gap-2 shrink-0 border-b border-neutral-800 pb-2">
-						<div className="flex items-center">
-							<div className="flex items-center gap-1">
-								<Button
-									disabled={!codeText}
-									icon={<Eraser className="size-4" aria-hidden="true" />}
-									size="sm"
-									variant="ghost"
-									onClick={() => handleCodeTextChange("")}
-									title={t("quick.clearCommand")}
-									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-								/>
-								<Button
-									disabled={!codeText}
-									icon={
-										codeCopied ? (
-											<Check
-												className="size-4 text-note-info"
-												aria-hidden="true"
-											/>
-										) : (
-											<Copy className="size-4" aria-hidden="true" />
-										)
-									}
-									size="sm"
-									variant="ghost"
-									onClick={handleCopyCode}
-									title={t("quick.copyCode")}
-									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-								/>
-							</div>
-
-							<div
-								className="h-4 w-px bg-neutral-800 mx-1 shrink-0"
-								aria-hidden="true"
+					<div className="px-3 py-2 border-b border-neutral-800 flex items-center justify-between shrink-0">
+						<div className="flex items-center gap-1">
+							<Button
+								disabled={!codeText}
+								icon={<Eraser className="size-4" aria-hidden="true" />}
+								size="sm"
+								variant="ghost"
+								onClick={() => handleCodeTextChange("")}
+								title={t("quick.clearCommand")}
+								className="size-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
 							/>
-
-							<div className="flex items-center gap-1">
-								<Button
-									icon={
-										isCodeMaximized ? (
-											<Minimize2 aria-hidden="true" className="size-4" />
-										) : (
-											<Maximize2 aria-hidden="true" className="size-4" />
-										)
-									}
-									size="sm"
-									variant="ghost"
-									onClick={() => setIsCodeMaximized((prev) => !prev)}
-									title={
-										isCodeMaximized
-											? t("quick.exitFullView")
-											: t("quick.maximizeCode")
-									}
-									aria-label={
-										isCodeMaximized
-											? t("quick.exitFullView")
-											: t("quick.maximizeCode")
-									}
-									className="w-7 h-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
-								/>
-							</div>
+							<Button
+								disabled={!codeText}
+								icon={
+									codeCopied ? (
+										<Check
+											className="size-4 text-note-info"
+											aria-hidden="true"
+										/>
+									) : (
+										<Copy className="size-4" aria-hidden="true" />
+									)
+								}
+								size="sm"
+								variant="ghost"
+								onClick={handleCopyCode}
+								title={t("quick.copyCode")}
+								className="size-7 p-0 rounded-full text-neutral-400 hover:text-neutral-100 hover:bg-neutral-800"
+							/>
 						</div>
 						<div className="text-[10px] font-['Hack'] font-mono text-neutral-400 uppercase tracking-wider px-1">
 							COMMAND / CODE
 						</div>
 					</div>
 
-					{/* 直接編集ターミナルコンソール (オートインデント有効化) */}
 					<div
 						className={
-							isCodeMaximized
-								? "w-full pt-1 flex-1 min-h-0 overflow-y-auto overscroll-contain"
-								: "w-full pt-1 max-h-[30vh] overflow-y-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto"
+							isMaximized
+								? "px-3 py-2 flex-1 min-h-0 overflow-y-auto overscroll-contain"
+								: "px-3 py-2 max-h-[30vh] overflow-y-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden overscroll-auto"
 						}
 					>
 						<TextareaAutosize
@@ -750,224 +492,13 @@ export default function QuickPanel({
 							onBlur={flushCodeStorage}
 							value={codeText}
 							placeholder="$ docker run -it --rm ..."
-							className={`w-full resize-none overflow-hidden border-none p-0 text-xs bg-neutral-900 text-neutral-100 focus:outline-none focus:ring-0 placeholder:text-neutral-500 font-['Hack'] font-mono leading-[1.6] transition-[height] duration-300 ease-out ${
-								isCodeMaximized ? "min-h-full" : ""
+							className={`w-full resize-none overflow-hidden border-none p-0 text-xs bg-neutral-900 text-neutral-100 focus:outline-none focus:ring-0 placeholder:text-neutral-500 font-['Hack'] font-mono leading-[1.6] ${
+								isMaximized ? "min-h-full" : ""
 							}`}
-							minRows={isCodeMaximized ? 10 : 3}
+							minRows={isMaximized ? 10 : 3}
 							spellCheck={false}
 							onKeyDown={onCommandKeyDown}
 						/>
-					</div>
-				</div>
-			)}
-
-			{/* --- Links 画面 --- */}
-			{activeSection === "links" && (
-				<div className="pb-3 px-3 animate-fadeIn bg-base-bg overflow-y-auto max-h-[40vh] scrollbar-none shrink-0">
-					<div className="space-y-1">
-						{loading ? (
-							<div className="flex justify-center py-2">
-								<Loader2
-									aria-hidden="true"
-									className="w-4 h-4 animate-spin text-muted-foreground"
-								/>
-							</div>
-						) : links.length === 0 ? (
-							!isAdding && (
-								<div className="text-center text-muted-foreground text-xs py-2 italic">
-									{t("quick.noLinks")}
-								</div>
-							)
-						) : (
-							links.map((link) => {
-								const isIncoming = link.domain !== currentDomain;
-								return (
-									<div
-										key={link.id}
-										className="group flex items-center justify-between p-1 hover:bg-base-bg rounded-xl transition-colors text-sm"
-									>
-										<a
-											href={link.target_url}
-											target={link.type === "related" ? "_blank" : undefined}
-											rel={
-												link.type === "related"
-													? "noopener noreferrer"
-													: undefined
-											}
-											onClick={(e) => handleLinkClick(e, link)}
-											className="flex items-center gap-2 flex-1 min-w-0"
-											title={link.target_url}
-										>
-											{link.type === "related" ? (
-												<img
-													src={`https://www.google.com/s2/favicons?domain=${new URL(link.target_url).hostname}`}
-													alt=""
-													className="w-4 h-4 rounded-sm shrink-0"
-												/>
-											) : (
-												<ArrowRightLeft
-													aria-hidden="true"
-													className="w-4 h-4 text-action shrink-0"
-												/>
-											)}
-											<span className="truncate text-action">{link.label}</span>
-											{link.type === "related" && (
-												<ExternalLink
-													aria-hidden="true"
-													className="w-3 h-3 text-muted-foreground shrink-0"
-												/>
-											)}
-											{link.type === "env" && (
-												<span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-1 shrink-0 border border-base-border px-1.5 rounded-full bg-base-surface">
-													ENV
-													{isIncoming && (
-														<Lock aria-hidden="true" className="w-3 h-3" />
-													)}
-												</span>
-											)}
-										</a>
-										{!isIncoming && (
-											<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-												<button
-													type="button"
-													onClick={() => {
-														setEditingLink(link);
-														setFormUrl(link.target_url);
-														setFormLabel(link.label);
-														setFormType(link.type);
-														setIsAdding(true);
-													}}
-													className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-base-surface rounded-full transition-colors"
-												>
-													<Pencil aria-hidden="true" className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													onClick={() => deleteLink(link.id)}
-													className="cursor-pointer p-1 text-muted-foreground hover:text-note-alert hover:bg-note-alert/10 rounded-full transition-colors"
-												>
-													<Trash2 aria-hidden="true" className="w-3.5 h-3.5" />
-												</button>
-											</div>
-										)}
-									</div>
-								);
-							})
-						)}
-
-						{isAdding ? (
-							<form
-								onSubmit={async (e) => {
-									e.preventDefault();
-									if (!formUrl.trim() || !formLabel.trim()) return;
-									setLinkSubmitting(true);
-									if (editingLink) {
-										await updateLink(editingLink.id, {
-											label: formLabel,
-											target_url: formUrl,
-											type: formType,
-										});
-									} else {
-										await addLink({
-											label: formLabel,
-											target_url: formUrl,
-											type: formType,
-										});
-									}
-									setIsAdding(false);
-									setEditingLink(null);
-									setFormUrl("");
-									setFormLabel("");
-									setLinkSubmitting(false);
-								}}
-								className="mt-2 text-xs border border-base-border rounded-2xl p-3 bg-base-bg flex flex-col gap-2.5 shadow-2xs"
-							>
-								<input
-									// biome-ignore lint/a11y/noAutofocus: intentional UX
-									autoFocus
-									type="text"
-									required
-									placeholder={t("quick.urlPlaceholder")}
-									value={formUrl}
-									onChange={(e) => setFormUrl(e.target.value)}
-									className="w-full p-2 px-3.5 border border-base-border rounded-full bg-base-surface text-action text-xs focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-neutral-400"
-								/>
-								<input
-									type="text"
-									required
-									placeholder={t("quick.labelPlaceholder")}
-									value={formLabel}
-									onChange={(e) => setFormLabel(e.target.value)}
-									className="w-full p-2 px-3.5 border border-base-border rounded-full bg-base-surface text-action text-xs focus:outline-none focus:ring-1 focus:ring-action/30 placeholder:text-neutral-400"
-								/>
-								<div className="flex gap-3 px-1 text-muted-foreground">
-									<label className="flex items-center gap-1.5 cursor-pointer select-none">
-										<input
-											type="radio"
-											checked={formType === "related"}
-											onChange={() => setFormType("related")}
-											className="accent-action"
-										/>
-										<span>{t("quick.related")}</span>
-									</label>
-									<label className="flex items-center gap-1.5 cursor-pointer select-none">
-										<input
-											type="radio"
-											checked={formType === "env"}
-											onChange={() => setFormType("env")}
-											className="accent-action"
-										/>
-										<span>{t("quick.envSwitch")}</span>
-									</label>
-								</div>
-								<div className="flex justify-end gap-1.5 pt-1.5 border-t border-base-border/30">
-									<Button
-										icon={<X aria-hidden="true" className="w-3.5 h-3.5" />}
-										size="xs"
-										variant="ghost"
-										onClick={() => {
-											setIsAdding(false);
-											setEditingLink(null);
-										}}
-									>
-										{t("quick.cancel")}
-									</Button>
-									<Button
-										disabled={linkSubmitting}
-										icon={
-											linkSubmitting ? (
-												<Loader2
-													aria-hidden="true"
-													className="w-3.5 h-3.5 animate-spin"
-												/>
-											) : (
-												<Check aria-hidden="true" className="w-3.5 h-3.5" />
-											)
-										}
-										size="xs"
-										variant="default"
-										type="submit"
-									>
-										{editingLink ? t("quick.update") : t("quick.add")}
-									</Button>
-								</div>
-							</form>
-						) : (
-							<button
-								type="button"
-								onClick={() => {
-									setEditingLink(null);
-									setFormUrl("");
-									setFormLabel("");
-									setFormType("related");
-									setIsAdding(true);
-								}}
-								className="cursor-pointer w-full text-left p-2 px-3 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40 mt-1"
-							>
-								<Plus aria-hidden="true" className="w-3.5 h-3.5" />
-								<span>{t("quick.addLink")}</span>
-							</button>
-						)}
 					</div>
 				</div>
 			)}

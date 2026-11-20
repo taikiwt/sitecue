@@ -35,6 +35,9 @@ description: Chrome拡張機能（WXT/Manifest V3）、OAuth認証、ゲスト�
 - **可視性連動サイズ測定規約 (ResizeObserver Collapsible Rule):** アコーディオンやタブ等で初期非表示（`display: none`）になり得るカードのテキスト溢れ・省略判定（`isOverflowing`）は、初期マウント時の一発測定（`scrollHeight`）に依存せず、`ResizeObserver` を用いて要素が可視化された瞬間のサイズ変化に自動追従させること。
 - **URLロックコンテキスト分離規約 (Context Lock Isolation Rule):** サイドパネル内でURL固定（Lock）が有効化されている場合、タブ切り替え（`onActivated`）やURL更新（`onUpdated`）イベントによる下位コンポーネントへのコンテキスト更新を遮断し、ロック中のURL・ドメイン・タイトルを唯一のSSOTとして分配すること。
 - **ノート保存0ms楽観的更新規約 (Optimistic Note Save Rule):** ノート編集（`updateNote`）の保存処理は、フロント側での文字数制限事前ガードを通過後、通信の完了を待たずに直ちにローカルStateを更新して編集モードを閉じ、非同期で永続化およびエラー時ロールバックを行うこと。
+- **QuickPanel 開閉状態永続化規約:** `QuickPanel` の初期表示状態（ストレージ未保存時）は `"note"` オープンとし、ユーザーのタブ選択・開閉状態（`"none" | "note" | "command"`）を `quick_panel_tab_${userId}` キーで `chrome.storage.local` に永続化すること。
+- **エリア単位最大化規約 (Pane-Level Maximization Rule):** サイドパネル内の最大化は `maximizedPane: "none" | "quick" | "notes"` の単一ステートで管理し、対象エリアのコンテナ全体（タブバーやスコープバーを含む）を全画面展開すること。最大化中もエリア内のタブ切替やフィルタ操作が可能でなければならない。
+- **ドメイン設定・QuickLinks 統合規約:** ドメインに紐づくDB設定リソース（ドメインラベル・カラーおよび `sitecue_links`）は `Header` の展開パネル内へ集約し、`QuickPanel` にはローカルストレージ完結の一時作業機能（`Note` / `Command`）のみを配置すること。
 
 
 

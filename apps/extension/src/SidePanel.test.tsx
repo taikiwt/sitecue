@@ -137,10 +137,10 @@ vi.mock("./hooks/useNotes", () => ({
 }));
 
 describe("SidePanel Component", () => {
-	it("グリッドレイアウトが正しく適用されていること", () => {
+	it("フレックスレイアウトが正しく適用されていること", () => {
 		const { container } = render(<SidePanel />);
-		const mainDiv = container.querySelector(".grid");
-		expect(mainDiv).toHaveClass("grid-rows-[auto_auto_auto_auto_1fr]");
+		const mainDiv = container.firstChild;
+		expect(mainDiv).toHaveClass("flex", "flex-col", "overflow-hidden");
 	});
 
 	it("フィルターの切り替えで表示されるノートが連動して変わること", async () => {
@@ -149,7 +149,8 @@ describe("SidePanel Component", () => {
 		// デフォルトは Exact スコープ
 		expect(screen.getByText("Exact Note")).toBeInTheDocument();
 
-		// Info フィルターをクリック
+		// フィルタパネルを展開して Info フィルターをクリック
+		fireEvent.click(screen.getByTitle("Toggle filters and search"));
 		const infoFilterButton = screen.getByTitle("Filter by Info");
 		fireEvent.click(infoFilterButton);
 
@@ -163,6 +164,7 @@ describe("SidePanel Component", () => {
 	it("検索入力で表示されるノートが連動して変わること", async () => {
 		render(<SidePanel />);
 
+		fireEvent.click(screen.getByTitle("Toggle filters and search"));
 		const searchInput = screen.getByPlaceholderText("Search...");
 		fireEvent.change(searchInput, { target: { value: "Exact" } });
 
@@ -357,11 +359,14 @@ describe("SidePanel Component", () => {
 });
 
 describe("SidePanel - Zen Notes Mode", () => {
-	it("アクションバー左端の最大化ボタンをクリックすると上部シェルが非表示になり、縮小ボタンまたはEscapeで復帰すること", () => {
+	it("FilterBar右端の最大化ボタンをクリックするとHeaderとQuickPanelが非表示になり、スコープタブは維持され、縮小ボタンまたはEscapeで復帰すること", () => {
 		render(<SidePanel />);
 
-		// 初期状態: ヘッダーやフィルターバーの要素が存在する
-		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+		// 初期状態: Header と QuickPanel が存在する
+		expect(screen.getByTitle("Open diary")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("Temporary text scratchpad..."),
+		).toBeInTheDocument();
 
 		const maximizeBtn = screen.getByTitle("Maximize notes view");
 		expect(maximizeBtn).toBeInTheDocument();
@@ -369,10 +374,16 @@ describe("SidePanel - Zen Notes Mode", () => {
 		// 最大化を実行
 		fireEvent.click(maximizeBtn);
 
-		// 上部シェルを包括するラッパーに hidden クラスが付与されていること
-		const searchInput = screen.getByPlaceholderText("Search...");
-		const wrapper = searchInput.closest(".hidden");
-		expect(wrapper).toHaveClass("hidden");
+		// Header と QuickPanel が非表示になり、FilterBar のスコープタブは維持されること
+		expect(screen.queryByTitle("Open diary")).not.toBeInTheDocument();
+		expect(
+			screen.queryByPlaceholderText("Temporary text scratchpad..."),
+		).not.toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /^Page$/ })).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /^Domain$/ }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /^Inbox$/ })).toBeInTheDocument();
 
 		// ボタンのタイトルが縮小モードに変わっていること
 		const exitBtn = screen.getByTitle("Exit full view");
@@ -382,7 +393,10 @@ describe("SidePanel - Zen Notes Mode", () => {
 		fireEvent.keyDown(window, { key: "Escape" });
 
 		expect(screen.getByTitle("Maximize notes view")).toBeInTheDocument();
-		expect(wrapper).not.toHaveClass("hidden");
+		expect(screen.getByTitle("Open diary")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("Temporary text scratchpad..."),
+		).toBeInTheDocument();
 	});
 
 	it("最大化中に新規ノートモーダルが開いている場合、Escapeキーはモーダルを優先して閉じ、最大化は維持されること", () => {
@@ -428,6 +442,36 @@ describe("SidePanel - Zen Notes Mode", () => {
 		// 3. Escapeキーを押下 -> 最大化は解除されず Exit full view のままであること
 		fireEvent.keyDown(window, { key: "Escape" });
 		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+	});
+});
+
+describe("SidePanel - Zen Quick Panel Mode", () => {
+	it("QuickPanel右上の最大化ボタンをクリックするとHeaderとノート一覧エリアが非表示になり、QuickPanelのタブバーとエディタが維持され、Escapeキーで復帰すること", () => {
+		render(<SidePanel />);
+
+		const maximizeQuickBtn = screen.getByTitle("Maximize Quick Panel");
+		fireEvent.click(maximizeQuickBtn);
+
+		// Header とノート一覧エリアが非表示になること
+		expect(screen.queryByTitle("Open diary")).not.toBeInTheDocument();
+		expect(
+			screen.queryByRole("button", { name: /^Page$/ }),
+		).not.toBeInTheDocument();
+		expect(screen.queryByText("Exact Note")).not.toBeInTheDocument();
+
+		// QuickPanel のタブバー（Note / Command）とエディタが維持されること
+		expect(screen.getAllByText("Note")[0]).toBeInTheDocument();
+		expect(screen.getByText("Command")).toBeInTheDocument();
+		expect(
+			screen.getByPlaceholderText("Temporary text scratchpad..."),
+		).toBeInTheDocument();
+		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+
+		// Escapeキーで通常表示に復帰すること
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.getByTitle("Open diary")).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: /^Page$/ })).toBeInTheDocument();
+		expect(screen.getByTitle("Maximize Quick Panel")).toBeInTheDocument();
 	});
 });
 
