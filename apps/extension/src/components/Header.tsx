@@ -1,9 +1,11 @@
 import type { Session } from "@supabase/supabase-js";
 import {
 	CalendarDays,
+	ChevronDown,
 	CircleOff,
 	ExternalLink,
 	Glasses,
+	Link as LinkIcon,
 	Lock,
 	LogOut,
 	Unlock,
@@ -12,8 +14,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { AuthStatus } from "../hooks/useAuth";
+import { useQuickLinks } from "../hooks/useQuickLinks";
 import { type SupportedLanguage, setUserLanguage } from "../locales/i18n";
 import { localClient, supabase } from "../supabaseClient";
+import QuickLinksSection, { type QuickLinkItem } from "./QuickLinksSection";
 
 interface HeaderProps {
 	url: string;
@@ -64,6 +68,14 @@ export default function Header({
 	const [saving, setSaving] = useState(false);
 	const [isProfileOpen, setIsProfileOpen] = useState(false);
 	const profileMenuRef = useRef<HTMLDivElement>(null);
+
+	const { links, loading, addLink, updateLink, deleteLink } =
+		useQuickLinks(domain);
+	const showFavicons = links.length > 0 && links.length < 5;
+	const showNumberBadge = links.length >= 5;
+	const relatedFavicons = (links as QuickLinkItem[])
+		.filter((l) => l.type === "related")
+		.slice(0, 4);
 
 	const { t, i18n } = useTranslation();
 	const currentLang: SupportedLanguage = i18n.language.startsWith("ja")
@@ -174,7 +186,7 @@ export default function Header({
 			style={{
 				borderColor: isLocked ? colorHex || undefined : undefined,
 			}}
-			className={`p-2 bg-base-surface border-b sticky top-0 z-50 w-full min-w-0 transition-colors ${
+			className={`mx-2.5 mt-2.5 rounded-2xl bg-base-bg border shadow-2xs shrink-0 px-3 py-2.5 sticky top-0 z-50 min-w-0 transition-colors ${
 				isLocked && !colorHex ? "border-action" : "border-base-border"
 			}`}
 		>
@@ -223,13 +235,56 @@ export default function Header({
 						{settings?.label && (
 							<button
 								type="button"
-								onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+								onClick={() => setIsSettingsOpen((prev) => !prev)}
 								className="text-[10px] bg-action text-action-text px-1.5 py-0.5 rounded border border-base-border font-mono shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
 								title={t("header.editSettingsTooltip")}
 							>
 								{settings.label}
 							</button>
 						)}
+
+						{/* クイックリンク＆ドメイン設定開閉ピルボタン（常時表示） */}
+						<button
+							type="button"
+							onClick={() => setIsSettingsOpen((prev) => !prev)}
+							aria-expanded={isSettingsOpen}
+							className={`flex items-center gap-1 shrink-0 cursor-pointer rounded-full px-1.5 py-0.5 border transition-colors ${
+								isSettingsOpen
+									? "bg-base-surface text-action border-base-border shadow-2xs"
+									: "bg-base-bg text-muted-foreground border-base-border/70 hover:text-action hover:border-base-border"
+							}`}
+							title={`${t("quick.tabLinksTooltip")} / ${t("header.editSettingsTooltip")}`}
+						>
+							<LinkIcon className="w-3 h-3 shrink-0" aria-hidden="true" />
+							{showFavicons &&
+								relatedFavicons.map((link) => {
+									let hostname = "";
+									try {
+										hostname = new URL(link.target_url).hostname;
+									} catch {
+										hostname = "";
+									}
+									return hostname ? (
+										<img
+											key={link.id}
+											src={`https://www.google.com/s2/favicons?domain=${hostname}`}
+											alt=""
+											className="w-3 h-3 rounded-sm shrink-0"
+										/>
+									) : null;
+								})}
+							{showNumberBadge && (
+								<span className="text-[10px] font-mono leading-none">
+									{links.length}
+								</span>
+							)}
+							<ChevronDown
+								className={`w-3 h-3 shrink-0 transition-transform duration-200 ${
+									isSettingsOpen ? "rotate-180" : ""
+								}`}
+								aria-hidden="true"
+							/>
+						</button>
 					</h1>
 					<p
 						className={`text-xs truncate w-full transition-colors ${
@@ -381,8 +436,16 @@ export default function Header({
 
 			{/* Settings Popup / Expandable Area */}
 			{isSettingsOpen && (
-				<div className="mt-3 pt-3 border-t border-base-border animate-in slide-in-from-top-2 fade-in duration-200">
-					<div className="space-y-3">
+				<div className="mt-3 pt-3 border-t border-base-border animate-in slide-in-from-top-2 fade-in duration-200 max-h-[65vh] overflow-y-auto">
+					<QuickLinksSection
+						currentDomain={domain}
+						links={links as QuickLinkItem[]}
+						loading={loading}
+						onAddLink={addLink}
+						onUpdateLink={updateLink}
+						onDeleteLink={deleteLink}
+					/>
+					<div className="space-y-3 border-t border-base-border pt-3">
 						<div>
 							<label
 								htmlFor="label-input"

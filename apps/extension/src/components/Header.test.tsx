@@ -33,6 +33,29 @@ describe("Header Component - Guest Mode UI & Disclaimer", () => {
 		expect(guestButton.className).toContain("bg-neutral-800");
 	});
 
+	it("リンクが0件の時でも Header 内にクイックリンク＆ドメイン設定ボタンが常時表示され、クリックで展開パネルが開くこと", () => {
+		const authStatus: AuthStatus = {
+			mode: "guest",
+			session: null,
+			userId: "guest-user",
+		};
+
+		render(<Header {...defaultProps} authStatus={authStatus} />);
+
+		const toggleBtn = screen.getByTitle(
+			"Quick links for this domain / Click to edit label & color",
+		);
+		expect(toggleBtn).toBeInTheDocument();
+		expect(toggleBtn).toHaveAttribute("aria-expanded", "false");
+
+		fireEvent.click(toggleBtn);
+		expect(toggleBtn).toHaveAttribute("aria-expanded", "true");
+		expect(screen.getByText("Label")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: /add link/i }),
+		).toBeInTheDocument();
+	});
+
 	it("Guestボタンクリックで展開されるメニュー内に、言語切替・リスク警告・免責事項・サインイン昇格ボタンが正しく存在すること", () => {
 		const authStatus: AuthStatus = {
 			mode: "guest",

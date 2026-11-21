@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import FilterBar from "./FilterBar";
 
@@ -15,27 +15,46 @@ describe("FilterBar Component", () => {
 		selectedTag: null,
 		setSelectedTag: vi.fn(),
 		availableTags: ["tag1", "tag2"],
+		isMaximized: false,
+		onToggleMaximize: vi.fn(),
 	};
 
-	it("検索クエリがある場合、クリアボタンが表示されること", () => {
+	it("初期状態ではフィルタパネルが閉じており、フィルタトグルボタン押下で展開すること", () => {
+		render(<FilterBar {...mockProps} />);
+		expect(screen.queryByPlaceholderText("Search...")).not.toBeInTheDocument();
+
+		const toggleBtn = screen.getByTitle("Toggle filters and search");
+		fireEvent.click(toggleBtn);
+
+		expect(screen.getByPlaceholderText("Search...")).toBeInTheDocument();
+		expect(screen.getByText("#tag1")).toBeInTheDocument();
+	});
+
+	it("検索クエリやフィルタ条件が有効な場合、パネルが閉じていてもフィルタトグルボタンがハイライト（bg-action）され、インジケータドットが表示されること", () => {
 		const { rerender } = render(
 			<FilterBar {...mockProps} searchQuery="test" />,
 		);
+		const toggleBtn = screen.getByTitle("Toggle filters and search");
+		expect(toggleBtn).toHaveClass("bg-action");
+		expect(toggleBtn.querySelector(".bg-note-info")).toBeInTheDocument();
+
+		// トグルを開くとインジケータドットが消え、クリアボタンも確認できること
+		fireEvent.click(toggleBtn);
+		expect(toggleBtn.querySelector(".bg-note-info")).not.toBeInTheDocument();
 		expect(screen.getByTitle("Clear search")).toBeInTheDocument();
 
 		rerender(<FilterBar {...mockProps} searchQuery="" />);
 		expect(screen.queryByTitle("Clear search")).not.toBeInTheDocument();
 	});
 
-	it("タグのフェードマスクが正しくレンダリングされること", () => {
-		render(<FilterBar {...mockProps} />);
-
-		expect(screen.getByText("#tag1")).toBeInTheDocument();
-		// Mask要素がaria-hidden="true"で存在すること
-		const mask = document.querySelector(
-			'div[aria-hidden="true"].pointer-events-none',
+	it("右端の最大化ボタンクリックで onToggleMaximize が呼ばれること", () => {
+		const onToggleMaximizeMock = vi.fn();
+		render(
+			<FilterBar {...mockProps} onToggleMaximize={onToggleMaximizeMock} />,
 		);
-		expect(mask).toBeInTheDocument();
-		expect(mask?.className).toContain("to-base-surface");
+
+		const maxBtn = screen.getByTitle("Maximize notes view");
+		fireEvent.click(maxBtn);
+		expect(onToggleMaximizeMock).toHaveBeenCalledTimes(1);
 	});
 });

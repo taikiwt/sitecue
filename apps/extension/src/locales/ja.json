@@ -33,7 +33,8 @@
 		"tooltipIdea": "Idea で絞り込み",
 		"searchPlaceholder": "検索...",
 		"clearSearch": "検索をクリア",
-		"toggleResolved": "完了済みメモの表示/非表示"
+		"toggleResolved": "完了済みメモの表示/非表示",
+		"toggleFilters": "絞り込み・検索を表示/非表示"
 	},
 	"input": {
 		"closeInput": "入力を閉じる",
@@ -110,6 +111,7 @@
 		"exitPreview": "プレビューを終了",
 		"maximize": "全画面表示",
 		"maximizeCode": "コードを全画面表示",
+		"maximizePanel": "クイックパネルを最大化",
 		"exitFullView": "全画面表示を終了",
 		"noLinks": "リンクはまだ登録されていません。",
 		"urlPlaceholder": "URL",

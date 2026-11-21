@@ -13,26 +13,9 @@ vi.mock("../hooks/useAuth", () => ({
 	}),
 }));
 
-vi.mock("../hooks/useQuickLinks", () => ({
-	useQuickLinks: () => ({
-		links: [
-			{
-				id: "1",
-				label: "Docs",
-				target_url: "https://docs.com",
-				type: "related",
-				domain: "example.com",
-			},
-		],
-		loading: false,
-		addLink: vi.fn(),
-		updateLink: vi.fn(),
-		deleteLink: vi.fn(),
-	}),
-}));
-
 const mockGet = vi.fn();
 const mockSet = vi.fn();
+const localStorageStore = new Map<string, string>();
 
 vi.stubGlobal("chrome", {
 	storage: {
@@ -43,14 +26,136 @@ vi.stubGlobal("chrome", {
 	},
 });
 
+vi.stubGlobal("localStorage", {
+	getItem: (key: string) => localStorageStore.get(key) ?? null,
+	setItem: (key: string, value: string) => {
+		localStorageStore.set(key, String(value));
+	},
+	removeItem: (key: string) => {
+		localStorageStore.delete(key);
+	},
+	clear: () => {
+		localStorageStore.clear();
+	},
+});
+
 describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", () => {
 	const mockOnAddNote = vi.fn().mockResolvedValue(true);
 	const mockOnAppendDiary = vi.fn().mockResolvedValue(true);
+	const mockOnToggleMaximize = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		localStorage.clear();
 		mockAuthStatus.userPlan = "free";
 		mockGet.mockImplementation((_key, cb) => cb({}));
+	});
+
+	it("ストレージ未保存時は初期状態で note が展開され、Temporary text scratchpad... が即表示されること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
+			/>,
+		);
+
+		expect(
+			screen.getByPlaceholderText("Temporary text scratchpad..."),
+		).toBeInTheDocument();
+		expect(screen.queryByText("Links")).not.toBeInTheDocument();
+	});
+
+	it("chrome.storage.local に quick_panel_tab_user-123: 'none' が保存されている場合は閉じた状態で初期化されること", () => {
+		mockGet.mockImplementation((key, cb) => {
+			if (key === "quick_panel_tab_user-123") {
+				cb({ "quick_panel_tab_user-123": "none" });
+			} else {
+				cb({});
+			}
+		});
+
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
+			/>,
+		);
+
+		expect(
+			screen.queryByPlaceholderText("Temporary text scratchpad..."),
+		).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Maximize Quick Panel")).not.toBeInTheDocument();
+	});
+
+	it("localStorage に quick_panel_tab_user-123 = 'none' が存在する場合、chrome.storage.local の非同期待ちなしで初期レンダー時点（0ms）から閉じた状態であること", () => {
+		localStorage.setItem("quick_panel_tab_user-123", "none");
+		// chrome.storage.local.get がまだコールバックを返さない状態を模擬
+		mockGet.mockImplementation(() => {});
+
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
+			/>,
+		);
+
+		expect(
+			screen.queryByPlaceholderText("Temporary text scratchpad..."),
+		).not.toBeInTheDocument();
+		expect(screen.queryByTitle("Maximize Quick Panel")).not.toBeInTheDocument();
+	});
+
+	it("Note / Command タブ内に開閉状態に応じた SVG シェブロンが存在すること", () => {
+		render(
+			<QuickPanel
+				currentDomain="example.com"
+				onAddNote={mockOnAddNote}
+				onAppendDiary={mockOnAppendDiary}
+				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
+			/>,
+		);
+
+		const noteTab = screen.getByTitle(
+			"Scratchpad for temporary notes (Markdown supported)",
+		);
+		const commandTab = screen.getByTitle(
+			"Draft and edit multi-line commands or code snippets",
+		);
+
+		// 初期状態では Note が開いており、両タブにアイコン用SVG + シェブロンSVGの2つが存在する
+		expect(noteTab.querySelectorAll("svg")).toHaveLength(2);
+		expect(commandTab.querySelectorAll("svg")).toHaveLength(2);
+
+		// Note タブのシェブロンが ChevronDown、Command タブが ChevronRight であること
+		expect(
+			noteTab.querySelector("svg.lucide-chevron-down"),
+		).toBeInTheDocument();
+		expect(
+			commandTab.querySelector("svg.lucide-chevron-right"),
+		).toBeInTheDocument();
+
+		// Command タブをクリックすると Command が ChevronDown、Note が ChevronRight に切り替わること
+		fireEvent.click(commandTab);
+		expect(
+			noteTab.querySelector("svg.lucide-chevron-right"),
+		).toBeInTheDocument();
+		expect(
+			commandTab.querySelector("svg.lucide-chevron-down"),
+		).toBeInTheDocument();
 	});
 
 	it("未入力状態では、CopyボタンだけでなくClear(Eraser)ボタンもdisabledになっていること", () => {
@@ -60,9 +165,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const clearBtn = screen.getByTitle("Clear scratchpad");
 		const copyBtn = screen.getByTitle("Copy text");
@@ -78,9 +184,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const noteBtn = screen.getByTitle("Save as Inbox Note");
 		const diaryBtn = screen.getByTitle("Append to Today's Diary");
@@ -91,29 +198,6 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 		expect(diaryBtn).toHaveTextContent("Diary");
 	});
 
-	it("Linksアコーディオンが開いていても閉じていても、リンク数が4件以下の時はヘッダー右側にファビコン画像が常時維持されること", () => {
-		const { container } = render(
-			<QuickPanel
-				currentDomain="example.com"
-				onAddNote={mockOnAddNote}
-				onAppendDiary={mockOnAppendDiary}
-				userPlan="free"
-			/>,
-		);
-
-		// 1. 初期閉鎖状態での画像露出チェック
-		const faviconImg = container.querySelector("img");
-		expect(faviconImg).toBeInTheDocument();
-		expect(faviconImg?.getAttribute("src")).toContain(
-			"favicons?domain=docs.com",
-		);
-
-		// 2. 開いた状態（展開時）でも画像がパージされず維持されることを検証
-		const linksTrigger = screen.getByText("Links");
-		fireEvent.click(linksTrigger);
-		expect(container.querySelector("img")).toBeInTheDocument();
-	});
-
 	it("Note展開時、エディタを内包するコンテナが max-h-[30vh] と overflow-y-auto クラスで物理隔離されていること", () => {
 		render(
 			<QuickPanel
@@ -121,9 +205,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(
 			"Temporary text scratchpad...",
@@ -142,9 +227,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: "Hello Antigravity" } });
@@ -168,9 +254,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: "Flush Me Immediately" } });
@@ -191,9 +278,10 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, {
@@ -211,15 +299,16 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 	it("サイドパネル閉鎖時に currentDomain が null へ揺らいでも、コンポーネントがアンマウント（自己破壊）されず、最新の Ref バッファが保護されること", async () => {
 		vi.useFakeTimers();
 
-		const { rerender } = render(
+		const { container, rerender } = render(
 			<QuickPanel
 				currentDomain="example.com"
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, {
@@ -232,11 +321,12 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
 
-		const container = screen.getAllByText("Note")[0].closest(".w-full");
-		expect(container).toHaveClass("hidden");
+		expect(container.firstChild).toHaveClass("hidden");
 
 		fireEvent.blur(textarea);
 		expect(mockSet).not.toHaveBeenCalledWith({
@@ -259,10 +349,11 @@ describe("QuickPanel Component - Secondary Layout Guarding & Refined Layout", ()
 				onAddNote={mockOnAddNote}
 				onAppendDiary={mockOnAppendDiary}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={mockOnToggleMaximize}
 			/>,
 		);
 
-		fireEvent.click(screen.getByText("Note"));
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.blur(textarea);
 
@@ -288,6 +379,8 @@ describe("QuickPanel Component - Namespace Separation Test", () => {
 				onAddNote={vi.fn().mockResolvedValue(true)}
 				onAppendDiary={vi.fn().mockResolvedValue(true)}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
 
@@ -308,10 +401,10 @@ describe("QuickPanel Limit Validation Test", () => {
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
-
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: longText } });
@@ -336,10 +429,10 @@ describe("QuickPanel Pro Plan Limit Validation Test", () => {
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				userPlan="pro"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
-
-		fireEvent.click(screen.getByText("Note"));
 
 		const textarea = screen.getByPlaceholderText(/Temporary text scratchpad/i);
 		fireEvent.change(textarea, { target: { value: longText10k } });
@@ -357,78 +450,79 @@ describe("QuickPanel Pro Plan Limit Validation Test", () => {
 	});
 });
 
-describe("QuickPanel - Zen Quick Note Mode", () => {
-	it("最大化ボタンをクリックすると全画面オーバーレイクラスが適用され、縮小ボタンで復帰すること", () => {
-		render(
+describe("QuickPanel - Pane-Level Maximize Integration", () => {
+	it("1段目右端の最大化ボタンクリックで onToggleMaximize が呼ばれ、isMaximized=true で全画面クラスが適用されること", () => {
+		const onToggleMaximizeMock = vi.fn();
+		const { container, rerender } = render(
 			<QuickPanel
 				currentDomain="example.com"
 				onAddNote={vi.fn().mockResolvedValue(true)}
 				onAppendDiary={vi.fn().mockResolvedValue(true)}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={onToggleMaximizeMock}
 			/>,
 		);
 
-		fireEvent.click(screen.getByText("Note"));
-
-		const maximizeBtn = screen.getByTitle("Maximize Quick Note");
+		const maximizeBtn = screen.getByTitle("Maximize Quick Panel");
 		expect(maximizeBtn).toBeInTheDocument();
 
 		fireEvent.click(maximizeBtn);
+		expect(onToggleMaximizeMock).toHaveBeenCalledTimes(1);
 
-		const overlay = screen.getByTitle("Exit full view").closest(".fixed");
-		expect(overlay).toHaveClass("fixed", "inset-0", "z-50");
-
-		const exitBtn = screen.getByTitle("Exit full view");
-		fireEvent.click(exitBtn);
-
-		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
-	});
-
-	it("最大化中にEscapeキーを押下すると最大化が解除されること", () => {
-		render(
+		rerender(
 			<QuickPanel
 				currentDomain="example.com"
 				onAddNote={vi.fn().mockResolvedValue(true)}
 				onAppendDiary={vi.fn().mockResolvedValue(true)}
 				userPlan="free"
+				isMaximized={true}
+				onToggleMaximize={onToggleMaximizeMock}
 			/>,
 		);
 
-		fireEvent.click(screen.getByText("Note"));
-		fireEvent.click(screen.getByTitle("Maximize Quick Note"));
-
+		expect(container.firstChild).toHaveClass(
+			"flex-1",
+			"min-h-0",
+			"rounded-none",
+		);
 		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
-
-		fireEvent.keyDown(window, { key: "Escape" });
-
-		expect(screen.getByTitle("Maximize Quick Note")).toBeInTheDocument();
 	});
 });
 
-describe("QuickPanel - 3-Tab Header & Command / Preview Integration", () => {
+describe("QuickPanel - 2-Tab Header & Command / Preview Integration", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockGet.mockImplementation((_keys, cb) => cb({}));
 	});
 
-	it("Note / Command / Links の3連タブが存在し、Commandタブを開くと専用コンソールが描画されること", () => {
+	// biome-ignore lint/suspicious/noTemplateCurlyInString: intentional test title
+	it("Note / Command タブクリック時に quick_panel_tab_${userId} へ保存され、Command 選択時はインセットダークコンソール（bg-neutral-900）が描画されること", () => {
 		render(
 			<QuickPanel
 				currentDomain="example.com"
 				onAddNote={vi.fn().mockResolvedValue(true)}
 				onAppendDiary={vi.fn().mockResolvedValue(true)}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
 
-		expect(screen.getByText("Note")).toBeInTheDocument();
+		expect(screen.getAllByText("Note")[0]).toBeInTheDocument();
 		expect(screen.getByText("Command")).toBeInTheDocument();
-		expect(screen.getByText("Links")).toBeInTheDocument();
+		expect(screen.queryByText("Links")).not.toBeInTheDocument();
 
 		// Command タブを開く
 		fireEvent.click(screen.getByText("Command"));
 
-		expect(screen.getByText("COMMAND / CODE")).toBeInTheDocument();
+		expect(mockSet).toHaveBeenCalledWith({
+			"quick_panel_tab_user-123": "command",
+		});
+
+		const consoleHeader = screen.getByText("COMMAND / CODE");
+		expect(consoleHeader).toBeInTheDocument();
+		expect(consoleHeader.closest(".bg-neutral-900")).toBeInTheDocument();
 		expect(
 			screen.getByPlaceholderText("$ docker run -it --rm ..."),
 		).toBeInTheDocument();
@@ -449,6 +543,8 @@ describe("QuickPanel - 3-Tab Header & Command / Preview Integration", () => {
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
 		fireEvent.click(screen.getByText("Command"));
@@ -475,9 +571,10 @@ describe("QuickPanel - 3-Tab Header & Command / Preview Integration", () => {
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
-		fireEvent.click(screen.getByText("Note"));
 
 		const previewBtn = screen.getByTitle("Preview Markdown");
 		expect(previewBtn).toBeInTheDocument();
@@ -503,6 +600,8 @@ describe("QuickPanel - 3-Tab Header & Command / Preview Integration", () => {
 				onAddNote={vi.fn()}
 				onAppendDiary={vi.fn()}
 				userPlan="free"
+				isMaximized={false}
+				onToggleMaximize={vi.fn()}
 			/>,
 		);
 		fireEvent.click(screen.getByText("Command"));
