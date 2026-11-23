@@ -946,10 +946,10 @@ function NotesUI({
 					>
 						<div
 							ref={listContainerRef}
-							className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 pt-3 relative"
+							className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 relative"
 						>
 							{isNotesLoading ? (
-								<div className="space-y-3">
+								<div className="space-y-3 pt-3">
 									{["skel-1", "skel-2", "skel-3"].map((key) => (
 										<NoteSkeleton key={key} />
 									))}

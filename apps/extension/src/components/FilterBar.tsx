@@ -64,7 +64,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1.5 px-1 text-xs font-bold whitespace-nowrap rounded-full transition-all text-center ${
 							viewScope === "exact"
 								? "bg-action text-action-text shadow-sm"
-								: "text-muted-foreground hover:bg-base-surface"
+								: "text-muted-foreground hover:bg-muted hover:text-action"
 						}`}
 					>
 						{t("filter.page")}
@@ -75,7 +75,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1.5 px-1 text-xs font-bold whitespace-nowrap rounded-full transition-all text-center ${
 							viewScope === "domain"
 								? "bg-action text-action-text shadow-sm"
-								: "text-muted-foreground hover:bg-base-surface"
+								: "text-muted-foreground hover:bg-muted hover:text-action"
 						}`}
 					>
 						{t("filter.domain")}
@@ -86,7 +86,7 @@ export default function FilterBar({
 						className={`cursor-pointer py-1.5 px-1 text-xs font-bold whitespace-nowrap rounded-full transition-all text-center ${
 							viewScope === "inbox"
 								? "bg-action text-action-text shadow-sm"
-								: "text-muted-foreground hover:bg-base-surface"
+								: "text-muted-foreground hover:bg-muted hover:text-action"
 						}`}
 					>
 						{t("filter.inbox")}

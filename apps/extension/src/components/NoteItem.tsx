@@ -128,7 +128,52 @@ function NoteItem({
 	const { onKeyDown, onPaste } = useMarkdownAssist();
 
 	const cardRef = useRef<HTMLDivElement | null>(null);
+	const topSentinelRef = useRef<HTMLDivElement | null>(null);
+	const bottomSentinelRef = useRef<HTMLDivElement | null>(null);
+	const [isStuck, setIsStuck] = useState(false);
 	const prevExpandedRef = useRef(note.is_expanded);
+
+	useEffect(() => {
+		if (isPreview) return;
+		const topSentinel = topSentinelRef.current;
+		const bottomSentinel = bottomSentinelRef.current;
+		if (
+			!topSentinel ||
+			!bottomSentinel ||
+			typeof IntersectionObserver === "undefined"
+		) {
+			return;
+		}
+
+		const scrollRoot = topSentinel.closest(".overflow-y-auto");
+		let isTopPassed = false;
+		let isBottomReached = false;
+
+		const updateStuck = () => {
+			setIsStuck(isTopPassed && !isBottomReached);
+		};
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					const rootTop = entry.rootBounds?.top ?? 0;
+					if (entry.target === topSentinel) {
+						isTopPassed =
+							!entry.isIntersecting && entry.boundingClientRect.top < rootTop;
+					} else if (entry.target === bottomSentinel) {
+						isBottomReached =
+							!entry.isIntersecting && entry.boundingClientRect.top <= rootTop;
+					}
+				}
+				updateStuck();
+			},
+			{ root: scrollRoot, threshold: [0, 1] },
+		);
+
+		observer.observe(topSentinel);
+		observer.observe(bottomSentinel);
+		return () => observer.disconnect();
+	}, [isPreview]);
 
 	useEffect(() => {
 		if (prevExpandedRef.current && !note.is_expanded) {
@@ -348,7 +393,7 @@ function NoteItem({
 	const borderClass =
 		isResolving && isCollapsePhase
 			? "border-transparent"
-			: "border-base-border";
+			: "border-card-border";
 	// 0ms時点で opacity-0 や scale-95 が入った瞬間にアニメーションが暴発するのを防ぎ、インライン style で秒数を個別管理します。
 	const resolvingClasses = isResolving
 		? ` opacity-0 translate-x-full pointer-events-none ${
@@ -356,13 +401,12 @@ function NoteItem({
 					? "overflow-hidden py-0 my-0 border-y-0"
 					: "overflow-visible"
 			}`
-		: " opacity-100 translate-x-0";
+		: " opacity-100 translate-x-0 overflow-clip";
 
 	return (
 		<div
 			ref={cardRef}
 			style={{
-				contentVisibility: isEditing ? "visible" : "auto",
 				maxHeight:
 					animatingHeight !== null ? `${animatingHeight}px` : undefined,
 				// 💡【タイムライン個別調律のベストプラクティス】
@@ -381,8 +425,18 @@ function NoteItem({
 					: "border-color 200ms ease-in-out, box-shadow 200ms ease-in-out, transform 200ms ease-in-out, translate 200ms ease-in-out",
 			}}
 			// 💡 className から一括指定の transition-all を完全削除！
-			className={`bg-base-bg rounded-xl border group relative flex flex-col ${paddingClass} ${borderClass} ${resolvedClasses} ${resolvingClasses}`}
+			className={`bg-base-bg rounded-xl border shadow-2xs group relative flex flex-col ${paddingClass} ${borderClass} ${resolvedClasses} ${resolvingClasses}`}
 		>
+			<div
+				ref={topSentinelRef}
+				aria-hidden="true"
+				className="absolute top-0 left-0 right-0 h-px pointer-events-none"
+			/>
+			<div
+				ref={bottomSentinelRef}
+				aria-hidden="true"
+				className="absolute bottom-14 left-0 right-0 h-px pointer-events-none"
+			/>
 			{/* カード全体を覆う多重防止グレーアウト＆中央チェックマークオーバーレイ */}
 			{isResolving && (
 				<div className="absolute inset-0 flex items-center justify-center bg-base-bg/85 rounded-xl z-30 animate-fadeIn pointer-events-none">
@@ -392,7 +446,20 @@ function NoteItem({
 			)}
 			{isEditing ? (
 				<div className="space-y-3 flex flex-col flex-1 min-w-0 relative animate-fadeIn">
-					<div className="sticky top-0 z-20 bg-base-bg flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20">
+					{/* 編集モードのスティッキーヘッダー（2段構成のため吸着時は rounded-2xl） */}
+					<div
+						className={`sticky z-20 flex flex-col gap-0 shrink-0 select-none transition-all duration-200 ${
+							isStuck
+								? "top-1.5 mx-1.5 rounded-2xl border border-base-border shadow-2xs bg-base-bg/70 backdrop-blur-md"
+								: "top-0 rounded-t-xl border-b border-base-border bg-base-bg"
+						}`}
+					>
+						{isStuck && (
+							<div
+								aria-hidden="true"
+								className="pointer-events-none absolute -top-2 -left-1.5 -right-1.5 h-3 bg-linear-to-b from-base-bg via-base-bg/80 to-transparent"
+							/>
+						)}
 						<div className="flex items-center justify-between w-full min-h-[40px] px-2">
 							<div className="text-xs text-muted-foreground/50 font-semibold pl-1 select-none opacity-0">
 								{t("item.editing")}
@@ -418,7 +485,7 @@ function NoteItem({
 							</div>
 						</div>
 
-						<div className="flex items-center justify-between w-full py-1 px-2 border-t border-base-border/30">
+						<div className="flex items-center justify-between w-full py-1 px-2 border-t border-base-border/60">
 							<div className="relative flex items-center shrink-0 px-4 py-2 bg-base-surface rounded-full">
 								<select
 									value={editScope}
@@ -500,7 +567,20 @@ function NoteItem({
 				</div>
 			) : (
 				<div className="flex flex-col flex-1">
-					<div className="sticky top-0 z-20 bg-base-bg flex flex-col gap-0 select-none border-b border-base-border/20">
+					{/* 閲覧モードのスティッキーヘッダー（1段構成のため吸着時は rounded-full カプセル型） */}
+					<div
+						className={`sticky z-20 flex flex-col gap-0 select-none transition-all duration-200 ${
+							isStuck
+								? "top-1.5 mx-1.5 rounded-full border border-base-border shadow-2xs bg-base-bg/70 backdrop-blur-md"
+								: "top-0 rounded-t-xl border-b border-base-border bg-base-bg"
+						}`}
+					>
+						{isStuck && (
+							<div
+								aria-hidden="true"
+								className="pointer-events-none absolute -top-2 -left-1.5 -right-1.5 h-3 bg-linear-to-b from-base-bg via-base-bg/80 to-transparent"
+							/>
+						)}
 						<div className="flex items-center justify-between w-full min-h-[40px] px-2 transition-colors">
 							<div className="flex items-center gap-1 shrink-0">
 								{!isPreview && (
@@ -509,7 +589,7 @@ function NoteItem({
 										{...sortableAttributes}
 										{...sortableListeners}
 										style={{ touchAction: "none" }}
-										className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/40 hover:text-action transition-colors shrink-0"
+										className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/70 hover:text-action transition-colors shrink-0"
 										title={t("item.dragToReorder")}
 									>
 										<GripVertical className="size-4" aria-hidden="true" />
@@ -557,11 +637,11 @@ function NoteItem({
 
 							<div className="flex items-center gap-2 ml-auto shrink-0">
 								{!isPreview && (
-									<div className="flex items-center gap-0.5 pr-1.5 border-r border-base-border/30">
+									<div className="flex items-center gap-0.5 pr-1.5 border-r border-base-border">
 										<Button
 											variant="ghost"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
+											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-base-surface"
 											icon={<Pencil className="size-4" />}
 											onClick={startEditing}
 											title={t("item.edit")}
@@ -569,7 +649,7 @@ function NoteItem({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground/60 hover:text-action hover:bg-base-surface"
+											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-base-surface"
 											icon={
 												copiedNoteId === note.id ? (
 													<Check className="w-3.5 h-3.5 text-success" />
@@ -583,7 +663,7 @@ function NoteItem({
 										<Button
 											variant="destructive2"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground/60"
+											className="size-7 p-0 rounded-full text-muted-foreground"
 											icon={<Trash2 className="w-3.5 h-3.5" />}
 											onClick={() => onDelete(note.id)}
 											title={t("item.delete")}
@@ -595,7 +675,7 @@ function NoteItem({
 									<Button
 										variant="ghost"
 										size="xs"
-										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_favorite ? "text-action bg-action/5" : "text-muted-foreground/50"}`}
+										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_favorite ? "text-action bg-action/10" : "text-muted-foreground/70 hover:text-action"}`}
 										icon={
 											<Star
 												className={`w-3.5 h-3.5 ${note.is_favorite ? "fill-current" : ""}`}
@@ -611,7 +691,7 @@ function NoteItem({
 									<Button
 										variant="ghost"
 										size="xs"
-										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_pinned ? "text-action bg-action/5" : "text-muted-foreground/50"}`}
+										className={`size-7 p-0 rounded-full transition-all duration-200 ${note.is_pinned ? "text-action bg-action/10" : "text-muted-foreground/70 hover:text-action"}`}
 										icon={
 											<Pin
 												className={`w-3.5 h-3.5 ${note.is_pinned ? "fill-current text-action" : ""}`}
@@ -647,7 +727,9 @@ function NoteItem({
 						>
 							<div
 								ref={contentRef}
-								className={`text-sm px-4 py-2 ${
+								className={`text-sm px-4 ${
+									isOverflowing && isExpanded ? "pt-7 pb-2" : "py-2"
+								} ${
 									note.is_resolved
 										? "line-through text-muted-foreground"
 										: "text-action"
@@ -658,7 +740,7 @@ function NoteItem({
 
 							{isCollapsed && (
 								<>
-									<div className="absolute bottom-0 left-0 w-full h-16 bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
+									<div className="absolute bottom-0 left-0 w-full h-16 rounded-b-xl bg-linear-to-t from-base-bg via-base-bg/80 to-transparent pointer-events-none" />
 									<div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20">
 										<button
 											type="button"

@@ -380,7 +380,7 @@ function NoteList({
 
 	if (loading && notes.length === 0) {
 		return (
-			<div className="space-y-3">
+			<div className="space-y-3 pt-3">
 				{["skel-1", "skel-2", "skel-3"].map((key) => (
 					<NoteSkeleton key={key} />
 				))}
@@ -394,7 +394,7 @@ function NoteList({
 		normalNotes.length === 0
 	) {
 		return (
-			<div className="flex flex-col items-center justify-center py-10 text-center">
+			<div className="flex flex-col items-center justify-center py-10 pt-13 text-center">
 				<div className="bg-base-bg p-4 rounded-full mb-4">
 					<Ghost className="w-8 h-8 text-muted-foreground" />
 				</div>
@@ -448,7 +448,7 @@ function NoteList({
 			onDragStart={handleDragStart}
 			sensors={sensors}
 		>
-			<div className="space-y-4 relative">
+			<div className="space-y-4 pt-3 relative">
 				{/* --- 1. FAVORITES セクション --- */}
 				{favoriteNotes.length > 0 && (
 					<div className="space-y-3">

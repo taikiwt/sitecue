@@ -28,6 +28,7 @@
   --color-base-bg: #ffffff;
   --color-base-surface: #f9fafb;
   --color-base-border: #e5e7eb;
+  --color-card-border: #d1d5db;
   --color-action: #062032;
   --color-action-hover: #4b6275;
   --color-action-text: #ffffff;
@@ -35,7 +36,7 @@
   --color-note-alert: #FB7176;
   --color-note-idea: #ff8104;
   --color-muted: #f3f4f6;
-  --color-muted-foreground: #9ca3af;
+  --color-muted-foreground: oklch(0.556 0 0);
   --color-success: oklch(0.7881 0.1322 183.75);
   --color-success-foreground: oklch(0.985 0 0);
 }

@@ -451,7 +451,7 @@ describe("QuickPanel Pro Plan Limit Validation Test", () => {
 });
 
 describe("QuickPanel - Pane-Level Maximize Integration", () => {
-	it("1段目右端の最大化ボタンクリックで onToggleMaximize が呼ばれ、isMaximized=true で全画面クラスが適用されること", () => {
+	it("1段目右端の最大化ボタンクリックで onToggleMaximize が呼ばれ、isMaximized=true で全画面クラスとアクティブ配色(bg-action)が適用されること", () => {
 		const onToggleMaximizeMock = vi.fn();
 		const { container, rerender } = render(
 			<QuickPanel
@@ -466,6 +466,8 @@ describe("QuickPanel - Pane-Level Maximize Integration", () => {
 
 		const maximizeBtn = screen.getByTitle("Maximize Quick Panel");
 		expect(maximizeBtn).toBeInTheDocument();
+		expect(maximizeBtn).toHaveAttribute("aria-pressed", "false");
+		expect(maximizeBtn).not.toHaveClass("bg-action");
 
 		fireEvent.click(maximizeBtn);
 		expect(onToggleMaximizeMock).toHaveBeenCalledTimes(1);
@@ -486,7 +488,10 @@ describe("QuickPanel - Pane-Level Maximize Integration", () => {
 			"min-h-0",
 			"rounded-none",
 		);
-		expect(screen.getByTitle("Exit full view")).toBeInTheDocument();
+		const exitFullViewBtn = screen.getByTitle("Exit full view");
+		expect(exitFullViewBtn).toBeInTheDocument();
+		expect(exitFullViewBtn).toHaveAttribute("aria-pressed", "true");
+		expect(exitFullViewBtn).toHaveClass("bg-action", "text-action-text");
 	});
 });
 

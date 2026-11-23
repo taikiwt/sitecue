@@ -96,22 +96,26 @@ function CodeBlock({
 	};
 
 	return (
-		<div className="relative group my-3 min-w-0 max-w-full">
-			<div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-base-surface/90 rounded shadow-sm border border-base-border z-1">
+		<div className="relative my-3 min-w-0 max-w-full">
+			<div className="sticky top-[48px] z-1 flex items-center justify-between px-3 py-1 bg-base-surface border border-base-border rounded-t-lg select-none">
+				<span className="text-[11px] font-['Hack'] font-mono text-muted-foreground leading-none">
+					{language || "text"}
+				</span>
 				<button
 					type="button"
 					onClick={handleCopy}
-					className="p-1.5 text-muted-foreground hover:text-action flex items-center justify-center transition-colors cursor-pointer"
+					className="p-1 text-muted-foreground hover:text-action flex items-center justify-center rounded transition-colors cursor-pointer"
 					title="Copy code"
+					aria-label="Copy code"
 				>
 					{isCopied ? (
-						<Check className="w-3.5 h-3.5 text-note-info" />
+						<Check className="w-3.5 h-3.5 text-note-info" aria-hidden="true" />
 					) : (
-						<Copy className="w-3.5 h-3.5" />
+						<Copy className="w-3.5 h-3.5" aria-hidden="true" />
 					)}
 				</button>
 			</div>
-			<div className="rounded-lg overflow-hidden text-xs font-['Hack'] monospace leading-relaxed relative min-w-0 max-w-full">
+			<div className="rounded-b-lg border-x border-b border-base-border text-xs font-['Hack'] monospace leading-relaxed relative min-w-0 max-w-full">
 				<SyntaxHighlighter
 					{...rest}
 					style={oneLight}
@@ -153,7 +157,7 @@ export default function MarkdownRenderer({
 	if (markdownCache.has(content)) {
 		return (
 			<div
-				className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
+				className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
 			>
 				{markdownCache.get(content)}
 			</div>
@@ -288,7 +292,7 @@ export default function MarkdownRenderer({
 
 	return (
 		<div
-			className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full overflow-hidden [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
+			className={`prose prose-sm prose-neutral max-w-none min-w-0 max-w-full [overflow-wrap:anywhere] ${className} break-words [&>*:first-child]:mt-0`}
 		>
 			{parsedElement}
 		</div>
