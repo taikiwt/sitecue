@@ -14,7 +14,7 @@ export const buttonVariants = cva(
 				default: "bg-action text-action-text hover:opacity-90",
 				outline:
 					"border border-base-border bg-base-bg text-action hover:bg-base-surface",
-				ghost: "text-muted-foreground hover:text-action hover:bg-base-surface",
+				ghost: "text-muted-foreground hover:text-action hover:bg-muted",
 				destructive: "bg-note-alert/10 text-note-alert hover:bg-note-alert/20",
 				destructive2: "hover:text-note-alert hover:bg-note-alert/10",
 			},

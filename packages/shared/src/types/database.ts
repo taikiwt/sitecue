@@ -16,6 +16,7 @@ export interface SitecueNoteBase {
 	is_expanded: boolean;
 	draft_id: string | null;
 	tags: string[] | null;
+	deleted_at: string | null;
 }
 
 export interface SitecueDraftBase {

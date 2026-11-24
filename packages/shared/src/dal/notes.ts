@@ -22,6 +22,7 @@ export async function fetchNoteMetadatas(
 			"id, user_id, url_pattern, scope, note_type, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
 		)
 		.eq("user_id", userId)
+		.is("deleted_at", null)
 		.order("is_pinned", { ascending: false })
 		.order("sort_order", { ascending: true })
 		.order("created_at", { ascending: false });
@@ -44,6 +45,7 @@ export async function createNoteEntity(
 		.eq("user_id", userId)
 		.eq("scope", payload.scope)
 		.eq("is_pinned", false)
+		.is("deleted_at", null)
 		.order("sort_order", { ascending: true })
 		.limit(1);
 
@@ -60,6 +62,7 @@ export async function createNoteEntity(
 			.select("sort_order")
 			.eq("user_id", userId)
 			.eq("scope", payload.scope)
+			.is("deleted_at", null)
 			.order("sort_order", { ascending: true })
 			.limit(1);
 
@@ -224,7 +227,7 @@ export async function fetchNotesByUrlPattern(
 	supabase: SupabaseClient,
 	urlPattern?: string,
 ): Promise<Note[]> {
-	let query = supabase.from("sitecue_notes").select("*");
+	let query = supabase.from("sitecue_notes").select("*").is("deleted_at", null);
 	if (urlPattern) {
 		query = query.eq("url_pattern", urlPattern);
 	}
@@ -259,6 +262,7 @@ export async function fetchExtensionNoteMetadatas(
 		.select(
 			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
 		)
+		.is("deleted_at", null)
 		.or(orConditions.join(","))
 		.order("sort_order", { ascending: true })
 		.order("created_at", { ascending: true });
@@ -287,6 +291,7 @@ export async function fetchExtensionNoteContents(
 	const { data, error } = await supabase
 		.from("sitecue_notes")
 		.select("id, content")
+		.is("deleted_at", null)
 		.or(orConditions.join(","));
 
 	if (error) throw error;
@@ -305,6 +310,7 @@ export async function fetchExtensionFavoriteMetadatas(
 			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
 		)
 		.eq("is_favorite", true)
+		.is("deleted_at", null)
 		.order("sort_order", { ascending: true })
 		.order("created_at", { ascending: true });
 
@@ -321,7 +327,8 @@ export async function fetchExtensionFavoriteContents(
 	const { data, error } = await supabase
 		.from("sitecue_notes")
 		.select("id, content")
-		.eq("is_favorite", true);
+		.eq("is_favorite", true)
+		.is("deleted_at", null);
 
 	if (error) throw error;
 	return data || [];
@@ -339,6 +346,7 @@ export async function fetchExtensionInboxMetadatas(
 			"id, user_id, url_pattern, scope, note_type, sort_order, created_at, is_expanded, is_favorite, is_pinned, is_resolved, tags",
 		)
 		.eq("scope", "inbox")
+		.is("deleted_at", null)
 		.order("sort_order", { ascending: true })
 		.order("created_at", { ascending: true });
 
@@ -355,7 +363,8 @@ export async function fetchExtensionInboxContents(
 	const { data, error } = await supabase
 		.from("sitecue_notes")
 		.select("id, content")
-		.eq("scope", "inbox");
+		.eq("scope", "inbox")
+		.is("deleted_at", null);
 
 	if (error) throw error;
 	return data || [];
@@ -373,7 +382,8 @@ export async function fetchTopDomainActivity(
 		.from("sitecue_notes")
 		.select("url_pattern")
 		.eq("user_id", userId)
-		.eq("scope", "domain");
+		.eq("scope", "domain")
+		.is("deleted_at", null);
 
 	if (error) throw error;
 	if (!data) return [];
@@ -424,7 +434,8 @@ export async function searchNotesAndDrafts(
 				.from("sitecue_notes")
 				.select(
 					"id, user_id, url_pattern, scope, note_type, content, is_pinned, is_resolved, is_favorite, is_expanded, sort_order, created_at, updated_at, draft_id, tags",
-				);
+				)
+				.is("deleted_at", null);
 
 	if (tags) {
 		const tagsArray = tags.split(",");
@@ -454,4 +465,97 @@ export async function searchNotesAndDrafts(
 		notes: (notesResult.data as Note[]) || [],
 		drafts: (draftsResult.data as Draft[]) || [],
 	};
+}
+
+/**
+ * ノートをゴミ箱へ移動する（論理削除）
+ */
+export async function softDeleteNoteEntity(
+	supabase: SupabaseClient,
+	id: string,
+): Promise<Note> {
+	const now = new Date().toISOString();
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.update({
+			deleted_at: now,
+			updated_at: now,
+		})
+		.eq("id", id)
+		.select()
+		.single();
+
+	if (error) throw error;
+	return data as Note;
+}
+
+/**
+ * ゴミ箱内のノートを復元する
+ */
+export async function restoreNoteEntity(
+	supabase: SupabaseClient,
+	id: string,
+): Promise<Note> {
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.update({
+			deleted_at: null,
+			updated_at: new Date().toISOString(),
+		})
+		.eq("id", id)
+		.select()
+		.single();
+
+	if (error) throw error;
+	return data as Note;
+}
+
+/**
+ * 保持期限内のゴミ箱ノート一覧を取得する（Basecamp ゴミ箱ビュー用）
+ */
+export async function fetchTrashNotes(
+	supabase: SupabaseClient,
+	userId: string,
+	retentionDays: number,
+): Promise<Note[]> {
+	const cutoff = new Date(
+		Date.now() - retentionDays * 24 * 60 * 60 * 1000,
+	).toISOString();
+
+	const { data, error } = await supabase
+		.from("sitecue_notes")
+		.select("*")
+		.eq("user_id", userId)
+		.not("deleted_at", "is", null)
+		.gte("deleted_at", cutoff)
+		.order("deleted_at", { ascending: false });
+
+	if (error) throw error;
+	return (data as Note[]) || [];
+}
+
+/**
+ * ゴミ箱内のノートを完全に物理削除する（単一・Basecamp ゴミ箱ビュー用）
+ */
+export async function permanentlyDeleteNoteEntity(
+	supabase: SupabaseClient,
+	id: string,
+): Promise<string> {
+	return deleteNoteEntity(supabase, id);
+}
+
+/**
+ * ユーザーのゴミ箱を空にする（一括物理削除・Basecamp ゴミ箱ビュー用）
+ */
+export async function emptyTrashNotesEntity(
+	supabase: SupabaseClient,
+	userId: string,
+): Promise<void> {
+	const { error } = await supabase
+		.from("sitecue_notes")
+		.delete()
+		.eq("user_id", userId)
+		.not("deleted_at", "is", null);
+
+	if (error) throw error;
 }

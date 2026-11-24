@@ -122,7 +122,7 @@ export default function QuickLinksSection({
 					return (
 						<div
 							key={link.id}
-							className="group flex items-center justify-between p-1 hover:bg-base-bg rounded-xl transition-colors text-xs"
+							className="group flex items-center justify-between p-1 hover:bg-muted rounded-xl transition-colors text-xs"
 						>
 							<a
 								href={link.target_url}
@@ -180,7 +180,7 @@ export default function QuickLinksSection({
 											setFormType(link.type);
 											setIsAdding(true);
 										}}
-										className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-base-surface rounded-full transition-colors"
+										className="cursor-pointer p-1 text-muted-foreground hover:text-action hover:bg-muted rounded-full transition-colors"
 										title={t("quick.update")}
 									>
 										<Pencil aria-hidden="true" className="w-3 h-3" />
@@ -282,7 +282,7 @@ export default function QuickLinksSection({
 						setFormType("related");
 						setIsAdding(true);
 					}}
-					className="cursor-pointer w-full text-left p-1.5 px-3 text-xs text-muted-foreground hover:text-action hover:bg-base-bg rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40"
+					className="cursor-pointer w-full text-left p-1.5 px-3 text-xs text-muted-foreground hover:text-action hover:bg-muted rounded-full flex items-center gap-1 transition-colors border border-dashed border-base-border/40"
 				>
 					<Plus aria-hidden="true" className="w-3.5 h-3.5" />
 					<span>{t("quick.addLink")}</span>

@@ -103,7 +103,7 @@ export default function FilterBar({
 						className={`relative cursor-pointer flex items-center justify-center size-7 p-0 rounded-full transition-colors ${
 							isFilterOpen || hasActiveFilter
 								? "bg-action text-action-text shadow-xs"
-								: "bg-base-bg border border-base-border/60 text-muted-foreground hover:text-action"
+								: "bg-base-bg border border-base-border/60 text-muted-foreground hover:bg-muted hover:text-action"
 						}`}
 					>
 						<SlidersHorizontal className="size-3.5" aria-hidden="true" />
@@ -131,7 +131,7 @@ export default function FilterBar({
 						className={`cursor-pointer flex items-center justify-center size-7 p-0 rounded-full transition-colors ${
 							isMaximized
 								? "bg-action text-action-text"
-								: "bg-base-bg border border-base-border/60 text-muted-foreground hover:text-action"
+								: "bg-base-bg border border-base-border/60 text-muted-foreground hover:bg-muted hover:text-action"
 						}`}
 					>
 						{isMaximized ? (
@@ -155,7 +155,7 @@ export default function FilterBar({
 								className={`cursor-pointer py-1 px-2.5 rounded-full text-xs font-medium transition-colors ${
 									filterType === "all"
 										? "bg-action text-action-text shadow-sm"
-										: "text-muted-foreground hover:text-action hover:bg-base-surface"
+										: "text-muted-foreground hover:text-action hover:bg-muted"
 								}`}
 							>
 								{t("filter.all")}
@@ -166,7 +166,7 @@ export default function FilterBar({
 								className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 									filterType === "info"
 										? "bg-note-info text-action-text shadow-sm"
-										: "text-muted-foreground hover:text-note-info hover:bg-base-surface"
+										: "text-muted-foreground hover:text-note-info hover:bg-muted"
 								}`}
 								title={t("filter.tooltipInfo")}
 							>
@@ -178,7 +178,7 @@ export default function FilterBar({
 								className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 									filterType === "alert"
 										? "bg-note-alert text-action-text shadow-sm"
-										: "text-muted-foreground hover:text-note-alert hover:bg-base-surface"
+										: "text-muted-foreground hover:text-note-alert hover:bg-muted"
 								}`}
 								title={t("filter.tooltipAlert")}
 							>
@@ -190,7 +190,7 @@ export default function FilterBar({
 								className={`cursor-pointer flex items-center justify-center rounded-full transition-colors size-7 ${
 									filterType === "idea"
 										? "bg-note-idea text-action-text shadow-sm"
-										: "text-muted-foreground hover:text-note-idea hover:bg-base-surface"
+										: "text-muted-foreground hover:text-note-idea hover:bg-muted"
 								}`}
 								title={t("filter.tooltipIdea")}
 							>
@@ -237,7 +237,7 @@ export default function FilterBar({
 								className={`cursor-pointer flex items-center justify-center p-1.5 rounded-full border transition-colors shrink-0 size-7 ${
 									showResolved
 										? "bg-action border-action text-action-text"
-										: "bg-base-surface border-base-border text-muted-foreground hover:bg-base-bg"
+										: "bg-base-surface border-base-border text-muted-foreground hover:bg-muted hover:text-action"
 								}`}
 								title={t("filter.toggleResolved")}
 							>
@@ -260,7 +260,7 @@ export default function FilterBar({
 										className={`cursor-pointer whitespace-nowrap px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors ${
 											selectedTag === tag
 												? "bg-action text-action-text border-action"
-												: "bg-base-surface text-muted-foreground border-base-border hover:bg-base-bg hover:text-action"
+												: "bg-base-surface text-muted-foreground border-base-border hover:bg-muted hover:text-action"
 										}`}
 									>
 										#{tag}

@@ -479,6 +479,7 @@ function NoteItem({
 									icon={<Check className="w-3.5 h-3.5" />}
 									onClick={handleUpdate}
 									disabled={isUnchanged}
+									title={t("item.saveTooltip")}
 								>
 									{t("item.save")}
 								</Button>
@@ -641,7 +642,7 @@ function NoteItem({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-base-surface"
+											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-muted"
 											icon={<Pencil className="size-4" />}
 											onClick={startEditing}
 											title={t("item.edit")}
@@ -649,7 +650,7 @@ function NoteItem({
 										<Button
 											variant="ghost"
 											size="sm"
-											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-base-surface"
+											className="size-7 p-0 rounded-full text-muted-foreground hover:text-action hover:bg-muted"
 											icon={
 												copiedNoteId === note.id ? (
 													<Check className="w-3.5 h-3.5 text-success" />
@@ -666,7 +667,7 @@ function NoteItem({
 											className="size-7 p-0 rounded-full text-muted-foreground"
 											icon={<Trash2 className="w-3.5 h-3.5" />}
 											onClick={() => onDelete(note.id)}
-											title={t("item.delete")}
+											title={t("item.moveToTrash")}
 										/>
 									</div>
 								)}
@@ -712,7 +713,7 @@ function NoteItem({
 										e.stopPropagation();
 										onToggleExpansion(note.id, isExpanded);
 									}}
-									className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action hover:bg-base-surface/80 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-base-border/50 bg-base-bg/90 shadow-sm"
+									className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action hover:bg-muted px-2.5 py-1 rounded-full flex items-center gap-1 transition-all border border-base-border/50 bg-base-bg/90 shadow-sm"
 								>
 									<ChevronDown className="w-3.5 h-3.5 shrink-0 rotate-180" />
 									<span>{t("item.showLess")}</span>
@@ -748,7 +749,7 @@ function NoteItem({
 												e.stopPropagation();
 												onToggleExpansion(note.id, isExpanded);
 											}}
-											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-bg hover:bg-base-surface px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
+											className="cursor-pointer text-[10px] font-bold text-muted-foreground hover:text-action bg-base-bg hover:bg-muted px-2.5 py-1 rounded-full shadow-xs flex items-center gap-1 transition-colors border border-base-border"
 										>
 											<ChevronDown className="w-3.5 h-3.5 shrink-0" />
 											<span>{t("item.readMore")}</span>

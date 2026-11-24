@@ -556,3 +556,43 @@ describe("SidePanel - URL Context Lock Integration", () => {
 		expect(screen.getByText("Exact Note")).toBeInTheDocument();
 	});
 });
+
+describe("SidePanel - Filter Reset & Help Modal", () => {
+	it("フィルター適用時にリセットボタンが出現し、クリックで全条件が解除されて消えること", () => {
+		render(<SidePanel />);
+
+		// 初期状態ではリセットボタンは非表示
+		expect(screen.queryByTitle("Reset all filters")).not.toBeInTheDocument();
+
+		// フィルターを展開して検索クエリを入力
+		fireEvent.click(screen.getByTitle("Toggle filters and search"));
+		const searchInput = screen.getByPlaceholderText("Search...");
+		fireEvent.change(searchInput, { target: { value: "Exact" } });
+
+		// リセットボタンが出現する
+		const resetBtn = screen.getByTitle("Reset all filters");
+		expect(resetBtn).toBeInTheDocument();
+
+		// リセットボタンをクリックすると全条件が解除され、ボタンが消える
+		fireEvent.click(resetBtn);
+		expect(screen.queryByTitle("Reset all filters")).not.toBeInTheDocument();
+		expect(searchInput).toHaveValue("");
+	});
+
+	it("Headerメニューからガイドモーダルを開き、Escapeキーでモーダルのみが閉じること", () => {
+		render(<SidePanel />);
+
+		// プロフィールメニューを開く
+		fireEvent.click(screen.getByTitle("Account & Status"));
+
+		// Guide & Shortcuts をクリック
+		fireEvent.click(screen.getByText("Guide & Shortcuts"));
+
+		// モーダルが開く
+		expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+		// Escape キーでモーダルが閉じる
+		fireEvent.keyDown(window, { key: "Escape" });
+		expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+	});
+});

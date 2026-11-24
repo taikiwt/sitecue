@@ -23,6 +23,7 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
   - **Backgrounds & Borders**: `bg-base-bg` (メイン背景), `bg-base-surface` (コンテナ等), `border-base-border`
   - **Action Buttons**: `bg-action`, `hover:bg-action-hover`, `text-action-text`
   - **Note Markers**: Info (`text-note-info` / `bg-note-info`), Alert (`text-note-alert` / `bg-note-alert`), Idea (`text-note-idea` / `bg-note-idea`)
+- **ホバー・アクティブ配色統一規約:** 白・薄灰背景上の標準ボタン・タブのホバーは `hover:bg-muted hover:text-action` を基本とし、開閉・選択状態を表すボタンのアクティブ時は原則 `bg-action text-action-text` とする（ただし `Header` の Links ピルボタンのみ展開時は `bg-muted text-action border-base-border` とする）。
 
 ## 4. Environment Specific Rules
 - **Extension (`apps/extension/`)**: ノートの一覧表示が主役であるため、視覚的ノイズを抑える徹底したモノクロームを維持。有彩色が許されるのは3種類のノートマークとシステム通知のみとする。

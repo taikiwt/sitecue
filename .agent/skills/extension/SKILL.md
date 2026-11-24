@@ -38,6 +38,7 @@ description: Chrome拡張機能（WXT/Manifest V3）、OAuth認証、ゲスト�
 - **QuickPanel 開閉状態永続化規約:** `QuickPanel` の初期表示状態（ストレージ未保存時）は `"note"` オープンとし、ユーザーのタブ選択・開閉状態（`"none" | "note" | "command"`）を `quick_panel_tab_${userId}` キーで `chrome.storage.local` に永続化すること。
 - **エリア単位最大化規約 (Pane-Level Maximization Rule):** サイドパネル内の最大化は `maximizedPane: "none" | "quick" | "notes"` の単一ステートで管理し、対象エリアのコンテナ全体（タブバーやスコープバーを含む）を全画面展開すること。最大化中もエリア内のタブ切替やフィルタ操作が可能でなければならない。
 - **ドメイン設定・QuickLinks 統合規約:** ドメインに紐づくDB設定リソース（ドメインラベル・カラーおよび `sitecue_links`）は `Header` の展開パネル内へ集約し、`QuickPanel` にはローカルストレージ完結の一時作業機能（`Note` / `Command`）のみを配置すること。
+- **論理削除フィルタリング規約:** `sitecue_notes` を取得・集計・検索する全クエリおよび RPC 関数は、ゴミ箱専用クエリを除き必ず `deleted_at IS NULL` を条件に含めること。
 
 
 

@@ -97,6 +97,7 @@ export async function fetchDashboardActivityData(
 			)
 			.eq("user_id", userId)
 			.neq("scope", "draft")
+			.is("deleted_at", null)
 			.gte("created_at", dateStr)
 			.order("created_at", { ascending: false }),
 		supabase
@@ -124,6 +125,7 @@ export async function fetchDashboardActivityData(
 			.select("id, content, is_resolved, scope, url_pattern, created_at")
 			.eq("user_id", userId)
 			.neq("scope", "draft")
+			.is("deleted_at", null)
 			.order("created_at", { ascending: false })
 			.limit(5);
 		recentNotes = (fallbackNotes as DashboardActivityData["recentNotes"]) ?? [];

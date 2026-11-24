@@ -10,6 +10,7 @@
 		"openDiary": "日記を開く",
 		"accountStatus": "アカウントとステータス",
 		"openBasecamp": "Basecamp を開く",
+		"helpAndShortcuts": "使い方・ショートカット",
 		"logout": "ログアウト",
 		"guest": "ゲスト",
 		"guestWarning": "ローカル保存のみ: ブラウザのキャッシュを使った一時的な保存状態です。アカウントなしで手軽に試すことができます。",
@@ -34,7 +35,9 @@
 		"searchPlaceholder": "検索...",
 		"clearSearch": "検索をクリア",
 		"toggleResolved": "完了済みメモの表示/非表示",
-		"toggleFilters": "絞り込み・検索を表示/非表示"
+		"toggleFilters": "絞り込み・検索を表示/非表示",
+		"reset": "解除",
+		"resetTooltip": "フィルターをすべて解除"
 	},
 	"input": {
 		"closeInput": "入力を閉じる",
@@ -73,9 +76,11 @@
 		"copy": "メモをコピー",
 		"edit": "編集",
 		"delete": "削除",
+		"moveToTrash": "ゴミ箱に移動",
 		"editing": "メモを編集中...",
 		"cancel": "キャンセル",
 		"save": "保存",
+		"saveTooltip": "保存 (Ctrl+Enter)",
 		"confirmDiscard": "他のメモに未保存の変更があります。変更を破棄してこのメモを編集しますか？",
 		"confirmDelete": "このメモを削除しますか？"
 	},
@@ -161,6 +166,29 @@
 		"copiedToClipboard": "クリップボードにコピーしました",
 		"sendTextFailed": "テキストの送信に失敗しました",
 		"settingsSaved": "設定を保存しました",
-		"settingsSaveFailed": "設定の保存に失敗しました"
+		"settingsSaveFailed": "設定の保存に失敗しました",
+		"movedToTrash": "ゴミ箱に移動しました",
+		"restore": "復元",
+		"restoreNoteFailed": "ノートの復元に失敗しました",
+		"restoreLimitReached": "上限（500件）に達しているため復元できません"
+	},
+	"help": {
+		"title": "使い方・ショートカット",
+		"close": "閉じる",
+		"closeOverlayAria": "ガイドを閉じる",
+		"usageSection": "基本の使い方",
+		"scopeTitle": "スコープ切替",
+		"scopeDesc": "Page（現在のURL）、Domain（サイト全体）、Inbox（どこからでも見られるメモ）を切り替えます。",
+		"lockTitle": "URL固定（ロック）",
+		"lockDesc": "ヘッダーの鍵アイコンを押すと、別タブへ移動しても現在のメモを表示し続けます。",
+		"quickTitle": "一時メモ（Quick Panel）",
+		"quickDesc": "Note で Markdown の下書き、Command で複数行のコマンドやコードを一時保存できます。",
+		"shortcutsSection": "ショートカット一覧",
+		"shortcutTogglePanel": "サイドパネルの開閉",
+		"shortcutSave": "ノート・日記の保存",
+		"shortcutEsc": "モーダルを閉じる / 最大化解除",
+		"shortcutIndent": "リスト・コードのインデント / アウトデント",
+		"shortcutList": "リストの自動継続（空行でEnterすると解除）",
+		"shortcutPasteUrl": "テキスト選択中にURL貼り付けでリンク化"
 	}
 }

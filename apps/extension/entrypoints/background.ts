@@ -50,7 +50,7 @@ export default defineBackground(() => {
 
 			// 3. 📋 タブスコープの厳格な隔離原則に基づくインメモリ消し込み
 			const matchingGuestCount = guestNotes.filter((note) => {
-				if (note.is_resolved) return false;
+				if (note.is_resolved || note.deleted_at) return false;
 
 				// 💡 お気に入りの全タブ貫通ロジック（if (note.is_favorite === true) return true;）を物理削除
 				// 100%文字レベルで一致するローカルコンテキストのみを正確に集計
