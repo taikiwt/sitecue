@@ -436,7 +436,7 @@ export default function Header({
 
 			{/* Settings Popup / Expandable Area */}
 			{isSettingsOpen && (
-				<div className="mt-3 pt-3 border-t border-base-border animate-in slide-in-from-top-2 fade-in duration-200 max-h-[65vh] overflow-y-auto">
+				<div className="mt-3 pt-3 border-t border-base-border animate-in slide-in-from-top-2 fade-in duration-200 max-h-[65vh] overflow-y-auto px-0.5">
 					<QuickLinksSection
 						currentDomain={domain}
 						links={links as QuickLinkItem[]}

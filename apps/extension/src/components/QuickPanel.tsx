@@ -252,7 +252,12 @@ export default function QuickPanel({
 							aria-label={
 								isMaximized ? t("quick.exitFullView") : t("quick.maximizePanel")
 							}
-							className="size-7 p-0 rounded-full"
+							aria-pressed={isMaximized}
+							className={`size-7 p-0 rounded-full ${
+								isMaximized
+									? "bg-action text-action-text hover:bg-action-hover"
+									: ""
+							}`}
 						/>
 					</div>
 				)}
