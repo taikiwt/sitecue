@@ -191,7 +191,7 @@ export default function NoteInput({
 			<button
 				type="button"
 				onClick={onClose}
-				className="absolute top-1 right-1 p-1.5 rounded-full text-muted-foreground hover:text-base-text hover:bg-base-border transition-all z-50 cursor-pointer"
+				className="absolute top-1 right-1 p-1.5 rounded-full text-muted-foreground hover:bg-muted hover:text-action transition-all z-50 cursor-pointer"
 				title={t("input.closeInput")}
 			>
 				<X aria-hidden="true" className="w-3.5 h-3.5" />
@@ -396,7 +396,7 @@ export default function NoteInput({
 					type="button"
 					onClick={handleSubmit}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
-					title={t("input.addNote")}
+					title={`${t("input.addNote")} (Ctrl+Enter)`}
 				>
 					<Send aria-hidden="true" className="w-3.5 h-3.5" />
 				</button>
@@ -463,7 +463,7 @@ export default function NoteInput({
 					onClick={handleDiarySubmit}
 					disabled={activeType !== "diary" || !diaryText.trim() || submitting}
 					className="cursor-pointer bg-action text-action-text w-8 h-8 rounded-full flex items-center justify-center hover:bg-action-hover disabled:opacity-10 disabled:cursor-not-allowed transition-all shadow-2xs shrink-0"
-					title={t("input.appendDiary")}
+					title={`${t("input.appendDiary")} (Ctrl+Enter)`}
 				>
 					<Send aria-hidden="true" className="w-3.5 h-3.5" />
 				</button>

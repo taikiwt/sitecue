@@ -746,6 +746,7 @@ describe("NoteList Infinite Scroll Callback Ref Verification", () => {
 			user_id: "user-1",
 			draft_id: null,
 			tags: [],
+			deleted_at: null,
 		}));
 
 		rerender(<NoteList {...baseProps} notes={manyNotes} scope="exact" />);

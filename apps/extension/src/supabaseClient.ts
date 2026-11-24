@@ -93,7 +93,7 @@ export const localClient = {
 		// 🛡️ 宣言型クエリビルダーコンテキストの生成
 		const builder = {
 			_filters: [] as Array<{
-				type: "eq" | "not" | "in";
+				type: "eq" | "not" | "in" | "is";
 				col: string;
 				// biome-ignore lint/suspicious/noExplicitAny: internal filter array
 				val: any;
@@ -131,6 +131,10 @@ export const localClient = {
 				}
 				return this;
 			},
+			is: function (col: string, val: null) {
+				this._filters.push({ type: "is", col, val });
+				return this;
+			},
 			maybeSingle: function () {
 				return this; // thenで単一オブジェクトとして処理するためのマーカー（ダミー）
 			},
@@ -163,6 +167,11 @@ export const localClient = {
 								(item: any) =>
 									Array.isArray(filter.val) &&
 									filter.val.includes(item[filter.col]),
+							);
+						} else if (filter.type === "is") {
+							filteredData = filteredData.filter(
+								// biome-ignore lint/suspicious/noExplicitAny: dynamic key mapping
+								(item: any) => (item[filter.col] ?? null) === filter.val,
 							);
 						}
 					}

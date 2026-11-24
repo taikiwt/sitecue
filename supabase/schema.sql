@@ -143,16 +143,20 @@ declare
   user_plan text;
   note_count int;
 begin
+  IF TG_OP = 'UPDATE' AND NOT (OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS NULL) THEN
+    RETURN NEW;
+  END IF;
+
   select plan into user_plan
   from public.sitecue_profiles
   where id = auth.uid();
 
-  if user_plan = 'free' then
+  if user_plan = 'free' or user_plan is null then
     select count(*) into note_count
     from public.sitecue_notes
-    where user_id = auth.uid();
+    where user_id = auth.uid()
+      and deleted_at is null;
 
-    -- Note limit is 500 as per latest migration
     if note_count >= 500 then
       raise exception 'note storage limit reached';
     end if;
@@ -164,6 +168,30 @@ $$;
 
 
 ALTER FUNCTION "public"."check_note_limit"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cleanup_expired_trash_notes"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  DELETE FROM public.sitecue_notes n
+  USING public.sitecue_profiles p
+  WHERE n.user_id = p.id
+    AND n.deleted_at IS NOT NULL
+    AND (
+      (p.plan = 'pro' AND n.deleted_at < now() - interval '30 days')
+      OR (p.plan <> 'pro' AND n.deleted_at < now() - interval '7 days')
+    );
+
+  DELETE FROM public.sitecue_notes n
+  WHERE n.deleted_at IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM public.sitecue_profiles p WHERE p.id = n.user_id)
+    AND n.deleted_at < now() - interval '7 days';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cleanup_expired_trash_notes"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_dashboard_domain_activity"("p_user_id" "uuid", "p_limit" integer DEFAULT 6) RETURNS json
@@ -181,9 +209,10 @@ BEGIN
       *,
       regexp_replace(url_pattern, '^(?:https?://)?(?:www\.)?([^/]+).*$', '\1') AS domain_name
     FROM public.sitecue_notes
-    WHERE user_id = p_user_id AND scope IN ('domain', 'exact')
+    WHERE user_id = p_user_id
+      AND deleted_at IS NULL
+      AND scope IN ('domain', 'exact')
   ),
-  
   top_domains AS (
     SELECT
       domain_name,
@@ -193,13 +222,12 @@ BEGIN
     ORDER BY total_count DESC, domain_name ASC
     LIMIT p_limit
   ),
-  
   domain_latest_notes AS (
     SELECT
       td.domain_name,
       COALESCE(
-        json_agg(json_build_object('id', ln.id, 'content', ln.content, 'is_resolved', ln.is_resolved) ORDER BY ln.created_at DESC) 
-        FILTER (WHERE ln.id IS NOT NULL), 
+        json_agg(json_build_object('id', ln.id, 'content', ln.content, 'is_resolved', ln.is_resolved) ORDER BY ln.created_at DESC)
+        FILTER (WHERE ln.id IS NOT NULL),
         '[]'::json
       ) AS domain_notes
     FROM top_domains td
@@ -212,7 +240,6 @@ BEGIN
     ) ln ON TRUE
     GROUP BY td.domain_name
   ),
-  
   page_ranking AS (
     SELECT
       n.domain_name,
@@ -223,13 +250,11 @@ BEGIN
     WHERE n.scope = 'exact'
     GROUP BY n.domain_name, n.url_pattern
   ),
-  
   top_pages_filtered AS (
     SELECT domain_name, page_url, page_count
     FROM page_ranking
     WHERE rank <= 3
   ),
-  
   page_latest_notes AS (
     SELECT
       tp.domain_name,
@@ -249,7 +274,6 @@ BEGIN
     ) lpn ON TRUE
     GROUP BY tp.domain_name, tp.page_url
   ),
-  
   domain_pages_json AS (
     SELECT
       tp.domain_name,
@@ -265,7 +289,6 @@ BEGIN
     LEFT JOIN page_latest_notes pn ON pn.domain_name = tp.domain_name AND pn.page_url = tp.page_url
     GROUP BY tp.domain_name
   )
-  
   SELECT json_agg(
     json_build_object(
       'domain', td.domain_name,
@@ -277,7 +300,7 @@ BEGIN
   FROM top_domains td
   LEFT JOIN domain_latest_notes dn ON dn.domain_name = td.domain_name
   LEFT JOIN domain_pages_json dp ON dp.domain_name = td.domain_name;
-  
+
   RETURN COALESCE(result, '[]'::json);
 END;
 $_$;
@@ -329,6 +352,7 @@ CREATE OR REPLACE FUNCTION "public"."get_matching_active_note_count"("p_domain" 
   FROM public.sitecue_notes
   WHERE user_id = auth.uid()
     AND is_resolved = false
+    AND deleted_at IS NULL
     AND ((scope = 'domain' AND url_pattern = p_domain)
       OR (scope = 'exact' AND url_pattern = p_exact));
 $$;
@@ -353,6 +377,7 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_notes" (
     "is_expanded" boolean DEFAULT false NOT NULL,
     "draft_id" "uuid",
     "tags" "text"[] DEFAULT '{}'::"text"[],
+    "deleted_at" timestamp with time zone,
     CONSTRAINT "sitecue_notes_content_len_check" CHECK (("char_length"("content") <= 30000)),
     CONSTRAINT "sitecue_notes_note_type_check" CHECK (("note_type" = ANY (ARRAY['info'::"text", 'alert'::"text", 'idea'::"text"]))),
     CONSTRAINT "sitecue_notes_scope_check" CHECK (("scope" = ANY (ARRAY['domain'::"text", 'exact'::"text", 'inbox'::"text", 'draft'::"text"])))
@@ -368,8 +393,9 @@ CREATE OR REPLACE FUNCTION "public"."get_matching_notes"("p_domain" "text", "p_e
 begin
   return query
   select * from sitecue_notes
-  where (scope = 'domain' and url_pattern = p_domain)
-     or (scope = 'exact' and url_pattern = p_exact);
+  where deleted_at is null
+    and ((scope = 'domain' and url_pattern = p_domain)
+      or (scope = 'exact' and url_pattern = p_exact));
 end;
 $$;
 
@@ -383,7 +409,9 @@ CREATE OR REPLACE FUNCTION "public"."get_notes_by_date"("p_user_id" "uuid", "p_d
 BEGIN
     RETURN QUERY
     SELECT * FROM public.sitecue_notes
-    WHERE user_id = p_user_id AND (timezone('Asia/Tokyo', created_at)::date)::text = p_date
+    WHERE user_id = p_user_id
+      AND deleted_at IS NULL
+      AND (timezone('Asia/Tokyo', created_at)::date)::text = p_date
     ORDER BY created_at ASC;
 END;
 $$;
@@ -456,8 +484,9 @@ CREATE OR REPLACE FUNCTION "public"."search_notes"("search_query" "text") RETURN
 BEGIN
   RETURN QUERY
   SELECT * FROM public.sitecue_notes
-  WHERE (content ILIKE '%' || search_query || '%'
-     OR url_pattern ILIKE '%' || search_query || '%');
+  WHERE deleted_at IS NULL
+    AND (content ILIKE '%' || search_query || '%'
+      OR url_pattern ILIKE '%' || search_query || '%');
 END;
 $$;
 
@@ -645,6 +674,10 @@ CREATE INDEX "sitecue_links_target_url_idx" ON "public"."sitecue_links" USING "b
 
 
 
+CREATE INDEX "sitecue_notes_deleted_at_idx" ON "public"."sitecue_notes" USING "btree" ("user_id", "deleted_at");
+
+
+
 CREATE INDEX "sitecue_notes_url_idx" ON "public"."sitecue_notes" USING "btree" ("url_pattern");
 
 
@@ -665,7 +698,7 @@ CREATE OR REPLACE TRIGGER "on_note_content_length_check" BEFORE INSERT OR UPDATE
 
 
 
-CREATE OR REPLACE TRIGGER "on_note_created_check_limit" BEFORE INSERT ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."check_note_limit"();
+CREATE OR REPLACE TRIGGER "on_note_created_check_limit" BEFORE INSERT OR UPDATE OF "deleted_at" ON "public"."sitecue_notes" FOR EACH ROW EXECUTE FUNCTION "public"."check_note_limit"();
 
 
 
@@ -1061,6 +1094,12 @@ GRANT ALL ON FUNCTION "public"."check_note_content_length"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "anon";
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."check_note_limit"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cleanup_expired_trash_notes"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cleanup_expired_trash_notes"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cleanup_expired_trash_notes"() TO "service_role";
 
 
 

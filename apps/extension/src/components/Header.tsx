@@ -2,6 +2,7 @@ import type { Session } from "@supabase/supabase-js";
 import {
 	CalendarDays,
 	ChevronDown,
+	CircleHelp,
 	CircleOff,
 	ExternalLink,
 	Glasses,
@@ -29,6 +30,7 @@ interface HeaderProps {
 	onDiaryClick?: () => void;
 	isLocked?: boolean;
 	onToggleLock?: () => void;
+	onOpenHelp?: () => void;
 }
 
 interface DomainSettings {
@@ -60,6 +62,7 @@ export default function Header({
 	onDiaryClick,
 	isLocked = false,
 	onToggleLock,
+	onOpenHelp,
 }: HeaderProps) {
 	const [settings, setSettings] = useState<DomainSettings | null>(null);
 	const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -205,7 +208,7 @@ export default function Header({
 							className={`cursor-pointer size-6 rounded-full shrink-0 flex items-center justify-center transition-all ${
 								isLocked
 									? `shadow-xs ${!colorHex ? "bg-action text-action-text" : "text-white"}`
-									: `hover:bg-base-surface ${!colorHex ? "text-muted-foreground/50 hover:text-action" : ""}`
+									: `hover:bg-muted ${!colorHex ? "text-muted-foreground/50 hover:text-action" : ""}`
 							}`}
 							title={isLocked ? t("header.unlockUrl") : t("header.lockUrl")}
 							aria-label={
@@ -223,7 +226,7 @@ export default function Header({
 						<button
 							type="button"
 							onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-							className="truncate flex-1 min-w-0 text-left cursor-pointer hover:bg-base-surface/80 rounded px-1 -mx-1 transition-colors"
+							className="truncate flex-1 min-w-0 text-left cursor-pointer hover:bg-muted rounded px-1 -mx-1 transition-colors"
 							title={t("header.editSettingsTooltip")}
 						>
 							<span className="truncate block font-semibold text-action">
@@ -250,8 +253,8 @@ export default function Header({
 							aria-expanded={isSettingsOpen}
 							className={`flex items-center gap-1 shrink-0 cursor-pointer rounded-full px-1.5 py-0.5 border transition-colors ${
 								isSettingsOpen
-									? "bg-base-surface text-action border-base-border shadow-2xs"
-									: "bg-base-bg text-muted-foreground border-base-border/70 hover:text-action hover:border-base-border"
+									? "bg-muted text-action border-base-border shadow-2xs"
+									: "bg-base-bg text-muted-foreground border-base-border/70 hover:bg-muted hover:text-action hover:border-base-border"
 							}`}
 							title={`${t("quick.tabLinksTooltip")} / ${t("header.editSettingsTooltip")}`}
 						>
@@ -301,7 +304,7 @@ export default function Header({
 						<button
 							type="button"
 							onClick={onDiaryClick}
-							className="cursor-pointer p-1.5 rounded-full border border-base-border text-muted-foreground bg-base-bg hover:text-action hover:bg-base-border transition-colors"
+							className="cursor-pointer p-1.5 rounded-full border border-base-border text-muted-foreground bg-base-bg hover:text-action hover:bg-muted transition-colors"
 							title={t("header.openDiary")}
 						>
 							<CalendarDays className="size-4" aria-hidden="true" />
@@ -375,6 +378,23 @@ export default function Header({
 									</div>
 								</div>
 
+								{onOpenHelp && (
+									<button
+										type="button"
+										onClick={() => {
+											setIsProfileOpen(false);
+											onOpenHelp();
+										}}
+										className="cursor-pointer flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-muted transition-colors border-b border-base-border/50"
+									>
+										<span>{t("header.helpAndShortcuts")}</span>
+										<CircleHelp
+											className="w-3.5 h-3.5 ml-auto text-muted-foreground"
+											aria-hidden="true"
+										/>
+									</button>
+								)}
+
 								{authStatus.mode === "guest" ? (
 									<div className="p-3 space-y-2.5">
 										<div className="text-[11px] text-note-alert font-medium leading-normal flex gap-1 items-start">
@@ -403,7 +423,7 @@ export default function Header({
 											href={webUrl}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-base-bg transition-colors"
+											className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-action hover:bg-muted transition-colors"
 											onClick={() => setIsProfileOpen(false)}
 										>
 											{t("header.openBasecamp")}{" "}
@@ -474,7 +494,7 @@ export default function Header({
 									id="color-button"
 									type="button"
 									onClick={() => setEditColor("")}
-									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-muted-foreground hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
+									className={`cursor-pointer w-4 h-4 rounded-full transition-all flex items-center justify-center border border-transparent text-muted-foreground hover:bg-muted hover:text-action ${editColor === "" ? "text-action bg-base-bg" : ""}`}
 									title={t("header.clearSettings")}
 								>
 									<CircleOff className="w-3.5 h-3.5" aria-hidden="true" />
@@ -495,7 +515,7 @@ export default function Header({
 							<button
 								type="button"
 								onClick={() => setIsSettingsOpen(false)}
-								className="cursor-pointer px-3 py-1 text-xs text-muted-foreground hover:text-action hover:bg-base-border rounded-full"
+								className="cursor-pointer px-3 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-action rounded-full"
 							>
 								{t("header.cancel")}
 							</button>

@@ -175,7 +175,7 @@ export default function QuickPanel({
 						className={`cursor-pointer flex items-center gap-1.5 rounded-full px-3 py-1 shrink-0 ${
 							activeSection === "note"
 								? "bg-action text-action-text shadow-2xs"
-								: "bg-transparent text-muted-foreground hover:text-action hover:bg-base-surface"
+								: "bg-transparent text-muted-foreground hover:text-action hover:bg-muted"
 						}`}
 					>
 						<FileText aria-hidden="true" className="w-3.5 h-3.5" />
@@ -195,7 +195,7 @@ export default function QuickPanel({
 						className={`cursor-pointer flex items-center gap-1.5 rounded-full px-2.5 py-1 shrink-0 ${
 							activeSection === "command"
 								? "bg-action text-action-text shadow-2xs"
-								: "bg-transparent text-muted-foreground hover:text-action hover:bg-base-surface"
+								: "bg-transparent text-muted-foreground hover:text-action hover:bg-muted"
 						}`}
 					>
 						<SquareTerminal aria-hidden="true" className="w-3.5 h-3.5" />
@@ -230,7 +230,7 @@ export default function QuickPanel({
 								aria-pressed={noteViewMode === "preview"}
 								className={`size-7 p-0 rounded-full ${
 									noteViewMode === "preview"
-										? "bg-action text-action-text hover:bg-action-hover"
+										? "bg-action text-action-text hover:opacity-90"
 										: ""
 								}`}
 							/>
@@ -254,9 +254,7 @@ export default function QuickPanel({
 							}
 							aria-pressed={isMaximized}
 							className={`size-7 p-0 rounded-full ${
-								isMaximized
-									? "bg-action text-action-text hover:bg-action-hover"
-									: ""
+								isMaximized ? "bg-action text-action-text hover:opacity-90" : ""
 							}`}
 						/>
 					</div>

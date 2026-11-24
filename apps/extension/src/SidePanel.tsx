@@ -11,7 +11,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { Check, Copy, Loader2, Plus, X } from "lucide-react";
+import { Check, Copy, FilterX, Loader2, Plus, X } from "lucide-react";
 import {
 	useCallback,
 	useDeferredValue,
@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import DiaryView from "./components/DiaryView";
 import FilterBar from "./components/FilterBar";
 import Header from "./components/Header";
+import HelpShortcutsModal from "./components/HelpShortcutsModal";
 import LoginScreen from "./components/LoginScreen";
 import NoteInput from "./components/NoteInput";
 import NoteList from "./components/NoteList";
@@ -180,8 +181,22 @@ function NotesUI({
 
 	const [maximizedPane, setMaximizedPane] = useState<MaximizedPane>("none");
 	const [isInputModeOpen, setIsInputModeOpen] = useState(false);
+	const [isHelpOpen, setIsHelpOpen] = useState(false);
 	const listContainerRef = useRef<HTMLDivElement>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	const hasActiveFilter =
+		filterType !== "all" ||
+		showResolved ||
+		searchQuery.trim().length > 0 ||
+		selectedTag !== null;
+
+	const handleResetFilters = useCallback(() => {
+		setFilterType("all");
+		setShowResolved(false);
+		setSearchQuery("");
+		setSelectedTag(null);
+	}, []);
 
 	// State
 	const [isDiaryOpen, setIsDiaryOpen] = useState(false);
@@ -609,6 +624,11 @@ function NotesUI({
 					return;
 				}
 
+				if (isHelpOpen) {
+					setIsHelpOpen(false);
+					return;
+				}
+
 				// 2. 新規ノート入力モーダル展開中ならモーダルを閉じる
 				if (isInputModeOpen) {
 					setIsInputModeOpen(false);
@@ -642,7 +662,7 @@ function NotesUI({
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [isCopyMenuOpen, isInputModeOpen, maximizedPane]);
+	}, [isCopyMenuOpen, isHelpOpen, isInputModeOpen, maximizedPane]);
 
 	// Close menu when clicking outside
 	useEffect(() => {
@@ -828,6 +848,7 @@ function NotesUI({
 					authStatus={authStatus}
 					isLocked={isLocked}
 					onToggleLock={handleToggleLock}
+					onOpenHelp={() => setIsHelpOpen(true)}
 					onDiaryClick={() => {
 						setIsDiaryOpen(true);
 						setIsEditingDiary(false);
@@ -870,8 +891,20 @@ function NotesUI({
 
 					{/* 🚀 等幅3カラム中央集権型アクションバー */}
 					<div className="grid grid-cols-3 items-center px-2.5 py-1.5 bg-base-surface shrink-0">
-						{/* 左カラム：スペーサー */}
-						<div />
+						{/* 左カラム：フィルター解除ボタン */}
+						<div className="flex items-center justify-start">
+							{hasActiveFilter && (
+								<button
+									type="button"
+									onClick={handleResetFilters}
+									title={t("filter.resetTooltip")}
+									className="cursor-pointer h-7 px-2.5 rounded-full text-xs font-medium inline-flex items-center gap-1 bg-base-bg border border-base-border/60 text-muted-foreground hover:bg-muted hover:text-action transition-colors shrink-0"
+								>
+									<FilterX className="size-3.5 shrink-0" aria-hidden="true" />
+									<span>{t("filter.reset")}</span>
+								</button>
+							)}
+						</div>
 
 						{/* 中央カラム：「＋」ボタンを物理的中心に完全ロック */}
 						<div className="flex justify-center">
@@ -897,8 +930,8 @@ function NotesUI({
 									isCopied
 										? "text-note-info bg-note-info/10"
 										: isCopyMenuOpen
-											? "text-action bg-base-border"
-											: "text-muted-foreground bg-base-bg border border-base-border/60 hover:text-action hover:bg-base-border"
+											? "text-action bg-muted"
+											: "text-muted-foreground bg-base-bg border border-base-border/60 hover:bg-muted hover:text-action"
 								}`}
 								title={
 									isCopied ? t("sidepanel.copied") : t("sidepanel.copyOptions")
@@ -921,14 +954,14 @@ function NotesUI({
 									<button
 										type="button"
 										onClick={handleCopyText}
-										className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+										className="cursor-pointer w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-action transition-colors"
 									>
 										{t("sidepanel.copyAsText")}
 									</button>
 									<button
 										type="button"
 										onClick={handleCopyJson}
-										className="w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-base-bg transition-colors"
+										className="cursor-pointer w-full text-left px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-action transition-colors"
 									>
 										{t("sidepanel.copyAsJson")}
 									</button>
@@ -1016,6 +1049,10 @@ function NotesUI({
 						)}
 					</div>
 				</>
+			)}
+
+			{isHelpOpen && (
+				<HelpShortcutsModal onClose={() => setIsHelpOpen(false)} />
 			)}
 
 			{/* 日記ドロワーのUIコンポーネント */}

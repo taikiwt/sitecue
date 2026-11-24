@@ -56,6 +56,8 @@ vi.mock("@sitecue/shared", async (importOriginal) => {
 		fetchExtensionFavoriteContents: vi.fn(),
 		updateNoteEntity: vi.fn(),
 		deleteNoteEntity: vi.fn(),
+		softDeleteNoteEntity: vi.fn(),
+		restoreNoteEntity: vi.fn(),
 		createNoteEntity: vi.fn(),
 	};
 });
@@ -69,6 +71,8 @@ import {
 	fetchExtensionNoteContents,
 	fetchExtensionNoteMetadatas,
 	type Note,
+	restoreNoteEntity,
+	softDeleteNoteEntity,
 	updateNoteEntity,
 } from "@sitecue/shared";
 import type { Session } from "@supabase/supabase-js";
@@ -779,5 +783,125 @@ describe("useNotes - Optimistic update and rollback", () => {
 		expect(
 			result.current.notes.find((n) => n.id === "note-opt-1")?.content,
 		).toBe("Original Content");
+	});
+});
+
+describe("useNotes - Soft Delete & Restore", () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	const mockSession = { user: { id: "user-1" } } as unknown as Session;
+	const mockAuthStatus: AuthStatus = {
+		mode: "authenticated",
+		session: mockSession,
+		userId: "user-1",
+	};
+
+	it("deleteNote実行時、confirmを呼ばずにsoftDeleteNoteEntityが呼ばれ即座にnotesから除外されること", async () => {
+		const originalConfirm = window.confirm;
+		const confirmMock = vi.fn();
+		window.confirm = confirmMock;
+		const targetNote = {
+			id: "note-trash-1",
+			url_pattern: "example.com/page",
+			scope: "exact",
+			content: "Trash Me",
+			created_at: new Date().toISOString(),
+			sort_order: 1,
+		} as unknown as Note;
+
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce([targetNote]);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionFavoriteMetadatas).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionFavoriteContents).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionInboxMetadatas).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionInboxContents).mockResolvedValueOnce([]);
+		vi.mocked(softDeleteNoteEntity).mockResolvedValueOnce({
+			...targetNote,
+			deleted_at: new Date().toISOString(),
+		});
+
+		const { result } = renderHook(() =>
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
+		);
+
+		await waitFor(() => expect(result.current.notes.length).toBe(1));
+
+		await act(async () => {
+			await result.current.deleteNote("note-trash-1");
+		});
+
+		expect(confirmMock).not.toHaveBeenCalled();
+		expect(softDeleteNoteEntity).toHaveBeenCalledWith(
+			expect.anything(),
+			"note-trash-1",
+		);
+		expect(result.current.notes.some((n) => n.id === "note-trash-1")).toBe(
+			false,
+		);
+		window.confirm = originalConfirm;
+	});
+
+	it("restoreNote実行時に元の位置へ復元され、上限エラー時はロールバックされること", async () => {
+		const targetNote = {
+			id: "note-restore-1",
+			url_pattern: "example.com/page",
+			scope: "exact",
+			content: "Restore Me",
+			created_at: new Date().toISOString(),
+			sort_order: 1,
+			deleted_at: new Date().toISOString(),
+		} as unknown as Note;
+
+		vi.mocked(fetchExtensionNoteMetadatas).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionNoteContents).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionFavoriteMetadatas).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionFavoriteContents).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionInboxMetadatas).mockResolvedValueOnce([]);
+		vi.mocked(fetchExtensionInboxContents).mockResolvedValueOnce([]);
+		vi.mocked(restoreNoteEntity).mockResolvedValueOnce({
+			...targetNote,
+			deleted_at: null,
+		});
+
+		const { result } = renderHook(() =>
+			useNotes(mockAuthStatus, "https://example.com/page", vi.fn(), "exact"),
+		);
+
+		await waitFor(() => expect(result.current.loading).toBe(false));
+
+		// 1. 正常復元
+		await act(async () => {
+			const ok = await result.current.restoreNote(targetNote);
+			expect(ok).toBe(true);
+		});
+
+		expect(restoreNoteEntity).toHaveBeenCalledWith(
+			expect.anything(),
+			"note-restore-1",
+		);
+		expect(result.current.notes.some((n) => n.id === "note-restore-1")).toBe(
+			true,
+		);
+
+		// 2. 上限エラー時のロールバック
+		const limitNote = {
+			...targetNote,
+			id: "note-restore-2",
+		};
+		vi.mocked(restoreNoteEntity).mockRejectedValueOnce(
+			new Error("note storage limit reached"),
+		);
+
+		await act(async () => {
+			const ok = await result.current.restoreNote(limitNote);
+			expect(ok).toBe(false);
+		});
+
+		expect(result.current.notes.some((n) => n.id === "note-restore-2")).toBe(
+			false,
+		);
+		expect(toast.error).toHaveBeenCalled();
 	});
 });

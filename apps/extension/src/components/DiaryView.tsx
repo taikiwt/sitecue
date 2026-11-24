@@ -181,7 +181,7 @@ export default function DiaryView({
 							className={`cursor-pointer px-3.5 py-2 text-xs font-medium rounded-full whitespace-nowrap transition-colors ${
 								selectedDiaryDate === dateStr
 									? "bg-action text-action-text"
-									: "bg-base-bg text-muted-foreground hover:bg-base-border/40"
+									: "bg-base-bg text-muted-foreground hover:bg-muted hover:text-action"
 							}`}
 						>
 							{i === 0 ? t("diary.today") : dateStr.substring(5)}

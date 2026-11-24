@@ -10,6 +10,7 @@
 		"openDiary": "Open diary",
 		"accountStatus": "Account & Status",
 		"openBasecamp": "Open Basecamp",
+		"helpAndShortcuts": "Guide & Shortcuts",
 		"logout": "Log out",
 		"guest": "Guest",
 		"guestWarning": "Local Storage Only: Temporary local storage for trial use without an account.",
@@ -34,7 +35,9 @@
 		"searchPlaceholder": "Search...",
 		"clearSearch": "Clear search",
 		"toggleResolved": "Show/Hide Resolved Notes",
-		"toggleFilters": "Toggle filters and search"
+		"toggleFilters": "Toggle filters and search",
+		"reset": "Reset",
+		"resetTooltip": "Reset all filters"
 	},
 	"input": {
 		"closeInput": "Close input",
@@ -73,9 +76,11 @@
 		"copy": "Copy note",
 		"edit": "Edit",
 		"delete": "Delete",
+		"moveToTrash": "Move to Trash",
 		"editing": "Editing note...",
 		"cancel": "Cancel",
 		"save": "Save",
+		"saveTooltip": "Save (Ctrl+Enter)",
 		"confirmDiscard": "You have unsaved changes in another note. Are you sure you want to discard them and edit this note?",
 		"confirmDelete": "Are you sure you want to delete this note?"
 	},
@@ -161,6 +166,29 @@
 		"copiedToClipboard": "Copied to clipboard",
 		"sendTextFailed": "Failed to send text",
 		"settingsSaved": "Settings saved",
-		"settingsSaveFailed": "Failed to save settings"
+		"settingsSaveFailed": "Failed to save settings",
+		"movedToTrash": "Moved to Trash",
+		"restore": "Restore",
+		"restoreNoteFailed": "Failed to restore note",
+		"restoreLimitReached": "Cannot restore: 500-note limit reached."
+	},
+	"help": {
+		"title": "Guide & Shortcuts",
+		"close": "Close",
+		"closeOverlayAria": "Close guide overlay",
+		"usageSection": "How to Use",
+		"scopeTitle": "Scopes",
+		"scopeDesc": "Switch between Page (exact URL), Domain (entire site), and Inbox (global notes).",
+		"lockTitle": "Lock URL",
+		"lockDesc": "Click the lock icon in the header to keep current notes visible while switching tabs.",
+		"quickTitle": "Quick Scratchpad",
+		"quickDesc": "Use Note for temporary Markdown drafts and Command for multi-line snippets.",
+		"shortcutsSection": "Shortcuts",
+		"shortcutTogglePanel": "Open / close side panel",
+		"shortcutSave": "Save note or diary",
+		"shortcutEsc": "Close modal / exit full view",
+		"shortcutIndent": "Indent / outdent list or code",
+		"shortcutList": "Auto-continue list (Enter on empty item to exit)",
+		"shortcutPasteUrl": "Convert selected text into Markdown link"
 	}
 }

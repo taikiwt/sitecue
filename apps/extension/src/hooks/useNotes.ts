@@ -1,7 +1,6 @@
 import type { Note, ViewScope as NoteScope } from "@sitecue/shared";
 import {
 	createNoteEntity,
-	deleteNoteEntity,
 	fetchExtensionFavoriteContents,
 	fetchExtensionFavoriteMetadatas,
 	fetchExtensionInboxContents,
@@ -10,9 +9,18 @@ import {
 	fetchExtensionNoteMetadatas,
 	getScopeUrls,
 	resolveNotePayload,
+	restoreNoteEntity,
+	softDeleteNoteEntity,
 	updateNoteEntity,
 } from "@sitecue/shared";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	createElement,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import toast from "react-hot-toast";
 import i18n from "../locales/i18n";
 import { localClient, supabase } from "../supabaseClient";
@@ -210,17 +218,17 @@ export function useNotes(
 	}, [favoriteNotes, inboxNotes, pageNotes]);
 
 	// CRUD ヘルパー
-	const updateLocalNoteState = (
-		updater: (prev: Note[]) => Note[],
-		scope: NoteScope,
-	) => {
-		if (scope === "inbox") {
-			setInboxNotes(updater);
-		} else {
-			setPageNotes(updater);
-		}
-		setFavoriteNotes((prev) => updater(prev).filter((n) => n.is_favorite));
-	};
+	const updateLocalNoteState = useCallback(
+		(updater: (prev: Note[]) => Note[], scope: NoteScope) => {
+			if (scope === "inbox") {
+				setInboxNotes(updater);
+			} else {
+				setPageNotes(updater);
+			}
+			setFavoriteNotes((prev) => updater(prev).filter((n) => n.is_favorite));
+		},
+		[],
+	);
 
 	const addNote = async (
 		content: string,
@@ -463,27 +471,165 @@ export function useNotes(
 		}
 	};
 
+	const restoreNote = useCallback(
+		async (noteToRestore: Note) => {
+			if (authStatus.mode === "loading") return false;
+
+			const activeNonInboxCount = notes.filter(
+				(n) => n.scope !== "inbox",
+			).length;
+			if (
+				noteToRestore.scope !== "inbox" &&
+				authStatus.mode === "guest" &&
+				activeNonInboxCount >= 50
+			) {
+				toast.error(i18n.t("toast.guestNoteLimitReached"));
+				return false;
+			}
+
+			const restoredNote: Note = {
+				...noteToRestore,
+				deleted_at: null,
+			};
+
+			// 0ms 楽観的復元
+			updateLocalNoteState(
+				(prev) =>
+					prev.some((n) => n.id === restoredNote.id)
+						? prev
+						: [...prev, restoredNote].sort(sortNotesConsistent),
+				restoredNote.scope,
+			);
+			if (restoredNote.is_favorite) {
+				setFavoriteNotes((prev) =>
+					prev.some((n) => n.id === restoredNote.id)
+						? prev
+						: [...prev, restoredNote].sort(sortNotesConsistent),
+				);
+			}
+			if (restoredNote.scope !== "inbox") {
+				setTotalNoteCount((prev) => prev + 1);
+			}
+
+			try {
+				if (authStatus.mode === "guest") {
+					const guestClient = client as unknown as typeof localClient;
+					if (typeof guestClient.from === "function") {
+						await (guestClient
+							.from("sitecue_notes")
+							.update({ deleted_at: null })
+							.eq("id", restoredNote.id) as unknown as Promise<unknown>);
+					}
+				} else {
+					await restoreNoteEntity(
+						client as unknown as typeof supabase,
+						restoredNote.id,
+					);
+				}
+				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
+				return true;
+			} catch (error: unknown) {
+				console.error("Failed to restore note", error);
+				// ロールバック
+				updateLocalNoteState(
+					(prev) => prev.filter((n) => n.id !== restoredNote.id),
+					restoredNote.scope,
+				);
+				setFavoriteNotes((prev) =>
+					prev.filter((n) => n.id !== restoredNote.id),
+				);
+				if (restoredNote.scope !== "inbox") {
+					setTotalNoteCount((prev) => Math.max(0, prev - 1));
+				}
+
+				const msg =
+					typeof error === "object" && error !== null && "message" in error
+						? String((error as { message: unknown }).message)
+						: "";
+				if (msg.includes("limit reached")) {
+					toast.error(i18n.t("toast.restoreLimitReached"));
+				} else {
+					toast.error(i18n.t("toast.restoreNoteFailed"));
+				}
+				return false;
+			}
+		},
+		[authStatus.mode, client, notes, setTotalNoteCount, updateLocalNoteState],
+	);
+
 	const deleteNote = async (id: string) => {
-		if (!window.confirm(i18n.t("item.confirmDelete"))) return false;
 		const noteToDelete = notes.find((n) => n.id === id);
 		if (!noteToDelete) return false;
 
+		const nowIso = new Date().toISOString();
+
+		// 0ms 楽観的除外
+		updateLocalNoteState(
+			(prev) => prev.filter((note) => note.id !== id),
+			noteToDelete.scope,
+		);
+		setFavoriteNotes((prev) => prev.filter((n) => n.id !== id));
+
+		if (noteToDelete.scope !== "inbox") {
+			setTotalNoteCount((prev) => Math.max(0, prev - 1));
+		}
+
 		try {
-			await deleteNoteEntity(client as unknown as typeof supabase, id);
-
-			updateLocalNoteState(
-				(prev) => prev.filter((note) => note.id !== id),
-				noteToDelete.scope,
-			);
-			setFavoriteNotes((prev) => prev.filter((n) => n.id !== id));
-
-			if (noteToDelete.scope !== "inbox") {
-				setTotalNoteCount((prev) => Math.max(0, prev - 1));
-				chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
+			if (authStatus.mode === "guest") {
+				const guestClient = client as unknown as typeof localClient;
+				if (typeof guestClient.from === "function") {
+					await (guestClient
+						.from("sitecue_notes")
+						.update({ deleted_at: nowIso })
+						.eq("id", id) as unknown as Promise<unknown>);
+				}
+			} else {
+				await softDeleteNoteEntity(client as unknown as typeof supabase, id);
 			}
+
+			chrome.runtime.sendMessage({ type: "REFRESH_BADGE" });
+
+			toast.custom(
+				(tObj) =>
+					createElement(
+						"div",
+						{
+							className:
+								"flex items-center gap-3 bg-action text-action-text text-xs px-3 py-2 rounded-full shadow-lg border border-base-border/20",
+						},
+						createElement("span", null, i18n.t("toast.movedToTrash")),
+						createElement(
+							"button",
+							{
+								type: "button",
+								onClick: () => {
+									toast.dismiss(tObj.id);
+									void restoreNote(noteToDelete);
+								},
+								className:
+									"cursor-pointer px-2.5 py-0.5 rounded-full bg-base-bg text-action font-bold hover:bg-muted transition-colors",
+							},
+							i18n.t("toast.restore"),
+						),
+					),
+				{ duration: 5000 },
+			);
 			return true;
 		} catch (error) {
-			console.error("Failed to delete note", error);
+			console.error("Failed to move note to trash", error);
+			// ロールバック
+			updateLocalNoteState(
+				(prev) => [...prev, noteToDelete].sort(sortNotesConsistent),
+				noteToDelete.scope,
+			);
+			if (noteToDelete.is_favorite) {
+				setFavoriteNotes((prev) =>
+					[...prev, noteToDelete].sort(sortNotesConsistent),
+				);
+			}
+			if (noteToDelete.scope !== "inbox") {
+				setTotalNoteCount((prev) => prev + 1);
+			}
 			toast.error(i18n.t("toast.deleteNoteFailed"));
 			return false;
 		}
@@ -758,6 +904,7 @@ export function useNotes(
 		addNote,
 		updateNote,
 		deleteNote,
+		restoreNote,
 		toggleResolved,
 		toggleFavorite,
 		togglePinned,

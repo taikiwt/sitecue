@@ -7,7 +7,9 @@ import {
 	fetchNoteContents,
 	fetchNoteMetadatas,
 	getMatchingNoteCount,
+	restoreNoteEntity,
 	searchNotesAndDrafts,
+	softDeleteNoteEntity,
 	updateNoteEntity,
 } from "./notes";
 
@@ -24,7 +26,8 @@ describe("Shared DAL: notes", () => {
 			.mockResolvedValue({ data: mockData, error: null });
 		const mockOrder2 = vi.fn().mockReturnValue({ order: mockOrder3 });
 		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
-		const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockIs = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockEq = vi.fn().mockReturnValue({ is: mockIs });
 		const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 		const supabase: AnyClient = { from: mockFrom };
@@ -34,6 +37,7 @@ describe("Shared DAL: notes", () => {
 		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
 		expect(mockSelect).toHaveBeenCalled();
 		expect(mockEq).toHaveBeenCalledWith("user_id", "user-123");
+		expect(mockIs).toHaveBeenCalledWith("deleted_at", null);
 		expect(res).toEqual(mockData);
 	});
 
@@ -117,6 +121,58 @@ describe("Shared DAL: notes", () => {
 			}),
 		);
 	});
+
+	it("softDeleteNoteEntityがdeleted_atとupdated_atをペイロードに含めて更新すること", async () => {
+		const mockSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: "note-1",
+				deleted_at: "2026-11-25T00:00:00Z",
+				updated_at: "2026-11-25T00:00:00Z",
+			},
+			error: null,
+		});
+		const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+		const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
+		const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+		const mockFrom = vi.fn().mockReturnValue({ update: mockUpdate });
+		const supabase: AnyClient = { from: mockFrom };
+
+		const res = await softDeleteNoteEntity(supabase, "note-1");
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
+		expect(mockUpdate).toHaveBeenCalledWith({
+			deleted_at: expect.any(String),
+			updated_at: expect.any(String),
+		});
+		expect(mockEq).toHaveBeenCalledWith("id", "note-1");
+		expect(res.id).toBe("note-1");
+	});
+
+	it("restoreNoteEntityがdeleted_at: nullとupdated_atをペイロードに含めて更新すること", async () => {
+		const mockSingle = vi.fn().mockResolvedValue({
+			data: {
+				id: "note-1",
+				deleted_at: null,
+				updated_at: "2026-11-25T00:00:00Z",
+			},
+			error: null,
+		});
+		const mockSelect = vi.fn().mockReturnValue({ single: mockSingle });
+		const mockEq = vi.fn().mockReturnValue({ select: mockSelect });
+		const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+		const mockFrom = vi.fn().mockReturnValue({ update: mockUpdate });
+		const supabase: AnyClient = { from: mockFrom };
+
+		const res = await restoreNoteEntity(supabase, "note-1");
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
+		expect(mockUpdate).toHaveBeenCalledWith({
+			deleted_at: null,
+			updated_at: expect.any(String),
+		});
+		expect(mockEq).toHaveBeenCalledWith("id", "note-1");
+		expect(res.deleted_at).toBeNull();
+	});
 });
 
 describe("Shared DAL: Extension Notes Isolation", () => {
@@ -124,7 +180,8 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
 		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
 		const mockOr = vi.fn().mockReturnValue({ order: mockOrder1 });
-		const mockSelect = vi.fn().mockReturnValue({ or: mockOr });
+		const mockIs = vi.fn().mockReturnValue({ or: mockOr });
+		const mockSelect = vi.fn().mockReturnValue({ is: mockIs });
 		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 		const supabase: AnyClient = { from: mockFrom };
 
@@ -133,6 +190,7 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 			domain: "example.com",
 			exact: "https://example.com/page",
 		});
+		expect(mockIs).toHaveBeenCalledWith("deleted_at", null);
 		expect(mockOr).toHaveBeenCalledWith(
 			expect.not.stringContaining("scope.eq.inbox"),
 		);
@@ -152,7 +210,8 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
 		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
 		const mockOr = vi.fn().mockReturnValue({ order: mockOrder1 });
-		const mockSelect = vi.fn().mockReturnValue({ or: mockOr });
+		const mockIs = vi.fn().mockReturnValue({ or: mockOr });
+		const mockSelect = vi.fn().mockReturnValue({ is: mockIs });
 		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 		const supabase: AnyClient = { from: mockFrom };
 
@@ -161,6 +220,7 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 			exact: "https://example.com/page",
 		});
 
+		expect(mockIs).toHaveBeenCalledWith("deleted_at", null);
 		expect(mockOr).toHaveBeenCalledWith(
 			expect.not.stringContaining("is_favorite.eq.true"),
 		);
@@ -172,7 +232,8 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 	it("fetchExtensionFavoriteMetadatasがお気に入り条件（is_favorite=true）でクエリを構築すること", async () => {
 		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
 		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
-		const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockIs = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockEq = vi.fn().mockReturnValue({ is: mockIs });
 		const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 		const supabase: AnyClient = { from: mockFrom };
@@ -181,12 +242,14 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 
 		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
 		expect(mockEq).toHaveBeenCalledWith("is_favorite", true);
+		expect(mockIs).toHaveBeenCalledWith("deleted_at", null);
 	});
 
 	it("fetchExtensionInboxMetadatasがscope=inboxで絞り込みクエリを構築すること", async () => {
 		const mockOrder2 = vi.fn().mockResolvedValue({ data: [], error: null });
 		const mockOrder1 = vi.fn().mockReturnValue({ order: mockOrder2 });
-		const mockEq = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockIs = vi.fn().mockReturnValue({ order: mockOrder1 });
+		const mockEq = vi.fn().mockReturnValue({ is: mockIs });
 		const mockSelect = vi.fn().mockReturnValue({ eq: mockEq });
 		const mockFrom = vi.fn().mockReturnValue({ select: mockSelect });
 		const supabase: AnyClient = { from: mockFrom };
@@ -195,6 +258,7 @@ describe("Shared DAL: Extension Notes Isolation", () => {
 
 		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
 		expect(mockEq).toHaveBeenCalledWith("scope", "inbox");
+		expect(mockIs).toHaveBeenCalledWith("deleted_at", null);
 	});
 });
 
@@ -227,6 +291,7 @@ describe("Shared DAL: searchNotesAndDrafts", () => {
 	it("tagsのみが指定された場合、通常のテーブルクエリでcontainsフィルタが適用されること", async () => {
 		const mockChain = {
 			select: vi.fn().mockReturnThis(),
+			is: vi.fn().mockReturnThis(),
 			contains: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
