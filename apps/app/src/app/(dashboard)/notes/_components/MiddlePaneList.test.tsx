@@ -125,6 +125,7 @@ const mockItems: Note[] = [
 		sort_order: 0,
 		draft_id: null,
 		tags: null,
+		deleted_at: null,
 	},
 	{
 		id: "note-2",
@@ -142,6 +143,7 @@ const mockItems: Note[] = [
 		sort_order: 1,
 		draft_id: null,
 		tags: null,
+		deleted_at: null,
 	},
 ];
 

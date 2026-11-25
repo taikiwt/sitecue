@@ -96,14 +96,19 @@ declare
   user_plan text;
   draft_count int;
 begin
+  IF TG_OP = 'UPDATE' AND NOT (OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS NULL) THEN
+    RETURN NEW;
+  END IF;
+
   select plan into user_plan
   from public.sitecue_profiles
   where id = auth.uid();
 
-  if user_plan = 'free' then
+  if user_plan = 'free' or user_plan is null then
     select count(*) into draft_count
     from public.sitecue_drafts
-    where user_id = auth.uid();
+    where user_id = auth.uid()
+      and deleted_at is null;
 
     if draft_count >= 50 then
       raise exception 'draft storage limit reached';
@@ -187,6 +192,20 @@ BEGIN
   WHERE n.deleted_at IS NOT NULL
     AND NOT EXISTS (SELECT 1 FROM public.sitecue_profiles p WHERE p.id = n.user_id)
     AND n.deleted_at < now() - interval '7 days';
+
+  DELETE FROM public.sitecue_drafts d
+  USING public.sitecue_profiles p
+  WHERE d.user_id = p.id
+    AND d.deleted_at IS NOT NULL
+    AND (
+      (p.plan = 'pro' AND d.deleted_at < now() - interval '30 days')
+      OR (p.plan <> 'pro' AND d.deleted_at < now() - interval '7 days')
+    );
+
+  DELETE FROM public.sitecue_drafts d
+  WHERE d.deleted_at IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM public.sitecue_profiles p WHERE p.id = d.user_id)
+    AND d.deleted_at < now() - interval '7 days';
 END;
 $$;
 
@@ -323,6 +342,7 @@ CREATE TABLE IF NOT EXISTS "public"."sitecue_drafts" (
     "metadata" "jsonb" DEFAULT '{}'::"jsonb",
     "template_id" "uuid",
     "tags" "text"[] DEFAULT '{}'::"text"[],
+    "deleted_at" timestamp with time zone,
     CONSTRAINT "sitecue_drafts_content_len_check" CHECK (("char_length"("content") <= 100000))
 );
 
@@ -336,7 +356,9 @@ CREATE OR REPLACE FUNCTION "public"."get_drafts_by_date"("p_user_id" "uuid", "p_
 BEGIN
     RETURN QUERY
     SELECT * FROM public.sitecue_drafts
-    WHERE user_id = p_user_id AND (timezone('Asia/Tokyo', updated_at)::date)::text = p_date
+    WHERE user_id = p_user_id
+      AND deleted_at IS NULL
+      AND (timezone('Asia/Tokyo', updated_at)::date)::text = p_date
     ORDER BY updated_at ASC;
 END;
 $$;
@@ -469,8 +491,9 @@ CREATE OR REPLACE FUNCTION "public"."search_drafts"("search_query" "text") RETUR
 BEGIN
   RETURN QUERY
   SELECT * FROM public.sitecue_drafts
-  WHERE (content ILIKE '%' || search_query || '%'
-     OR title ILIKE '%' || search_query || '%');
+  WHERE deleted_at IS NULL
+    AND (content ILIKE '%' || search_query || '%'
+      OR title ILIKE '%' || search_query || '%');
 END;
 $$;
 
@@ -666,6 +689,10 @@ CREATE INDEX "idx_sitecue_drafts_template_id" ON "public"."sitecue_drafts" USING
 
 
 
+CREATE INDEX "sitecue_drafts_deleted_at_idx" ON "public"."sitecue_drafts" USING "btree" ("user_id", "deleted_at");
+
+
+
 CREATE INDEX "sitecue_links_domain_idx" ON "public"."sitecue_links" USING "btree" ("domain");
 
 
@@ -690,7 +717,7 @@ CREATE OR REPLACE TRIGGER "on_diary_content_length_check" BEFORE INSERT OR UPDAT
 
 
 
-CREATE OR REPLACE TRIGGER "on_draft_created_check_limit" BEFORE INSERT ON "public"."sitecue_drafts" FOR EACH ROW EXECUTE FUNCTION "public"."check_draft_limit"();
+CREATE OR REPLACE TRIGGER "on_draft_created_check_limit" BEFORE INSERT OR UPDATE OF "deleted_at" ON "public"."sitecue_drafts" FOR EACH ROW EXECUTE FUNCTION "public"."check_draft_limit"();
 
 
 

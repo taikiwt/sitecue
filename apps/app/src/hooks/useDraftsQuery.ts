@@ -1,6 +1,17 @@
 "use client";
 
-import type { Draft } from "@sitecue/shared";
+import {
+	createDraftEntity,
+	type Draft,
+	emptyTrashDraftsEntity,
+	fetchDraftById,
+	fetchDraftsList,
+	fetchTrashDrafts,
+	permanentlyDeleteDraftEntity,
+	restoreDraftEntity,
+	softDeleteDraftEntity,
+	updateDraftEntity,
+} from "@sitecue/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DASHBOARD_QUERY_KEY } from "@/hooks/useDashboardQuery";
 import { NOTES_QUERY_KEY } from "@/hooks/useNotesQuery";
@@ -8,6 +19,7 @@ import { broadcastCacheSync } from "@/hooks/useTabSync";
 import { createClient } from "@/utils/supabase/client";
 
 export const DRAFTS_QUERY_KEY = ["drafts"];
+export const TRASH_DRAFTS_QUERY_KEY = ["trash-drafts"];
 
 export function useFetchDrafts(initialData?: Draft[]) {
 	return useQuery({
@@ -20,14 +32,7 @@ export function useFetchDrafts(initialData?: Draft[]) {
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error("User not authenticated");
 
-			const { data, error } = await supabase
-				.from("sitecue_drafts")
-				.select("*")
-				.eq("user_id", user.id)
-				.order("updated_at", { ascending: false });
-
-			if (error) throw error;
-			return (data as Draft[]) || [];
+			return await fetchDraftsList(supabase, user.id);
 		},
 	});
 }
@@ -57,21 +62,7 @@ export function useFetchDraft(id?: string, initialData?: Draft) {
 		queryFn: async (): Promise<Draft | undefined> => {
 			if (!id) return undefined;
 			const supabase = createClient();
-			const { data, error } = await supabase
-				.from("sitecue_drafts")
-				.select("*, sitecue_templates(*)")
-				.eq("id", id)
-				.maybeSingle();
-
-			if (error) throw error;
-			if (!data) return undefined;
-
-			return {
-				...data,
-				metadata: data.metadata as Draft["metadata"],
-				sitecue_templates:
-					data.sitecue_templates as unknown as Draft["sitecue_templates"],
-			} as Draft;
+			return await fetchDraftById(supabase, id);
 		},
 		staleTime: 5 * 60 * 1000,
 	});
@@ -88,17 +79,7 @@ export function useCreateDraft() {
 			} = await supabase.auth.getUser();
 			if (!user) throw new Error("User not authenticated");
 
-			const { data, error } = await supabase
-				.from("sitecue_drafts")
-				.insert({
-					...newDraft,
-					user_id: user.id,
-				})
-				.select()
-				.single();
-
-			if (error) throw error;
-			return data as Draft;
+			return await createDraftEntity(supabase, user.id, newDraft);
 		},
 		onSuccess: (newDraft) => {
 			queryClient.setQueryData([...DRAFTS_QUERY_KEY, newDraft.id], newDraft);
@@ -142,15 +123,7 @@ export function useUpdateDraft() {
 			updates: Partial<Draft>;
 		}) => {
 			const supabase = createClient();
-			const { data, error } = await supabase
-				.from("sitecue_drafts")
-				.update(updates)
-				.eq("id", id)
-				.select()
-				.single();
-
-			if (error) throw error;
-			return data as Draft;
+			return await updateDraftEntity(supabase, id, updates);
 		},
 		onSuccess: (updatedDraft) => {
 			queryClient.setQueryData(
@@ -190,15 +163,10 @@ export function useDeleteDraft() {
 	return useMutation({
 		mutationFn: async (id: string) => {
 			const supabase = createClient();
-			const { error } = await supabase
-				.from("sitecue_drafts")
-				.delete()
-				.eq("id", id);
-
-			if (error) throw error;
-			return id;
+			return await softDeleteDraftEntity(supabase, id);
 		},
-		onSuccess: (deletedId) => {
+		onSuccess: (deletedDraft) => {
+			const deletedId = deletedDraft.id;
 			queryClient.removeQueries({
 				queryKey: [...DRAFTS_QUERY_KEY, deletedId],
 				exact: true,
@@ -238,11 +206,102 @@ export function useDeleteDraft() {
 				return old;
 			});
 			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: TRASH_DRAFTS_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
 			broadcastCacheSync(DRAFTS_QUERY_KEY);
+			broadcastCacheSync(TRASH_DRAFTS_QUERY_KEY);
 			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 			broadcastCacheSync(NOTES_QUERY_KEY);
+		},
+	});
+}
+
+export function useFetchTrashDrafts(retentionDays: number) {
+	return useQuery({
+		queryKey: [...TRASH_DRAFTS_QUERY_KEY, retentionDays],
+		staleTime: 60 * 1000,
+		queryFn: async (): Promise<Draft[]> => {
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("User not authenticated");
+
+			return await fetchTrashDrafts(supabase, user.id, retentionDays);
+		},
+	});
+}
+
+export function useRestoreDraft() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (id: string) => {
+			const supabase = createClient();
+			return await restoreDraftEntity(supabase, id);
+		},
+		onSuccess: (restoredDraft) => {
+			queryClient.setQueriesData<Draft[]>(
+				{ queryKey: TRASH_DRAFTS_QUERY_KEY },
+				(old) => {
+					if (!old || !Array.isArray(old)) return old;
+					return old.filter((d) => d.id !== restoredDraft.id);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DRAFTS_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(TRASH_DRAFTS_QUERY_KEY);
+			broadcastCacheSync(DRAFTS_QUERY_KEY);
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+		},
+	});
+}
+
+export function usePermanentlyDeleteDraft() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (id: string) => {
+			const supabase = createClient();
+			return await permanentlyDeleteDraftEntity(supabase, id);
+		},
+		onSuccess: (deletedId) => {
+			queryClient.setQueriesData<Draft[]>(
+				{ queryKey: TRASH_DRAFTS_QUERY_KEY },
+				(old) => {
+					if (!old || !Array.isArray(old)) return old;
+					return old.filter((d) => d.id !== deletedId);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_DRAFTS_QUERY_KEY });
+			broadcastCacheSync(TRASH_DRAFTS_QUERY_KEY);
+		},
+	});
+}
+
+export function useEmptyTrashDrafts() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async () => {
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("User not authenticated");
+			await emptyTrashDraftsEntity(supabase, user.id);
+		},
+		onSuccess: () => {
+			queryClient.setQueriesData<Draft[]>(
+				{ queryKey: TRASH_DRAFTS_QUERY_KEY },
+				() => [],
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_DRAFTS_QUERY_KEY });
+			broadcastCacheSync(TRASH_DRAFTS_QUERY_KEY);
 		},
 	});
 }

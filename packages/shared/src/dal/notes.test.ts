@@ -10,6 +10,7 @@ import {
 	restoreNoteEntity,
 	searchNotesAndDrafts,
 	softDeleteNoteEntity,
+	softDeleteNotesEntity,
 	updateNoteEntity,
 } from "./notes";
 
@@ -305,5 +306,22 @@ describe("Shared DAL: searchNotesAndDrafts", () => {
 		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
 		expect(mockFrom).toHaveBeenCalledWith("sitecue_drafts");
 		expect(mockChain.contains).toHaveBeenCalledWith("tags", ["tag1"]);
+	});
+
+	it("softDeleteNotesEntityが複数IDに対してdeleted_atとupdated_atを一括更新すること", async () => {
+		const mockIn = vi.fn().mockResolvedValue({ error: null });
+		const mockUpdate = vi.fn().mockReturnValue({ in: mockIn });
+		const mockFrom = vi.fn().mockReturnValue({ update: mockUpdate });
+		const supabase: AnyClient = { from: mockFrom };
+
+		const res = await softDeleteNotesEntity(supabase, ["note-1", "note-2"]);
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_notes");
+		expect(mockUpdate).toHaveBeenCalledWith({
+			deleted_at: expect.any(String),
+			updated_at: expect.any(String),
+		});
+		expect(mockIn).toHaveBeenCalledWith("id", ["note-1", "note-2"]);
+		expect(res).toEqual(["note-1", "note-2"]);
 	});
 });

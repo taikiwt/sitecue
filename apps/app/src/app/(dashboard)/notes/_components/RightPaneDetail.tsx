@@ -7,6 +7,8 @@ import {
 	SHARED_LIMITS,
 } from "@sitecue/shared";
 import {
+	ChevronDown,
+	ChevronUp,
 	ClipboardCopy,
 	Copy,
 	MoreHorizontal,
@@ -14,7 +16,9 @@ import {
 	Pencil,
 	Pin,
 	PinOff,
+	Search,
 	Star,
+	X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
@@ -96,6 +100,10 @@ export function RightPaneDetail({
 
 	const [editContent, setEditContent] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [inNoteQuery, setInNoteQuery] = useState("");
+	const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+	const [totalMatches, setTotalMatches] = useState(0);
+	const inNoteSearchInputRef = useRef<HTMLInputElement>(null);
 
 	const [_isCopying, setIsCopying] = useState(false);
 	const [optimisticContent, setOptimisticContent] = useState<string | null>(
@@ -233,6 +241,27 @@ export function RightPaneDetail({
 		}
 	}, [note?.id, note?.content, isNewNote]);
 
+	const activeItemId = note?.id ?? draft?.id ?? diary?.date ?? null;
+	useEffect(() => {
+		if (isEditing || activeItemId !== undefined) {
+			setInNoteQuery("");
+			setActiveMatchIndex(0);
+			setTotalMatches(0);
+		}
+	}, [activeItemId, isEditing]);
+
+	useEffect(() => {
+		if (isEditing) return;
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
+				e.preventDefault();
+				inNoteSearchInputRef.current?.focus();
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [isEditing]);
+
 	// 2. 物理的な外殻コンテナ構造（Anti-CLS）を破壊しないトップレベルガードの構造化
 	// ① 何も選択されていない空状態のガード：isLoading が true の場合はスキップしてスケルトンを表示させる
 	if (
@@ -261,6 +290,7 @@ export function RightPaneDetail({
 		try {
 			await deleteNoteMutation.mutateAsync(note.id);
 			setDeleteTarget(null);
+			toast.success("Moved to Trash");
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("noteId");
@@ -279,6 +309,7 @@ export function RightPaneDetail({
 		try {
 			await deleteDraftMutation.mutateAsync(draft.id);
 			setDeleteTarget(null);
+			toast.success("Moved to Trash");
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("draftId");
@@ -310,9 +341,9 @@ export function RightPaneDetail({
 	};
 
 	const deleteDescriptionMap: Record<"note" | "draft" | "diary", string> = {
-		note: "This action cannot be undone. This will permanently delete your note and remove it from our servers.",
+		note: "This note will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
 		draft:
-			"This action cannot be undone. This will permanently delete your draft and its review notes from our servers.",
+			"This draft will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
 		diary:
 			"This action cannot be undone. This will permanently delete your diary entry from our servers.",
 	};
@@ -347,11 +378,108 @@ export function RightPaneDetail({
 						className="bg-note-alert hover:bg-note-alert/80 text-white"
 						disabled={isSaving}
 					>
-						{isSaving ? "Deleting..." : "Delete"}
+						{isSaving
+							? "Deleting..."
+							: deleteTarget === "note" || deleteTarget === "draft"
+								? "Move to Trash"
+								: "Delete"}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
+	);
+
+	const inNoteSearchBar = (
+		<div className="flex items-center gap-1 rounded-full border border-base-border bg-base-surface px-2.5 py-1 min-w-0 order-last basis-full lg:order-none lg:basis-auto lg:flex-1 lg:max-w-xs">
+			<Search
+				className="size-3.5 text-neutral-400 shrink-0"
+				aria-hidden="true"
+			/>
+			<input
+				ref={inNoteSearchInputRef}
+				type="text"
+				value={inNoteQuery}
+				onChange={(e) => {
+					setInNoteQuery(e.target.value);
+					setActiveMatchIndex(0);
+				}}
+				onKeyDown={(e) => {
+					if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+					if (e.key === "Enter") {
+						e.preventDefault();
+						if (totalMatches > 0) {
+							setActiveMatchIndex((prev) =>
+								e.shiftKey
+									? (prev - 1 + totalMatches) % totalMatches
+									: (prev + 1) % totalMatches,
+							);
+						}
+					} else if (e.key === "Escape") {
+						setInNoteQuery("");
+						setActiveMatchIndex(0);
+						setTotalMatches(0);
+					}
+				}}
+				placeholder="Find in note..."
+				aria-label="Find in note"
+				className="w-full min-w-0 bg-transparent text-base md:text-sm outline-none placeholder:text-neutral-400"
+			/>
+			{inNoteQuery && (
+				<div className="flex items-center gap-0.5 shrink-0">
+					<span className="text-[11px] font-mono text-neutral-400 px-1 shrink-0">
+						{totalMatches > 0
+							? `${activeMatchIndex + 1}/${totalMatches}`
+							: "0/0"}
+					</span>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => {
+							if (totalMatches > 0) {
+								setActiveMatchIndex(
+									(prev) => (prev - 1 + totalMatches) % totalMatches,
+								);
+							}
+						}}
+						disabled={totalMatches === 0}
+						aria-label="Previous match"
+						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
+					>
+						<ChevronUp className="size-3.5" aria-hidden="true" />
+					</Button>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => {
+							if (totalMatches > 0) {
+								setActiveMatchIndex((prev) => (prev + 1) % totalMatches);
+							}
+						}}
+						disabled={totalMatches === 0}
+						aria-label="Next match"
+						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
+					>
+						<ChevronDown className="size-3.5" aria-hidden="true" />
+					</Button>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						onClick={() => {
+							setInNoteQuery("");
+							setActiveMatchIndex(0);
+							setTotalMatches(0);
+						}}
+						aria-label="Clear find in note"
+						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
+					>
+						<X className="size-3.5" aria-hidden="true" />
+					</Button>
+				</div>
+			)}
+		</div>
 	);
 
 	// ② 日記コンテキスト（view === "diaries" かつ diary が存在するときのみ許容）
@@ -367,20 +495,23 @@ export function RightPaneDetail({
 		return (
 			<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
 				{/* Header */}
-				<div className="flex items-center justify-between p-6 border-b border-base-border shrink-0">
-					<div>
-						<h2 className="text-xl font-bold text-action leading-tight">
-							{formattedDiaryDate}
-						</h2>
-						<p className="text-xs text-gray-400 mt-1">
-							Last updated:{" "}
-							{new Date(diary.updated_at).toLocaleTimeString("en-US", {
-								hour: "2-digit",
-								minute: "2-digit",
-							})}
-						</p>
+				<div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 lg:gap-3 p-4 lg:p-6 border-b border-base-border shrink-0">
+					<div className="contents lg:flex lg:items-center lg:gap-3 lg:min-w-0 lg:flex-1">
+						<div className="min-w-0">
+							<h2 className="text-xl font-bold text-action leading-tight">
+								{formattedDiaryDate}
+							</h2>
+							<p className="text-xs text-gray-400 mt-1">
+								Last updated:{" "}
+								{new Date(diary.updated_at).toLocaleTimeString("en-US", {
+									hour: "2-digit",
+									minute: "2-digit",
+								})}
+							</p>
+						</div>
+						{inNoteSearchBar}
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
 						{/* PCサイズ（1024px以上）: HoverRevealButton をパージし、テキスト常時露出カプセルボタンへ */}
 						<div className="hidden lg:block">
 							<Button
@@ -455,7 +586,12 @@ export function RightPaneDetail({
 
 				{/* Content */}
 				<div className="flex-1 overflow-y-auto p-8 prose max-w-none">
-					<MarkdownRenderer content={diary.content} />
+					<MarkdownRenderer
+						content={diary.content}
+						searchQuery={inNoteQuery}
+						activeMatchIndex={activeMatchIndex}
+						onMatchCountChange={setTotalMatches}
+					/>
 				</div>
 				{deleteAlertDialog}
 			</div>
@@ -652,33 +788,28 @@ export function RightPaneDetail({
 	return (
 		<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
 			{/* 1. Header (Fixed) */}
-			<div className="shrink-0 z-10 bg-base-bg pt-6 md:pt-8 px-4 md:px-10">
-				<div className="mx-auto w-full flex items-center justify-between pb-4 border-b border-base-border">
-					{/* Left: Badge and Date */}
-					<div className="flex flex-col gap-1">
-						<div className="flex items-center gap-2 group/meta">
-							{note ? (
-								<NoteStatusBadge
-									type={currentNoteType}
-									isResolved={currentResolved}
-									onClick={() =>
-										handleUpdateProperty({ is_resolved: !currentResolved })
-									}
-								/>
-							) : (
-								<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase">
-									{isNewNote ? "NEW" : "DRAFT"}
-								</span>
-							)}
-
-							<span className="hidden md:inline text-sm text-gray-400">
-								{formatDate(createdAt)}
+			<div className="shrink-0 z-10 bg-base-bg pt-4 lg:pt-8 px-4 lg:px-10">
+				<div className="mx-auto w-full flex flex-wrap lg:flex-nowrap items-center justify-between gap-2 lg:gap-3 pb-4 border-b border-base-border">
+					{/* Left: Badge and In-Note Search (Mobile / Tablet縦持ちでは検索バーが2段目100%幅へ折り返す) */}
+					<div className="contents lg:flex lg:items-center lg:gap-2 lg:min-w-0 lg:flex-1">
+						{note ? (
+							<NoteStatusBadge
+								type={currentNoteType}
+								isResolved={currentResolved}
+								onClick={() =>
+									handleUpdateProperty({ is_resolved: !currentResolved })
+								}
+							/>
+						) : (
+							<span className="relative z-10 bg-neutral-100 text-neutral-600 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase shrink-0">
+								{isNewNote ? "NEW" : "DRAFT"}
 							</span>
-						</div>
+						)}
+						{!isEditing && inNoteSearchBar}
 					</div>
 
 					{/* Right: Action Buttons */}
-					<div className="flex items-center gap-2">
+					<div className="flex items-center gap-2 shrink-0 ml-auto lg:ml-0">
 						{note && !isEditing && (
 							<>
 								{/* PCサイズ（1024px以上）: 常時テキスト露出カプセルボタン */}
@@ -1152,7 +1283,12 @@ export function RightPaneDetail({
 											)}
 										</div>
 										<div className="min-h-50 rounded-2xl">
-											<MarkdownRenderer content={content} />
+											<MarkdownRenderer
+												content={content}
+												searchQuery={inNoteQuery}
+												activeMatchIndex={activeMatchIndex}
+												onMatchCountChange={setTotalMatches}
+											/>
 										</div>
 									</div>
 								</>

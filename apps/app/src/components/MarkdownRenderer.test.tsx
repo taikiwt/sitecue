@@ -74,4 +74,22 @@ describe("MarkdownRenderer", () => {
 		const codeEl = container.querySelector("pre code");
 		expect(codeEl?.textContent).toContain("const a = 1;\n\n\nconst b = 2;");
 	});
+
+	it("searchQueryが指定された場合にテキストノードのみを<mark>でハイライトし一致件数を通知すること", () => {
+		const onMatchCountChange = vi.fn();
+		const { container } = render(
+			<MarkdownRenderer
+				content={"Hello **world**, hello `code` world"}
+				searchQuery="hello"
+				activeMatchIndex={1}
+				onMatchCountChange={onMatchCountChange}
+			/>,
+		);
+
+		const marks = container.querySelectorAll('mark[data-search-match="true"]');
+		expect(marks).toHaveLength(2);
+		expect(marks[0]).not.toHaveAttribute("data-search-active", "true");
+		expect(marks[1]).toHaveAttribute("data-search-active", "true");
+		expect(onMatchCountChange).toHaveBeenCalledWith(2);
+	});
 });

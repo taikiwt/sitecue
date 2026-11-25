@@ -104,6 +104,7 @@ export async function fetchDashboardActivityData(
 			.from("sitecue_drafts")
 			.select("id, title, content, created_at")
 			.eq("user_id", userId)
+			.is("deleted_at", null)
 			.gte("created_at", dateStr)
 			.order("created_at", { ascending: false }),
 	]);
@@ -140,6 +141,7 @@ export async function fetchDashboardActivityData(
 			.from("sitecue_drafts")
 			.select("id, title, content, created_at")
 			.eq("user_id", userId)
+			.is("deleted_at", null)
 			.order("created_at", { ascending: false })
 			.limit(5);
 		recentDrafts =
