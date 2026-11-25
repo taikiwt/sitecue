@@ -14,8 +14,14 @@ import {
 } from "@/hooks/useNotesQuery";
 import type { Draft, GroupedNotes, Note } from "../types";
 import { MiddlePaneContent } from "./MiddlePaneContent";
-import { type FilterType, MiddlePaneHeader } from "./MiddlePaneHeader";
+import {
+	type DomainSortOrder,
+	type FilterType,
+	MiddlePaneHeader,
+} from "./MiddlePaneHeader";
 import { NotesTabBar } from "./NotesTabBar";
+
+const DOMAIN_SORT_STORAGE_KEY = "sitecue_domain_sort_order";
 
 type Props = {
 	items: (Note | Draft | Diary)[];
@@ -78,6 +84,30 @@ export function MiddlePaneList(props: Props) {
 	const [showResolved, setShowResolved] = useState(false);
 	const [filterType, setFilterType] = useState<FilterType>("all");
 	const [isSorting, setIsSorting] = useState(false);
+	const [domainSortOrder, setDomainSortOrder] =
+		useState<DomainSortOrder>("count");
+
+	useEffect(() => {
+		if (
+			typeof window !== "undefined" &&
+			typeof window.localStorage?.getItem === "function"
+		) {
+			const stored = window.localStorage.getItem(DOMAIN_SORT_STORAGE_KEY);
+			if (stored === "name" || stored === "count") {
+				setDomainSortOrder(stored);
+			}
+		}
+	}, []);
+
+	const handleDomainSortOrderChange = useCallback((order: DomainSortOrder) => {
+		setDomainSortOrder(order);
+		if (
+			typeof window !== "undefined" &&
+			typeof window.localStorage?.setItem === "function"
+		) {
+			window.localStorage.setItem(DOMAIN_SORT_STORAGE_KEY, order);
+		}
+	}, []);
 
 	const isDesktop = useMediaQuery("(min-width: 768px)");
 	const defaultBatchSize = isDesktop ? 35 : 20;
@@ -442,6 +472,8 @@ export function MiddlePaneList(props: Props) {
 					isDeletingBulk={isDeletingBulk}
 					displayItems={searchedDisplayItems}
 					onBack={handleBack}
+					domainSortOrder={domainSortOrder}
+					onDomainSortOrderChange={handleDomainSortOrderChange}
 				/>
 			</div>
 
@@ -472,6 +504,7 @@ export function MiddlePaneList(props: Props) {
 				visibleCount={visibleCount}
 				onLoadMore={handleLoadMore}
 				bulkExitingIds={bulkExitingIds}
+				domainSortOrder={domainSortOrder}
 			/>
 		</div>
 	);

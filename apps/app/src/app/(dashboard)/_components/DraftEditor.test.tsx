@@ -171,7 +171,8 @@ describe("DraftEditor - Error Handling & Architecture", () => {
 		expect(saveButton).toBeDisabled();
 	});
 
-	it("新規保存時に router.refresh() を呼ばずに setQueriesData で0ms注入後に router.replace を直列実行すること", async () => {
+	it("新規保存時に router.replace() を呼ばずに window.history.replaceState でURLとクエリを維持し再マウントを防ぐこと", async () => {
+		const replaceStateSpy = vi.spyOn(window.history, "replaceState");
 		const queryClient = createTestQueryClient();
 		const user = userEvent.setup();
 
@@ -189,12 +190,15 @@ describe("DraftEditor - Error Handling & Architecture", () => {
 		await user.click(saveButton);
 
 		await waitFor(() => {
-			expect(mockReplace).toHaveBeenCalledWith(
-				expect.stringContaining("/studio/"),
-				{ scroll: false },
+			expect(replaceStateSpy).toHaveBeenCalledWith(
+				null,
+				"",
+				expect.stringContaining("/studio/draft-new"),
 			);
+			expect(mockReplace).not.toHaveBeenCalled();
 			expect(mockRefresh).not.toHaveBeenCalled();
 		});
+		replaceStateSpy.mockRestore();
 	});
 
 	it("タブ切替（OUTLINE / REVIEW / MATERIALS）が正しく動作すること", async () => {

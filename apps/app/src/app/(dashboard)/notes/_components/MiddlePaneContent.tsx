@@ -19,6 +19,7 @@ import { type RefObject, useCallback, useEffect, useRef } from "react";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { DomainFavicon } from "../../_components/DomainFavicon";
 import type { Draft, GroupedNotes, Note } from "../types";
+import type { DomainSortOrder } from "./MiddlePaneHeader";
 import { NoteItem, SortableNoteItem } from "./NoteItem";
 import { MiddlePaneListSkeleton } from "./NotesSkeletons";
 
@@ -63,6 +64,7 @@ interface MiddlePaneContentProps {
 	visibleCount: number;
 	onLoadMore: () => void;
 	bulkExitingIds?: Set<string>;
+	domainSortOrder?: DomainSortOrder;
 }
 
 export function MiddlePaneContent({
@@ -91,6 +93,7 @@ export function MiddlePaneContent({
 	visibleCount,
 	onLoadMore,
 	bulkExitingIds,
+	domainSortOrder = "count",
 }: MiddlePaneContentProps) {
 	const searchParams = useSearchParams();
 	const diaries = items.filter(
@@ -300,6 +303,14 @@ export function MiddlePaneContent({
 				Object.entries(groupedNotes.domains)
 					.filter(([domain]) => domain !== "inbox")
 					.filter(([domain]) => !query || domain.toLowerCase().includes(query))
+					.sort(([domainA, dataA], [domainB, dataB]) => {
+						if (domainSortOrder === "name") {
+							return domainA.localeCompare(domainB);
+						}
+						const countDiff =
+							unresolvedDomainCount(dataB) - unresolvedDomainCount(dataA);
+						return countDiff !== 0 ? countDiff : domainA.localeCompare(domainB);
+					})
 					.map(([domain, data]) => (
 						<Link
 							key={domain}

@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import type { Draft, Note } from "../types";
 
 export type FilterType = "all" | "info" | "alert" | "idea";
+export type DomainSortOrder = "count" | "name";
 
 interface MiddlePaneHeaderProps {
 	currentView: string | null;
@@ -50,6 +51,8 @@ interface MiddlePaneHeaderProps {
 	isDeletingBulk: boolean;
 	displayItems: (Note | Draft)[];
 	onBack: () => void;
+	domainSortOrder?: DomainSortOrder;
+	onDomainSortOrderChange?: (order: DomainSortOrder) => void;
 }
 
 export function MiddlePaneHeader({
@@ -72,6 +75,8 @@ export function MiddlePaneHeader({
 	isDeletingBulk,
 	displayItems,
 	onBack,
+	domainSortOrder,
+	onDomainSortOrderChange,
 }: MiddlePaneHeaderProps) {
 	const searchParams = useSearchParams();
 	const router = useRouter();
@@ -277,6 +282,23 @@ export function MiddlePaneHeader({
 								className="rounded-full px-2.5 py-1 text-xs"
 							>
 								Idea
+							</FilterBadge>
+						</div>
+					) : isRouteDomains && domainSortOrder && onDomainSortOrderChange ? (
+						<div className="flex items-center gap-0.5 bg-base-surface p-1.5 rounded-full animate-in fade-in duration-200 pointer-events-auto">
+							<FilterBadge
+								isActive={domainSortOrder === "count"}
+								onClick={() => onDomainSortOrderChange("count")}
+								className="rounded-full px-2.5 py-1 text-xs"
+							>
+								Most Notes
+							</FilterBadge>
+							<FilterBadge
+								isActive={domainSortOrder === "name"}
+								onClick={() => onDomainSortOrderChange("name")}
+								className="rounded-full px-2.5 py-1 text-xs"
+							>
+								Name
 							</FilterBadge>
 						</div>
 					) : (

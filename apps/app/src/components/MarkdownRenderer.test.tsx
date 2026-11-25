@@ -61,4 +61,17 @@ describe("MarkdownRenderer", () => {
 		const link = screen.getByRole("link", { name: /Google/i });
 		expect(link).toHaveAttribute("href", "https://google.com");
 	});
+
+	it("連続する空行が視覚的な空行段落として保持され、コードブロック内の空行は変更されないこと", () => {
+		const content =
+			"Line 1\n\n\n\nLine 2\n\n```js\nconst a = 1;\n\n\nconst b = 2;\n```";
+		const { container } = render(<MarkdownRenderer content={content} />);
+		const paragraphs = container.querySelectorAll("p");
+		expect(paragraphs.length).toBeGreaterThanOrEqual(4);
+		expect(paragraphs[1].textContent).toBe("\u00A0");
+		expect(paragraphs[2].textContent).toBe("\u00A0");
+
+		const codeEl = container.querySelector("pre code");
+		expect(codeEl?.textContent).toContain("const a = 1;\n\n\nconst b = 2;");
+	});
 });

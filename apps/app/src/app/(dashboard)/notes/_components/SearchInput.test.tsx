@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SearchInput from "./SearchInput";
@@ -110,5 +110,15 @@ describe("SearchInput Component", () => {
 				scroll: false,
 			});
 		});
+	});
+
+	it("should ignore Enter keydown during IME composition", () => {
+		render(<SearchInput />);
+		const input = screen.getByPlaceholderText(/Search keywords/i);
+
+		fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+		fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
+
+		expect(mockPush).not.toHaveBeenCalled();
 	});
 });

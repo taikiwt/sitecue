@@ -837,7 +837,10 @@ describe("MiddlePaneList Back Button", () => {
 				selectedDraftId={null}
 			/>,
 		);
-		expect(screen.getByText("Domain List")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Most Notes" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument();
 
 		rerender(
 			<MiddlePaneList
@@ -874,7 +877,10 @@ describe("MiddlePaneList Back Button", () => {
 		expect(screen.queryByTitle("New Note here")).not.toBeInTheDocument();
 		expect(screen.queryByTitle("Select Mode")).not.toBeInTheDocument();
 		// 代わりに中央に Domain List がマウントされていることを検証
-		expect(screen.getByText("Domain List")).toBeInTheDocument();
+		expect(
+			screen.getByRole("button", { name: "Most Notes" }),
+		).toBeInTheDocument();
+		expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument();
 	});
 
 	it("diariesビューで表示値(27 Sat)や日付によって正しくインクリメンタル検索・消し込みされること", async () => {
@@ -1462,5 +1468,50 @@ describe("MiddlePaneList - On-Demand Content Hydration & Scroll Sync", () => {
 				"note-batch-25",
 			]);
 		});
+	});
+
+	it("ドメイン一覧でデフォルトは未解決ノート数降順、Name切替でドメイン名昇順に並び替わること", async () => {
+		const user = userEvent.setup();
+		const groupedNotes = {
+			domains: {
+				"zeta.com": {
+					domainNotes: [
+						{ ...mockItems[0], id: "z1", is_resolved: false },
+						{ ...mockItems[0], id: "z2", is_resolved: false },
+					],
+					pages: {},
+				},
+				"alpha.com": {
+					domainNotes: [{ ...mockItems[0], id: "a1", is_resolved: false }],
+					pages: {},
+				},
+			},
+			inbox: [],
+			drafts: [],
+		};
+
+		render(
+			<MiddlePaneList
+				items={[]}
+				groupedNotes={groupedNotes}
+				currentView="domains"
+				currentDomain={null}
+				currentExact={null}
+				selectedNoteId={null}
+				selectedDraftId={null}
+			/>,
+		);
+
+		// デフォルト（Most Notes）では zeta.com (2 notes) が alpha.com (1 notes) より先
+		const linksBefore = screen.getAllByRole("link");
+		expect(linksBefore[0]).toHaveTextContent("zeta.com");
+		expect(linksBefore[1]).toHaveTextContent("alpha.com");
+
+		// Name ボタンをクリックして名前順に切り替え
+		await user.click(screen.getByRole("button", { name: "Name" }));
+
+		const linksAfter = screen.getAllByRole("link");
+		expect(linksAfter[0]).toHaveTextContent("alpha.com");
+		expect(linksAfter[1]).toHaveTextContent("zeta.com");
 	});
 });
