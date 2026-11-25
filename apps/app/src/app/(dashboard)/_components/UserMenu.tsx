@@ -4,6 +4,7 @@ import { fetchOrResetUserProfile, SHARED_LIMITS } from "@sitecue/shared";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import {
 	Activity,
+	CircleHelp,
 	ExternalLink,
 	LogOut,
 	Settings,
@@ -255,6 +256,15 @@ export function UserMenu({
 				>
 					<Trash2 className="h-4 w-4" aria-hidden="true" />
 					Trash
+				</Link>
+
+				<Link
+					href="/guide"
+					onClick={() => setIsMenuOpen(false)}
+					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
+				>
+					<CircleHelp className="h-4 w-4" aria-hidden="true" />
+					Guide &amp; Shortcuts
 				</Link>
 
 				<a

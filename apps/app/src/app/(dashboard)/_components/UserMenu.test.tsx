@@ -203,4 +203,20 @@ describe("UserMenu", () => {
 		expect(trashLink).toBeDefined();
 		expect(trashLink.getAttribute("href")).toBe("/trash");
 	});
+
+	it("Guide & Shortcuts リンクが表示され、/guide への href を持つこと", async () => {
+		render(<UserMenu />);
+
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "User menu" })).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "User menu" }));
+
+		const guideLink = screen.getByRole("link", {
+			name: /Guide & Shortcuts/i,
+		});
+		expect(guideLink).toBeDefined();
+		expect(guideLink.getAttribute("href")).toBe("/guide");
+	});
 });
