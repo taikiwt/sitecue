@@ -3,6 +3,7 @@
 import type { Diary } from "@sitecue/shared";
 import {
 	appendDiaryLog,
+	deleteDiaryEntity,
 	fetchDiariesList,
 	fetchDiaryByDate,
 	updateDiaryContent,
@@ -159,6 +160,42 @@ export function useUpdateDiary() {
 					return old;
 				},
 			);
+			broadcastCacheSync(["diaries"]);
+		},
+	});
+}
+
+export function useDeleteDiary() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (date: string) => {
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("Unauthenticated");
+			return deleteDiaryEntity(supabase, user.id, date);
+		},
+		onSuccess: (deletedDate) => {
+			queryClient.removeQueries({
+				queryKey: ["diaries", deletedDate],
+				exact: true,
+			});
+			queryClient.setQueriesData<Diary[] | Diary | null>(
+				{ queryKey: ["diaries"] },
+				(old) => {
+					if (!old) return old;
+					if (Array.isArray(old)) {
+						return old.filter((d) => d.date !== deletedDate);
+					}
+					if (typeof old === "object" && "date" in old) {
+						return old.date === deletedDate ? null : old;
+					}
+					return old;
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: ["diaries"] });
 			broadcastCacheSync(["diaries"]);
 		},
 	});

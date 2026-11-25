@@ -199,6 +199,10 @@ export function useDeleteDraft() {
 			return id;
 		},
 		onSuccess: (deletedId) => {
+			queryClient.removeQueries({
+				queryKey: [...DRAFTS_QUERY_KEY, deletedId],
+				exact: true,
+			});
 			queryClient.setQueriesData<
 				Draft[] | { drafts: Draft[]; notes: unknown[] }
 			>({ queryKey: DRAFTS_QUERY_KEY }, (old) => {
@@ -210,6 +214,25 @@ export function useDeleteDraft() {
 					return {
 						...old,
 						drafts: old.drafts.filter((d) => d.id !== deletedId),
+					};
+				}
+				return old;
+			});
+			queryClient.setQueriesData<
+				| Array<{ id: string; draft_id?: string | null }>
+				| {
+						notes: Array<{ id: string; draft_id?: string | null }>;
+						drafts: unknown[];
+				  }
+			>({ queryKey: NOTES_QUERY_KEY }, (old) => {
+				if (!old) return old;
+				if (Array.isArray(old)) {
+					return old.filter((n) => n.draft_id !== deletedId);
+				}
+				if ("notes" in old) {
+					return {
+						...old,
+						notes: old.notes.filter((n) => n.draft_id !== deletedId),
 					};
 				}
 				return old;

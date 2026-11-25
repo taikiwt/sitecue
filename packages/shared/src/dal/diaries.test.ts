@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
-import { appendDiaryLog } from "./diaries";
+import { appendDiaryLog, deleteDiaryEntity } from "./diaries";
 
 describe("Shared Diaries DAL: appendDiaryLog", () => {
 	it("初回入力時にタイムスタンプ [HH:MM] が正しく先頭に添えられて保存されること", async () => {
@@ -102,5 +102,20 @@ describe("Shared Diaries DAL: appendDiaryLog", () => {
 		await expect(
 			appendDiaryLog(supabase, "u1", "2026-06-21", "hello", excessTopics),
 		).rejects.toThrow("Maximum 10 topics allowed");
+	});
+
+	it("deleteDiaryEntityがuser_idとdateを指定して削除しdateStrを返すこと", async () => {
+		const mockEq2 = vi.fn().mockResolvedValue({ error: null });
+		const mockEq1 = vi.fn().mockReturnValue({ eq: mockEq2 });
+		const mockDelete = vi.fn().mockReturnValue({ eq: mockEq1 });
+		const mockFrom = vi.fn().mockReturnValue({ delete: mockDelete });
+		const supabase = { from: mockFrom } as unknown as SupabaseClient;
+
+		const res = await deleteDiaryEntity(supabase, "u1", "2026-06-21");
+
+		expect(mockFrom).toHaveBeenCalledWith("sitecue_diaries");
+		expect(mockEq1).toHaveBeenCalledWith("user_id", "u1");
+		expect(mockEq2).toHaveBeenCalledWith("date", "2026-06-21");
+		expect(res).toBe("2026-06-21");
 	});
 });

@@ -138,3 +138,18 @@ export async function fetchDiaryByDate(
 	if (error) throw error;
 	return data as Diary | null;
 }
+
+export async function deleteDiaryEntity(
+	supabase: SupabaseClient,
+	userId: string,
+	dateStr: string,
+): Promise<string> {
+	const { error } = await supabase
+		.from("sitecue_diaries")
+		.delete()
+		.eq("user_id", userId)
+		.eq("date", dateStr);
+
+	if (error) throw error;
+	return dateStr;
+}

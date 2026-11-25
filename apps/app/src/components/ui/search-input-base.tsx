@@ -22,6 +22,9 @@ export const SearchInputBase = React.forwardRef<
 		ref,
 	) => {
 		const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+			if (e.nativeEvent.isComposing || e.keyCode === 229) {
+				return;
+			}
 			if (e.key === "Enter" && onSubmit) {
 				e.preventDefault();
 				onSubmit();

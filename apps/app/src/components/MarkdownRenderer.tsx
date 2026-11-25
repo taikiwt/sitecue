@@ -84,6 +84,23 @@ function CodeBlockNode({
 	);
 }
 
+function preserveBlankLines(markdown: string): string {
+	if (!markdown) return markdown;
+	const normalized = markdown.replace(/\r\n/g, "\n");
+	// フェンスドコードブロック（``` または ~~~）を分割して保護
+	const parts = normalized.split(/(^```[\s\S]*?^```|^~~~[\s\S]*?^~~~)/gm);
+	return parts
+		.map((part, index) => {
+			// キャプチャグループ（奇数インデックス）はコードブロックなのでそのまま返す
+			if (index % 2 === 1) return part;
+			return part.replace(/\n{3,}/g, (match) => {
+				const extraBlankLines = match.length - 2;
+				return `\n\n${Array(extraBlankLines).fill("\u00A0").join("\n\n")}\n\n`;
+			});
+		})
+		.join("");
+}
+
 interface MarkdownRendererProps {
 	content: string;
 	className?: string;
@@ -93,6 +110,7 @@ export default function MarkdownRenderer({
 	content,
 	className = "",
 }: MarkdownRendererProps) {
+	const processedContent = preserveBlankLines(content);
 	return (
 		<div
 			className={cn(
@@ -162,7 +180,7 @@ export default function MarkdownRenderer({
 					},
 				}}
 			>
-				{content}
+				{processedContent}
 			</ReactMarkdown>
 		</div>
 	);

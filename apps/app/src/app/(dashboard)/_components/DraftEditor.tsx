@@ -166,7 +166,13 @@ export default function DraftEditor({
 	const pendingContent = useEditorStore((state) => state.pendingContent);
 	const setPendingContent = useEditorStore((state) => state.setPendingContent);
 
-	const targetDraftId = draftId || activeDraft?.id;
+	const [savedDraftId, setSavedDraftId] = useState<string | undefined>(draftId);
+	useEffect(() => {
+		if (draftId) {
+			setSavedDraftId(draftId);
+		}
+	}, [draftId]);
+	const targetDraftId = savedDraftId || activeDraft?.id;
 
 	// Custom Hooks
 	const {
@@ -219,8 +225,7 @@ export default function DraftEditor({
 		if (!window.confirm("Are you sure you want to delete this draft?")) return;
 		try {
 			await deleteDraftMutation.mutateAsync(targetDraftId);
-			router.push("/");
-			router.refresh();
+			router.push("/notes?view=drafts");
 		} catch (err) {
 			console.error("Failed to delete draft:", err);
 			toast.error("Failed to delete draft.");
@@ -551,8 +556,15 @@ export default function DraftEditor({
 				setSavedState({ content, title, slug });
 				setHasUnsavedNotesChanges(false);
 
-				if (!draftId) {
-					router.replace(`/studio/${currentDraftId}`, { scroll: false });
+				if (!targetDraftId) {
+					setSavedDraftId(currentDraftId);
+					const search =
+						typeof window !== "undefined" ? window.location.search : "";
+					window.history.replaceState(
+						null,
+						"",
+						`/studio/${currentDraftId}${search}`,
+					);
 				}
 			}
 

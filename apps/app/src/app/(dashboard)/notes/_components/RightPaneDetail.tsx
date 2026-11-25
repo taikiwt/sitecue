@@ -44,7 +44,8 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { SWRBoundary } from "@/components/ui/swr-boundary";
-import { useFetchDiaries } from "@/hooks/useDiariesQuery";
+import { useDeleteDiary, useFetchDiaries } from "@/hooks/useDiariesQuery";
+import { useDeleteDraft } from "@/hooks/useDraftsQuery";
 import {
 	useCreateNote,
 	useDeleteNote,
@@ -71,6 +72,8 @@ export function RightPaneDetail({
 	const createNoteMutation = useCreateNote();
 	const updateNoteMutation = useUpdateNote();
 	const deleteNoteMutation = useDeleteNote();
+	const deleteDraftMutation = useDeleteDraft();
+	const deleteDiaryMutation = useDeleteDiary();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const { plan, openPaywall } = useUserStore();
@@ -111,7 +114,9 @@ export function RightPaneDetail({
 	const [optimisticFavorite, setOptimisticFavorite] = useState<boolean | null>(
 		null,
 	);
-	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<
+		"note" | "draft" | "diary" | null
+	>(null);
 	const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 	const [editUrl, setEditUrl] = useState(note?.url_pattern || "");
 	const [editScope, setEditScope] = useState<Note["scope"]>(
@@ -250,6 +255,105 @@ export function RightPaneDetail({
 		);
 	}
 
+	const handleDeleteNote = async () => {
+		if (!note) return;
+		setIsSaving(true);
+		try {
+			await deleteNoteMutation.mutateAsync(note.id);
+			setDeleteTarget(null);
+
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("noteId");
+			router.replace(`/notes?${params.toString()}`);
+		} catch (err) {
+			console.error("Failed to delete note:", err);
+			toast.error("Failed to delete the note.");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const handleDeleteDraft = async () => {
+		if (!draft) return;
+		setIsSaving(true);
+		try {
+			await deleteDraftMutation.mutateAsync(draft.id);
+			setDeleteTarget(null);
+
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("draftId");
+			router.replace(`/notes?${params.toString()}`);
+		} catch (err) {
+			console.error("Failed to delete draft:", err);
+			toast.error("Failed to delete the draft.");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const handleDeleteDiary = async () => {
+		if (!diary) return;
+		setIsSaving(true);
+		try {
+			await deleteDiaryMutation.mutateAsync(diary.date);
+			setDeleteTarget(null);
+
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete("date");
+			router.replace(`/notes?${params.toString()}`);
+		} catch (err) {
+			console.error("Failed to delete diary:", err);
+			toast.error("Failed to delete the diary.");
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const deleteDescriptionMap: Record<"note" | "draft" | "diary", string> = {
+		note: "This action cannot be undone. This will permanently delete your note and remove it from our servers.",
+		draft:
+			"This action cannot be undone. This will permanently delete your draft and its review notes from our servers.",
+		diary:
+			"This action cannot be undone. This will permanently delete your diary entry from our servers.",
+	};
+
+	const handleConfirmDelete = () => {
+		if (deleteTarget === "note") return handleDeleteNote();
+		if (deleteTarget === "draft") return handleDeleteDraft();
+		if (deleteTarget === "diary") return handleDeleteDiary();
+	};
+
+	const deleteAlertDialog = (
+		<AlertDialog
+			open={deleteTarget !== null}
+			onOpenChange={(open) => {
+				if (!open) setDeleteTarget(null);
+			}}
+		>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+					<AlertDialogDescription>
+						{deleteTarget ? deleteDescriptionMap[deleteTarget] : ""}
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={(e) => {
+							e.preventDefault();
+							handleConfirmDelete();
+						}}
+						className="bg-note-alert hover:bg-note-alert/80 text-white"
+						disabled={isSaving}
+					>
+						{isSaving ? "Deleting..." : "Delete"}
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+
 	// ② 日記コンテキスト（view === "diaries" かつ diary が存在するときのみ許容）
 	if (currentView === "diaries" && diary) {
 		const diaryDate = new Date(diary.date);
@@ -276,31 +380,76 @@ export function RightPaneDetail({
 							})}
 						</p>
 					</div>
-					{/* PCサイズ（1024px以上）: HoverRevealButton をパージし、テキスト常時露出カプセルボタンへ */}
-					<div className="hidden lg:block">
-						<Button
-							onClick={() => router.push(`/diaries/${diary.date}`)}
-							type="button"
-							variant="default"
-							className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
-						>
-							<Pencil aria-hidden="true" className="size-4" />
-							Open Studio
-						</Button>
-					</div>
-					{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
-					<div className="block lg:hidden">
-						<Button
-							onClick={() => router.push(`/diaries/${diary.date}`)}
-							type="button"
-							variant="default"
-							size="icon"
-							className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
-							title="Open Studio"
-						>
-							<Pencil aria-hidden="true" className="size-4" />
-							<span className="sr-only">Open Studio</span>
-						</Button>
+					<div className="flex items-center gap-2">
+						{/* PCサイズ（1024px以上）: HoverRevealButton をパージし、テキスト常時露出カプセルボタンへ */}
+						<div className="hidden lg:block">
+							<Button
+								onClick={() => router.push(`/diaries/${diary.date}`)}
+								type="button"
+								variant="default"
+								className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
+							>
+								<Pencil aria-hidden="true" className="size-4" />
+								Open Studio
+							</Button>
+						</div>
+						{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
+						<div className="block lg:hidden">
+							<Button
+								onClick={() => router.push(`/diaries/${diary.date}`)}
+								type="button"
+								variant="default"
+								size="icon"
+								className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
+								title="Open Studio"
+							>
+								<Pencil aria-hidden="true" className="size-4" />
+								<span className="sr-only">Open Studio</span>
+							</Button>
+						</div>
+						<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
+							<PopoverTrigger
+								render={
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+										aria-label="More options"
+									>
+										<MoreHorizontal
+											className="size-5 md:size-4"
+											aria-hidden="true"
+										/>
+									</Button>
+								}
+							/>
+							<PopoverContent className="w-48 p-2" align="end">
+								<div className="space-y-3">
+									<div className="pt-2 border-t border-neutral-100">
+										<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+											Actions
+										</div>
+										<div className="flex flex-col gap-1">
+											<Button
+												type="button"
+												variant="ghost"
+												size="sm"
+												onClick={() => {
+													setIsMoreMenuOpen(false);
+													setTimeout(() => {
+														setDeleteTarget("diary");
+													}, 150);
+												}}
+												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
+											>
+												Delete Diary
+											</Button>
+										</div>
+									</div>
+								</div>
+							</PopoverContent>
+						</Popover>
 					</div>
 				</div>
 
@@ -308,6 +457,7 @@ export function RightPaneDetail({
 				<div className="flex-1 overflow-y-auto p-8 prose max-w-none">
 					<MarkdownRenderer content={diary.content} />
 				</div>
+				{deleteAlertDialog}
 			</div>
 		);
 	}
@@ -492,24 +642,6 @@ export function RightPaneDetail({
 		}
 	};
 
-	const handleDeleteNote = async () => {
-		if (!note) return;
-		setIsSaving(true);
-		try {
-			await deleteNoteMutation.mutateAsync(note.id);
-			setIsDeleteDialogOpen(false);
-
-			const params = new URLSearchParams(searchParams.toString());
-			params.delete("noteId");
-			router.replace(`/notes?${params.toString()}`);
-		} catch (err) {
-			console.error("Failed to delete note:", err);
-			toast.error("Failed to delete the note.");
-		} finally {
-			setIsSaving(false);
-		}
-	};
-
 	const handleCopyAll = () => {
 		if (!content) return;
 		navigator.clipboard.writeText(content);
@@ -624,7 +756,7 @@ export function RightPaneDetail({
 														onClick={() => {
 															setIsMoreMenuOpen(false);
 															setTimeout(() => {
-																setIsDeleteDialogOpen(true);
+																setDeleteTarget("note");
 															}, 150);
 														}}
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
@@ -691,6 +823,49 @@ export function RightPaneDetail({
 										<span className="sr-only">Edit in Studio</span>
 									</Button>
 								</div>
+								<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
+									<PopoverTrigger
+										render={
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+												aria-label="More options"
+											>
+												<MoreHorizontal
+													className="size-5 md:size-4"
+													aria-hidden="true"
+												/>
+											</Button>
+										}
+									/>
+									<PopoverContent className="w-48 p-2" align="end">
+										<div className="space-y-3">
+											<div className="pt-2 border-t border-neutral-100">
+												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+													Actions
+												</div>
+												<div className="flex flex-col gap-1">
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={() => {
+															setIsMoreMenuOpen(false);
+															setTimeout(() => {
+																setDeleteTarget("draft");
+															}, 150);
+														}}
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
+													>
+														Delete Draft
+													</Button>
+												</div>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
 							</>
 						)}
 						<div className="flex gap-1 ml-2">
@@ -996,33 +1171,7 @@ export function RightPaneDetail({
 				</div>
 			</div>
 
-			<AlertDialog
-				open={isDeleteDialogOpen}
-				onOpenChange={setIsDeleteDialogOpen}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete your
-							note and remove it from our servers.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={(e) => {
-								e.preventDefault();
-								handleDeleteNote();
-							}}
-							className="bg-note-alert hover:bg-note-alert/80 text-white"
-							disabled={isSaving}
-						>
-							{isSaving ? "Deleting..." : "Delete"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			{deleteAlertDialog}
 		</div>
 	);
 }

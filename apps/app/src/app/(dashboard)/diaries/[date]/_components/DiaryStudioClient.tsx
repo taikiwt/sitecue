@@ -7,6 +7,8 @@ import {
 	Check,
 	ChevronLeft,
 	ChevronRight,
+	MoreHorizontal,
+	Trash2,
 	X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -18,6 +20,16 @@ import {
 	Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { StudioEditor } from "@/components/editor/StudioEditor";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { CustomLink } from "@/components/ui/custom-link";
 import {
@@ -28,9 +40,18 @@ import {
 	DrawerTitle,
 	DrawerTrigger,
 } from "@/components/ui/drawer";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "@/components/ui/popover";
 import { SWRBoundary } from "@/components/ui/swr-boundary";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { useFetchDiaryByDate, useUpdateDiary } from "@/hooks/useDiariesQuery";
+import {
+	useDeleteDiary,
+	useFetchDiaryByDate,
+	useUpdateDiary,
+} from "@/hooks/useDiariesQuery";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
@@ -111,6 +132,25 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 		setEditingIndex(null);
 	};
 	const updateDiaryMutation = useUpdateDiary();
+	const deleteDiaryMutation = useDeleteDiary();
+	const [isPcMoreMenuOpen, setIsPcMoreMenuOpen] = useState(false);
+	const [isMobileMoreMenuOpen, setIsMobileMoreMenuOpen] = useState(false);
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
+
+	const handleDeleteDiary = async () => {
+		setIsDeleting(true);
+		try {
+			await deleteDiaryMutation.mutateAsync(date);
+			setIsDeleteDialogOpen(false);
+			router.push("/notes?view=diaries");
+		} catch (err) {
+			console.error("Failed to delete diary:", err);
+			toast.error("Failed to delete diary.");
+		} finally {
+			setIsDeleting(false);
+		}
+	};
 
 	const isDirty =
 		content !== savedContent ||
@@ -242,6 +282,53 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										"Save"
 									)}
 								</Button>
+								<Popover
+									open={isPcMoreMenuOpen}
+									onOpenChange={setIsPcMoreMenuOpen}
+								>
+									<PopoverTrigger
+										render={
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+												aria-label="More options"
+											>
+												<MoreHorizontal
+													className="w-4 h-4"
+													aria-hidden="true"
+												/>
+											</Button>
+										}
+									/>
+									<PopoverContent className="w-48 p-2" align="end">
+										<div className="space-y-3">
+											<div className="pt-2 border-t border-neutral-100">
+												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+													Actions
+												</div>
+												<div className="flex flex-col gap-1">
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={() => {
+															setIsPcMoreMenuOpen(false);
+															setTimeout(() => {
+																setIsDeleteDialogOpen(true);
+															}, 150);
+														}}
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
+													>
+														<Trash2 className="w-4 h-4" aria-hidden="true" />
+														Delete Diary
+													</Button>
+												</div>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
 							</div>
 						</header>
 
@@ -442,6 +529,53 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										"Save"
 									)}
 								</Button>
+								<Popover
+									open={isMobileMoreMenuOpen}
+									onOpenChange={setIsMobileMoreMenuOpen}
+								>
+									<PopoverTrigger
+										render={
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
+												aria-label="More options"
+											>
+												<MoreHorizontal
+													className="w-4 h-4"
+													aria-hidden="true"
+												/>
+											</Button>
+										}
+									/>
+									<PopoverContent className="w-48 p-2" align="end">
+										<div className="space-y-3">
+											<div className="pt-2 border-t border-neutral-100">
+												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
+													Actions
+												</div>
+												<div className="flex flex-col gap-1">
+													<Button
+														type="button"
+														variant="ghost"
+														size="sm"
+														onClick={() => {
+															setIsMobileMoreMenuOpen(false);
+															setTimeout(() => {
+																setIsDeleteDialogOpen(true);
+															}, 150);
+														}}
+														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
+													>
+														<Trash2 className="w-4 h-4" aria-hidden="true" />
+														Delete Diary
+													</Button>
+												</div>
+											</div>
+										</div>
+									</PopoverContent>
+								</Popover>
 							</div>
 						</header>
 
@@ -680,6 +814,33 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 					</div>
 				)}
 			</div>
+			<AlertDialog
+				open={isDeleteDialogOpen}
+				onOpenChange={setIsDeleteDialogOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. This will permanently delete your
+							diary entry from our servers.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={(e) => {
+								e.preventDefault();
+								handleDeleteDiary();
+							}}
+							className="bg-note-alert hover:bg-note-alert/80 text-white"
+							disabled={isDeleting}
+						>
+							{isDeleting ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }
