@@ -7,6 +7,7 @@ import { createClient } from "@/utils/supabase/client";
 import { DASHBOARD_QUERY_KEY } from "./useDashboardQuery";
 import {
 	NOTES_QUERY_KEY,
+	TRASH_NOTES_QUERY_KEY,
 	useCreateNote,
 	useDeleteNote,
 	useFetchNoteContents,
@@ -59,6 +60,24 @@ vi.mock("@sitecue/shared", async (importOriginal) => {
 			tags: [],
 		}),
 		deleteNoteEntity: vi.fn().mockResolvedValue("note-1"),
+		softDeleteNoteEntity: vi.fn().mockResolvedValue({
+			id: "note-1",
+			user_id: "user-1",
+			url_pattern: "",
+			scope: "inbox",
+			note_type: "info",
+			content: "To be deleted",
+			is_pinned: false,
+			is_resolved: false,
+			is_favorite: false,
+			is_expanded: false,
+			sort_order: 0,
+			created_at: "2026-07-28T00:00:00Z",
+			updated_at: "2026-07-28T00:00:00Z",
+			deleted_at: "2026-07-28T01:00:00Z",
+			draft_id: null,
+			tags: [],
+		}),
 		fetchNoteMetadatas: vi.fn().mockResolvedValue([
 			{
 				id: "note-1",
@@ -139,6 +158,7 @@ describe("useSearchNotes", () => {
 		const mockSupabase = {
 			from: vi.fn().mockReturnThis(),
 			select: vi.fn().mockReturnThis(),
+			is: vi.fn().mockReturnThis(),
 			contains: vi.fn().mockReturnThis(),
 			order: vi.fn().mockReturnThis(),
 			// biome-ignore lint/suspicious/noThenProperty: Supabase thenable mock
@@ -234,6 +254,7 @@ describe("useFetchNoteContents", () => {
 				content: undefined as unknown as string,
 				created_at: "2026-07-28T00:00:00Z",
 				updated_at: "2026-07-28T00:00:00Z",
+				deleted_at: null,
 				note_type: "info",
 				scope: "inbox",
 				url_pattern: "",
@@ -304,6 +325,7 @@ describe("useFetchNotes - Content Cache Preservation", () => {
 				content: "new note 7/28",
 				created_at: "2026-07-28T00:00:00Z",
 				updated_at: "2026-07-28T00:00:00Z",
+				deleted_at: null,
 				note_type: "info",
 				scope: "inbox",
 				url_pattern: "",
@@ -376,6 +398,7 @@ describe("useDeleteNote - Cache Invalidation Linkage", () => {
 				content: "To be deleted",
 				created_at: "2026-07-28T00:00:00Z",
 				updated_at: "2026-07-28T00:00:00Z",
+				deleted_at: null,
 				note_type: "info",
 				scope: "inbox",
 				url_pattern: "",
@@ -404,6 +427,9 @@ describe("useDeleteNote - Cache Invalidation Linkage", () => {
 
 		await waitFor(() => {
 			expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: NOTES_QUERY_KEY });
+			expect(invalidateSpy).toHaveBeenCalledWith({
+				queryKey: TRASH_NOTES_QUERY_KEY,
+			});
 			const cachedMain = queryClient.getQueryData<Note[]>(NOTES_QUERY_KEY);
 			const cachedSearch = queryClient.getQueryData<{ notes: Note[] }>([
 				...NOTES_QUERY_KEY,

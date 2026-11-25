@@ -6,8 +6,14 @@ import { ComingSoonButton } from "./ComingSoonButton";
 export async function StatsOverviewSection() {
 	const { supabase } = await requireUser("/");
 	const [{ count: notesCount }, { count: draftsCount }] = await Promise.all([
-		supabase.from("sitecue_notes").select("*", { count: "exact", head: true }),
-		supabase.from("sitecue_drafts").select("*", { count: "exact", head: true }),
+		supabase
+			.from("sitecue_notes")
+			.select("*", { count: "exact", head: true })
+			.is("deleted_at", null),
+		supabase
+			.from("sitecue_drafts")
+			.select("*", { count: "exact", head: true })
+			.is("deleted_at", null),
 	]);
 
 	const { NOTES_LIMIT } = SHARED_LIMITS;

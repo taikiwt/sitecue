@@ -31,6 +31,7 @@ describe("StudioReviewPane Component", () => {
 			sort_order: 0,
 			draft_id: "d-1",
 			tags: null,
+			deleted_at: null,
 		},
 	];
 

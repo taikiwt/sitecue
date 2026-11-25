@@ -29,6 +29,7 @@ export interface SitecueDraftBase {
 	tags: string[] | null;
 	metadata: Record<string, unknown> | null;
 	template_id: string | null;
+	deleted_at: string | null;
 }
 
 export interface SitecueTemplateBase {

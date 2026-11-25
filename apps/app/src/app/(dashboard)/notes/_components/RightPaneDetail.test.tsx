@@ -14,6 +14,11 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/useDiariesQuery", () => ({
 	useFetchDiaries: () => ({ data: [] }),
+	useDeleteDiary: () => ({ mutateAsync: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useDraftsQuery", () => ({
+	useDeleteDraft: () => ({ mutateAsync: vi.fn() }),
 }));
 
 const mockCreateNoteMutateAsync = vi.fn();
@@ -225,5 +230,50 @@ describe("RightPaneDetail - New Note Scope & NoteType Integration", () => {
 				"/notes?domain=github.com&view=domains&exact=domain&noteId=domain-note-789",
 			);
 		});
+	});
+});
+
+describe("RightPaneDetail - In-Note Word Search", () => {
+	it("ヘッダーの検索バーに入力すると一致件数がカウントされ、次へ・前へボタンとクリアが動作すること", async () => {
+		const noteWithRepeats = {
+			id: "note-search-1",
+			created_at: "2026-07-28T00:00:00Z",
+			updated_at: "2026-07-28T00:00:00Z",
+			content: "Alpha beta alpha gamma ALPHA",
+			note_type: "info",
+			scope: "inbox",
+			url_pattern: "",
+			is_resolved: false,
+			is_pinned: false,
+			is_favorite: false,
+		} as Note;
+
+		render(<RightPaneDetail note={noteWithRepeats} />);
+
+		const searchInput = screen.getByPlaceholderText("Find in note...");
+		expect(searchInput.parentElement).toHaveClass(
+			"order-last",
+			"basis-full",
+			"lg:order-none",
+			"lg:basis-auto",
+		);
+		fireEvent.change(searchInput, { target: { value: "alpha" } });
+
+		await waitFor(() => {
+			expect(screen.getByText("1/3")).toBeInTheDocument();
+		});
+
+		const nextBtn = screen.getByRole("button", { name: "Next match" });
+		fireEvent.click(nextBtn);
+		expect(screen.getByText("2/3")).toBeInTheDocument();
+
+		const prevBtn = screen.getByRole("button", { name: "Previous match" });
+		fireEvent.click(prevBtn);
+		expect(screen.getByText("1/3")).toBeInTheDocument();
+
+		const clearBtn = screen.getByRole("button", { name: "Clear find in note" });
+		fireEvent.click(clearBtn);
+		expect(searchInput).toHaveValue("");
+		expect(screen.queryByText("1/3")).not.toBeInTheDocument();
 	});
 });

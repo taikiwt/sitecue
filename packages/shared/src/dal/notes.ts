@@ -444,7 +444,7 @@ export async function searchNotesAndDrafts(
 
 	let draftsQuery = q
 		? supabase.rpc("search_drafts", { search_query: q })
-		: supabase.from("sitecue_drafts").select("*");
+		: supabase.from("sitecue_drafts").select("*").is("deleted_at", null);
 
 	if (tags) {
 		const tagsArray = tags.split(",");
@@ -487,6 +487,27 @@ export async function softDeleteNoteEntity(
 
 	if (error) throw error;
 	return data as Note;
+}
+
+/**
+ * 複数のノートをゴミ箱へ移動する（一括論理削除）
+ */
+export async function softDeleteNotesEntity(
+	supabase: SupabaseClient,
+	ids: string[],
+): Promise<string[]> {
+	if (ids.length === 0) return [];
+	const now = new Date().toISOString();
+	const { error } = await supabase
+		.from("sitecue_notes")
+		.update({
+			deleted_at: now,
+			updated_at: now,
+		})
+		.in("id", ids);
+
+	if (error) throw error;
+	return ids;
 }
 
 /**

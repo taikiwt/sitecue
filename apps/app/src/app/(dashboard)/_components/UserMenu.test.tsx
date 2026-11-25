@@ -189,4 +189,18 @@ describe("UserMenu", () => {
 
 		expect(currentStoreState.openPaywall).toHaveBeenCalledWith("menu");
 	});
+
+	it("Trash リンクが表示され、/trash への href を持つこと", async () => {
+		render(<UserMenu />);
+
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "User menu" })).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "User menu" }));
+
+		const trashLink = screen.getByRole("link", { name: /Trash/i });
+		expect(trashLink).toBeDefined();
+		expect(trashLink.getAttribute("href")).toBe("/trash");
+	});
 });

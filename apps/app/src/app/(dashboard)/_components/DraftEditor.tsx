@@ -132,8 +132,22 @@ export default function DraftEditor({
 	const [title, setTitle] = useState(savedState.title);
 	const [slug, setSlug] = useState(savedState.slug);
 
+	const [savedDraftId, setSavedDraftId] = useState<string | undefined>(draftId);
 	useEffect(() => {
+		if (draftId) {
+			setSavedDraftId(draftId);
+		}
+	}, [draftId]);
+	const targetDraftId = savedDraftId || activeDraft?.id;
+
+	const hasHydratedInitialRef = useRef(Boolean(activeDraft || activeTemplate));
+
+	useEffect(() => {
+		if (savedDraftId || hasHydratedInitialRef.current) {
+			return;
+		}
 		if (activeDraft || activeTemplate) {
+			hasHydratedInitialRef.current = true;
 			const initialContent =
 				activeDraft?.content || activeTemplate?.boilerplate || "";
 			const initialTitle = activeDraft?.title || "";
@@ -148,7 +162,7 @@ export default function DraftEditor({
 			setTitle((prev) => (!prev ? initialTitle : prev));
 			setSlug((prev) => (!prev ? initialSlug : prev));
 		}
-	}, [activeDraft, activeTemplate]);
+	}, [activeDraft, activeTemplate, savedDraftId]);
 
 	const [hasUnsavedNotesChanges, setHasUnsavedNotesChanges] = useState(false);
 
@@ -165,14 +179,6 @@ export default function DraftEditor({
 	const openPaywall = useUserStore((state) => state.openPaywall);
 	const pendingContent = useEditorStore((state) => state.pendingContent);
 	const setPendingContent = useEditorStore((state) => state.setPendingContent);
-
-	const [savedDraftId, setSavedDraftId] = useState<string | undefined>(draftId);
-	useEffect(() => {
-		if (draftId) {
-			setSavedDraftId(draftId);
-		}
-	}, [draftId]);
-	const targetDraftId = savedDraftId || activeDraft?.id;
 
 	// Custom Hooks
 	const {
@@ -225,6 +231,7 @@ export default function DraftEditor({
 		if (!window.confirm("Are you sure you want to delete this draft?")) return;
 		try {
 			await deleteDraftMutation.mutateAsync(targetDraftId);
+			toast.success("Moved to Trash");
 			router.push("/notes?view=drafts");
 		} catch (err) {
 			console.error("Failed to delete draft:", err);
@@ -342,6 +349,7 @@ export default function DraftEditor({
 				is_resolved: false,
 				sort_order: reviewNotes.length,
 				tags: null,
+				deleted_at: null,
 			};
 			setReviewNotes((prev) => [tempNote, ...prev]);
 			setHasUnsavedNotesChanges(true);
@@ -584,7 +592,17 @@ export default function DraftEditor({
 			if (errorMessage.includes("limit reached")) {
 				openPaywall(errorMessage.includes("draft") ? "drafts" : "notes");
 			} else {
-				toast.error("Failed to save the draft.");
+				const rawMsg =
+					err instanceof Error
+						? err.message
+						: typeof err === "object" && err !== null && "message" in err
+							? String((err as { message: unknown }).message)
+							: "";
+				toast.error(
+					rawMsg
+						? `Failed to save the draft: ${rawMsg}`
+						: "Failed to save the draft.",
+				);
 			}
 			setStatus("error");
 		}

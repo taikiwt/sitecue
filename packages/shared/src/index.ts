@@ -1,5 +1,6 @@
 export * from "./dal/dashboard";
 export * from "./dal/diaries";
+export * from "./dal/drafts";
 export * from "./dal/notes";
 export * from "./dal/profiles";
 export * from "./types/app";

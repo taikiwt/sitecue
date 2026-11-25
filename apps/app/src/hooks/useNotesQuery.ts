@@ -3,13 +3,17 @@
 import {
 	type CreateNoteInput,
 	createNoteEntity,
-	deleteNoteEntity,
-	deleteNotesEntity,
+	emptyTrashNotesEntity,
 	fetchNoteContents,
 	fetchNoteMetadatas,
+	fetchTrashNotes,
 	type Note,
 	type NoteType,
+	permanentlyDeleteNoteEntity,
+	restoreNoteEntity,
 	searchNotesAndDrafts,
+	softDeleteNoteEntity,
+	softDeleteNotesEntity,
 	updateNoteEntity,
 	type ViewScope,
 } from "@sitecue/shared";
@@ -20,6 +24,7 @@ import { broadcastCacheSync } from "@/hooks/useTabSync";
 import { createClient } from "@/utils/supabase/client";
 
 export const NOTES_QUERY_KEY = ["notes"];
+export const TRASH_NOTES_QUERY_KEY = ["trash-notes"];
 
 export function useFetchNotes() {
 	const queryClient = useQueryClient();
@@ -196,20 +201,20 @@ export function useDeleteNote() {
 	return useMutation({
 		mutationFn: async (id: string) => {
 			const supabase = createClient();
-			return await deleteNoteEntity(supabase, id);
+			return await softDeleteNoteEntity(supabase, id);
 		},
-		onSuccess: (deletedId) => {
+		onSuccess: (deletedNote) => {
 			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
 				{ queryKey: NOTES_QUERY_KEY },
 				(old) => {
 					if (!old) return old;
 					if (Array.isArray(old)) {
-						return old.filter((note) => note.id !== deletedId);
+						return old.filter((note) => note.id !== deletedNote.id);
 					}
 					if ("notes" in old) {
 						return {
 							...old,
-							notes: old.notes.filter((note) => note.id !== deletedId),
+							notes: old.notes.filter((note) => note.id !== deletedNote.id),
 						};
 					}
 					return old;
@@ -217,8 +222,10 @@ export function useDeleteNote() {
 			);
 
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: TRASH_NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(TRASH_NOTES_QUERY_KEY);
 			broadcastCacheSync(DASHBOARD_QUERY_KEY);
 		},
 	});
@@ -293,13 +300,119 @@ export function useDeleteNotes() {
 	return useMutation({
 		mutationFn: async (ids: string[]) => {
 			const supabase = createClient();
-			return await deleteNotesEntity(supabase, ids);
+			return await softDeleteNotesEntity(supabase, ids);
 		},
-		onSuccess: () => {
+		onSuccess: (deletedIds) => {
+			const deletedSet = new Set(deletedIds);
+			queryClient.setQueriesData<Note[] | { notes: Note[]; drafts: unknown[] }>(
+				{ queryKey: NOTES_QUERY_KEY },
+				(old) => {
+					if (!old) return old;
+					if (Array.isArray(old)) {
+						return old.filter((note) => !deletedSet.has(note.id));
+					}
+					if ("notes" in old) {
+						return {
+							...old,
+							notes: old.notes.filter((note) => !deletedSet.has(note.id)),
+						};
+					}
+					return old;
+				},
+			);
 			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: TRASH_NOTES_QUERY_KEY });
 			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
 			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(TRASH_NOTES_QUERY_KEY);
 			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+		},
+	});
+}
+
+export function useFetchTrashNotes(retentionDays: number) {
+	return useQuery({
+		queryKey: [...TRASH_NOTES_QUERY_KEY, retentionDays],
+		staleTime: 60 * 1000,
+		queryFn: async (): Promise<Note[]> => {
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("User not authenticated");
+
+			return await fetchTrashNotes(supabase, user.id, retentionDays);
+		},
+	});
+}
+
+export function useRestoreNote() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (id: string) => {
+			const supabase = createClient();
+			return await restoreNoteEntity(supabase, id);
+		},
+		onSuccess: (restoredNote) => {
+			queryClient.setQueriesData<Note[]>(
+				{ queryKey: TRASH_NOTES_QUERY_KEY },
+				(old) => {
+					if (!old || !Array.isArray(old)) return old;
+					return old.filter((n) => n.id !== restoredNote.id);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: NOTES_QUERY_KEY });
+			queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEY });
+			broadcastCacheSync(TRASH_NOTES_QUERY_KEY);
+			broadcastCacheSync(NOTES_QUERY_KEY);
+			broadcastCacheSync(DASHBOARD_QUERY_KEY);
+		},
+	});
+}
+
+export function usePermanentlyDeleteNote() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (id: string) => {
+			const supabase = createClient();
+			return await permanentlyDeleteNoteEntity(supabase, id);
+		},
+		onSuccess: (deletedId) => {
+			queryClient.setQueriesData<Note[]>(
+				{ queryKey: TRASH_NOTES_QUERY_KEY },
+				(old) => {
+					if (!old || !Array.isArray(old)) return old;
+					return old.filter((n) => n.id !== deletedId);
+				},
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_NOTES_QUERY_KEY });
+			broadcastCacheSync(TRASH_NOTES_QUERY_KEY);
+		},
+	});
+}
+
+export function useEmptyTrashNotes() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async () => {
+			const supabase = createClient();
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (!user) throw new Error("User not authenticated");
+			await emptyTrashNotesEntity(supabase, user.id);
+		},
+		onSuccess: () => {
+			queryClient.setQueriesData<Note[]>(
+				{ queryKey: TRASH_NOTES_QUERY_KEY },
+				() => [],
+			);
+			queryClient.invalidateQueries({ queryKey: TRASH_NOTES_QUERY_KEY });
+			broadcastCacheSync(TRASH_NOTES_QUERY_KEY);
 		},
 	});
 }

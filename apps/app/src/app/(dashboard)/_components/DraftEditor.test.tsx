@@ -93,6 +93,7 @@ const mockDraft: Draft = {
 	user_id: "user-123",
 	template_id: null,
 	tags: null,
+	deleted_at: null,
 };
 
 describe("DraftEditor - Error Handling & Architecture", () => {
@@ -199,6 +200,35 @@ describe("DraftEditor - Error Handling & Architecture", () => {
 			expect(mockRefresh).not.toHaveBeenCalled();
 		});
 		replaceStateSpy.mockRestore();
+	});
+
+	it("新規保存後に Save ボタンが disabled になり、Back ボタンをクリックしても未保存確認ダイアログが表示されないこと", async () => {
+		const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+		const queryClient = createTestQueryClient();
+		const user = userEvent.setup();
+
+		render(
+			<QueryClientProvider client={queryClient}>
+				<DraftEditor />
+			</QueryClientProvider>,
+		);
+
+		const titleInput = screen.getAllByPlaceholderText("Title (optional)")[0];
+		fireEvent.change(titleInput, { target: { value: "New Title" } });
+
+		const saveButton = screen.getAllByRole("button", { name: /^Save$/i })[0];
+		expect(saveButton).not.toBeDisabled();
+		await user.click(saveButton);
+
+		await waitFor(() => {
+			expect(saveButton).toBeDisabled();
+		});
+
+		const backButton = screen.getAllByRole("button", { name: /^Back$/i })[0];
+		await user.click(backButton);
+
+		expect(confirmSpy).not.toHaveBeenCalled();
+		confirmSpy.mockRestore();
 	});
 
 	it("タブ切替（OUTLINE / REVIEW / MATERIALS）が正しく動作すること", async () => {
