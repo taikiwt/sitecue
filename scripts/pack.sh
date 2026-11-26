@@ -24,44 +24,91 @@ esac
 
 echo "📦 Packing target: $NAME ($DIR)..."
 
-# 1. project-tree.txt の生成
-tree -I 'node_modules|.git|.next|dist|build|.turbo|coverage|public|assets|migrations|snippets|test_output.txt' > project-tree.txt
+# 0. 対象ターゲットの古い XML を削除（他ターゲットの XML は保持）
+rm -f "repomix-${NAME}_"*.xml
 
-# 2. 共通基盤 (1-base)
-BASE='project-tree.txt,.agent/**/*,supabase/schema.sql,packages/shared/src/**/*'
-repomix --include "$BASE" --no-git-sort-by-changes --output "repomix-${NAME}-1-base.xml"
+# 1. project-tree.txt の生成（.gitignore を尊重）
+tree --gitignore -I 'node_modules|.git|.next|dist|build|.turbo|coverage|public|assets|migrations|snippets|test_output.txt' > project-tree.txt
 
-# 3. 本体ソースコード (2-src)
-IGNORE_TESTS="${DIR}/**/*.test.*,${DIR}/**/*.spec.*,${DIR}/**/e2e/**/*"
+# 共通オプション
+FLAGS=(--remove-empty-lines --no-git-sort-by-changes)
+
+# 2. 共通基盤 (_1-common-base)
+BASE="project-tree.txt,.agent/**/*,supabase/schema.sql,packages/shared/src/**/*"
+repomix --include "$BASE" \
+  --ignore "packages/shared/src/**/*.test.*" \
+  "${FLAGS[@]}" \
+  --output "repomix-${NAME}_1-common-base.xml"
+
+# 3. ターゲット別ソースコード (_2-src*) & テスト (_3-tests)
+TESTS="${DIR}/**/*.test.*,${DIR}/**/*.spec.*,${DIR}/**/e2e/**/*"
+COMMON_IGNORE="${TESTS},${DIR}/**/scripts/**,${DIR}/**/setupTests.ts,${DIR}/**/*.woff2,${DIR}/**/*.png,${DIR}/**/*.ico,${DIR}/.gitignore"
 
 if [ "$NAME" = "app" ]; then
-  # App Basecamp はテキスト上限回避のため 2a (画面ルート) と 2b (共通基盤) に分割
-  repomix --include "${DIR}/src/app/**/*" \
-    --ignore "$IGNORE_TESTS" \
-    --no-git-sort-by-changes \
-    --output "repomix-app-2a-routes.xml"
+  # ※ (dashboard) の丸括弧は fast-glob の extglob と衝突するため **/<dir>/** で指定する
+  NOTES_SCOPE="${DIR}/src/app/**/notes/**/*"
+  STUDIO_SCOPE="${DIR}/src/app/**/studio/**/*,${DIR}/src/app/**/diaries/**/*,${DIR}/src/app/**/DraftEditor.tsx,${DIR}/src/app/**/NoteEditor.tsx"
 
-  repomix --include "${DIR}/src/components/**/*,${DIR}/src/hooks/**/*,${DIR}/src/store/**/*,${DIR}/src/utils/**/*,${DIR}/src/lib/**/*,${DIR}/src/providers/**/*,${DIR}/src/middleware.ts,${DIR}/src/proxy.ts,${DIR}/package.json" \
-    --ignore "$IGNORE_TESTS" \
-    --no-git-sort-by-changes \
-    --output "repomix-app-2b-core.xml"
-else
+  # 2-src_1-notes: ノート一覧・詳細ペイン
+  repomix --include "$NOTES_SCOPE" \
+    --ignore "$COMMON_IGNORE" "${FLAGS[@]}" \
+    --output "repomix-app_2-src_1-notes.xml"
+
+  # 2-src_2-studio: Studio・日記エディタ関連
+  repomix --include "$STUDIO_SCOPE" \
+    --ignore "$COMMON_IGNORE" "${FLAGS[@]}" \
+    --output "repomix-app_2-src_2-studio.xml"
+
+  # 2-src_3-routes: その他画面ルート（Launchpad, Guide, Templates, Trash, Auth, API）+ ルート設定
+  repomix --include "${DIR}/src/app/**/*,${DIR}/package.json,${DIR}/next.config.ts,${DIR}/wrangler.toml" \
+    --ignore "${COMMON_IGNORE},${NOTES_SCOPE},${STUDIO_SCOPE}" "${FLAGS[@]}" \
+    --output "repomix-app_2-src_3-routes.xml"
+
+  # 2-src_4-core: src/app 以外の src/ 全体（hooks, store, components, locales 等の新設に自動追従）
+  repomix --include "${DIR}/src/**/*" \
+    --ignore "${COMMON_IGNORE},${DIR}/src/app/**/*" "${FLAGS[@]}" \
+    --output "repomix-app_2-src_4-core.xml"
+
+  # 3-tests: テスト一式
+  repomix --include "$TESTS" "${FLAGS[@]}" --output "repomix-app_3-tests.xml"
+
+elif [ "$NAME" = "ext" ]; then
+  UI="${DIR}/entrypoints/**/*,${DIR}/src/SidePanel.tsx,${DIR}/src/components/**/*,${DIR}/src/index.css"
+
+  # 2-src_1-ui: サイドパネルUI・画面コンポーネント
+  repomix --include "$UI" \
+    --ignore "$COMMON_IGNORE" "${FLAGS[@]}" \
+    --output "repomix-ext_2-src_1-ui.xml"
+
+  # 2-src_2-core: UI以外の全体（hooks, locales, utils, public/_locales, wxt.config.ts 等に自動追従）
   repomix --include "${DIR}/**/*" \
-    --ignore "$IGNORE_TESTS" \
-    --no-git-sort-by-changes \
-    --output "repomix-${NAME}-2-src.xml"
-fi
+    --ignore "${COMMON_IGNORE},${UI}" "${FLAGS[@]}" \
+    --output "repomix-ext_2-src_2-core.xml"
 
-# 4. テストコード群 (3-tests)
-repomix --include "${DIR}/**/*.test.*,${DIR}/**/*.spec.*,${DIR}/**/e2e/**/*" \
-  --no-git-sort-by-changes \
-  --output "repomix-${NAME}-3-tests.xml"
+  # 3-tests: テスト一式
+  repomix --include "$TESTS" "${FLAGS[@]}" --output "repomix-ext_3-tests.xml"
+
+else
+  # API 等の単一分割ターゲット
+  repomix --include "${DIR}/**/*" \
+    --ignore "$COMMON_IGNORE" "${FLAGS[@]}" \
+    --output "repomix-${NAME}_2-src.xml"
+
+  repomix --include "$TESTS" "${FLAGS[@]}" --output "repomix-${NAME}_3-tests.xml"
+fi
 
 # クリーンアップ
 rm project-tree.txt
 
-if [ "$NAME" = "app" ]; then
-  echo "✔ Successfully generated: repomix-app-1-base.xml, repomix-app-2a-routes.xml, repomix-app-2b-core.xml, repomix-app-3-tests.xml"
-else
-  echo "✔ Successfully generated: repomix-${NAME}-1-base.xml, repomix-${NAME}-2-src.xml, repomix-${NAME}-3-tests.xml"
-fi
+# 4. 文字数上限チェック（WebUI展開上限対策: 250,000文字超過で警告）
+echo ""
+echo "📊 Generated files & character counts:"
+for f in "repomix-${NAME}_"*.xml; do
+  [ -e "$f" ] || continue
+  CHARS=$(wc -m < "$f" | tr -d ' ')
+  if [ "$CHARS" -gt 250000 ]; then
+    echo "  ⚠️  $f :${CHARS} chars (25万文字超過！分割を検討してください)"
+  else
+    echo "  ✅ $f :${CHARS} chars"
+  fi
+done
