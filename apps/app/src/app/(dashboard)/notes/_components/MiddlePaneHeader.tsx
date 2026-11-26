@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AnimatedIconButton } from "@/components/ui/animated-icon-button";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -78,6 +79,7 @@ export function MiddlePaneHeader({
 	domainSortOrder,
 	onDomainSortOrderChange,
 }: MiddlePaneHeaderProps) {
+	const { t } = useTranslation();
 	const searchParams = useSearchParams();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -191,11 +193,13 @@ export function MiddlePaneHeader({
 		(!isPageListLevel || isSearchActive);
 
 	const getContextTitle = (): string | null => {
-		if (currentView === "domains" && !currentDomain) return "Domain List";
-		if (isPageListLevel && !isSearchActive) return currentDomain || "Pages";
-		if (currentView === "drafts") return "Draft List";
+		if (currentView === "domains" && !currentDomain)
+			return t("notes.domainList");
+		if (isPageListLevel && !isSearchActive)
+			return currentDomain || t("common.pages");
+		if (currentView === "drafts") return t("notes.draftList");
 		if (currentView === "diaries" && (!currentYear || !currentMonth))
-			return "Diary Archive";
+			return t("notes.diaryArchive");
 		return null;
 	};
 
@@ -226,7 +230,9 @@ export function MiddlePaneHeader({
 	};
 
 	const plusHref = getPlusHref();
-	const plusTitle = isDiariesView ? "New Diary Log" : "New Note here";
+	const plusTitle = isDiariesView
+		? t("notes.newDiaryLog")
+		: t("notes.newNoteHere");
 
 	return (
 		<div className="space-y-3">
@@ -238,7 +244,7 @@ export function MiddlePaneHeader({
 							type="button"
 							onClick={onBack}
 							className="p-1.5 text-gray-400 hover:text-action rounded-full hover:bg-base-surface transition-colors animate-in fade-in zoom-in duration-200 cursor-pointer border border-base-border bg-base-bg"
-							title="Go back"
+							title={t("common.back")}
 						>
 							<ArrowLeft aria-hidden="true" className="size-4" />
 						</button>
@@ -258,30 +264,30 @@ export function MiddlePaneHeader({
 							<FilterBadge
 								isActive={filterType === "all"}
 								onClick={() => onFilterTypeChange("all")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								All
+								{t("common.all")}
 							</FilterBadge>
 							<FilterBadge
 								isActive={filterType === "info"}
 								onClick={() => onFilterTypeChange("info")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								Info
+								{t("notes.typeInfo")}
 							</FilterBadge>
 							<FilterBadge
 								isActive={filterType === "alert"}
 								onClick={() => onFilterTypeChange("alert")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								Alert
+								{t("notes.typeAlert")}
 							</FilterBadge>
 							<FilterBadge
 								isActive={filterType === "idea"}
 								onClick={() => onFilterTypeChange("idea")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								Idea
+								{t("notes.typeIdea")}
 							</FilterBadge>
 						</div>
 					) : isRouteDomains && domainSortOrder && onDomainSortOrderChange ? (
@@ -289,16 +295,16 @@ export function MiddlePaneHeader({
 							<FilterBadge
 								isActive={domainSortOrder === "count"}
 								onClick={() => onDomainSortOrderChange("count")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								Most Notes
+								{t("notes.mostNotes")}
 							</FilterBadge>
 							<FilterBadge
 								isActive={domainSortOrder === "name"}
 								onClick={() => onDomainSortOrderChange("name")}
-								className="rounded-full px-2.5 py-1 text-xs"
+								className="rounded-full px-2 sm:px-2.5 py-1 text-xs whitespace-nowrap"
 							>
-								Name
+								{t("notes.sortName")}
 							</FilterBadge>
 						</div>
 					) : (
@@ -321,7 +327,7 @@ export function MiddlePaneHeader({
 									? "bg-action text-action-text border-action"
 									: "bg-base-bg text-gray-400 border-base-border hover:text-action hover:bg-base-surface",
 							)}
-							title="Show Resolved Notes"
+							title={t("notes.showResolved")}
 						>
 							<SquareCheckBig aria-hidden="true" className="w-4 h-4" />
 						</button>
@@ -349,7 +355,7 @@ export function MiddlePaneHeader({
 						onSubmit={() => {
 							searchInputRef.current?.blur();
 						}}
-						placeholder="Search notes..."
+						placeholder={t("notes.searchNotesPlaceholder")}
 						className="rounded-full text-base md:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-border/50"
 						autoFocus={false}
 					/>
@@ -377,7 +383,7 @@ export function MiddlePaneHeader({
 									? "text-neutral-900 bg-base-bg shadow-sm"
 									: "text-gray-400 hover:text-action",
 							)}
-							title="Select Mode"
+							title={t("notes.selectMode")}
 						/>
 						<Popover
 							open={isCopyPopoverOpen}
@@ -398,7 +404,7 @@ export function MiddlePaneHeader({
 												? "text-note-info"
 												: "text-gray-400 hover:text-action",
 										)}
-										title="Bulk Copy"
+										title={t("notes.bulkCopy")}
 									/>
 								}
 							/>
@@ -419,7 +425,9 @@ export function MiddlePaneHeader({
 										) : (
 											<FileText aria-hidden="true" className="w-3.5 h-3.5" />
 										)}
-										{copiedType === "text" ? "Copied!" : "as Text"}
+										{copiedType === "text"
+											? t("common.copied")
+											: t("notes.asText")}
 									</Button>
 									<Button
 										type="button"
@@ -436,7 +444,9 @@ export function MiddlePaneHeader({
 										) : (
 											<FileJson aria-hidden="true" className="w-3.5 h-3.5" />
 										)}
-										{copiedType === "json" ? "Copied!" : "as JSON"}
+										{copiedType === "json"
+											? t("common.copied")
+											: t("notes.asJson")}
 									</Button>
 								</div>
 							</PopoverContent>
@@ -449,7 +459,7 @@ export function MiddlePaneHeader({
 			{isSelectMode && (
 				<div className="flex items-center justify-between pt-1 border-t border-base-border border-dashed animate-in fade-in slide-in-from-top-1 duration-200">
 					<span className="text-xs font-semibold text-action">
-						{selectedCount} selected
+						{t("notes.selectedCount", { count: selectedCount })}
 					</span>
 					<div className="flex items-center gap-2">
 						<Button
@@ -463,7 +473,7 @@ export function MiddlePaneHeader({
 							disabled={isDeletingBulk}
 							className="text-gray-500 hover:text-action font-medium cursor-pointer rounded-full px-3"
 						>
-							Cancel
+							{t("common.cancel")}
 						</Button>
 						<Button
 							type="button"
@@ -474,7 +484,7 @@ export function MiddlePaneHeader({
 							className="flex items-center gap-1.5 font-bold cursor-pointer rounded-full px-3 disabled:opacity-40"
 						>
 							<Trash2 aria-hidden="true" className="w-3 h-3" />
-							{isDeletingBulk ? "Deleting..." : "Delete"}
+							{isDeletingBulk ? t("notes.deleting") : t("common.delete")}
 						</Button>
 					</div>
 				</div>

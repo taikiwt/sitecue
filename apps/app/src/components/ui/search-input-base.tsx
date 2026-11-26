@@ -1,5 +1,8 @@
+"use client";
+
 import { Search, X } from "lucide-react";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface SearchInputBaseProps
@@ -21,6 +24,7 @@ export const SearchInputBase = React.forwardRef<
 		{ value, onChange, onClear, onSubmit, placeholder, className, ...rest },
 		ref,
 	) => {
+		const { t } = useTranslation();
 		const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
 			if (e.nativeEvent.isComposing || e.keyCode === 229) {
 				return;
@@ -37,7 +41,7 @@ export const SearchInputBase = React.forwardRef<
 					type="button"
 					onClick={onSubmit}
 					className="absolute left-3 flex items-center justify-center cursor-pointer text-muted-foreground group-focus-within:text-action transition-colors"
-					aria-label="Search"
+					aria-label={t("nav.search")}
 				>
 					<Search className="w-4 h-4" aria-hidden="true" />
 				</button>
@@ -47,7 +51,7 @@ export const SearchInputBase = React.forwardRef<
 					value={value}
 					onChange={(e) => onChange(e.target.value)}
 					onKeyDown={handleKeyDown}
-					placeholder={placeholder || "Search..."}
+					placeholder={placeholder || t("common.searchPlaceholder")}
 					className="w-full pl-9 pr-8 py-2 text-base md:text-sm bg-base-bg border border-transparent focus:border-base-border focus:ring-2 focus:ring-base-border rounded-full transition-all outline-none"
 					{...rest}
 				/>
@@ -56,7 +60,7 @@ export const SearchInputBase = React.forwardRef<
 						type="button"
 						onClick={onClear}
 						className="absolute right-2 p-1 text-muted-foreground hover:text-action cursor-pointer transition-colors"
-						aria-label="Clear search"
+						aria-label={t("common.clearSearch")}
 					>
 						<X className="w-3.5 h-3.5" aria-hidden="true" />
 					</button>

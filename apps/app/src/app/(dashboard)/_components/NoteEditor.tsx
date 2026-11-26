@@ -4,6 +4,7 @@ import { SHARED_LIMITS } from "@sitecue/shared";
 import { AlertTriangle, Info, Lightbulb, Send } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import { FilterBadge } from "@/components/ui/filter-badge";
 import { cn } from "@/lib/utils";
@@ -16,6 +17,7 @@ interface NoteEditorProps {
 }
 
 export default function NoteEditor({ onSubmit }: NoteEditorProps) {
+	const { t } = useTranslation();
 	const planState = useUserStore((state) => state.plan);
 	const userPlan = typeof planState === "string" ? planState : "free";
 	const openPaywall = useUserStore((state) => state.openPaywall);
@@ -51,7 +53,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 			if (errorMessage.includes("limit reached")) {
 				openPaywall("notes");
 			} else {
-				toast.error("Failed to save the note.");
+				toast.error(t("toast.saveNoteFailed"));
 			}
 		} finally {
 			setIsSaving(false);
@@ -73,7 +75,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 						)}
 					>
 						<Info aria-hidden="true" className="h-3 w-3" />
-						Info
+						{t("notes.typeInfo")}
 					</FilterBadge>
 					<FilterBadge
 						isActive={noteType === "alert"}
@@ -86,7 +88,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 						)}
 					>
 						<AlertTriangle aria-hidden="true" className="h-3 w-3" />
-						Alert
+						{t("notes.typeAlert")}
 					</FilterBadge>
 					<FilterBadge
 						isActive={noteType === "idea"}
@@ -99,7 +101,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 						)}
 					>
 						<Lightbulb aria-hidden="true" className="h-3 w-3" />
-						Idea
+						{t("notes.typeIdea")}
 					</FilterBadge>
 				</div>
 			</div>
@@ -108,14 +110,14 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 				<NotesEditor
 					value={content}
 					onChange={(val) => setContent(val)}
-					placeholder="Write down your thoughts..."
+					placeholder={t("studio.writeThoughts")}
 					isDirty={content.length > 0}
 				/>
 				<button
 					type="button"
 					onClick={() => handleSave()}
 					disabled={!content.trim() || isSaving || isOverLimit}
-					aria-label="Save note"
+					aria-label={t("capture.saveNote")}
 					className="absolute right-2 bottom-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-action text-action-text shadow-lg transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 cursor-pointer"
 				>
 					<Send aria-hidden="true" className="h-4 w-4" />
@@ -123,7 +125,7 @@ export default function NoteEditor({ onSubmit }: NoteEditorProps) {
 			</div>
 			<div className="flex justify-between items-center">
 				<p className="text-[10px] text-gray-400">
-					{isSaving ? "Saving..." : "Markdown supported"}
+					{isSaving ? t("common.saving") : t("notes.markdownSupported")}
 				</p>
 				<span
 					className={cn(

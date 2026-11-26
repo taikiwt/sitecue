@@ -6,6 +6,7 @@ import {
 	waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import i18n from "@/locales/i18n";
 import { UserMenu } from "./UserMenu";
 
 // Supabase クライアントのモック
@@ -77,8 +78,10 @@ vi.mock("@/store/useUserStore", () => ({
 }));
 
 describe("UserMenu", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
 		vi.clearAllMocks();
+		window.localStorage.clear();
+		await i18n.changeLanguage("en");
 		currentStoreState = {
 			aiUsageCount: 0,
 			plan: "free",
@@ -218,5 +221,28 @@ describe("UserMenu", () => {
 		});
 		expect(guideLink).toBeDefined();
 		expect(guideLink.getAttribute("href")).toBe("/guide");
+	});
+
+	it("言語切替ボタン（JA / EN）をクリックすると、メニュー内の表示言語が即座に切り替わること", async () => {
+		render(<UserMenu />);
+		await waitFor(() => {
+			expect(screen.getByRole("button", { name: "User menu" })).toBeDefined();
+		});
+		fireEvent.click(screen.getByRole("button", { name: "User menu" }));
+
+		expect(screen.getByText("Language")).toBeDefined();
+		fireEvent.click(screen.getByRole("button", { name: "JA" }));
+
+		await waitFor(() => {
+			expect(screen.getByText("言語")).toBeDefined();
+			expect(screen.getByText("ゴミ箱")).toBeDefined();
+			expect(screen.getByText("ログアウト")).toBeDefined();
+		});
+
+		fireEvent.click(screen.getByRole("button", { name: "EN" }));
+		await waitFor(() => {
+			expect(screen.getByText("Language")).toBeDefined();
+			expect(screen.getByText("Trash")).toBeDefined();
+		});
 	});
 });

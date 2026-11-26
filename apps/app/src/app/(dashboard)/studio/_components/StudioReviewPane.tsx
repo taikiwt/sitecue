@@ -18,6 +18,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Note, NoteType } from "@sitecue/shared";
 import { ChevronDown, Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -67,6 +68,7 @@ export default function StudioReviewPane({
 	onGenerateReview,
 	isGeneratingReview,
 }: StudioReviewPaneProps) {
+	const { t } = useTranslation();
 	const [isAddNotesOpen, setIsAddNotesOpen] = useState(
 		reviewNotes.length === 0,
 	);
@@ -107,7 +109,7 @@ export default function StudioReviewPane({
 							)}
 							aria-hidden="true"
 						/>
-						<span>Add Notes</span>
+						<span>{t("studio.addNotes")}</span>
 					</button>
 					<Button
 						type="button"
@@ -123,11 +125,11 @@ export default function StudioReviewPane({
 						)}
 					>
 						{isGeneratingReview ? (
-							<Loader2 className="w-3 h-3 animate-spin" />
+							<Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
 						) : (
-							<Sparkles className="w-3 h-3" />
+							<Sparkles className="w-3 h-3" aria-hidden="true" />
 						)}
-						AI Review
+						{t("studio.aiReview")}
 					</Button>
 				</div>
 				{isAddNotesOpen && (
@@ -141,7 +143,7 @@ export default function StudioReviewPane({
 			<div className="flex-1 overflow-y-auto p-4 min-h-0 w-full min-w-0">
 				<div className="flex justify-between items-center mb-3">
 					<span className="text-xs font-bold text-neutral-400 uppercase tracking-widest">
-						Review Notes ({reviewNotes.length})
+						{t("studio.reviewNotesCount", { count: reviewNotes.length })}
 					</span>
 					{reviewNotes.length > 0 && (
 						<AlertDialog>
@@ -152,25 +154,26 @@ export default function StudioReviewPane({
 										size="sm"
 										className="text-note-alert hover:bg-note-alert/10 hover:text-note-alert h-6 px-2 text-xs font-bold uppercase"
 									>
-										Delete All
+										{t("studio.deleteAll")}
 									</Button>
 								}
 							/>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>Delete all notes?</AlertDialogTitle>
+									<AlertDialogTitle>
+										{t("studio.deleteAllTitle")}
+									</AlertDialogTitle>
 									<AlertDialogDescription>
-										This will remove all comments from this draft. You must
-										click "Save" to apply these changes to the server.
+										{t("studio.deleteAllDesc")}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<AlertDialogFooter>
-									<AlertDialogCancel>Cancel</AlertDialogCancel>
+									<AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
 									<AlertDialogAction
 										onClick={onDeleteAllNotes}
 										className="bg-note-alert hover:bg-note-alert/90 text-white font-bold"
 									>
-										Delete
+										{t("common.delete")}
 									</AlertDialogAction>
 								</AlertDialogFooter>
 							</AlertDialogContent>
@@ -188,11 +191,9 @@ export default function StudioReviewPane({
 						))
 					) : reviewNotes.length === 0 ? (
 						<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-							<p className="text-sm font-medium">
-								No notes for this draft yet.
-							</p>
+							<p className="text-sm font-medium">{t("studio.noReviewNotes")}</p>
 							<p className="mt-1 text-[10px]">
-								Use the form above to capture your thoughts.
+								{t("studio.noReviewNotesHint")}
 							</p>
 						</div>
 					) : (
@@ -259,11 +260,14 @@ export default function StudioReviewPane({
 										: "bg-gradient-to-r from-purple-200 via-indigo-200 to-blue-200 bg-clip-text text-transparent",
 								)}
 							>
-								{isWeaving ? "WEAVING..." : "WEAVE WITH AI"}
+								{isWeaving ? t("studio.weaving") : t("studio.weaveWithAi")}
 							</span>
 						</div>
 					</Button>
 				</div>
+				<p className="mt-2 text-center text-[11px] text-neutral-400 leading-snug">
+					{t("studio.weaveDescription")}
+				</p>
 			</div>
 		</div>
 	);

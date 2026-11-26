@@ -2,6 +2,7 @@
 
 import { ExternalLink, WrapText } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkBreaks from "remark-breaks";
@@ -53,6 +54,7 @@ function CodeBlockNode({
 	className,
 	codeString,
 }: CodeBlockNodeProps) {
+	const { t } = useTranslation();
 	const [isWrapped, setIsWrapped] = useState(false);
 
 	return (
@@ -62,7 +64,7 @@ function CodeBlockNode({
 					type="button"
 					onClick={() => setIsWrapped(!isWrapped)}
 					className="p-1.5 rounded-md bg-base-surface/80 dark:bg-neutral-800/80 backdrop-blur-sm border border-base-border dark:border-neutral-700 text-gray-500 hover:text-action dark:hover:text-neutral-100 transition-colors cursor-pointer flex items-center justify-center"
-					title={isWrapped ? "Disable wrap" : "Wrap text"}
+					title={isWrapped ? t("common.disableWrap") : t("common.wrapText")}
 				>
 					<WrapText className="w-3.5 h-3.5" aria-hidden="true" />
 				</button>

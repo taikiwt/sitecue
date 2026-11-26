@@ -6,20 +6,12 @@ import type { Diary } from "@sitecue/shared";
 import { getSafeUrl } from "@sitecue/shared";
 import { GripVertical, MapPin, Pin } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { NoteStatusBadge } from "@/components/ui/note-status-badge";
+import { formatDiaryDayLabel, formatShortDateTime } from "@/lib/dateFormat";
 import { cn } from "@/lib/utils";
 import type { Draft, Note } from "../types";
-
-const formatDate = (dateStr: string) => {
-	const date = new Date(dateStr);
-	return date.toLocaleDateString("en-US", {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-};
 
 interface NoteItemProps {
 	item: Note | Draft | Diary;
@@ -52,6 +44,7 @@ function NoteItemComponent({
 	onPinToggle,
 	isBulkExiting = false,
 }: NoteItemProps) {
+	const { t, i18n } = useTranslation();
 	const [isExiting, setIsExiting] = useState(false);
 	const exitTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -65,11 +58,7 @@ function NoteItemComponent({
 
 	if (isDiary) {
 		const diary = item as Diary;
-		const diaryDate = new Date(diary.date);
-		const dayLabel = diaryDate.toLocaleDateString("en-US", {
-			day: "numeric",
-			weekday: "short",
-		});
+		const dayLabel = formatDiaryDayLabel(diary.date, i18n.language);
 		const isActive =
 			searchParams.get("date") === diary.date &&
 			searchParams.get("view") === "diaries";
@@ -170,7 +159,7 @@ function NoteItemComponent({
 						{...dragHandleProps}
 						style={{ touchAction: "none" }}
 						className="flex items-center justify-center p-1 text-base-border hover-safe:text-action opacity-100 pointer-fine:opacity-0 group-card-hover-safe:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
-						aria-label="Drag to reorder"
+						aria-label={t("notes.dragToReorder")}
 					>
 						<GripVertical className="w-4 h-4" aria-hidden="true" />
 					</button>
@@ -208,7 +197,10 @@ function NoteItemComponent({
 					)}
 					<div className="flex items-center gap-1.5 shrink-0 pointer-events-auto">
 						<span className="text-[10px] text-gray-400">
-							{formatDate(isNote ? item.created_at : item.updated_at)}
+							{formatShortDateTime(
+								isNote ? item.created_at : item.updated_at,
+								i18n.language,
+							)}
 						</span>
 						{isNote && (
 							<button
@@ -224,8 +216,10 @@ function NoteItemComponent({
 										? "text-action fill-current"
 										: "text-neutral-300 hover:text-action",
 								)}
-								title={isPinned ? "Unpin note" : "Pin note"}
-								aria-label={isPinned ? "Unpin note" : "Pin note"}
+								title={isPinned ? t("notes.unpinNote") : t("notes.pinNote")}
+								aria-label={
+									isPinned ? t("notes.unpinNote") : t("notes.pinNote")
+								}
 							>
 								<Pin
 									aria-hidden="true"
@@ -241,7 +235,7 @@ function NoteItemComponent({
 						(isResolved || isExiting) && "line-through",
 					)}
 				>
-					{!isNote && (item.title || "Untitled Draft")}
+					{!isNote && (item.title || t("dashboard.untitledDraft"))}
 				</h3>
 				<p
 					className={cn(

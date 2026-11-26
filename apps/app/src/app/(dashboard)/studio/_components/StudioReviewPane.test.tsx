@@ -104,6 +104,11 @@ describe("StudioReviewPane Component", () => {
 
 		expect(screen.getByText("Review Notes (1)")).toBeInTheDocument();
 		expect(screen.getByText("Test Review Note")).toBeInTheDocument();
+		expect(
+			screen.getByText(
+				"AI rewrites your draft by combining the text and review notes.",
+			),
+		).toBeInTheDocument();
 	});
 
 	it("グラブアイコンが存在し、ドラッグ領域が独立して提供されていること", () => {

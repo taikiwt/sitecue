@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 
 interface StudioSearchInputProps {
@@ -13,6 +14,7 @@ export default function StudioSearchInput({
 	onSearchKeywordChange,
 	onSearch,
 }: StudioSearchInputProps) {
+	const { t } = useTranslation();
 	const handleClear = () => {
 		onSearchKeywordChange("");
 	};
@@ -23,7 +25,7 @@ export default function StudioSearchInput({
 			onChange={onSearchKeywordChange}
 			onClear={handleClear}
 			onSubmit={onSearch}
-			placeholder="Search global materials..."
+			placeholder={t("studio.searchGlobalMaterials")}
 		/>
 	);
 }

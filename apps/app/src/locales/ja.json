@@ -1,0 +1,620 @@
+{
+	"common": {
+		"save": "保存",
+		"saving": "保存中...",
+		"saved": "保存済み",
+		"cancel": "キャンセル",
+		"delete": "削除",
+		"restore": "復元",
+		"close": "閉じる",
+		"back": "戻る",
+		"edit": "編集",
+		"copy": "コピー",
+		"copied": "コピーしました！",
+		"today": "今日",
+		"all": "すべて",
+		"notes": "ノート",
+		"drafts": "ドラフト",
+		"diaries": "日記",
+		"domains": "ドメイン",
+		"inbox": "インボックス",
+		"page": "ページ",
+		"pages": "ページ",
+		"domain": "ドメイン",
+		"chars": "文字",
+		"unsavedLeaveConfirm": "未保存の変更があります。ページを離れてもよろしいですか？",
+		"searchPlaceholder": "検索...",
+		"clearSearch": "検索をクリア",
+		"copyToClipboard": "クリップボードにコピー",
+		"disableWrap": "折り返しを解除",
+		"wrapText": "テキストを折り返す"
+	},
+	"nav": {
+		"home": "ホーム",
+		"newNote": "新規作成",
+		"search": "検索",
+		"notes": "ノート"
+	},
+	"userMenu": {
+		"myAccount": "マイアカウント",
+		"language": "言語",
+		"proPlanActive": "Proプラン有効",
+		"manageSubscription": "サブスクリプション管理",
+		"upgradeToPro": "Proへアップグレード",
+		"seeWhatProOffers": "Proプランの機能を見る",
+		"aiUsage": "AI利用回数",
+		"uses": "回",
+		"noteStorage": "ノート保存数",
+		"draftStorage": "ドラフト保存数",
+		"manageTemplates": "テンプレート管理",
+		"trash": "ゴミ箱",
+		"guideAndShortcuts": "ガイド & ショートカット",
+		"privacyPolicy": "プライバシーポリシー",
+		"logout": "ログアウト"
+	},
+	"login": {
+		"welcome": "sitecueへようこそ",
+		"subtitle": "サインインしてコンテキストを同期しましょう。",
+		"continueGoogle": "Googleでログイン",
+		"continueGithub": "GitHubでログイン",
+		"termsPrefix": "ログインすることで、",
+		"privacyPolicy": "プライバシーポリシー",
+		"termsSuffix": "に同意したものとみなされます。"
+	},
+	"dashboard": {
+		"todaysFocus": "今日の活動",
+		"viewDiariesTimeline": "日記タイムラインを見る",
+		"appendTodayDiary": "+ 今日の日記に追記",
+		"newEntriesToday": "件（ノート・ドラフト作成）",
+		"weeklyProgress": "過去7日間の活動",
+		"weeklyProgressDesc": "過去7日間のノート・ドラフトの記録状況です。",
+		"activities": "活動",
+		"notesCaptured": "作成したノート",
+		"draftsCreated": "作成したドラフト",
+		"recentItems": "最近のアイテム",
+		"untitledDraft": "無題のドラフト",
+		"domainActivity": "ドメイン別の活動",
+		"noDomainActivity": "ドメインごとの活動履歴がありません。拡張機能からノートを作成するとここに表示されます。",
+		"open": "開く",
+		"notesCount": "{{count}}件のノート",
+		"untitledNote": "無題のノート",
+		"activityLog": "活動記録",
+		"noRecentActivities": "過去7日間の活動はありません。",
+		"activitiesCount": "{{count}}件の活動",
+		"capturedNotes": "作成したノート",
+		"createdDrafts": "作成したドラフト",
+		"noContentPreview": "プレビューなし",
+		"favoriteSites": "お気に入りサイト",
+		"addSite": "サイトを追加",
+		"title": "タイトル",
+		"titlePlaceholder": "例: マイブログ",
+		"url": "URL",
+		"addPinnedSite": "ピン留めサイトを追加",
+		"adding": "追加中...",
+		"noPinnedSites": "ピン留めサイトはまだありません。よく使うツールや参考サイトを追加できます。",
+		"overview": "概要",
+		"totalNotes": "合計ノート数",
+		"totalDrafts": "ドラフト総数",
+		"storageAlmostFull": "ノート保存上限に近づいています（{{count}}/{{max}}）。Proで無制限に保存できます。",
+		"upgrade": "アップグレード",
+		"recentDrafts": "最近のドラフト",
+		"viewAll": "すべて見る",
+		"noDraftsYet": "ドラフトはまだありません。",
+		"startDraft": "ドラフトを始める",
+		"blankCanvas": "白紙キャンバス",
+		"blankCanvasDesc": "テンプレートに縛られず自由に書き始めます。",
+		"useTemplateDesc": "このテンプレートを使って作成します。",
+		"upgradedToast": "sitecue Proへようこそ！🚀"
+	},
+	"notes": {
+		"tabDomains": "ドメイン",
+		"tabInbox": "インボックス",
+		"tabDrafts": "ドラフト",
+		"tabDiaries": "日記",
+		"domainList": "ドメイン一覧",
+		"draftList": "ドラフト一覧",
+		"diaryArchive": "日記アーカイブ",
+		"mostNotes": "ノート数順",
+		"sortName": "名前順",
+		"showResolved": "完了済みノートを表示",
+		"searchNotesPlaceholder": "ノートを検索...",
+		"searchKeywordsPlaceholder": "キーワードや #タグ で検索...",
+		"newNoteHere": "ここに新規ノート作成",
+		"newDiaryLog": "今日の日記を追記",
+		"selectMode": "選択モード",
+		"bulkCopy": "一括コピー",
+		"asText": "テキスト形式",
+		"asJson": "JSON形式",
+		"selectedCount": "{{count}}件選択中",
+		"deleting": "削除中...",
+		"allNotes": "すべてのノート",
+		"domainNotes": "ドメインノート",
+		"noDiariesFound": "日記が見つかりません",
+		"noDiariesYear": "この年の日記はありません",
+		"noDiariesMonth": "この月の日記はありません",
+		"selectCategoryTitle": "リストからカテゴリを選択してください",
+		"selectCategoryDesc": "インボックス、ドラフト、またはドメインを選択すると\nアイテム一覧が表示されます",
+		"noNotesCategory": "このカテゴリにノートはありません。",
+		"noDraftsCategory": "このカテゴリのドラフトはありません。",
+		"selectNotePrompt": "リストからノートまたはドラフトを選択してください",
+		"findInNote": "ノート内を検索...",
+		"previousMatch": "前の一致へ",
+		"nextMatch": "次の一致へ",
+		"clearFind": "検索をクリア",
+		"openStudio": "スタジオを開く",
+		"editInStudio": "スタジオで編集",
+		"lastUpdated": "最終更新",
+		"sourceUrl": "参照元URL",
+		"noteContent": "ノート本文",
+		"draftContent": "ドラフト本文",
+		"draftTitle": "ドラフトタイトル",
+		"created": "作成日時",
+		"noteType": "ノート種別",
+		"scopeAndUrl": "スコープ & URL",
+		"deleteConfirmTitle": "本当に削除しますか？",
+		"deleteNoteDesc": "このノートはゴミ箱に移動され、7日後（Proプランは30日後）に完全に削除されます。",
+		"deleteDraftDesc": "このドラフトはゴミ箱に移動され、7日後（Proプランは30日後）に完全に削除されます。",
+		"deleteDiaryDesc": "この操作は取り消せません。日記データはサーバーから完全に削除されます。",
+		"moveToTrash": "ゴミ箱へ移動",
+		"deleteDiary": "日記を削除",
+		"deleteNote": "ノートを削除",
+		"deleteDraft": "ドラフトを削除",
+		"dragToReorder": "ドラッグして並び替え",
+		"pinNote": "ノートをピン留め",
+		"unpinNote": "ピン留めを解除",
+		"favorite": "お気に入りに追加",
+		"unfavorite": "お気に入りから削除",
+		"copyAllContent": "すべてコピー",
+		"actions": "操作",
+		"typeInfo": "Info",
+		"typeAlert": "Alert",
+		"typeIdea": "Idea",
+		"typeToggleTitle": "種別: {{label}}（クリックで切り替え）",
+		"markResolved": "完了にする",
+		"markUnresolved": "未完了に戻す",
+		"markdownSupported": "Markdown対応"
+	},
+	"searchModal": {
+		"placeholder": "ノートを検索...",
+		"searching": "検索中...",
+		"noResults": "「{{query}}」に一致する結果はありません",
+		"domains": "ドメイン",
+		"pages": "ページ",
+		"drafts": "ドラフト",
+		"notes": "ノート",
+		"diaries": "日記",
+		"studioReview": "スタジオレビュー",
+		"reviewNoteInStudio": "スタジオのレビューノート",
+		"footerHint": "キーワードを入力してEnterで全ドメインから検索できます",
+		"noContent": "本文なし"
+	},
+	"capture": {
+		"menuTitle": "キャプチャメニュー",
+		"heading": "何を記録しますか？",
+		"quickNoteTitle": "クイックノート",
+		"quickNoteDesc": "URLやインボックスに紐づくメモを素早く記録",
+		"blankDraftTitle": "新規ドラフト",
+		"blankDraftDesc": "スタジオを開いて長文のドラフトを作成します",
+		"dailyDiaryTitle": "今日の日記",
+		"dailyDiaryDesc": "今日のタイムラインにタイトルなしで追記",
+		"dailyDiaryMode": "今日の日記モード",
+		"diaryPlaceholder": "今日の気づきや出来事を記録しましょう...（タイトル不要）",
+		"editInDiaryStudio": "日記で編集",
+		"logging": "記録中...",
+		"saveDiary": "日記を保存",
+		"quickNoteMode": "クイックノートモード",
+		"scope": "スコープ",
+		"sourceUrl": "対象URL",
+		"noteType": "ノート種別",
+		"note": "ノート",
+		"notePlaceholder": "今考えていることを書き留めましょう...",
+		"editInStudio": "スタジオで編集",
+		"saveNote": "ノートを保存"
+	},
+	"studio": {
+		"createTemplate": "テンプレートを作成",
+		"editTemplate": "テンプレートを編集",
+		"saveTemplate": "テンプレートを保存",
+		"saveAsTemplate": "テンプレートとして保存",
+		"templateName": "テンプレート名",
+		"templateNamePlaceholder": "例: 週報フォーマット",
+		"maxLengthOptional": "最大文字数（任意）",
+		"boilerplateLabel": "初期テキスト（定型文）",
+		"weavePromptLabel": "Weaveプロンプト（AI用システム指示）",
+		"weavePromptPlaceholder": "例: 要点を整理し、丁寧なトーンでまとめてください。",
+		"saveAsTemplateDialogDesc": "現在のドラフトから再利用可能なテンプレートを作成します。必要な構成だけが残るように初期テキストを編集できます。",
+		"deleteDraftConfirm": "このドラフトを削除しますか？",
+		"enterArticleTitle": "記事タイトルを入力...",
+		"titleOptional": "タイトル（任意）",
+		"writeThoughts": "自由に書き始めましょう...",
+		"templateLabel": "テンプレート",
+		"blankCanvas": "白紙キャンバス",
+		"outline": "アウトライン",
+		"review": "レビュー",
+		"materials": "資料",
+		"openPanel": "右パネルを開く",
+		"openPanelShort": "パネル",
+		"closeRightPanel": "右パネルを閉じる",
+		"notesAndAi": "ノート & AI",
+		"editor": "エディタ",
+		"filterHeadings": "見出しを絞り込み...",
+		"clearFilter": "絞り込みをクリア",
+		"noHeadingsFound": "見出しが見つかりません",
+		"noHeadingsHint": "エディタで # や ## を使うと構造が表示されます。",
+		"noHeadingsSearchHint": "別の検索キーワードをお試しください。",
+		"addNotes": "ノートを追加",
+		"aiReview": "AIレビュー",
+		"reviewNotesCount": "レビューノート ({{count}})",
+		"deleteAll": "すべて削除",
+		"deleteAllTitle": "すべてのノートを削除しますか？",
+		"deleteAllDesc": "このドラフトのレビューノートをすべて削除します。サーバーへ反映するには「保存」をクリックしてください。",
+		"noReviewNotes": "レビューノートはまだありません。",
+		"noReviewNotesHint": "上のフォームからレビューや補足のメモを追加できます。",
+		"weaveWithAi": "AIで作り直す",
+		"weaveDescription": "AIが本文とレビューノートの内容を組み合わせて作り直します",
+		"weaving": "統合中...",
+		"searchGlobalMaterials": "過去のノート・資料を検索...",
+		"noMaterialsFound": "資料が見つかりません。",
+		"noMaterialsHint": "キーワードを入力して過去のノートや\n保存済みページを検索できます。",
+		"undo": "元に戻す (Ctrl+Z)",
+		"redo": "やり直す (Ctrl+Y)",
+		"moreOptions": "その他のオプション",
+		"insertToEditor": "エディタへ挿入",
+		"editingNote": "ノートを編集中...",
+		"editNotePlaceholder": "ノート内容を編集...",
+		"showLess": "折りたたむ",
+		"readMore": "続きを読む",
+		"draftNote": "ドラフトメモ",
+		"pageNote": "ページノート",
+		"domainNote": "ドメインノート",
+		"inboxNote": "インボックスノート",
+		"dragToReorder": "ドラッグして並び替え",
+		"draftLabel": "ドラフト",
+		"editNote": "ノートを編集",
+		"copyNote": "ノートをコピー"
+	},
+	"diaryStudio": {
+		"title": "日記",
+		"deleteDiary": "日記を削除",
+		"canvasLabel": "キャンバス: デイリーサンドボックス",
+		"keyEventsCount": "今日の主な出来事 ({{count}}/10)",
+		"clickToEditTopic": "クリックしてトピックを編集",
+		"removeTopic": "トピックを削除",
+		"addTopicPlaceholder": "+ 今日の主な出来事を追加... (最大50文字)",
+		"add": "追加",
+		"diaryPlaceholder": "今日の出来事や考えたことを記録しましょう...（Markdown対応）",
+		"materialsTitle": "今日の資料",
+		"materialsOfDay": "この日のノート・ドラフト",
+		"noFootprints": "今日の記録はまだありません。",
+		"deleteConfirmTitle": "本当に削除しますか？",
+		"deleteConfirmDesc": "この操作は取り消せません。日記データはサーバーから完全に削除されます。",
+		"editorWorkspace": "エディタ画面へ",
+		"topicMaxLengthError": "トピックは50文字以内で入力してください",
+		"topicMaxCountError": "トピックは最大10件まで登録できます"
+	},
+	"templates": {
+		"title": "テンプレート",
+		"newTemplate": "新規テンプレート",
+		"selectPrompt": "編集するテンプレートを選択するか、新規作成してください。",
+		"deleteConfirm": "このテンプレートを削除してもよろしいですか？",
+		"maxLengthLabel": "最大文字数（任意）",
+		"boilerplateOptional": "定型文 / 初期テキスト（任意）",
+		"weavePromptOptional": "Weaveプロンプト（AI用システム指示・任意）",
+		"namePlaceholder": "例: Xスレッド、日報",
+		"boilerplatePlaceholder": "# ターゲット読者\n\n# 伝えたいこと",
+		"weavePromptPlaceholder": "このテンプレートからAI生成する際の指示を入力してください。",
+		"deleteAriaLabel": "{{name}} を削除",
+		"drawerDescription": "テンプレートの詳細を編集"
+	},
+	"trash": {
+		"title": "ゴミ箱",
+		"retentionSubtitle": "Freeプラン: 7日間 / Proプラン: 30日間",
+		"emptyTrash": "ゴミ箱を空にする",
+		"emptyTitle": "ゴミ箱は空です",
+		"emptyDesc": "ゴミ箱内のアイテムは{{days}}日後に自動削除されます。",
+		"expiresToday": "本日削除予定",
+		"expiresInDays": "あと{{count}}日で削除",
+		"emptyNote": "（空のノート）",
+		"emptyDraft": "（空のドラフト）",
+		"untitledDraft": "無題のドラフト",
+		"deleteForever": "完全に削除",
+		"deleteConfirmTitle": "完全に削除しますか？",
+		"deleteNoteDesc": "この操作は取り消せません。このノートはサーバーから完全に削除されます。",
+		"deleteDraftDesc": "この操作は取り消せません。このドラフトはサーバーから完全に削除されます。",
+		"emptyConfirmTitle": "ゴミ箱を空にしますか？",
+		"emptyConfirmDesc": "この操作は取り消せません。ゴミ箱内のすべてのアイテムがサーバーから完全に削除されます。",
+		"emptying": "削除中..."
+	},
+	"paywall": {
+		"titleMenu": "sitecue Pro",
+		"titleNotes": "保存上限に達しました",
+		"titleDrafts": "ドラフトの保存上限に達しました",
+		"titleAiFree": "今月のAI生成上限",
+		"titleAiLimit": "利用上限に達しました",
+		"descMenu": "ノート・ドラフトの無制限保存と、より多くのAI生成枠で執筆を加速させましょう。",
+		"descNotesLine1": "無料プランの上限（500件）に達しました。",
+		"descNotesLine2": "Proプランへアップグレードすると、ノート保存数無制限・1ノート最大30,000文字まで利用できます。",
+		"descDraftsLine1": "無料プランのドラフト保存上限（50件）に達しました。",
+		"descDraftsLine2": "Proプランにアップグレードすると無制限にドラフトを作成できます。",
+		"descAiFreeLine1": "今月の無料AI生成枠（3回/月）をすべて使用しました。",
+		"descAiFreeLine2": "Proプランへアップグレードすると、月100回までAI生成を利用できます。",
+		"descAiLimit": "引き続きAI機能をご利用いただくには、次回の更新サイクルまでお待ちください。",
+		"everythingInPro": "Proプランの特典:",
+		"featureNotesBold": "ノート保存数 無制限",
+		"featureNotesSuffix": "（無料プランは500件）",
+		"featureDraftsBold": "ドラフト無制限",
+		"featureDraftsSuffix": "（無料プランは50件）",
+		"featureCharsBold": "1ノート 30,000文字",
+		"featureCharsSuffix": "まで対応（無料プランは10,000文字）",
+		"featureAiBold": "AI生成 月100回",
+		"featureAiSuffix": "（無料プランは月3回）",
+		"monthlyPlan": "月額プラン ($5/月)",
+		"yearlyPlan": "年額プラン ($48/年 - 20%お得)",
+		"secureCheckout": "Polarによる安全な決済",
+		"trustItem1": "決済はStripeのインフラを利用し、Polarによって安全に処理されます。",
+		"trustItem2": "sitecueがクレジットカード情報を閲覧・保存することは一切ありません。",
+		"trustItem3": "サブスクリプションはアカウント設定からいつでも管理・解約できます。",
+		"maybeLater": "あとで検討する",
+		"gotIt": "閉じる",
+		"footerTagline": "sitecue Proで創造性をさらに広げよう"
+	},
+	"guide": {
+		"title": "ガイド & ショートカット",
+		"subtitle": "コンテキストの記録・整理・統合の操作ガイドです。",
+		"filterAll": "すべて",
+		"filterBasecamp": "Basecamp",
+		"filterExtension": "拡張機能",
+		"filterAriaLabel": "環境でガイドを絞り込み",
+		"shortcutsHeading": "キーボードショートカット",
+		"featuresHeading": "機能とボタン配置",
+		"placementLabel": "配置:",
+		"shortcuts": {
+			"bc-save": {
+				"action": "ノートまたは日記を保存",
+				"context": "クイックノートモーダル / ノートエディタ"
+			},
+			"bc-find": {
+				"action": "表示中のノート・日記内を検索",
+				"context": "ノート詳細 / 日記詳細"
+			},
+			"bc-find-nav": {
+				"action": "次の一致 / 前の一致へジャンプ",
+				"context": "ノート内検索バー"
+			},
+			"bc-find-esc": {
+				"action": "ノート内検索キーワードをクリア",
+				"context": "ノート内検索バー"
+			},
+			"bc-hint": {
+				"action": "AI執筆補完ヒントを実行",
+				"context": "ドラフトスタジオエディタ"
+			},
+			"bc-hint-accept": {
+				"action": "AI補完ヒントを確定 / 破棄",
+				"context": "ドラフトスタジオエディタ"
+			},
+			"bc-indent": {
+				"action": "リスト項目のインデント / インデント解除",
+				"context": "Markdownエディタ全般"
+			},
+			"bc-paste-url": {
+				"action": "選択テキストをMarkdownリンクに変換",
+				"context": "Markdownエディタ全般"
+			},
+			"ext-toggle": {
+				"action": "ブラウザのサイドパネルを開閉",
+				"context": "ブラウザ全体"
+			},
+			"ext-save": {
+				"action": "ノート保存または日記へ追記",
+				"context": "サイドパネル入力 / ノート編集"
+			},
+			"ext-esc": {
+				"action": "モーダルを閉じる / 最大化パネルを終了",
+				"context": "サイドパネル"
+			},
+			"ext-indent": {
+				"action": "リストまたはコマンドスニペットのインデント調整",
+				"context": "ノート / コマンドエディタ"
+			},
+			"ext-list": {
+				"action": "リスト記号の自動継続（空行でEnterすると終了）",
+				"context": "ノート / 日記エディタ"
+			},
+			"ext-paste-url": {
+				"action": "選択テキストをMarkdownリンクに変換",
+				"context": "ノート / 日記エディタ"
+			}
+		},
+		"features": {
+			"bc-nav": {
+				"title": "グローバルナビゲーションレール & ボトムバー",
+				"summary": "ランチャー画面、ノート一覧、全体検索、クイック記録、アカウント設定へ移動します。",
+				"placement": "デスクトップ左レール / モバイル下部バー",
+				"controls": {
+					"bc-nav-home": {
+						"name": "ホーム",
+						"description": "今日の活動、過去7日間の活動、ドメイン別の活動を表示します。"
+					},
+					"bc-nav-new": {
+						"name": "sitecueロゴ (+)",
+						"description": "クイックノート、新規ドラフト、または今日の日記の記録メニューを開きます。"
+					},
+					"bc-nav-search": {
+						"name": "検索",
+						"description": "全ノート、ドメイン、ページ、ドラフト、日記を横断検索します。"
+					},
+					"bc-nav-notes": {
+						"name": "ノート",
+						"description": "ドメイン・インボックス・ドラフト・日記の4タブワークスペースを開きます。"
+					},
+					"bc-nav-user": {
+						"name": "ユーザーアバター",
+						"description": "プラン利用状況、言語切替（EN / JA）、テンプレート管理、ゴミ箱、ガイド、ログアウトを開きます。"
+					}
+				}
+			},
+			"bc-notes-list": {
+				"title": "ノートワークスペース & 4タブビュー",
+				"summary": "ドメイン別、インボックス、ドラフト、日記の4つの軸で記録したコンテキストを閲覧・絞り込みできます。",
+				"placement": "/notes 画面の中央ペイン",
+				"controls": {
+					"bc-notes-tabs": {
+						"name": "ドメイン / インボックス / ドラフト / 日記",
+						"description": "主軸ビューを切り替え、ドメインはノート数順または名前順で並び替えられます。"
+					},
+					"bc-notes-filters": {
+						"name": "すべて / Info / Alert / Idea & 完了済み表示トグル",
+						"description": "ノート種別で絞り込んだり、完了済みノートの表示を切り替えたりします。"
+					},
+					"bc-notes-actions": {
+						"name": "+ / 選択モード / 一括コピー",
+						"description": "現在のコンテキストで新規作成、複数選択してゴミ箱へ移動、テキスト/JSON形式で一括コピーできます。"
+					}
+				}
+			},
+			"bc-note-detail": {
+				"title": "ノート詳細、ノート内検索 & アクション",
+				"summary": "Markdownの閲覧・編集、長文内のキーワード検索、ステータスやピン留めの管理を行います。",
+				"placement": "/notes 画面の右ペイン（モバイル時は全画面スライド表示）",
+				"controls": {
+					"bc-detail-search": {
+						"name": "ノート内を検索...",
+						"description": "表示中のノート・日記内で一致する単語をハイライトし、前後へジャンプします。"
+					},
+					"bc-detail-status": {
+						"name": "ステータスバッジ & ピン留め / お気に入り",
+						"description": "完了状態の切り替え、リスト上部へのピン留め、お気に入り登録を行います。"
+					},
+					"bc-detail-edit": {
+						"name": "編集 / コピー / その他 (…)",
+						"description": "Markdown本文の編集、全文コピー、ノート・ドラフトのゴミ箱への移動を行います。"
+					}
+				}
+			},
+			"bc-studio": {
+				"title": "ドラフトスタジオ & AI統合（Weave）",
+				"summary": "アウトライン移動、レビューメモ、AIによる文章統合を組み合わせて長文を執筆できます。",
+				"placement": "/studio/[id] 画面の左エディタ & 右3タブパネル",
+				"controls": {
+					"bc-studio-header": {
+						"name": "元に戻す / やり直す / 保存 / その他 (…)",
+						"description": "編集履歴の操作、ドラフトの保存、テンプレートとして保存、ゴミ箱への移動を行います。"
+					},
+					"bc-studio-outline": {
+						"name": "アウトラインタブ",
+						"description": "Markdownの見出しを絞り込み、エディタ内の該当箇所へ即座にジャンプします。"
+					},
+					"bc-studio-review": {
+						"name": "レビュータブ & AIで作り直す",
+						"description": "レビューノート追加やAIレビューを実行し、ノート内容を本文へ統合できます。"
+					},
+					"bc-studio-materials": {
+						"name": "資料タブ",
+						"description": "執筆しながら過去のノートや保存済みページを検索して参照できます。"
+					}
+				}
+			},
+			"bc-diary-trash": {
+				"title": "今日の日記、テンプレート & ゴミ箱",
+				"summary": "タイムスタンプ付きの日記、執筆用テンプレート管理、削除済みアイテムの復元を行います。",
+				"placement": "今日の活動、/diaries/[date]、/templates、/trash",
+				"controls": {
+					"bc-diary-studio": {
+						"name": "日記 & 今日の主な出来事",
+						"description": "1日最大10件の主な出来事を記録し、その日に作成したノートやドラフトを振り返れます。"
+					},
+					"bc-templates": {
+						"name": "テンプレート管理",
+						"description": "再利用可能な初期テキスト、文字数制限、AI統合用プロンプトを設定します。"
+					},
+					"bc-trash": {
+						"name": "ゴミ箱（Free: 7日間 / Pro: 30日間）",
+						"description": "誤って削除したノートやドラフトを復元したり、完全に削除したりできます。"
+					}
+				}
+			},
+			"ext-header": {
+				"title": "サイドパネルヘッダー & コンテキストロック",
+				"summary": "閲覧中のタブに連動するか、ロックして別タブ閲覧中も同じノートを参照し続けます。",
+				"placement": "Chromeサイドパネル最上部のカードヘッダー",
+				"controls": {
+					"ext-header-lock": {
+						"name": "ロック / ロック解除アイコン",
+						"description": "現在のページノートを固定し、ブラウザタブを切り替えても表示を維持します。"
+					},
+					"ext-header-links": {
+						"name": "タイトル / Links ピルボタン",
+						"description": "ドメインのラベル・色設定やQuick Links（関連URL・環境切り替え）を開きます。"
+					},
+					"ext-header-diary": {
+						"name": "カレンダーアイコン",
+						"description": "直近3日間のクイック日記ドロワーを開いて閲覧・編集します。"
+					},
+					"ext-header-avatar": {
+						"name": "プロフィールアバター",
+						"description": "言語切替（EN / JA）、Basecampを開く、ショートカット一覧、ログアウトを行います。"
+					}
+				}
+			},
+			"ext-quick-panel": {
+				"title": "クイックスクラッチパッド（ノート & コマンド）",
+				"summary": "ブラウザ上にローカル保存される一時的なMarkdownドラフトや複数行コマンドを素早くメモできます。",
+				"placement": "ヘッダー直下の折りたたみカード",
+				"controls": {
+					"ext-qp-note": {
+						"name": "ノートタブ",
+						"description": "プレビュー付きでドラフトを作成し、インボックス（Note）または今日の日記（Diary）へ送信できます。"
+					},
+					"ext-qp-cmd": {
+						"name": "コマンドタブ",
+						"description": "2スペース自動インデント対応のダークコンソール風メモでCLIコマンド等を保管できます。"
+					},
+					"ext-qp-max": {
+						"name": "最大化アイコン",
+						"description": "クイックパネルをサイドパネル全体の高さまで拡大します。"
+					}
+				}
+			},
+			"ext-notes": {
+				"title": "スコープタブ & ノートカード",
+				"summary": "URL単位・ドメイン単位・グローバルインボックスの3階層でサイト固有のメモを整理します。",
+				"placement": "Chromeサイドパネルのメイン一覧エリア",
+				"controls": {
+					"ext-notes-scope": {
+						"name": "ページ / ドメイン / インボックスタブ",
+						"description": "完全一致ページ、ドメイン全体、インボックスの各ノートを切り替えます。"
+					},
+					"ext-notes-filter": {
+						"name": "スライダーアイコン & 中央 + ボタン",
+						"description": "種別・キーワード・#タグで絞り込み、フローティングのノート・日記作成画面を開きます。"
+					},
+					"ext-notes-card": {
+						"name": "カード操作（並び替え / 完了 / 編集 / スター / ピン留め）",
+						"description": "ドラッグによる並び替え、完了状態の切り替え、インライン編集、重要メモの固定ができます。"
+					}
+				}
+			}
+		}
+	},
+	"toast": {
+		"movedToTrash": "ゴミ箱に移動しました",
+		"noteRestored": "ノートを復元しました",
+		"draftRestored": "ドラフトを復元しました",
+		"permanentlyDeleted": "完全に削除しました",
+		"trashEmptied": "ゴミ箱を空にしました",
+		"saveNoteFailed": "ノートの保存に失敗しました。",
+		"saveNoteFailedWithRetain": "保存に失敗しました。入力保持: \"{{preview}}...\"",
+		"deleteNoteFailed": "ノートの削除に失敗しました。",
+		"saveDraftFailed": "ドラフトの保存に失敗しました。",
+		"deleteDraftFailed": "ドラフトの削除に失敗しました。",
+		"saveDiaryFailed": "日記の保存に失敗しました。",
+		"deleteDiaryFailed": "日記の削除に失敗しました。",
+		"saveTemplateFailed": "テンプレートの保存に失敗しました。",
+		"restoreNoteFailed": "ノートの復元に失敗しました。",
+		"restoreDraftFailed": "ドラフトの復元に失敗しました。",
+		"permanentDeleteFailed": "完全削除に失敗しました。",
+		"emptyTrashFailed": "ゴミ箱を空にできませんでした。",
+		"copiedToClipboard": "クリップボードにコピーしました"
+	}
+}

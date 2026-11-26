@@ -1,0 +1,620 @@
+{
+	"common": {
+		"save": "Save",
+		"saving": "Saving...",
+		"saved": "Saved",
+		"cancel": "Cancel",
+		"delete": "Delete",
+		"restore": "Restore",
+		"close": "Close",
+		"back": "Back",
+		"edit": "Edit",
+		"copy": "Copy",
+		"copied": "Copied!",
+		"today": "Today",
+		"all": "All",
+		"notes": "Notes",
+		"drafts": "Drafts",
+		"diaries": "Diaries",
+		"domains": "Domains",
+		"inbox": "Inbox",
+		"page": "Page",
+		"pages": "Pages",
+		"domain": "Domain",
+		"chars": "chars",
+		"unsavedLeaveConfirm": "You have unsaved changes. Are you sure you want to leave?",
+		"searchPlaceholder": "Search...",
+		"clearSearch": "Clear search",
+		"copyToClipboard": "Copy to clipboard",
+		"disableWrap": "Disable wrap",
+		"wrapText": "Wrap text"
+	},
+	"nav": {
+		"home": "Home",
+		"newNote": "New Note",
+		"search": "Search",
+		"notes": "Notes"
+	},
+	"userMenu": {
+		"myAccount": "My Account",
+		"language": "Language",
+		"proPlanActive": "Pro Plan Active",
+		"manageSubscription": "Manage Subscription",
+		"upgradeToPro": "Upgrade to Pro",
+		"seeWhatProOffers": "See what Pro offers",
+		"aiUsage": "AI Usage",
+		"uses": "uses",
+		"noteStorage": "Note Storage",
+		"draftStorage": "Draft Storage",
+		"manageTemplates": "Manage Templates",
+		"trash": "Trash",
+		"guideAndShortcuts": "Guide & Shortcuts",
+		"privacyPolicy": "Privacy Policy",
+		"logout": "Log out"
+	},
+	"login": {
+		"welcome": "Welcome to sitecue",
+		"subtitle": "Sign in to sync your context.",
+		"continueGoogle": "Sign in with Google",
+		"continueGithub": "Sign in with GitHub",
+		"termsPrefix": "By continuing, you agree to our ",
+		"privacyPolicy": "Privacy Policy",
+		"termsSuffix": "."
+	},
+	"dashboard": {
+		"todaysFocus": "Today's Activity",
+		"viewDiariesTimeline": "View Diaries Timeline",
+		"appendTodayDiary": "+ append to today's diary",
+		"newEntriesToday": "notes & drafts today",
+		"weeklyProgress": "Weekly Progress",
+		"weeklyProgressDesc": "Your note-taking activity over the last 7 days.",
+		"activities": "Activities",
+		"notesCaptured": "Notes Captured",
+		"draftsCreated": "Drafts Created",
+		"recentItems": "Recent Items",
+		"untitledDraft": "Untitled Draft",
+		"domainActivity": "Domain Activity",
+		"noDomainActivity": "No active domain tracking detected. Capture notes via Extension to build domain activity.",
+		"open": "Open",
+		"notesCount": "{{count}} notes",
+		"untitledNote": "Untitled note",
+		"activityLog": "Activity Log",
+		"noRecentActivities": "No recent activities logged in the last 7 days.",
+		"activitiesCount": "{{count}} activities",
+		"capturedNotes": "Captured Notes",
+		"createdDrafts": "Created Drafts",
+		"noContentPreview": "No content preview",
+		"favoriteSites": "Favorite Sites",
+		"addSite": "Add Site",
+		"title": "Title",
+		"titlePlaceholder": "e.g. My Blog",
+		"url": "URL",
+		"addPinnedSite": "Add Pinned Site",
+		"adding": "Adding...",
+		"noPinnedSites": "No pinned sites yet. Add your favorite tools or references here.",
+		"overview": "Overview",
+		"totalNotes": "Total Notes",
+		"totalDrafts": "Total Drafts",
+		"storageAlmostFull": "Note storage almost full ({{count}}/{{max}}). Upgrade to unlock unlimited notes.",
+		"upgrade": "Upgrade",
+		"recentDrafts": "Recent Drafts",
+		"viewAll": "View all",
+		"noDraftsYet": "No drafts yet.",
+		"startDraft": "Start a Draft",
+		"blankCanvas": "Blank Canvas",
+		"blankCanvasDesc": "Free-form notes not limited to any specific template.",
+		"useTemplateDesc": "Use this template for your workflow.",
+		"upgradedToast": "Welcome to sitecue Pro! 🚀"
+	},
+	"notes": {
+		"tabDomains": "Domains",
+		"tabInbox": "Inbox",
+		"tabDrafts": "Drafts",
+		"tabDiaries": "Diaries",
+		"domainList": "Domain List",
+		"draftList": "Draft List",
+		"diaryArchive": "Diary Archive",
+		"mostNotes": "Most Notes",
+		"sortName": "Name",
+		"showResolved": "Show Resolved Notes",
+		"searchNotesPlaceholder": "Search notes...",
+		"searchKeywordsPlaceholder": "Search keywords or #tags...",
+		"newNoteHere": "New Note here",
+		"newDiaryLog": "New Diary Log",
+		"selectMode": "Select Mode",
+		"bulkCopy": "Bulk Copy",
+		"asText": "as Text",
+		"asJson": "as JSON",
+		"selectedCount": "{{count}} selected",
+		"deleting": "Deleting...",
+		"allNotes": "All Notes",
+		"domainNotes": "Domain Notes",
+		"noDiariesFound": "No diaries found",
+		"noDiariesYear": "No diaries found for this year",
+		"noDiariesMonth": "No diaries found for this month",
+		"selectCategoryTitle": "Please select a category from the list",
+		"selectCategoryDesc": "Select Inbox, Drafts, or a Domain\nto see the list of items",
+		"noNotesCategory": "No notes found for this category.",
+		"noDraftsCategory": "No drafts found for this category.",
+		"selectNotePrompt": "Please select a note or draft from the list",
+		"findInNote": "Find in note...",
+		"previousMatch": "Previous match",
+		"nextMatch": "Next match",
+		"clearFind": "Clear find in note",
+		"openStudio": "Open Studio",
+		"editInStudio": "Edit in Studio",
+		"lastUpdated": "Last updated",
+		"sourceUrl": "Source URL",
+		"noteContent": "Note Content",
+		"draftContent": "Draft Content",
+		"draftTitle": "Draft Title",
+		"created": "Created",
+		"noteType": "Note Type",
+		"scopeAndUrl": "Scope & URL",
+		"deleteConfirmTitle": "Are you absolutely sure?",
+		"deleteNoteDesc": "This note will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
+		"deleteDraftDesc": "This draft will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
+		"deleteDiaryDesc": "This action cannot be undone. This will permanently delete your diary entry from our servers.",
+		"moveToTrash": "Move to Trash",
+		"deleteDiary": "Delete Diary",
+		"deleteNote": "Delete Note",
+		"deleteDraft": "Delete Draft",
+		"dragToReorder": "Drag to reorder",
+		"pinNote": "Pin note",
+		"unpinNote": "Unpin note",
+		"favorite": "Favorite",
+		"unfavorite": "Remove from Favorites",
+		"copyAllContent": "Copy all content",
+		"actions": "Actions",
+		"typeInfo": "Info",
+		"typeAlert": "Alert",
+		"typeIdea": "Idea",
+		"typeToggleTitle": "Type: {{label}} (Click to toggle)",
+		"markResolved": "Mark as resolved",
+		"markUnresolved": "Mark as unresolved",
+		"markdownSupported": "Markdown supported"
+	},
+	"searchModal": {
+		"placeholder": "Search notes...",
+		"searching": "Searching...",
+		"noResults": "No results found for \"{{query}}\"",
+		"domains": "Domains",
+		"pages": "Pages",
+		"drafts": "Drafts",
+		"notes": "Notes",
+		"diaries": "Diaries",
+		"studioReview": "Studio Review",
+		"reviewNoteInStudio": "Review note in Studio",
+		"footerHint": "Type and press Enter to search your notes across domains",
+		"noContent": "No content"
+	},
+	"capture": {
+		"menuTitle": "Capture Menu",
+		"heading": "What would you like to capture?",
+		"quickNoteTitle": "Quick Note",
+		"quickNoteDesc": "Capture an instantaneous text linked to context",
+		"blankDraftTitle": "Blank Draft",
+		"blankDraftDesc": "Open full-pane studio to author a heavy document",
+		"dailyDiaryTitle": "Daily Diary",
+		"dailyDiaryDesc": "Atomic titleless log appending to today's timeline",
+		"dailyDiaryMode": "Daily Diary Mode",
+		"diaryPlaceholder": "Write down your thoughts for today... (No title required)",
+		"editInDiaryStudio": "Edit in Diary Studio",
+		"logging": "Logging...",
+		"saveDiary": "Save Diary",
+		"quickNoteMode": "Quick Note Mode",
+		"scope": "Scope",
+		"sourceUrl": "Source URL",
+		"noteType": "Note Type",
+		"note": "Note",
+		"notePlaceholder": "What's on your mind?",
+		"editInStudio": "Edit in Studio",
+		"saveNote": "Save Note"
+	},
+	"studio": {
+		"createTemplate": "Create Template",
+		"editTemplate": "Edit Template",
+		"saveTemplate": "Save Template",
+		"saveAsTemplate": "Save as Template",
+		"templateName": "Template Name",
+		"templateNamePlaceholder": "e.g. Weekly Report Format",
+		"maxLengthOptional": "Max Length (Optional)",
+		"boilerplateLabel": "Initial Text (Boilerplate)",
+		"weavePromptLabel": "Weave Prompt (System Prompt for AI)",
+		"weavePromptPlaceholder": "e.g. Write in a professional tone, summarizing the key points.",
+		"saveAsTemplateDialogDesc": "Create a reusable template from your current draft. You can edit the initial text (boilerplate) below to leave only the structure you need.",
+		"deleteDraftConfirm": "Are you sure you want to delete this draft?",
+		"enterArticleTitle": "Enter article title...",
+		"titleOptional": "Title (optional)",
+		"writeThoughts": "Write down your thoughts...",
+		"templateLabel": "Template",
+		"blankCanvas": "Blank Canvas",
+		"outline": "OUTLINE",
+		"review": "REVIEW",
+		"materials": "MATERIALS",
+		"openPanel": "Open right panel",
+		"openPanelShort": "Open Panel",
+		"closeRightPanel": "Close right panel",
+		"notesAndAi": "Notes & AI",
+		"editor": "Editor",
+		"filterHeadings": "Filter headings...",
+		"clearFilter": "Clear filter",
+		"noHeadingsFound": "No headings found",
+		"noHeadingsHint": "Use #, ##, or ### in the editor to structure your document.",
+		"noHeadingsSearchHint": "Try a different search keyword.",
+		"addNotes": "Add Notes",
+		"aiReview": "AI Review",
+		"reviewNotesCount": "Review Notes ({{count}})",
+		"deleteAll": "Delete All",
+		"deleteAllTitle": "Delete all notes?",
+		"deleteAllDesc": "This will remove all comments from this draft. You must click \"Save\" to apply these changes to the server.",
+		"noReviewNotes": "No notes for this draft yet.",
+		"noReviewNotesHint": "Use the form above to capture your thoughts.",
+		"weaveWithAi": "WEAVE WITH AI",
+		"weaveDescription": "AI rewrites your draft by combining the text and review notes.",
+		"weaving": "WEAVING...",
+		"searchGlobalMaterials": "Search global materials...",
+		"noMaterialsFound": "No materials found.",
+		"noMaterialsHint": "Enter keywords to search your past notes\nand saved pages.",
+		"undo": "Undo (Ctrl+Z)",
+		"redo": "Redo (Ctrl+Y)",
+		"moreOptions": "More options",
+		"insertToEditor": "Insert to Editor",
+		"editingNote": "Editing note...",
+		"editNotePlaceholder": "Edit note content...",
+		"showLess": "Show less",
+		"readMore": "Read more",
+		"draftNote": "Draft Note",
+		"pageNote": "Page Note",
+		"domainNote": "Domain Note",
+		"inboxNote": "Inbox Note",
+		"dragToReorder": "Drag to reorder",
+		"draftLabel": "Draft",
+		"editNote": "Edit Note",
+		"copyNote": "Copy note"
+	},
+	"diaryStudio": {
+		"title": "Diary",
+		"deleteDiary": "Delete Diary",
+		"canvasLabel": "Canvas: Daily Sandbox",
+		"keyEventsCount": "Key Events of the Day ({{count}}/10)",
+		"clickToEditTopic": "Click to edit topic",
+		"removeTopic": "Remove topic",
+		"addTopicPlaceholder": "+ Add key event of the day... (Max 50 chars)",
+		"add": "Add",
+		"diaryPlaceholder": "Write down your thoughts for today... (Markdown supported)",
+		"materialsTitle": "Materials",
+		"materialsOfDay": "Notes & Drafts",
+		"noFootprints": "No footprints collected today.",
+		"deleteConfirmTitle": "Are you absolutely sure?",
+		"deleteConfirmDesc": "This action cannot be undone. This will permanently delete your diary entry from our servers.",
+		"editorWorkspace": "Editor Workspace",
+		"topicMaxLengthError": "Topic length cannot exceed 50 characters",
+		"topicMaxCountError": "Maximum 10 topics allowed"
+	},
+	"templates": {
+		"title": "Templates",
+		"newTemplate": "New Template",
+		"selectPrompt": "Select a template to edit or create a new one.",
+		"deleteConfirm": "Are you sure you want to delete this template?",
+		"maxLengthLabel": "Max Length (Optional)",
+		"boilerplateOptional": "Boilerplate / Initial Text (Optional)",
+		"weavePromptOptional": "Weave Prompt (System Prompt for AI) (Optional)",
+		"namePlaceholder": "e.g. X Thread, Daily Report",
+		"boilerplatePlaceholder": "# Target Audience\n\n# Key Message",
+		"weavePromptPlaceholder": "Provide context for the AI when generating from this template.",
+		"deleteAriaLabel": "Delete {{name}}",
+		"drawerDescription": "Edit the template details"
+	},
+	"trash": {
+		"title": "Trash",
+		"retentionSubtitle": "Free: 7 days / Pro: 30 days",
+		"emptyTrash": "Empty Trash",
+		"emptyTitle": "Trash is empty",
+		"emptyDesc": "Items in Trash are automatically deleted after {{days}} days.",
+		"expiresToday": "Expires today",
+		"expiresInDays": "Expires in {{count}} days",
+		"emptyNote": "(Empty note)",
+		"emptyDraft": "(Empty draft)",
+		"untitledDraft": "Untitled Draft",
+		"deleteForever": "Delete Forever",
+		"deleteConfirmTitle": "Delete permanently?",
+		"deleteNoteDesc": "This action cannot be undone. This note will be permanently deleted from our servers.",
+		"deleteDraftDesc": "This action cannot be undone. This draft will be permanently deleted from our servers.",
+		"emptyConfirmTitle": "Empty Trash?",
+		"emptyConfirmDesc": "This action cannot be undone. All items in Trash will be permanently deleted from our servers.",
+		"emptying": "Emptying..."
+	},
+	"paywall": {
+		"titleMenu": "sitecue Pro",
+		"titleNotes": "Storage Limit Reached",
+		"titleDrafts": "Draft Limit Reached",
+		"titleAiFree": "Monthly Generation Limit",
+		"titleAiLimit": "Usage Limit Reached",
+		"descMenu": "Unlock unlimited notes, drafts, and higher AI quota to power your workflow.",
+		"descNotesLine1": "You've reached the free limit (500 notes).",
+		"descNotesLine2": "Upgrade to Pro for unlimited notes & 30,000 chars per note.",
+		"descDraftsLine1": "Draft storage limit reached (50/50).",
+		"descDraftsLine2": "Upgrade to Pro to create unlimited studio drafts.",
+		"descAiFreeLine1": "You've used all your AI generations (3/month).",
+		"descAiFreeLine2": "Upgrade to Pro for 100 generations per month.",
+		"descAiLimit": "Please wait for the next billing cycle to continue using AI features.",
+		"everythingInPro": "Everything in Pro:",
+		"featureNotesBold": "Unlimited notes",
+		"featureNotesSuffix": "(vs 500 in Free)",
+		"featureDraftsBold": "Unlimited studio drafts",
+		"featureDraftsSuffix": "(vs 50 in Free)",
+		"featureCharsBold": "30,000 chars",
+		"featureCharsSuffix": "per note (vs 10,000 in Free)",
+		"featureAiBold": "100 AI generations",
+		"featureAiSuffix": "/ month (vs 3 in Free)",
+		"monthlyPlan": "Monthly Plan ($5/month)",
+		"yearlyPlan": "Yearly Plan ($48/year - Save 20%)",
+		"secureCheckout": "Secure checkout powered by Polar",
+		"trustItem1": "Payments are securely processed by Polar using Stripe's infrastructure.",
+		"trustItem2": "sitecue never sees, accesses, or stores your credit card details.",
+		"trustItem3": "Subscriptions can be managed or canceled anytime from your account.",
+		"maybeLater": "Maybe Later",
+		"gotIt": "Got it",
+		"footerTagline": "Stay creative with sitecue Pro"
+	},
+	"guide": {
+		"title": "Guide & Shortcuts",
+		"subtitle": "Learn how to capture, organize, and weave your context.",
+		"filterAll": "All",
+		"filterBasecamp": "Basecamp",
+		"filterExtension": "Extension",
+		"filterAriaLabel": "Filter guide by environment",
+		"shortcutsHeading": "Keyboard Shortcuts",
+		"featuresHeading": "Features & Button Placement",
+		"placementLabel": "Placement:",
+		"shortcuts": {
+			"bc-save": {
+				"action": "Save note or diary",
+				"context": "Quick Note Modal / Notes Editor"
+			},
+			"bc-find": {
+				"action": "Find word in current note or diary",
+				"context": "Notes Detail / Diary Detail"
+			},
+			"bc-find-nav": {
+				"action": "Jump to next / previous match",
+				"context": "In-Note Search Bar"
+			},
+			"bc-find-esc": {
+				"action": "Clear in-note search query",
+				"context": "In-Note Search Bar"
+			},
+			"bc-hint": {
+				"action": "Trigger AI writing completion hint",
+				"context": "Draft Studio Editor"
+			},
+			"bc-hint-accept": {
+				"action": "Accept / dismiss AI completion hint",
+				"context": "Draft Studio Editor"
+			},
+			"bc-indent": {
+				"action": "Indent / outdent list items",
+				"context": "Markdown Editors"
+			},
+			"bc-paste-url": {
+				"action": "Convert selected text into Markdown link",
+				"context": "Markdown Editors"
+			},
+			"ext-toggle": {
+				"action": "Open / close browser side panel",
+				"context": "Browser Global"
+			},
+			"ext-save": {
+				"action": "Save note or append diary",
+				"context": "Side Panel Input / Note Edit"
+			},
+			"ext-esc": {
+				"action": "Close modal / exit maximized pane",
+				"context": "Side Panel"
+			},
+			"ext-indent": {
+				"action": "Indent / outdent list or command snippet",
+				"context": "Note / Command Editors"
+			},
+			"ext-list": {
+				"action": "Auto-continue list (Enter on empty item to exit)",
+				"context": "Note / Diary Editors"
+			},
+			"ext-paste-url": {
+				"action": "Convert selected text into Markdown link",
+				"context": "Note / Diary Editors"
+			}
+		},
+		"features": {
+			"bc-nav": {
+				"title": "Global Navigation Rail & Bottom Bar",
+				"summary": "Switch between Launchpad, Notes, global search, quick capture, and account settings.",
+				"placement": "Left rail on desktop / bottom bar on mobile",
+				"controls": {
+					"bc-nav-home": {
+						"name": "Home",
+						"description": "Open Launchpad with Today's Focus, Weekly Progress, and Domain Activity."
+					},
+					"bc-nav-new": {
+						"name": "sitecue Logo (+)",
+						"description": "Launch Quick Note, Blank Draft in Studio, or Daily Diary capture."
+					},
+					"bc-nav-search": {
+						"name": "Search",
+						"description": "Search across all notes, domains, pages, drafts, and diaries."
+					},
+					"bc-nav-notes": {
+						"name": "Notes",
+						"description": "Open the 4-tab workspace for Domains, Inbox, Drafts, and Diaries."
+					},
+					"bc-nav-user": {
+						"name": "User Avatar",
+						"description": "Check plan quota, manage Templates, open Trash, view Guide, or log out."
+					}
+				}
+			},
+			"bc-notes-list": {
+				"title": "Notes Workspace & 4-Tab Views",
+				"summary": "Browse and filter captured context grouped by domain, global inbox, studio drafts, or daily diaries.",
+				"placement": "Middle pane in /notes",
+				"controls": {
+					"bc-notes-tabs": {
+						"name": "Domains / Inbox / Drafts / Diaries",
+						"description": "Switch primary context view; sort domains by Most Notes or Name (A-Z)."
+					},
+					"bc-notes-filters": {
+						"name": "All / Info / Alert / Idea & Resolved Toggle",
+						"description": "Filter notes by type or reveal completed items."
+					},
+					"bc-notes-actions": {
+						"name": "+ / Select Mode / Bulk Copy",
+						"description": "Create a note in context, select multiple notes to move to Trash, or copy as Text/JSON."
+					}
+				}
+			},
+			"bc-note-detail": {
+				"title": "Note Detail, In-Note Search & Actions",
+				"summary": "Read rendered Markdown with preserved spacing, search words inside long notes, and manage status.",
+				"placement": "Right pane in /notes (full-screen slide-in on mobile)",
+				"controls": {
+					"bc-detail-search": {
+						"name": "Find in note...",
+						"description": "Highlight matching keywords inside the active note/diary and jump between matches."
+					},
+					"bc-detail-status": {
+						"name": "Status Badge & Pin / Star",
+						"description": "Toggle resolved status, pin notes to the top of lists, or mark as favorite."
+					},
+					"bc-detail-edit": {
+						"name": "Edit / Copy / More (…)",
+						"description": "Edit Markdown content, copy raw text, or move the note/draft to Trash."
+					}
+				}
+			},
+			"bc-studio": {
+				"title": "Draft Studio & AI Weave",
+				"summary": "Author long-form documents with outline navigation, self-review notes, and AI synthesis.",
+				"placement": "Left editor & right 3-tab panel in /studio/[id]",
+				"controls": {
+					"bc-studio-header": {
+						"name": "Undo / Redo / Save / More (…)",
+						"description": "Manage revision history, save drafts without losing scroll position, save as Template, or move to Trash."
+					},
+					"bc-studio-outline": {
+						"name": "OUTLINE Tab",
+						"description": "Filter Markdown headings and jump directly to sections in the editor."
+					},
+					"bc-studio-review": {
+						"name": "REVIEW Tab & WEAVE WITH AI",
+						"description": "Add review notes or run AI Review, then synthesize active notes into your draft."
+					},
+					"bc-studio-materials": {
+						"name": "MATERIALS Tab",
+						"description": "Search past notes and reference pages while writing."
+					}
+				}
+			},
+			"bc-diary-trash": {
+				"title": "Daily Diary, Templates & Trash",
+				"summary": "Log timestamped daily thoughts, customize writing templates, and recover deleted items.",
+				"placement": "Launchpad Today's Focus, /diaries/[date], /templates, and /trash",
+				"controls": {
+					"bc-diary-studio": {
+						"name": "Diary Studio & Key Events",
+						"description": "Record up to 10 key events per day and review notes/drafts created on that date."
+					},
+					"bc-templates": {
+						"name": "Manage Templates",
+						"description": "Configure reusable boilerplate text, max character limits, and custom AI Weave prompts."
+					},
+					"bc-trash": {
+						"name": "Trash (7 days Free / 30 days Pro)",
+						"description": "Restore accidentally deleted notes and drafts or permanently delete them."
+					}
+				}
+			},
+			"ext-header": {
+				"title": "Side Panel Header & Context Lock",
+				"summary": "Stay anchored to the active tab or lock context while browsing across multiple pages.",
+				"placement": "Top card header in the Chrome side panel",
+				"controls": {
+					"ext-header-lock": {
+						"name": "Lock / Unlock Icon",
+						"description": "Pin current page notes so they stay visible even when switching browser tabs."
+					},
+					"ext-header-links": {
+						"name": "Title / Links Pill Button",
+						"description": "Open domain label/color settings and Quick Links (related URLs & ENV environment switchers)."
+					},
+					"ext-header-diary": {
+						"name": "Calendar Icon",
+						"description": "Open the 3-day quick Diary drawer to view or edit recent logs."
+					},
+					"ext-header-avatar": {
+						"name": "Profile Avatar",
+						"description": "Switch language (EN / JA), open Basecamp, view shortcuts, or log out."
+					}
+				}
+			},
+			"ext-quick-panel": {
+				"title": "Quick Scratchpad (Note & Command)",
+				"summary": "Jot down temporary Markdown drafts or multi-line terminal commands stored locally.",
+				"placement": "Collapsible card below the header",
+				"controls": {
+					"ext-qp-note": {
+						"name": "Note Tab",
+						"description": "Draft Markdown with live preview (Eye icon), then send directly to Inbox (Note) or Today's Diary (Diary)."
+					},
+					"ext-qp-cmd": {
+						"name": "Command Tab",
+						"description": "Dark console scratchpad with 2-space auto-indent for CLI commands and snippets."
+					},
+					"ext-qp-max": {
+						"name": "Maximize Icon",
+						"description": "Expand the Quick Panel to fill the entire side panel height."
+					}
+				}
+			},
+			"ext-notes": {
+				"title": "Scope Tabs & Note Cards",
+				"summary": "Organize site-specific cues by exact URL, entire domain, or global inbox.",
+				"placement": "Main list area in the Chrome side panel",
+				"controls": {
+					"ext-notes-scope": {
+						"name": "Page / Domain / Inbox Tabs",
+						"description": "Switch between exact page notes, domain-wide notes, and global inbox notes."
+					},
+					"ext-notes-filter": {
+						"name": "Sliders Icon & Central + Button",
+						"description": "Filter by type, search text, or #tags, and open the floating note/diary composer."
+					},
+					"ext-notes-card": {
+						"name": "Card Controls (Drag / Status / Edit / Star / Pin)",
+						"description": "Reorder via drag handle, toggle resolved state, edit inline, or star/pin important cues."
+					}
+				}
+			}
+		}
+	},
+	"toast": {
+		"movedToTrash": "Moved to Trash",
+		"noteRestored": "Note restored",
+		"draftRestored": "Draft restored",
+		"permanentlyDeleted": "Permanently deleted",
+		"trashEmptied": "Trash emptied",
+		"saveNoteFailed": "Failed to save the note.",
+		"saveNoteFailedWithRetain": "Failed to save. Retain: \"{{preview}}...\"",
+		"deleteNoteFailed": "Failed to delete the note.",
+		"saveDraftFailed": "Failed to save the draft",
+		"deleteDraftFailed": "Failed to delete the draft.",
+		"saveDiaryFailed": "Failed to save diary log.",
+		"deleteDiaryFailed": "Failed to delete the diary.",
+		"saveTemplateFailed": "Failed to save template.",
+		"restoreNoteFailed": "Failed to restore note.",
+		"restoreDraftFailed": "Failed to restore draft.",
+		"permanentDeleteFailed": "Failed to permanently delete item.",
+		"emptyTrashFailed": "Failed to empty trash.",
+		"copiedToClipboard": "Copied to clipboard"
+	}
+}

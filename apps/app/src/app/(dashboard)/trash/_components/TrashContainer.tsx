@@ -4,6 +4,7 @@ import { type Draft, type Note, SHARED_LIMITS } from "@sitecue/shared";
 import { ArrowLeft, RotateCcw, Trash2 } from "lucide-react";
 import { Suspense, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -62,13 +63,6 @@ function getRemainingDays(
 	return Math.max(0, diffDays);
 }
 
-function getScopeDisplayLabel(scope: string): string {
-	if (scope === "exact") return "Page";
-	if (scope === "domain") return "Domain";
-	if (scope === "draft") return "Draft";
-	return "Inbox";
-}
-
 function extractErrorMessage(err: unknown): string {
 	if (err instanceof Error) return err.message.toLowerCase();
 	if (typeof err === "object" && err !== null && "message" in err) {
@@ -78,6 +72,7 @@ function extractErrorMessage(err: unknown): string {
 }
 
 export function TrashContainer() {
+	const { t } = useTranslation();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const { plan, openPaywall } = useUserStore();
 	const retentionDays =
@@ -135,10 +130,10 @@ export function TrashContainer() {
 		try {
 			if (item.kind === "note") {
 				await restoreNoteMutation.mutateAsync(item.id);
-				toast.success("Note restored");
+				toast.success(t("toast.noteRestored"));
 			} else {
 				await restoreDraftMutation.mutateAsync(item.id);
-				toast.success("Draft restored");
+				toast.success(t("toast.draftRestored"));
 			}
 		} catch (err: unknown) {
 			const errorMessage = extractErrorMessage(err);
@@ -147,8 +142,8 @@ export function TrashContainer() {
 			} else {
 				toast.error(
 					item.kind === "draft"
-						? "Failed to restore draft."
-						: "Failed to restore note.",
+						? t("toast.restoreDraftFailed")
+						: t("toast.restoreNoteFailed"),
 				);
 			}
 		}
@@ -163,10 +158,10 @@ export function TrashContainer() {
 				await permanentlyDeleteDraftMutation.mutateAsync(deleteTarget.id);
 			}
 			setDeleteTarget(null);
-			toast.success("Permanently deleted");
+			toast.success(t("toast.permanentlyDeleted"));
 		} catch (err) {
 			console.error("Failed to permanently delete item:", err);
-			toast.error("Failed to permanently delete item.");
+			toast.error(t("toast.permanentDeleteFailed"));
 		}
 	};
 
@@ -177,10 +172,10 @@ export function TrashContainer() {
 				emptyTrashDraftsMutation.mutateAsync(),
 			]);
 			setIsEmptyDialogOpen(false);
-			toast.success("Trash emptied");
+			toast.success(t("toast.trashEmptied"));
 		} catch (err) {
 			console.error("Failed to empty trash:", err);
-			toast.error("Failed to empty trash.");
+			toast.error(t("toast.emptyTrashFailed"));
 		}
 	};
 
@@ -195,9 +190,9 @@ export function TrashContainer() {
 	const hasItems = (combinedItems?.length ?? 0) > 0;
 
 	const filterOptions: Array<{ value: TrashFilter; label: string }> = [
-		{ value: "all", label: "All" },
-		{ value: "notes", label: "Notes" },
-		{ value: "drafts", label: "Drafts" },
+		{ value: "all", label: t("common.all") },
+		{ value: "notes", label: t("common.notes") },
+		{ value: "drafts", label: t("common.drafts") },
 	];
 
 	return (
@@ -220,10 +215,10 @@ export function TrashContainer() {
 						</Link>
 						<div className="min-w-0">
 							<h1 className="font-bold text-lg text-action leading-tight">
-								Trash
+								{t("trash.title")}
 							</h1>
 							<p className="text-xs text-neutral-400">
-								Free: 7 days / Pro: 30 days
+								{t("trash.retentionSubtitle")}
 							</p>
 						</div>
 					</div>
@@ -262,7 +257,7 @@ export function TrashContainer() {
 								className="shrink-0"
 							>
 								<Trash2 className="size-3.5" aria-hidden="true" />
-								Empty Trash
+								{t("trash.emptyTrash")}
 							</Button>
 						)}
 					</div>
@@ -295,11 +290,10 @@ export function TrashContainer() {
 												/>
 											</div>
 											<p className="text-base font-medium text-action mb-1">
-												Trash is empty
+												{t("trash.emptyTitle")}
 											</p>
 											<p className="text-xs text-neutral-400">
-												Items in Trash are automatically deleted after{" "}
-												{retentionDays} days.
+												{t("trash.emptyDesc", { days: retentionDays })}
 											</p>
 										</div>
 									);
@@ -314,8 +308,8 @@ export function TrashContainer() {
 											);
 											const expiryLabel =
 												diffDays === 0
-													? "Expires today"
-													: `Expires in ${diffDays} ${diffDays === 1 ? "day" : "days"}`;
+													? t("trash.expiresToday")
+													: t("trash.expiresInDays", { count: diffDays });
 
 											return (
 												<article
@@ -331,7 +325,13 @@ export function TrashContainer() {
 																		isResolved={item.data.is_resolved}
 																	/>
 																	<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-base-bg border border-base-border text-neutral-600 shrink-0">
-																		{getScopeDisplayLabel(item.data.scope)}
+																		{item.data.scope === "exact"
+																			? t("common.page")
+																			: item.data.scope === "domain"
+																				? t("common.domain")
+																				: item.data.scope === "draft"
+																					? t("studio.draftLabel")
+																					: t("common.inbox")}
 																	</span>
 																	{item.data.scope !== "inbox" &&
 																		item.data.url_pattern && (
@@ -353,15 +353,15 @@ export function TrashContainer() {
 
 													{item.kind === "note" ? (
 														<p className="text-sm text-action/90 whitespace-pre-wrap break-words line-clamp-3">
-															{item.data.content || "(Empty note)"}
+															{item.data.content || t("trash.emptyNote")}
 														</p>
 													) : (
 														<div className="space-y-1">
 															<p className="text-sm font-bold text-action truncate">
-																{item.data.title || "Untitled Draft"}
+																{item.data.title || t("trash.untitledDraft")}
 															</p>
 															<p className="text-sm text-action/80 whitespace-pre-wrap break-words line-clamp-2">
-																{item.data.content || "(Empty draft)"}
+																{item.data.content || t("trash.emptyDraft")}
 															</p>
 														</div>
 													)}
@@ -379,7 +379,7 @@ export function TrashContainer() {
 																className="size-3.5"
 																aria-hidden="true"
 															/>
-															Restore
+															{t("common.restore")}
 														</Button>
 														<Button
 															type="button"
@@ -395,7 +395,7 @@ export function TrashContainer() {
 															disabled={isPermanentDeleting}
 														>
 															<Trash2 className="size-3.5" aria-hidden="true" />
-															Delete Forever
+															{t("trash.deleteForever")}
 														</Button>
 													</div>
 												</article>
@@ -418,16 +418,16 @@ export function TrashContainer() {
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete permanently?</AlertDialogTitle>
+						<AlertDialogTitle>{t("trash.deleteConfirmTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
 							{deleteTarget?.kind === "draft"
-								? "This action cannot be undone. This draft will be permanently deleted from our servers."
-								: "This action cannot be undone. This note will be permanently deleted from our servers."}
+								? t("trash.deleteDraftDesc")
+								: t("trash.deleteNoteDesc")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
 						<AlertDialogCancel disabled={isPermanentDeleting}>
-							Cancel
+							{t("common.cancel")}
 						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={(e) => {
@@ -437,7 +437,9 @@ export function TrashContainer() {
 							disabled={isPermanentDeleting}
 							className="bg-note-alert hover:bg-note-alert/80 text-white"
 						>
-							{isPermanentDeleting ? "Deleting..." : "Delete Forever"}
+							{isPermanentDeleting
+								? t("notes.deleting")
+								: t("trash.deleteForever")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -447,14 +449,15 @@ export function TrashContainer() {
 			<AlertDialog open={isEmptyDialogOpen} onOpenChange={setIsEmptyDialogOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+						<AlertDialogTitle>{t("trash.emptyConfirmTitle")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This action cannot be undone. All items in Trash will be
-							permanently deleted from our servers.
+							{t("trash.emptyConfirmDesc")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isEmptying}>Cancel</AlertDialogCancel>
+						<AlertDialogCancel disabled={isEmptying}>
+							{t("common.cancel")}
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={(e) => {
 								e.preventDefault();
@@ -463,7 +466,7 @@ export function TrashContainer() {
 							disabled={isEmptying}
 							className="bg-note-alert hover:bg-note-alert/80 text-white"
 						>
-							{isEmptying ? "Emptying..." : "Empty Trash"}
+							{isEmptying ? t("trash.emptying") : t("trash.emptyTrash")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -10,6 +10,7 @@ import { CalendarDays, Inbox, PenTool } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +25,7 @@ import { useLayoutStore } from "@/store/useLayoutStore";
 import { useUserStore } from "@/store/useUserStore";
 
 export function GlobalNewNoteDialog() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -155,7 +157,7 @@ export function GlobalNewNoteDialog() {
 				{
 					onError: (err: unknown) => {
 						console.error("Failed to save diary via background pipeline:", err);
-						toast.error("Failed to save diary log");
+						toast.error(t("toast.saveDiaryFailed"));
 					},
 				},
 			);
@@ -181,7 +183,9 @@ export function GlobalNewNoteDialog() {
 						openPaywall("notes");
 					} else {
 						toast.error(
-							`Failed to save. Retain: "${capturedContent.slice(0, 20)}..."`,
+							t("toast.saveNoteFailedWithRetain", {
+								preview: capturedContent.slice(0, 20),
+							}),
 						);
 					}
 				},
@@ -213,12 +217,12 @@ export function GlobalNewNoteDialog() {
 					isSubmittingAnimation && "pointer-events-none",
 				)}
 			>
-				<DialogTitle className="sr-only">Capture Menu</DialogTitle>
+				<DialogTitle className="sr-only">{t("capture.menuTitle")}</DialogTitle>
 
 				{mode === "gate" && (
 					<div className="p-6 space-y-4">
 						<h2 className="text-base font-bold text-action text-center uppercase tracking-wide mb-2">
-							What would you like to capture?
+							{t("capture.heading")}
 						</h2>
 						<div className="flex flex-col w-full gap-3">
 							<button
@@ -226,13 +230,16 @@ export function GlobalNewNoteDialog() {
 								onClick={() => setMode("note")}
 								className="flex items-center gap-4 w-full p-4 rounded-full border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<Inbox className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<Inbox
+									className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0"
+									aria-hidden="true"
+								/>
 								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
-										Quick Note
+										{t("capture.quickNoteTitle")}
 									</span>
 									<span className="text-xs text-gray-400 truncate">
-										Capture an instantaneous text linked to context
+										{t("capture.quickNoteDesc")}
 									</span>
 								</div>
 							</button>
@@ -245,13 +252,16 @@ export function GlobalNewNoteDialog() {
 								}}
 								className="flex items-center gap-4 w-full p-4 rounded-full border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<PenTool className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<PenTool
+									className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0"
+									aria-hidden="true"
+								/>
 								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
-										Blank Draft
+										{t("capture.blankDraftTitle")}
 									</span>
 									<span className="text-xs text-gray-400 truncate">
-										Open full-pane studio to author a heavy document
+										{t("capture.blankDraftDesc")}
 									</span>
 								</div>
 							</button>
@@ -261,13 +271,16 @@ export function GlobalNewNoteDialog() {
 								onClick={() => setMode("diary")}
 								className="flex items-center gap-4 w-full p-4 rounded-full border border-base-border bg-base-bg hover-safe:bg-base-surface text-left cursor-pointer transition-all group px-6"
 							>
-								<CalendarDays className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0" />
+								<CalendarDays
+									className="w-5 h-5 text-gray-400 group-hover-safe:text-action shrink-0"
+									aria-hidden="true"
+								/>
 								<div className="flex flex-col min-w-0">
 									<span className="text-sm font-bold text-action">
-										Daily Diary
+										{t("capture.dailyDiaryTitle")}
 									</span>
 									<span className="text-xs text-gray-400 truncate">
-										Atomic titleless log appending to today's timeline
+										{t("capture.dailyDiaryDesc")}
 									</span>
 								</div>
 							</button>
@@ -279,7 +292,7 @@ export function GlobalNewNoteDialog() {
 					<div className="flex flex-col flex-1 p-6 space-y-4 min-h-0">
 						<div className="flex items-center gap-2 shrink-0">
 							<span className="text-xs font-mono font-bold uppercase text-neutral-400">
-								Daily Diary Mode
+								{t("capture.dailyDiaryMode")}
 							</span>
 						</div>
 						{/* ★ 縦幅を min-h-[380px] h-[50vh] flex-1 に拡大し、枠内どこでもクリックで textarea にフォーカス委譲 */}
@@ -295,7 +308,7 @@ export function GlobalNewNoteDialog() {
 								value={content}
 								onChange={(e) => setContent(e.target.value)}
 								onPaste={onMarkdownPaste}
-								placeholder="Write down your thoughts for today... (No title required)"
+								placeholder={t("capture.diaryPlaceholder")}
 								className={cn(
 									"w-full flex-1 h-full text-base bg-transparent text-action border-none focus:outline-none resize-none font-sans break-words p-0 overflow-y-auto block",
 									isSubmittingAnimation
@@ -320,7 +333,7 @@ export function GlobalNewNoteDialog() {
 								type="button"
 								variant="link"
 							>
-								Edit in Diary Studio
+								{t("capture.editInDiaryStudio")}
 							</Button>
 							<div className="flex gap-2">
 								<Button
@@ -329,7 +342,7 @@ export function GlobalNewNoteDialog() {
 									type="button"
 									variant="ghost"
 								>
-									Cancel
+									{t("common.cancel")}
 								</Button>
 								<Button
 									className="min-w-[100px] rounded-full"
@@ -338,7 +351,9 @@ export function GlobalNewNoteDialog() {
 									type="button"
 									variant="default"
 								>
-									{isSubmittingAnimation ? "Logging..." : "Save Diary"}
+									{isSubmittingAnimation
+										? t("capture.logging")
+										: t("capture.saveDiary")}
 								</Button>
 							</div>
 						</div>
@@ -350,14 +365,14 @@ export function GlobalNewNoteDialog() {
 						<div className="p-6 space-y-6 flex-1 overflow-y-auto">
 							<div className="flex items-center gap-2">
 								<span className="text-xs font-mono font-bold uppercase text-neutral-400">
-									Quick Note Mode
+									{t("capture.quickNoteMode")}
 								</span>
 							</div>
 
 							<div className="space-y-4">
 								<div className="space-y-2">
 									<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-2">
-										Scope
+										{t("capture.scope")}
 									</Label>
 									<div className="flex bg-base-bg p-1 rounded-full border border-base-border/50 shrink-0 gap-1 w-fit">
 										{(["inbox", "domain", "exact"] as const).map((s) => (
@@ -372,7 +387,11 @@ export function GlobalNewNoteDialog() {
 														: "text-muted-foreground hover-safe:text-action hover-safe:bg-base-surface",
 												)}
 											>
-												{s === "exact" ? "Page" : s}
+												{s === "exact"
+													? t("common.page")
+													: s === "domain"
+														? t("common.domain")
+														: t("common.inbox")}
 											</button>
 										))}
 									</div>
@@ -384,11 +403,11 @@ export function GlobalNewNoteDialog() {
 											htmlFor="global-url"
 											className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-2"
 										>
-											Source URL
+											{t("capture.sourceUrl")}
 										</Label>
 										<Input
 											id="global-url"
-											placeholder="[example.com/page](https://example.com/page)"
+											placeholder="example.com/page"
 											value={urlPattern}
 											onChange={(e) => setUrlPattern(e.target.value)}
 											className="h-9 w-full rounded-full text-base md:text-sm px-4"
@@ -399,7 +418,7 @@ export function GlobalNewNoteDialog() {
 
 							<div className="grid items-center gap-2 mb-4">
 								<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-2">
-									Note Type
+									{t("capture.noteType")}
 								</Label>
 								<div className="flex bg-base-bg p-1 rounded-full border border-base-border/50 shrink-0 gap-1 w-fit">
 									{(["info", "alert", "idea"] as const).map((type) => (
@@ -426,7 +445,7 @@ export function GlobalNewNoteDialog() {
 
 							<div className="space-y-2">
 								<Label className="font-xs font-bold uppercase tracking-wider text-gray-400 inline-block mb-2">
-									Note
+									{t("capture.note")}
 								</Label>
 								{/* 外枠を固定したマスク親コンテナ */}
 								<div className="w-full overflow-hidden relative rounded-xl">
@@ -441,7 +460,7 @@ export function GlobalNewNoteDialog() {
 										<NotesEditor
 											value={content}
 											onChange={setContent}
-											placeholder="What's on your mind?"
+											placeholder={t("capture.notePlaceholder")}
 											isDirty={content.length > 0}
 											onSave={handleSave}
 										/>
@@ -470,7 +489,7 @@ export function GlobalNewNoteDialog() {
 								type="button"
 								variant="outline"
 							>
-								Edit in Studio
+								{t("capture.editInStudio")}
 							</Button>
 							<div className="flex gap-2">
 								<Button
@@ -479,7 +498,7 @@ export function GlobalNewNoteDialog() {
 									type="button"
 									variant="ghost"
 								>
-									Cancel
+									{t("common.cancel")}
 								</Button>
 								<Button
 									className="min-w-[100px] rounded-full"
@@ -488,7 +507,9 @@ export function GlobalNewNoteDialog() {
 									type="button"
 									variant="default"
 								>
-									{isSubmittingAnimation ? "Saving..." : "Save Note"}
+									{isSubmittingAnimation
+										? t("common.saving")
+										: t("capture.saveNote")}
 								</Button>
 							</div>
 						</div>

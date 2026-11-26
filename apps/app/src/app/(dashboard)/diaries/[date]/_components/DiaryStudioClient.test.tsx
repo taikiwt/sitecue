@@ -258,7 +258,7 @@ describe("DiaryStudioClient - Local Suspense Shell Protection", () => {
 			</QueryClientProvider>,
 		);
 
-		expect(screen.getAllByText("Diary Studio")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("Diary")[0]).toBeInTheDocument();
 		expect(screen.getAllByText("2026-06-28")[0]).toBeInTheDocument();
 	});
 });

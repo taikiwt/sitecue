@@ -1,6 +1,7 @@
 "use client";
 
 import type { Note } from "@sitecue/shared";
+import { useTranslation } from "react-i18next";
 import { SWRBoundary } from "@/components/ui/swr-boundary";
 import NoteCard from "./NoteCard";
 import StudioSearchInput from "./StudioSearchInput";
@@ -20,6 +21,7 @@ export default function StudioMaterialsPane({
 	searchResults,
 	isSearching,
 }: StudioMaterialsPaneProps) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex h-full flex-col bg-neutral-50/10 min-w-0 w-full overflow-hidden">
 			{/* 1. Search Bar: 固定上部ヘッダー (shrink-0) */}
@@ -51,11 +53,11 @@ export default function StudioMaterialsPane({
 						<div className="grid grid-cols-[minmax(0,1fr)] gap-3 w-full min-w-0">
 							{notes.length === 0 ? (
 								<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
-									<p className="text-sm font-medium">No materials found.</p>
-									<p className="mt-1 text-[10px]">
-										Enter keywords to search your past notes
-										<br />
-										and saved pages.
+									<p className="text-sm font-medium">
+										{t("studio.noMaterialsFound")}
+									</p>
+									<p className="mt-1 text-[10px] whitespace-pre-line">
+										{t("studio.noMaterialsHint")}
 									</p>
 								</div>
 							) : (

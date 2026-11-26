@@ -8,6 +8,7 @@ import {
 } from "@sitecue/shared";
 import { Activity, CalendarDays, Edit3, FileText, Layers } from "lucide-react";
 import { Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { CustomLink, CustomLink as Link } from "@/components/ui/custom-link";
 import { SWRBoundary } from "@/components/ui/swr-boundary";
 import {
@@ -25,6 +26,7 @@ import {
 } from "./Skeletons";
 
 function TodayEntryCountContent({ todayTotal }: { todayTotal: number }) {
+	const { t } = useTranslation();
 	return (
 		<div className="flex flex-col justify-center items-center text-center mt-2">
 			<div className="flex items-baseline gap-1">
@@ -32,7 +34,7 @@ function TodayEntryCountContent({ todayTotal }: { todayTotal: number }) {
 					{todayTotal}
 				</span>
 				<span className="text-xs text-neutral-400 font-bold font-mono">
-					new entries today
+					{t("dashboard.newEntriesToday")}
 				</span>
 			</div>
 		</div>
@@ -62,6 +64,7 @@ function TodayEntryCountSlot({
 }
 
 function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
+	const { t } = useTranslation();
 	const targetNotes = 20;
 	const targetDrafts = 5;
 	const notePct = Math.min(100, (data.noteCount7d / targetNotes) * 100);
@@ -90,7 +93,7 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 		...data.recentDrafts.map((d) => ({
 			id: d.id,
 			type: "draft" as const,
-			title: d.title || "Untitled Draft",
+			title: d.title || t("dashboard.untitledDraft"),
 			content: d.content || "",
 			isResolved: false,
 			href: `/studio/${d.id}`,
@@ -159,15 +162,17 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 							{data.noteCount7d + data.draftCount7d}
 						</span>
 						<span className="text-[8px] uppercase tracking-wider text-neutral-500 font-mono">
-							Activities
+							{t("dashboard.activities")}
 						</span>
 					</div>
 				</div>
 				<div className="flex-1 flex flex-col justify-center gap-4 w-full">
 					<div>
-						<h3 className="text-xl font-bold text-action">Weekly Progress</h3>
+						<h3 className="text-xl font-bold text-action">
+							{t("dashboard.weeklyProgress")}
+						</h3>
 						<p className="text-xs text-neutral-500 mt-0.5">
-							Your note-taking activity over the last 7 days.
+							{t("dashboard.weeklyProgressDesc")}
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
@@ -178,7 +183,9 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 									aria-hidden="true"
 									className="w-3.5 h-3.5 text-neutral-500"
 								/>
-								<span className="font-medium text-action">Notes Captured</span>
+								<span className="font-medium text-action">
+									{t("dashboard.notesCaptured")}
+								</span>
 							</div>
 							<div className="font-mono text-neutral-600 font-bold text-sm">
 								{data.noteCount7d}
@@ -191,7 +198,9 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 									aria-hidden="true"
 									className="w-3.5 h-3.5 text-neutral-500"
 								/>
-								<span className="font-medium text-action">Drafts Created</span>
+								<span className="font-medium text-action">
+									{t("dashboard.draftsCreated")}
+								</span>
 							</div>
 							<div className="font-mono text-neutral-600 font-bold text-sm">
 								{data.draftCount7d}
@@ -203,7 +212,7 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 			{recentItems.length > 0 && (
 				<div className="pt-4 border-t border-base-border/60 flex flex-col gap-2 w-full min-w-0 shrink-0">
 					<span className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">
-						Recent Items
+						{t("dashboard.recentItems")}
 					</span>
 					<div className="flex flex-col gap-1.5 w-full min-w-0">
 						{recentItems.map((item) => (
@@ -229,12 +238,12 @@ function WeeklyProgressContent({ data }: { data: DashboardActivityData }) {
 									className={`truncate font-sans ${item.isResolved ? "line-through opacity-50" : ""}`}
 									title={
 										item.type === "draft"
-											? item.title || "Untitled Draft"
+											? item.title || t("dashboard.untitledDraft")
 											: item.content || item.title
 									}
 								>
 									{item.type === "draft"
-										? item.title || "Untitled Draft"
+										? item.title || t("dashboard.untitledDraft")
 										: item.content
 											? item.content.replace(/[#*`-]/g, "")
 											: item.title}
@@ -273,11 +282,11 @@ function DomainActivityContent({
 }: {
 	domainActivities: DashboardDomainActivity[];
 }) {
+	const { t } = useTranslation();
 	if (domainActivities.length === 0) {
 		return (
 			<div className="rounded-xl border border-dashed border-base-border p-8 text-center text-sm text-neutral-500">
-				No active domain tracking detected. Capture notes via Extension to build
-				domain activity.
+				{t("dashboard.noDomainActivity")}
 			</div>
 		);
 	}
@@ -339,7 +348,9 @@ function ActivityLogSlot({
 }
 
 export function DashboardContainer() {
-	const todayMeta = getTodayFocusMeta();
+	const { t, i18n } = useTranslation();
+	const currentLang = i18n.language.startsWith("ja") ? "ja" : "en";
+	const todayMeta = getTodayFocusMeta(new Date(), currentLang);
 	const { data: activityData, isLoading: isActivityLoading } =
 		useFetchDashboardActivity();
 	const { data: domainsData, isLoading: isDomainsLoading } =
@@ -355,12 +366,12 @@ export function DashboardContainer() {
 						<div className="flex flex-col justify-between items-center p-5 rounded-xl bg-base-surface border border-base-border h-full min-h-[340px] md:min-h-[320px]">
 							<div className="flex justify-between items-start w-full">
 								<span className="text-[10px] uppercase tracking-wider text-neutral-400 font-mono">
-									Today's Focus
+									{t("dashboard.todaysFocus")}
 								</span>
 								<CustomLink
 									className="p-1.5 text-neutral-400 hover-safe:text-action hover-safe:bg-neutral-100 rounded-full transition-colors"
 									href={`/notes?view=diaries&year=${todayMeta.currentYear}&month=${todayMeta.currentMonth}`}
-									title="View Diaries Timeline"
+									title={t("dashboard.viewDiariesTimeline")}
 								>
 									<CalendarDays aria-hidden="true" className="w-4 h-4" />
 								</CustomLink>
@@ -403,7 +414,7 @@ export function DashboardContainer() {
 					<div className="flex items-center gap-2 mb-6">
 						<Layers aria-hidden="true" className="w-5 h-5 text-neutral-400" />
 						<h2 className="text-3xl font-bold tracking-tight text-action">
-							Domain Activity
+							{t("dashboard.domainActivity")}
 						</h2>
 					</div>
 					<DomainActivitySlot data={domainsData} isLoading={isDomainsLoading} />
@@ -414,7 +425,7 @@ export function DashboardContainer() {
 					<div className="flex items-center gap-2 mb-6">
 						<Activity aria-hidden="true" className="w-5 h-5 text-neutral-400" />
 						<h2 className="text-3xl font-bold tracking-tight text-action">
-							Activity Log
+							{t("dashboard.activityLog")}
 						</h2>
 					</div>
 					<ActivityLogSlot data={activityData} isLoading={isActivityLoading} />

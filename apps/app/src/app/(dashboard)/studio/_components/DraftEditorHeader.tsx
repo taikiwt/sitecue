@@ -1,4 +1,7 @@
+"use client";
+
 import { ArrowLeft, Check, MoreHorizontal } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { CustomLink } from "@/components/ui/custom-link";
 import {
@@ -42,6 +45,7 @@ export function DraftEditorHeader({
 	backHref,
 	onBack,
 }: DraftEditorHeaderProps) {
+	const { t } = useTranslation();
 	return (
 		<header
 			className={cn(
@@ -57,7 +61,7 @@ export function DraftEditorHeader({
 						className="text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer inline-flex items-center text-sm font-medium"
 					>
 						<ArrowLeft aria-hidden="true" className="w-4 h-4" />
-						{hasDraftId ? "Back" : "Cancel"}
+						{hasDraftId ? t("common.back") : t("common.cancel")}
 					</button>
 				) : (
 					<CustomLink
@@ -65,7 +69,7 @@ export function DraftEditorHeader({
 						className="text-neutral-500 hover:text-neutral-900 -ml-2 gap-1.5 cursor-pointer inline-flex items-center text-sm font-medium"
 					>
 						<ArrowLeft className="w-4 h-4" aria-hidden="true" />
-						{hasDraftId ? "Back" : "Cancel"}
+						{hasDraftId ? t("common.back") : t("common.cancel")}
 					</CustomLink>
 				)}
 			</div>
@@ -91,14 +95,14 @@ export function DraftEditorHeader({
 					type="button"
 				>
 					{status === "saving" ? (
-						"Saving..."
+						t("common.saving")
 					) : status === "success" ? (
 						<span className="flex items-center gap-1">
 							<Check className="w-4 h-4 text-note-info" aria-hidden="true" />
-							Saved
+							{t("common.saved")}
 						</span>
 					) : (
-						"Save"
+						t("common.save")
 					)}
 				</Button>
 
@@ -110,7 +114,7 @@ export function DraftEditorHeader({
 								variant="ghost"
 								size="icon"
 								className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-								aria-label="More options"
+								aria-label={t("studio.moreOptions")}
 							>
 								<MoreHorizontal
 									className="size-5 md:size-4"
@@ -127,7 +131,7 @@ export function DraftEditorHeader({
 								className="w-full justify-start text-sm font-medium text-neutral-600 hover:text-action cursor-pointer"
 								onClick={onSaveAsTemplate}
 							>
-								Save as Template
+								{t("studio.saveAsTemplate")}
 							</Button>
 							{hasDraftId && (
 								<Button
@@ -136,7 +140,7 @@ export function DraftEditorHeader({
 									className="w-full justify-start text-sm font-medium text-note-alert hover:bg-note-alert/10 cursor-pointer"
 									onClick={onDeleteDraft}
 								>
-									Delete Draft
+									{t("notes.deleteDraft")}
 								</Button>
 							)}
 						</div>

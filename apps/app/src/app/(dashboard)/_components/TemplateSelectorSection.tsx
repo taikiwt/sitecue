@@ -1,4 +1,5 @@
 import { PenSquare, Plus } from "lucide-react";
+import { T } from "@/components/i18n/T";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { requireUser } from "@/utils/supabase/server";
 
@@ -15,14 +16,14 @@ export async function TemplateSelectorSection() {
 				<div className="flex items-center gap-2">
 					<PenSquare className="w-5 h-5 text-neutral-400" aria-hidden="true" />
 					<h2 className="text-xl text-action font-light tracking-tight">
-						Start a Draft
+						<T k="dashboard.startDraft" />
 					</h2>
 				</div>
 				<Link
 					href="/templates"
 					className="text-xs font-medium text-neutral-400 hover:text-action transition-colors"
 				>
-					Manage Templates
+					<T k="userMenu.manageTemplates" />
 				</Link>
 			</div>
 			<div className="grid gap-6 sm:grid-cols-3">
@@ -36,11 +37,11 @@ export async function TemplateSelectorSection() {
 							aria-hidden="true"
 						/>
 						<h3 className="text-base text-action group-hover:text-action-hover transition-colors">
-							Blank Canvas
+							<T k="dashboard.blankCanvas" />
 						</h3>
 					</div>
 					<p className="text-xs text-neutral-500 line-clamp-2">
-						Free-form notes not limited to any specific template.
+						<T k="dashboard.blankCanvasDesc" />
 					</p>
 				</Link>
 
@@ -59,7 +60,7 @@ export async function TemplateSelectorSection() {
 							</p>
 						)}
 						<p className="text-xs text-neutral-500 line-clamp-2">
-							Use this template for your workflow.
+							<T k="dashboard.useTemplateDesc" />
 						</p>
 					</Link>
 				))}

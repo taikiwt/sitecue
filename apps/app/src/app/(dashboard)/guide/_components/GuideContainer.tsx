@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Keyboard, LayoutGrid } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { cn } from "@/lib/utils";
 import { useLayoutStore } from "@/store/useLayoutStore";
@@ -13,20 +14,21 @@ import {
 
 type GuideFilter = "all" | GuideEnvironment;
 
-const FILTER_OPTIONS: Array<{ value: GuideFilter; label: string }> = [
-	{ value: "all", label: "All" },
-	{ value: "basecamp", label: "Basecamp" },
-	{ value: "extension", label: "Extension" },
-];
-
 const ENV_LABELS: Record<GuideEnvironment, string> = {
 	basecamp: "Basecamp",
 	extension: "Extension",
 };
 
 export function GuideContainer() {
+	const { t } = useTranslation();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const [activeFilter, setActiveFilter] = useState<GuideFilter>("all");
+
+	const filterOptions: Array<{ value: GuideFilter; label: string }> = [
+		{ value: "all", label: t("guide.filterAll") },
+		{ value: "basecamp", label: t("guide.filterBasecamp") },
+		{ value: "extension", label: t("guide.filterExtension") },
+	];
 
 	const filteredShortcuts = useMemo(
 		() =>
@@ -64,19 +66,19 @@ export function GuideContainer() {
 						</Link>
 						<div className="min-w-0">
 							<h1 className="font-bold text-lg text-action leading-tight">
-								Guide &amp; Shortcuts
+								{t("guide.title")}
 							</h1>
 							<p className="text-xs text-muted-foreground">
-								Learn how to capture, organize, and weave your context.
+								{t("guide.subtitle")}
 							</p>
 						</div>
 					</div>
 
 					<fieldset
 						className="flex items-center gap-1 border-0 p-0 m-0 shrink-0"
-						aria-label="Filter guide by environment"
+						aria-label={t("guide.filterAriaLabel")}
 					>
-						{FILTER_OPTIONS.map((option) => (
+						{filterOptions.map((option) => (
 							<button
 								key={option.value}
 								type="button"
@@ -107,7 +109,7 @@ export function GuideContainer() {
 								id="guide-shortcuts-heading"
 								className="text-base font-bold text-action"
 							>
-								Keyboard Shortcuts
+								{t("guide.shortcutsHeading")}
 							</h2>
 						</div>
 
@@ -123,11 +125,15 @@ export function GuideContainer() {
 												{ENV_LABELS[item.env]}
 											</span>
 											<span className="text-sm font-medium text-action">
-												{item.action}
+												{t(`guide.shortcuts.${item.id}.action`, {
+													defaultValue: item.action,
+												})}
 											</span>
 										</div>
 										<p className="text-xs text-muted-foreground">
-											{item.context}
+											{t(`guide.shortcuts.${item.id}.context`, {
+												defaultValue: item.context,
+											})}
 										</p>
 									</div>
 
@@ -147,7 +153,7 @@ export function GuideContainer() {
 								id="guide-features-heading"
 								className="text-base font-bold text-action"
 							>
-								Features &amp; Button Placement
+								{t("guide.featuresHeading")}
 							</h2>
 						</div>
 
@@ -159,7 +165,9 @@ export function GuideContainer() {
 								>
 									<div className="flex items-start justify-between gap-2">
 										<h3 className="text-sm font-bold text-action leading-snug">
-											{feature.title}
+											{t(`guide.features.${feature.id}.title`, {
+												defaultValue: feature.title,
+											})}
 										</h3>
 										<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-muted text-muted-foreground border border-base-border shrink-0">
 											{ENV_LABELS[feature.env]}
@@ -167,12 +175,18 @@ export function GuideContainer() {
 									</div>
 
 									<p className="text-xs text-muted-foreground leading-relaxed">
-										{feature.summary}
+										{t(`guide.features.${feature.id}.summary`, {
+											defaultValue: feature.summary,
+										})}
 									</p>
 
 									<p className="text-xs font-medium text-action bg-base-bg border border-base-border rounded-xl px-3 py-2">
-										<span className="text-muted-foreground">Placement: </span>
-										{feature.placement}
+										<span className="text-muted-foreground">
+											{t("guide.placementLabel")}{" "}
+										</span>
+										{t(`guide.features.${feature.id}.placement`, {
+											defaultValue: feature.placement,
+										})}
 									</p>
 
 									<ul className="space-y-2 pt-1">
@@ -182,9 +196,19 @@ export function GuideContainer() {
 												className="text-xs leading-relaxed text-muted-foreground"
 											>
 												<span className="font-semibold text-action">
-													{control.name}
+													{t(
+														`guide.features.${feature.id}.controls.${control.id}.name`,
+														{ defaultValue: control.name },
+													)}
 												</span>
-												<span> — {control.description}</span>
+												<span>
+													{" "}
+													—{" "}
+													{t(
+														`guide.features.${feature.id}.controls.${control.id}.description`,
+														{ defaultValue: control.description },
+													)}
+												</span>
 											</li>
 										))}
 									</ul>

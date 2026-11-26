@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { Toaster } from "react-hot-toast";
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import { I18nProvider } from "@/providers/I18nProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
 import "./globals.css";
 
@@ -62,18 +63,20 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<body
 				className={`${geistSans.variable} ${geistMono.variable} ${hackFont.variable} antialiased`}
 			>
-				<QueryProvider>
-					<ServiceWorkerRegister />
-					{children}
-					<Toaster
-						position="top-center"
-						toastOptions={{ duration: 4000, style: { fontSize: "14px" } }}
-					/>
-				</QueryProvider>
+				<I18nProvider>
+					<QueryProvider>
+						<ServiceWorkerRegister />
+						{children}
+						<Toaster
+							position="top-center"
+							toastOptions={{ duration: 4000, style: { fontSize: "14px" } }}
+						/>
+					</QueryProvider>
+				</I18nProvider>
 			</body>
 		</html>
 	);

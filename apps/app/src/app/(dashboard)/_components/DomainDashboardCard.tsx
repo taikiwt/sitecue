@@ -1,8 +1,11 @@
+"use client";
+
 import {
 	buildNoteContextHref,
 	type DashboardDomainActivity,
 } from "@sitecue/shared";
 import { FileText, FolderOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { buttonVariants } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import { DomainFavicon } from "./DomainFavicon";
@@ -21,6 +24,7 @@ interface Props {
 }
 
 export function DomainDashboardCard({ data }: Props) {
+	const { t } = useTranslation();
 	return (
 		<div className="border border-base-border rounded-xl p-5 flex flex-col gap-4">
 			{/* ドメインヘッダー: Gridによる完全保護 */}
@@ -41,7 +45,7 @@ export function DomainDashboardCard({ data }: Props) {
 						</span>
 					</a>
 					<span className="text-[10px] text-neutral-400 font-mono shrink-0">
-						{data.total_count} notes
+						{t("dashboard.notesCount", { count: data.total_count })}
 					</span>
 				</div>
 				<div className="shrink-0">
@@ -49,7 +53,7 @@ export function DomainDashboardCard({ data }: Props) {
 						href={`/notes?domain=${data.domain}&view=domains`}
 						className={buttonVariants({ variant: "outline", size: "lg" })}
 					>
-						Open
+						{t("dashboard.open")}
 					</Link>
 				</div>
 			</div>
@@ -75,7 +79,7 @@ export function DomainDashboardCard({ data }: Props) {
 							/>
 							{note.content
 								? note.content.substring(0, 45).replace(/[#*`-]/g, "")
-								: "Untitled note"}
+								: t("dashboard.untitledNote")}
 						</Link>
 					))}
 				</div>
@@ -113,7 +117,9 @@ export function DomainDashboardCard({ data }: Props) {
 										className="shrink-0 text-[10px] text-neutral-400 hover-safe:text-action font-medium flex items-center gap-0.5 transition-colors ml-2"
 									>
 										<FolderOpen className="w-3 h-3" aria-hidden="true" />
-										<span>{page.page_count} notes</span>
+										<span>
+											{t("dashboard.notesCount", { count: page.page_count })}
+										</span>
 									</Link>
 								</div>
 								{/* ページ個別ノートスニペット (クリッカブル、親コンテキスト保持) */}
@@ -137,7 +143,7 @@ export function DomainDashboardCard({ data }: Props) {
 												/>
 												{note.content
 													? note.content.substring(0, 40).replace(/[#*`-]/g, "")
-													: "Untitled note"}
+													: t("dashboard.untitledNote")}
 											</Link>
 										))}
 									</div>

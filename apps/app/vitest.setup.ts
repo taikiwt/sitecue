@@ -1,6 +1,7 @@
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { expect } from "vitest";
 import "@testing-library/jest-dom";
+import "./src/locales/i18n";
 expect.extend(matchers);
 
 import { cleanup } from "@testing-library/react";
@@ -47,6 +48,32 @@ Object.defineProperty(window, "matchMedia", {
 		dispatchEvent: vi.fn(),
 	})),
 });
+
+// localStorage mock (when jsdom/node does not provide Storage methods)
+if (
+	typeof window.localStorage === "undefined" ||
+	typeof window.localStorage.getItem !== "function"
+) {
+	const store = new Map<string, string>();
+	const storageMock: Storage = {
+		get length() {
+			return store.size;
+		},
+		clear: () => store.clear(),
+		getItem: (key: string) => store.get(key) ?? null,
+		key: (index: number) => Array.from(store.keys())[index] ?? null,
+		removeItem: (key: string) => {
+			store.delete(key);
+		},
+		setItem: (key: string, value: string) => {
+			store.set(key, String(value));
+		},
+	};
+	Object.defineProperty(window, "localStorage", {
+		writable: true,
+		value: storageMock,
+	});
+}
 
 // Supabase や Next.js のルーターなど、ブラウザ特有の機能をモック化
 vi.mock("next/navigation", () => ({
