@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
 import {
@@ -25,6 +26,7 @@ import {
 import { useFetchDrafts } from "@/hooks/useDraftsQuery";
 import { useFetchNotes } from "@/hooks/useNotesQuery";
 import { cn } from "@/lib/utils";
+import { setUserLanguage } from "@/locales/i18n";
 import { useUserStore } from "@/store/useUserStore";
 import { createClient } from "@/utils/supabase/client";
 
@@ -39,6 +41,8 @@ export function UserMenu({
 	align = "end",
 	sideOffset = 16,
 }: UserMenuProps = {}) {
+	const { t, i18n } = useTranslation();
+	const currentLang = i18n.language.startsWith("ja") ? "ja" : "en";
 	const router = useRouter();
 	const supabase = createClient();
 	const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -110,7 +114,41 @@ export function UserMenu({
 					<p className="text-sm font-semibold text-action truncate">
 						{user.email}
 					</p>
-					<p className="text-[10px] text-neutral-400 font-medium">My Account</p>
+					<p className="text-[10px] text-neutral-400 font-medium">
+						{t("userMenu.myAccount")}
+					</p>
+				</div>
+
+				<div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-base-border/50 text-xs">
+					<span className="text-muted-foreground font-medium">
+						{t("userMenu.language")}
+					</span>
+					<div className="flex items-center bg-base-bg p-0.5 rounded-full border border-base-border/60">
+						<button
+							type="button"
+							onClick={() => void setUserLanguage("en")}
+							className={cn(
+								"cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors",
+								currentLang === "en"
+									? "bg-action text-action-text"
+									: "text-muted-foreground hover:text-action",
+							)}
+						>
+							EN
+						</button>
+						<button
+							type="button"
+							onClick={() => void setUserLanguage("ja")}
+							className={cn(
+								"cursor-pointer px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors",
+								currentLang === "ja"
+									? "bg-action text-action-text"
+									: "text-muted-foreground hover:text-action",
+							)}
+						>
+							JA
+						</button>
+					</div>
 				</div>
 
 				<div className="px-3 py-2 mb-1 border-b border-base-border/50">
@@ -121,7 +159,7 @@ export function UserMenu({
 									className="size-3 text-amber-500"
 									aria-hidden="true"
 								/>
-								<span>Pro Plan Active</span>
+								<span>{t("userMenu.proPlanActive")}</span>
 							</div>
 							<a
 								href={
@@ -133,7 +171,7 @@ export function UserMenu({
 								onClick={() => setIsMenuOpen(false)}
 								className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-action transition-colors px-1 py-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-action/50"
 							>
-								<span>Manage Subscription</span>
+								<span>{t("userMenu.manageSubscription")}</span>
 								<ExternalLink
 									className="size-3 text-neutral-400"
 									aria-hidden="true"
@@ -156,10 +194,10 @@ export function UserMenu({
 									className="size-3 text-amber-500"
 									aria-hidden="true"
 								/>
-								<span>Upgrade to Pro</span>
+								<span>{t("userMenu.upgradeToPro")}</span>
 							</Button>
 							<span className="text-[11px] text-neutral-400 select-none">
-								See what Pro offers
+								{t("userMenu.seeWhatProOffers")}
 							</span>
 						</div>
 					)}
@@ -184,8 +222,8 @@ export function UserMenu({
 										isAiWarning ? "text-amber-600" : "text-neutral-400",
 									)}
 								>
-									<Sparkles className="w-3 h-3" />
-									AI Usage
+									<Sparkles className="w-3 h-3" aria-hidden="true" />
+									{t("userMenu.aiUsage")}
 								</p>
 								<p
 									className={cn(
@@ -202,7 +240,7 @@ export function UserMenu({
 											isAiWarning ? "text-amber-500" : "text-neutral-400",
 										)}
 									>
-										uses
+										{t("userMenu.uses")}
 									</span>
 								</p>
 							</>
@@ -214,12 +252,12 @@ export function UserMenu({
 					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
 						<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
 							<Activity className="w-3 h-3" aria-hidden="true" />
-							Note Storage
+							{t("userMenu.noteStorage")}
 						</p>
 						<p className="text-sm text-amber-700">
 							{notes.length} / {NOTES_LIMIT.MAX_FREE}
 							<span className="text-[10px] font-normal text-amber-500 ml-1">
-								notes
+								{t("common.notes")}
 							</span>
 						</p>
 					</div>
@@ -229,12 +267,12 @@ export function UserMenu({
 					<div className="px-3 py-2 mb-1 border-b border-base-border/50">
 						<p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 flex items-center gap-1">
 							<Activity className="w-3 h-3" aria-hidden="true" />
-							Draft Storage
+							{t("userMenu.draftStorage")}
 						</p>
 						<p className="text-sm text-amber-700">
 							{drafts.length} / {DRAFTS_LIMIT.MAX_FREE}
 							<span className="text-[10px] font-normal text-amber-500 ml-1">
-								drafts
+								{t("common.drafts")}
 							</span>
 						</p>
 					</div>
@@ -246,7 +284,7 @@ export function UserMenu({
 					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
 				>
 					<Settings className="h-4 w-4" aria-hidden="true" />
-					Manage Templates
+					{t("userMenu.manageTemplates")}
 				</Link>
 
 				<Link
@@ -255,7 +293,7 @@ export function UserMenu({
 					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
 				>
 					<Trash2 className="h-4 w-4" aria-hidden="true" />
-					Trash
+					{t("userMenu.trash")}
 				</Link>
 
 				<Link
@@ -264,7 +302,7 @@ export function UserMenu({
 					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
 				>
 					<CircleHelp className="h-4 w-4" aria-hidden="true" />
-					Guide &amp; Shortcuts
+					{t("userMenu.guideAndShortcuts")}
 				</Link>
 
 				<a
@@ -275,7 +313,7 @@ export function UserMenu({
 					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-base-bg hover:text-action cursor-pointer mb-1"
 				>
 					<Shield className="h-4 w-4" aria-hidden="true" />
-					<span>Privacy Policy</span>
+					<span>{t("userMenu.privacyPolicy")}</span>
 					<ExternalLink
 						className="size-3.5 ml-auto text-neutral-400"
 						aria-hidden="true"
@@ -288,7 +326,7 @@ export function UserMenu({
 					className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-note-alert transition-colors hover:bg-note-alert/10 cursor-pointer"
 				>
 					<LogOut className="h-4 w-4" aria-hidden="true" />
-					Log out
+					{t("userMenu.logout")}
 				</button>
 			</PopoverContent>
 		</Popover>

@@ -2,6 +2,7 @@
 
 import { Hash, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export interface HeadingItem {
@@ -79,6 +80,7 @@ export default function StudioOutlinePane({
 	content,
 	onSelectHeading,
 }: StudioOutlinePaneProps) {
+	const { t } = useTranslation();
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const headings = useMemo(() => parseHeadings(content), [content]);
@@ -102,15 +104,15 @@ export default function StudioOutlinePane({
 						type="text"
 						value={searchQuery}
 						onChange={(e) => setSearchQuery(e.target.value)}
-						placeholder="Filter headings..."
-						className="w-full bg-base-surface border border-base-border rounded-full pl-9 pr-8 py-1.5 text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-action transition-colors"
+						placeholder={t("studio.filterHeadings")}
+						className="w-full bg-base-surface border border-base-border rounded-full pl-9 pr-8 py-1.5 text-base md:text-xs text-neutral-800 placeholder:text-neutral-400 focus:outline-none focus:border-action transition-colors"
 					/>
 					{searchQuery && (
 						<button
 							type="button"
 							onClick={() => setSearchQuery("")}
 							className="absolute right-2.5 p-0.5 text-neutral-400 hover:text-neutral-600 rounded-full cursor-pointer"
-							aria-label="Clear filter"
+							aria-label={t("studio.clearFilter")}
 						>
 							<X aria-hidden="true" className="w-3.5 h-3.5" />
 						</button>
@@ -123,11 +125,11 @@ export default function StudioOutlinePane({
 				{filteredHeadings.length === 0 ? (
 					<div className="flex h-40 flex-col items-center justify-center rounded-xl border border-dashed border-neutral-200 px-4 py-8 text-center text-neutral-400">
 						<Hash aria-hidden="true" className="w-5 h-5 mb-1.5 opacity-40" />
-						<p className="text-xs font-medium">No headings found</p>
+						<p className="text-xs font-medium">{t("studio.noHeadingsFound")}</p>
 						<p className="mt-1 text-[10px]">
 							{searchQuery
-								? "Try a different search keyword."
-								: "Use #, ##, or ### in the editor to structure your document."}
+								? t("studio.noHeadingsSearchHint")
+								: t("studio.noHeadingsHint")}
 						</p>
 					</div>
 				) : (

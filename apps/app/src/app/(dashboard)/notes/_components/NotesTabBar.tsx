@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const VIEWS = ["domains", "inbox", "drafts", "diaries"] as const;
@@ -13,6 +14,7 @@ interface NotesTabBarProps {
 }
 
 export function NotesTabBar({ currentView, onTabSwitch }: NotesTabBarProps) {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -63,13 +65,21 @@ export function NotesTabBar({ currentView, onTabSwitch }: NotesTabBarProps) {
 							type="button"
 							onClick={() => handleTabClick(view)}
 							className={cn(
-								"px-1 py-2.5 text-xs font-bold rounded-full transition-all cursor-pointer text-center",
+								"px-1 py-2.5 text-xs font-bold rounded-full transition-all cursor-pointer text-center whitespace-nowrap",
 								isActive
 									? "bg-action text-action-text shadow-sm"
 									: "text-neutral-500 hover:text-action hover:bg-base-bg/60",
 							)}
 						>
-							{view.charAt(0).toUpperCase() + view.slice(1)}
+							{t(
+								view === "domains"
+									? "notes.tabDomains"
+									: view === "inbox"
+										? "notes.tabInbox"
+										: view === "drafts"
+											? "notes.tabDrafts"
+											: "notes.tabDiaries",
+							)}
 						</button>
 					);
 				})}

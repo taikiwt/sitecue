@@ -39,4 +39,10 @@ description: sitecueのテーマ、セマンティックカラーの運用、環
 - **`TextareaAutosize` トランジション禁止規約:** `TextareaAutosize` コンポーネントには動的高さ計算の遅延を防ぐため、高さに関する CSS トランジション（`transition-[height]`, `transition-all`）を付与してはならない。
 - **無限スクロール表示件数リセット規約:** 無限スクロールの表示件数（`visibleLimit`）は、アクティブスコープの切り替え時または対象スコープのデータ変更時のみリセットすること。
 
+## 8. Basecamp 多言語化（i18n）規約
+- **ハードコード文字列の禁止:** `apps/app/` 配下の UI ラベル、プレースホルダー、トースト通知、確認ダイアログ文言は原則として `apps/app/src/locales/{en,ja}.json` に定義し、`useTranslation()` の `t("...")` 経由で描画すること。
+- **日付フォーマットのロケール連動:** `toLocaleDateString` / `toLocaleTimeString` / `toLocaleString` を使用する際は `"en-US"` をハードコードせず、現在の言語設定に応じたロケール（`ja` 時は `"ja-JP"`、それ以外は `"en-US"`）を渡すこと。
+- **Hydration 安全性の維持:** SSR 初期描画時の言語は `"en"` とし、クライアントマウント後に `localStorage` / `navigator.language` から言語を復元すること。
+- **用語統一規約（Draft / 日記 / 活動）:** 日本語UIにおける `Draft` の訳語は「下書き」ではなく「ドラフト」で統一すること。また、ユーザーに機能目的が直感的に伝わらない装飾的サブタイトル（サンドボックス表記等）は追加しないこと。
+
 

@@ -5,7 +5,9 @@ import {
 	type DashboardActivityData,
 } from "@sitecue/shared";
 import { Edit3, FileText, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { toIntlLocale } from "@/lib/dateFormat";
 import { DomainFavicon } from "./DomainFavicon";
 
 export interface ActivityItem {
@@ -39,11 +41,11 @@ function getLocalDateString(date: Date) {
 	return `${yyyy}-${mm}-${dd}`;
 }
 
-function getDisplayDate(dateStr: string) {
+function getDisplayDate(dateStr: string, lang: string, todayLabel: string) {
 	const todayStr = getLocalDateString(new Date());
-	if (dateStr === todayStr) return "Today";
+	if (dateStr === todayStr) return todayLabel;
 	const d = new Date(`${dateStr}T00:00:00`);
-	return d.toLocaleDateString("en-US", {
+	return d.toLocaleDateString(toIntlLocale(lang), {
 		month: "short",
 		day: "numeric",
 		weekday: "short",
@@ -63,10 +65,11 @@ export function ContributionTimeline({
 	notes?: DashboardActivityData["notes7d"];
 	drafts?: DashboardActivityData["drafts7d"];
 }) {
+	const { t, i18n } = useTranslation();
 	if (notes.length === 0 && drafts.length === 0) {
 		return (
 			<div className="rounded-xl border border-dashed border-base-border p-8 text-center text-sm text-neutral-500">
-				No recent activities logged in the last 7 days.
+				{t("dashboard.noRecentActivities")}
 			</div>
 		);
 	}
@@ -83,7 +86,8 @@ export function ContributionTimeline({
 		}
 		activityMap[dateKey].noteItems.push({
 			id: note.id,
-			title: note.scope === "inbox" ? "Inbox" : note.url_pattern || "",
+			title:
+				note.scope === "inbox" ? t("common.inbox") : note.url_pattern || "",
 			content: note.content || "",
 			domain: extractDomain(note.url_pattern || ""),
 			noteType: note.note_type,
@@ -99,7 +103,7 @@ export function ContributionTimeline({
 		}
 		activityMap[dateKey].draftItems.push({
 			id: draft.id,
-			title: draft.title || "Untitled Draft",
+			title: draft.title || t("dashboard.untitledDraft"),
 			content: draft.content || "",
 		});
 	}
@@ -113,7 +117,7 @@ export function ContributionTimeline({
 			if (noteItems.length > 0) {
 				events.push({
 					type: "note_captured",
-					label: "Captured Notes",
+					label: t("dashboard.capturedNotes"),
 					items: noteItems,
 				});
 			}
@@ -121,14 +125,14 @@ export function ContributionTimeline({
 			if (draftItems.length > 0) {
 				events.push({
 					type: "draft_created",
-					label: "Created Drafts",
+					label: t("dashboard.createdDrafts"),
 					items: draftItems,
 				});
 			}
 
 			return {
 				date: dateKey,
-				displayDate: getDisplayDate(dateKey),
+				displayDate: getDisplayDate(dateKey, i18n.language, t("common.today")),
 				noteCount: noteItems.length,
 				draftCount: draftItems.length,
 				events,
@@ -148,7 +152,11 @@ export function ContributionTimeline({
 							{day.displayDate}
 						</span>
 						<span className="text-[10px] text-neutral-400 font-mono">
-							({day.noteCount + day.draftCount} activities)
+							(
+							{t("dashboard.activitiesCount", {
+								count: day.noteCount + day.draftCount,
+							})}
+							)
 						</span>
 					</div>
 
@@ -196,7 +204,7 @@ export function ContributionTimeline({
 
 										const contentPreview = item.content
 											? item.content.replace(/[#*`-]/g, "")
-											: "No content preview";
+											: t("dashboard.noContentPreview");
 
 										return (
 											<Link

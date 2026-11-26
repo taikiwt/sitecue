@@ -50,7 +50,10 @@ export interface DashboardOverviewData extends DashboardActivityData {
 	domainActivities: Awaited<ReturnType<typeof fetchDashboardDomainActivity>>;
 }
 
-export function getTodayFocusMeta(now: Date = new Date()): TodayFocusMeta {
+export function getTodayFocusMeta(
+	now: Date = new Date(),
+	locale: "en" | "ja" = "en",
+): TodayFocusMeta {
 	const jstTime = now.getTime() + 9 * 60 * 60 * 1000;
 	const jstDate = new Date(jstTime);
 	const year = jstDate.getUTCFullYear();
@@ -59,19 +62,32 @@ export function getTodayFocusMeta(now: Date = new Date()): TodayFocusMeta {
 	const todayStr = `${year}-${month}-${day}`;
 	const startOfDay = `${todayStr}T00:00:00+09:00`;
 
+	const monthYearStr =
+		locale === "ja"
+			? `${year}年${Number(month)}月`
+			: jstDate
+					.toLocaleDateString("en-US", {
+						month: "short",
+						year: "numeric",
+						timeZone: "UTC",
+					})
+					.toUpperCase();
+
+	const weekdayStr =
+		locale === "ja"
+			? jstDate.toLocaleDateString("ja-JP", {
+					weekday: "long",
+					timeZone: "UTC",
+				})
+			: jstDate
+					.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
+					.toUpperCase();
+
 	return {
 		todayStr,
-		monthYearStr: jstDate
-			.toLocaleDateString("en-US", {
-				month: "short",
-				year: "numeric",
-				timeZone: "UTC",
-			})
-			.toUpperCase(),
+		monthYearStr,
 		dayNumStr: day,
-		weekdayStr: jstDate
-			.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })
-			.toUpperCase(),
+		weekdayStr,
 		currentYear: year.toString(),
 		currentMonth: month,
 		startOfDay,

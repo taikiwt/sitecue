@@ -16,7 +16,9 @@ import { type Diary, getSafeUrl } from "@sitecue/shared";
 import { ChevronRight, FileText, Globe, Inbox, Layers } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { type RefObject, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { CustomLink as Link } from "@/components/ui/custom-link";
+import { formatDiaryDayLabel } from "@/lib/dateFormat";
 import { DomainFavicon } from "../../_components/DomainFavicon";
 import type { Draft, GroupedNotes, Note } from "../types";
 import type { DomainSortOrder } from "./MiddlePaneHeader";
@@ -95,6 +97,7 @@ export function MiddlePaneContent({
 	bulkExitingIds,
 	domainSortOrder = "count",
 }: MiddlePaneContentProps) {
+	const { t, i18n } = useTranslation();
 	const searchParams = useSearchParams();
 	const diaries = items.filter(
 		(item): item is Diary => "date" in item && !("note_type" in item),
@@ -193,7 +196,9 @@ export function MiddlePaneContent({
 									aria-hidden="true"
 									className="w-12 h-12 mb-4 text-base-border"
 								/>
-								<p className="text-sm font-medium">No diaries found</p>
+								<p className="text-sm font-medium">
+									{t("notes.noDiariesFound")}
+								</p>
 							</div>
 						);
 					}
@@ -224,12 +229,16 @@ export function MiddlePaneContent({
 							if (!query) return true;
 							const shortEng = (MONTH_MAP[month] || "").toLowerCase();
 							const fullEng = fullMonths[month] || "";
+							const jaMonth = `${Number(month)}月`;
+							const q = query.toLowerCase();
 							return (
-								month.includes(query) ||
-								shortEng.includes(query) ||
-								fullEng.includes(query)
+								month.includes(q) ||
+								shortEng.includes(q) ||
+								fullEng.includes(q) ||
+								jaMonth.includes(q)
 							);
 						});
+						const isJa = i18n.language.startsWith("ja");
 						return filteredMonths.length > 0 ? (
 							filteredMonths.map((month) => (
 								<button
@@ -239,7 +248,7 @@ export function MiddlePaneContent({
 									className="w-full flex items-center justify-between p-4 hover-safe:bg-base-surface text-left cursor-pointer transition-colors group"
 								>
 									<span className="text-sm font-medium text-action">
-										{MONTH_MAP[month] || month}
+										{isJa ? `${Number(month)}月` : MONTH_MAP[month] || month}
 									</span>
 									<ChevronRight
 										aria-hidden="true"
@@ -254,7 +263,7 @@ export function MiddlePaneContent({
 									className="w-12 h-12 mb-4 text-base-border"
 								/>
 								<p className="text-sm font-medium">
-									No diaries found for this year
+									{t("notes.noDiariesYear")}
 								</p>
 							</div>
 						);
@@ -265,11 +274,7 @@ export function MiddlePaneContent({
 					);
 					const displayDiaries = filteredDiaries.filter((diary) => {
 						if (!query) return true;
-						const diaryDate = new Date(diary.date);
-						const dayLabel = diaryDate.toLocaleDateString("en-US", {
-							day: "numeric",
-							weekday: "short",
-						});
+						const dayLabel = formatDiaryDayLabel(diary.date, i18n.language);
 						const matchStr =
 							`${diary.content} ${diary.date}${dayLabel}`.toLowerCase();
 						return matchStr.includes(query);
@@ -293,9 +298,7 @@ export function MiddlePaneContent({
 								aria-hidden="true"
 								className="w-12 h-12 mb-4 text-base-border"
 							/>
-							<p className="text-sm font-medium">
-								No diaries found for this month
-							</p>
+							<p className="text-sm font-medium">{t("notes.noDiariesMonth")}</p>
 						</div>
 					);
 				})()
@@ -330,7 +333,9 @@ export function MiddlePaneContent({
 										{domain}
 									</span>
 									<span className="text-xs text-gray-400 shrink-0">
-										{unresolvedDomainCount(data)} notes
+										{t("dashboard.notesCount", {
+											count: unresolvedDomainCount(data),
+										})}
 									</span>
 								</div>
 							</div>
@@ -360,16 +365,17 @@ export function MiddlePaneContent({
 									</div>
 									<div className="flex flex-col min-w-0">
 										<span className="text-sm font-medium text-action">
-											All Notes
+											{t("notes.allNotes")}
 										</span>
 										<span className="text-xs text-gray-400">
-											{unresolvedDomainCount(
-												groupedNotes.domains[currentDomain] || {
-													domainNotes: [],
-													pages: {},
-												},
-											)}{" "}
-											notes
+											{t("dashboard.notesCount", {
+												count: unresolvedDomainCount(
+													groupedNotes.domains[currentDomain] || {
+														domainNotes: [],
+														pages: {},
+													},
+												),
+											})}
 										</span>
 									</div>
 								</div>
@@ -394,15 +400,14 @@ export function MiddlePaneContent({
 									</div>
 									<div className="flex flex-col min-w-0">
 										<span className="text-sm font-medium text-action">
-											Domain Notes
+											{t("notes.domainNotes")}
 										</span>
 										<span className="text-xs text-gray-400">
-											{
-												(
+											{t("dashboard.notesCount", {
+												count: (
 													groupedNotes.domains[currentDomain]?.domainNotes || []
-												).filter((n) => !n.is_resolved).length
-											}{" "}
-											notes
+												).filter((n) => !n.is_resolved).length,
+											})}
 										</span>
 									</div>
 								</div>
@@ -453,7 +458,9 @@ export function MiddlePaneContent({
 												{path}
 											</span>
 											<span className="text-xs text-gray-400">
-												{notes.filter((n) => !n.is_resolved).length} notes
+												{t("dashboard.notesCount", {
+													count: notes.filter((n) => !n.is_resolved).length,
+												})}
 											</span>
 										</div>
 									</div>
@@ -474,12 +481,10 @@ export function MiddlePaneContent({
 								className="w-10 h-10 mb-4 text-gray-300"
 							/>
 							<p className="text-sm font-medium">
-								Please select a category from the list
+								{t("notes.selectCategoryTitle")}
 							</p>
-							<p className="text-xs mt-2">
-								Select Inbox, Drafts, or a Domain
-								<br />
-								to see the list of items
+							<p className="text-xs mt-2 whitespace-pre-line">
+								{t("notes.selectCategoryDesc")}
 							</p>
 						</div>
 					) : visibleItems.length > 0 ? (
@@ -546,8 +551,9 @@ export function MiddlePaneContent({
 								className="w-12 h-12 mb-4 text-base-border"
 							/>
 							<p className="text-sm">
-								No {currentView === "drafts" ? "drafts" : "notes"} found for
-								this category.
+								{currentView === "drafts"
+									? t("notes.noDraftsCategory")
+									: t("notes.noNotesCategory")}
 							</p>
 						</div>
 					)}

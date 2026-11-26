@@ -5,6 +5,7 @@ import { APP_LIMITS } from "@sitecue/shared";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -37,6 +38,7 @@ export function TemplateManager({
 	initialTemplates?: Template[];
 	selectedId?: string | null;
 }) {
+	const { t } = useTranslation();
 	const isSidebarOpen = useLayoutStore((state) => state.isSidebarOpen);
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -133,15 +135,14 @@ export function TemplateManager({
 			router.refresh();
 		} catch (err) {
 			console.error("Failed to save template:", err);
-			alert("Failed to save template.");
+			alert(t("toast.saveTemplateFailed"));
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
 	const handleDelete = async (id: string) => {
-		if (!window.confirm("Are you sure you want to delete this template?"))
-			return;
+		if (!window.confirm(t("templates.deleteConfirm"))) return;
 
 		if (effectiveSelectedId === id) router.push("/templates");
 
@@ -161,30 +162,30 @@ export function TemplateManager({
 		<div className="max-w-2xl w-full mx-auto space-y-6">
 			<div className="flex items-center justify-between mb-8">
 				<h2 className="text-2xl font-bold">
-					{isNew ? "Create Template" : "Edit Template"}
+					{isNew ? t("studio.createTemplate") : t("studio.editTemplate")}
 				</h2>
 				<Button
 					onClick={handleSave}
 					disabled={isSaving || !name.trim() || isOverLimit}
 					type="button"
 				>
-					{isSaving ? "Saving..." : "Save Template"}
+					{isSaving ? t("common.saving") : t("studio.saveTemplate")}
 				</Button>
 			</div>
 
 			<div className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="template-name">Template Name</Label>
+					<Label htmlFor="template-name">{t("studio.templateName")}</Label>
 					<Input
 						id="template-name"
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="e.g. X Thread, Daily Report"
+						placeholder={t("templates.namePlaceholder")}
 					/>
 				</div>
 
 				<div className="space-y-2">
-					<Label htmlFor="max-length">Max Length (Optional)</Label>
+					<Label htmlFor="max-length">{t("templates.maxLengthLabel")}</Label>
 					<Input
 						id="max-length"
 						type="number"
@@ -196,15 +197,15 @@ export function TemplateManager({
 
 				<div className="space-y-2">
 					<Label htmlFor="boilerplate">
-						Boilerplate / Initial Text (Optional)
+						{t("templates.boilerplateOptional")}
 					</Label>
 					<TextareaAutosize
 						id="boilerplate"
 						minRows={4}
 						value={boilerplate}
 						onChange={(e) => setBoilerplate(e.target.value)}
-						className="w-full rounded-lg border border-base-border bg-transparent p-3 text-sm focus:outline-none focus:ring-2 focus:ring-base-border"
-						placeholder="# Target Audience&#10;&#10;# Key Message"
+						className="w-full rounded-lg border border-base-border bg-transparent p-3 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-base-border"
+						placeholder={t("templates.boilerplatePlaceholder")}
 					/>
 					{isBoilerplateNearLimit && (
 						<div className="flex justify-end">
@@ -223,15 +224,15 @@ export function TemplateManager({
 
 				<div className="space-y-2">
 					<Label htmlFor="weave-prompt">
-						Weave Prompt (System Prompt for AI) (Optional)
+						{t("templates.weavePromptOptional")}
 					</Label>
 					<TextareaAutosize
 						id="weave-prompt"
 						minRows={3}
 						value={weavePrompt}
 						onChange={(e) => setWeavePrompt(e.target.value)}
-						className="w-full rounded-lg border border-base-border bg-base-surface p-3 text-sm focus:outline-none font-mono text-xs"
-						placeholder="Provide context for the AI when generating from this template."
+						className="w-full rounded-lg border border-base-border bg-base-surface p-3 text-base md:text-sm focus:outline-none font-mono md:text-xs"
+						placeholder={t("templates.weavePromptPlaceholder")}
 					/>
 					{isWeavePromptNearLimit && (
 						<div className="flex justify-end">
@@ -270,12 +271,12 @@ export function TemplateManager({
 							>
 								<ArrowLeft className="w-4 h-4 text-action" aria-hidden="true" />
 							</Link>
-							<h1 className="font-bold text-lg">Templates</h1>
+							<h1 className="font-bold text-lg">{t("templates.title")}</h1>
 						</div>
 						<Link
 							href="/templates?id=new"
 							className="inline-flex items-center justify-center h-7 w-7 rounded-[min(var(--radius-md),12px)] hover-safe:bg-muted transition-colors text-action"
-							aria-label="New Template"
+							aria-label={t("templates.newTemplate")}
 						>
 							<Plus className="w-4 h-4" aria-hidden="true" />
 						</Link>
@@ -323,24 +324,26 @@ export function TemplateManager({
 								}
 							>
 								{(templateList) =>
-									templateList.map((t) => (
+									templateList.map((tpl) => (
 										<div
-											key={t.id}
-											className={`flex items-center justify-between px-3 py-2 rounded-lg group ${effectiveSelectedId === t.id ? "bg-base-bg shadow-sm" : "hover-safe:bg-base-bg/50"}`}
+											key={tpl.id}
+											className={`flex items-center justify-between px-3 py-2 rounded-lg group ${effectiveSelectedId === tpl.id ? "bg-base-bg shadow-sm" : "hover-safe:bg-base-bg/50"}`}
 										>
 											<Link
-												href={`/templates?id=${t.id}`}
+												href={`/templates?id=${tpl.id}`}
 												className="flex-1 truncate text-sm font-medium"
 											>
-												{t.name}
+												{tpl.name}
 											</Link>
 											<Button
 												variant="ghost"
 												size="icon-sm"
-												onClick={() => handleDelete(t.id)}
+												onClick={() => handleDelete(tpl.id)}
 												className="opacity-100 pointer-fine:opacity-0 group-hover-safe:opacity-100 text-gray-400 hover-safe:text-note-alert transition-opacity"
 												type="button"
-												aria-label={`Delete ${t.name}`}
+												aria-label={t("templates.deleteAriaLabel", {
+													name: tpl.name,
+												})}
 											>
 												<Trash2 className="w-3 h-3" aria-hidden="true" />
 											</Button>
@@ -379,7 +382,7 @@ export function TemplateManager({
 									EditorContent
 								) : (
 									<div className="flex-1 flex items-center justify-center text-gray-400">
-										Select a template to edit or create a new one.
+										{t("templates.selectPrompt")}
 									</div>
 								)
 							}
@@ -394,9 +397,11 @@ export function TemplateManager({
 					<DrawerContent className="!mt-0 !h-[100dvh] !max-h-none rounded-t-2xl rounded-b-none p-0 flex flex-col overflow-hidden bg-base-bg border-none">
 						<DrawerHeader className="sr-only">
 							<DrawerTitle>
-								{isNew ? "Create Template" : "Edit Template"}
+								{isNew ? t("studio.createTemplate") : t("studio.editTemplate")}
 							</DrawerTitle>
-							<DrawerDescription>Edit the template details</DrawerDescription>
+							<DrawerDescription>
+								{t("templates.drawerDescription")}
+							</DrawerDescription>
 						</DrawerHeader>
 
 						{/* Mobile Header with Back Button */}
@@ -408,7 +413,7 @@ export function TemplateManager({
 								className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
 							>
 								<ArrowLeft aria-hidden="true" className="w-5 h-5" />
-								Templates
+								{t("templates.title")}
 							</Button>
 						</div>
 

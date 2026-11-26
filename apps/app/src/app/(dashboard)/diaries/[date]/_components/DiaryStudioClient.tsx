@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -63,6 +64,7 @@ interface Props {
 }
 
 export function DiaryStudioClient({ initialDiary, date }: Props) {
+	const { t } = useTranslation();
 	const { data: fetchedDiary, isLoading: isDiaryLoading } = useFetchDiaryByDate(
 		date,
 		initialDiary,
@@ -123,7 +125,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 			return;
 		}
 		if (trimmed.length > 50) {
-			alert("Topic length cannot exceed 50 characters");
+			alert(t("diaryStudio.topicMaxLengthError"));
 			return;
 		}
 		const updated = [...topics];
@@ -146,7 +148,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 			router.push("/notes?view=diaries");
 		} catch (err) {
 			console.error("Failed to delete diary:", err);
-			toast.error("Failed to delete diary.");
+			toast.error(t("toast.deleteDiaryFailed"));
 		} finally {
 			setIsDeleting(false);
 		}
@@ -161,11 +163,11 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 		const trimmed = newTopic.trim();
 		if (!trimmed) return;
 		if (trimmed.length > 50) {
-			alert("Topic length cannot exceed 50 characters");
+			alert(t("diaryStudio.topicMaxLengthError"));
 			return;
 		}
 		if (topics.length >= 10) {
-			alert("Maximum 10 topics allowed");
+			alert(t("diaryStudio.topicMaxCountError"));
 			return;
 		}
 		if (!topics.includes(trimmed)) {
@@ -202,7 +204,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 			) {
 				openPaywall("notes");
 			} else {
-				toast.error("Failed to save diary log.");
+				toast.error(t("toast.saveDiaryFailed"));
 			}
 			setStatus("error");
 		}
@@ -253,7 +255,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								</CustomLink>
 								<div className="flex flex-col">
 									<h1 className="text-sm font-bold tracking-tight text-action">
-										Diary Studio
+										{t("diaryStudio.title")}
 									</h1>
 									<span className="text-[10px] font-mono text-gray-400 font-bold">
 										{date}
@@ -269,17 +271,17 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 									variant="default"
 								>
 									{status === "saving" ? (
-										"Saving..."
+										t("common.saving")
 									) : status === "success" ? (
 										<span className="flex items-center gap-1">
 											<Check
 												aria-hidden="true"
 												className="w-4 h-4 text-note-info"
 											/>
-											Saved
+											{t("common.saved")}
 										</span>
 									) : (
-										"Save"
+										t("common.save")
 									)}
 								</Button>
 								<Popover
@@ -293,7 +295,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												variant="ghost"
 												size="icon"
 												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-												aria-label="More options"
+												aria-label={t("studio.moreOptions")}
 											>
 												<MoreHorizontal
 													className="w-4 h-4"
@@ -306,7 +308,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										<div className="space-y-3">
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Actions
+													{t("notes.actions")}
 												</div>
 												<div className="flex flex-col gap-1">
 													<Button
@@ -322,7 +324,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
 														<Trash2 className="w-4 h-4" aria-hidden="true" />
-														Delete Diary
+														{t("diaryStudio.deleteDiary")}
 													</Button>
 												</div>
 											</div>
@@ -334,14 +336,10 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 
 						<div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10 bg-base-bg min-w-0">
 							<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-6 min-w-0">
-								<div className="text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
-									Canvas: Daily Sandbox
-								</div>
-
 								{/* Topics Section */}
 								<div className="flex flex-col gap-3 w-full border border-base-border bg-base-surface/30 p-4 rounded-xl mb-4">
 									<span className="text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-wider">
-										Key Events of the Day ({topics.length}/10)
+										{t("diaryStudio.keyEventsCount", { count: topics.length })}
 									</span>
 									<div className="flex flex-col gap-2 w-full">
 										{topics.map((topic, index) => (
@@ -376,7 +374,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 													<span
 														className="truncate pr-4 flex-1 cursor-pointer hover:text-action transition-colors"
 														onClick={() => handleStartEdit(index, topic)}
-														title="Click to edit topic"
+														title={t("diaryStudio.clickToEditTopic")}
 													>
 														{topic}
 													</span>
@@ -388,7 +386,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 															type="button"
 															onClick={() => handleRemoveTopic(index)}
 															className="text-neutral-400 hover:text-note-alert p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
-															aria-label="Remove topic"
+															aria-label={t("diaryStudio.removeTopic")}
 														>
 															<X className="w-3 h-3" aria-hidden="true" />
 														</button>
@@ -411,8 +409,8 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 														e.stopPropagation();
 													}
 												}}
-												placeholder="+ Add key event of the day... (Max 50 chars)"
-												className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-xs py-1 px-1 text-neutral-600"
+												placeholder={t("diaryStudio.addTopicPlaceholder")}
+												className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-base md:text-xs py-1 px-1 text-neutral-600"
 												maxLength={50}
 											/>
 											<Button
@@ -421,7 +419,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												variant="ghost"
 												className="text-[10px] uppercase font-mono tracking-wider font-bold h-7 rounded-full"
 											>
-												Add
+												{t("diaryStudio.add")}
 											</Button>
 										</form>
 									)}
@@ -444,7 +442,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												<StudioEditor
 													onChange={(val) => setContent(val)}
 													value={content}
-													placeholder="Write down your thoughts for today... (Markdown supported)"
+													placeholder={t("diaryStudio.diaryPlaceholder")}
 													isDirty={isDirty}
 													onGenerateHint={async () => null}
 												/>
@@ -459,10 +457,12 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												)}
 											>
 												{charCount.toLocaleString()} /{" "}
-												{maxDiaryLimit.toLocaleString()} chars
+												{maxDiaryLimit.toLocaleString()} {t("common.chars")}
 											</span>
 										) : (
-											<span>{charCount.toLocaleString()} chars</span>
+											<span>
+												{charCount.toLocaleString()} {t("common.chars")}
+											</span>
 										)}
 									</div>
 								</div>
@@ -500,7 +500,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								</CustomLink>
 								<div className="flex flex-col">
 									<h1 className="text-sm font-bold tracking-tight text-action">
-										Diary Studio
+										{t("diaryStudio.title")}
 									</h1>
 									<span className="text-[10px] font-mono text-gray-400 font-bold">
 										{date}
@@ -516,17 +516,17 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 									variant="default"
 								>
 									{status === "saving" ? (
-										"Saving..."
+										t("common.saving")
 									) : status === "success" ? (
 										<span className="flex items-center gap-1">
 											<Check
 												aria-hidden="true"
 												className="w-4 h-4 text-note-info"
 											/>
-											Saved
+											{t("common.saved")}
 										</span>
 									) : (
-										"Save"
+										t("common.save")
 									)}
 								</Button>
 								<Popover
@@ -540,7 +540,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												variant="ghost"
 												size="icon"
 												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-												aria-label="More options"
+												aria-label={t("studio.moreOptions")}
 											>
 												<MoreHorizontal
 													className="w-4 h-4"
@@ -553,7 +553,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										<div className="space-y-3">
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Actions
+													{t("notes.actions")}
 												</div>
 												<div className="flex flex-col gap-1">
 													<Button
@@ -569,7 +569,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
 														<Trash2 className="w-4 h-4" aria-hidden="true" />
-														Delete Diary
+														{t("diaryStudio.deleteDiary")}
 													</Button>
 												</div>
 											</div>
@@ -581,14 +581,10 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 
 						<div className="flex-1 overflow-y-auto px-4 py-8 md:px-8 md:py-10 bg-base-bg min-w-0">
 							<div className="relative max-w-4xl mx-auto w-full flex flex-col gap-6 min-w-0">
-								<div className="text-xs font-medium text-neutral-400 uppercase tracking-widest font-mono">
-									Canvas: Daily Sandbox
-								</div>
-
 								{/* Topics Section */}
 								<div className="flex flex-col gap-3 w-full border border-base-border bg-base-surface/30 p-4 rounded-xl mb-4">
 									<span className="text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-wider">
-										Key Events of the Day ({topics.length}/10)
+										{t("diaryStudio.keyEventsCount", { count: topics.length })}
 									</span>
 									<div className="flex flex-col gap-2 w-full">
 										{topics.map((topic, index) => (
@@ -623,7 +619,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 													<span
 														className="truncate pr-4 flex-1 cursor-pointer hover:text-action transition-colors"
 														onClick={() => handleStartEdit(index, topic)}
-														title="Click to edit topic"
+														title={t("diaryStudio.clickToEditTopic")}
 													>
 														{topic}
 													</span>
@@ -635,7 +631,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 															type="button"
 															onClick={() => handleRemoveTopic(index)}
 															className="text-neutral-400 hover:text-note-alert p-1 rounded-full hover:bg-neutral-100 transition-colors cursor-pointer"
-															aria-label="Remove topic"
+															aria-label={t("diaryStudio.removeTopic")}
 														>
 															<X className="w-3 h-3" aria-hidden="true" />
 														</button>
@@ -658,8 +654,8 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 														e.stopPropagation();
 													}
 												}}
-												placeholder="+ Add key event of the day... (Max 50 chars)"
-												className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-xs py-1 px-1 text-neutral-600"
+												placeholder={t("diaryStudio.addTopicPlaceholder")}
+												className="flex-1 bg-transparent border-b border-dashed border-neutral-300 focus:border-action focus:outline-none text-base md:text-xs py-1 px-1 text-neutral-600"
 												maxLength={50}
 											/>
 											<Button
@@ -668,7 +664,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												variant="ghost"
 												className="text-[10px] uppercase font-mono tracking-wider font-bold h-7 rounded-full"
 											>
-												Add
+												{t("diaryStudio.add")}
 											</Button>
 										</form>
 									)}
@@ -691,7 +687,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												<StudioEditor
 													onChange={(val) => setContent(val)}
 													value={content}
-													placeholder="Write down your thoughts for today... (Markdown supported)"
+													placeholder={t("diaryStudio.diaryPlaceholder")}
 													isDirty={isDirty}
 													onGenerateHint={async () => null}
 												/>
@@ -706,10 +702,12 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 												)}
 											>
 												{charCount.toLocaleString()} /{" "}
-												{maxDiaryLimit.toLocaleString()} chars
+												{maxDiaryLimit.toLocaleString()} {t("common.chars")}
 											</span>
 										) : (
-											<span>{charCount.toLocaleString()} chars</span>
+											<span>
+												{charCount.toLocaleString()} {t("common.chars")}
+											</span>
 										)}
 									</div>
 								</div>
@@ -724,7 +722,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								type="button"
 								onClick={togglePanel}
 								className="fixed right-[380px] md:right-[400px] -mr-5 top-1/2 -translate-y-1/2 z-40 size-10 rounded-full bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center select-none cursor-pointer active:bg-action active:text-action-text active:border-action"
-								title="Close right panel"
+								title={t("studio.closeRightPanel")}
 							>
 								<ChevronRight className="w-5 h-5 shrink-0" aria-hidden="true" />
 							</button>
@@ -734,15 +732,14 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								type="button"
 								onClick={togglePanel}
 								className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-[80px] h-[160px] rounded-l-full bg-base-surface border border-base-border border-r-0 shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center gap-1 pl-2 select-none cursor-pointer group/knob active:bg-action active:text-action-text active:border-action"
-								title="Open right panel"
+								title={t("studio.openPanel")}
 							>
 								<ChevronLeft
 									className="w-5 h-5 shrink-0 transition-transform group-hover/knob:-translate-x-0.5"
 									aria-hidden="true"
 								/>
 								<div className="flex flex-col text-left font-mono text-xs font-black uppercase tracking-tight leading-none text-neutral-500 group-active:text-action-text">
-									<span>Open</span>
-									<span>Panel</span>
+									<span>{t("studio.openPanelShort")}</span>
 								</div>
 							</button>
 						))}
@@ -781,7 +778,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 								>
 									<CalendarDays aria-hidden="true" className="h-4 w-4" />
 									<span className="text-xs font-bold font-mono uppercase tracking-wide">
-										Materials
+										{t("diaryStudio.materialsTitle")}
 									</span>
 								</button>
 							</DrawerTrigger>
@@ -800,7 +797,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 										className="gap-2 px-2 -ml-2 text-action cursor-pointer text-xs font-bold"
 									>
 										<ArrowLeft aria-hidden="true" className="w-4 h-4" />
-										Editor Workspace
+										{t("diaryStudio.editorWorkspace")}
 									</Button>
 								</div>
 								<div className="flex-1 overflow-hidden">
@@ -820,14 +817,17 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogTitle>
+							{t("diaryStudio.deleteConfirmTitle")}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete your
-							diary entry from our servers.
+							{t("diaryStudio.deleteConfirmDesc")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+						<AlertDialogCancel disabled={isDeleting}>
+							{t("common.cancel")}
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={(e) => {
 								e.preventDefault();
@@ -836,7 +836,7 @@ export function DiaryStudioClient({ initialDiary, date }: Props) {
 							className="bg-note-alert hover:bg-note-alert/80 text-white"
 							disabled={isDeleting}
 						>
-							{isDeleting ? "Deleting..." : "Delete"}
+							{isDeleting ? t("notes.deleting") : t("common.delete")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

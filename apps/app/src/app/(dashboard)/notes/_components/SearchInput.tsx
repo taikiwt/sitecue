@@ -1,10 +1,12 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useEditorStore } from "@/store/useEditorStore";
 
 function SearchInputInner() {
+	const { t } = useTranslation();
 	const router = useRouter();
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
@@ -37,9 +39,7 @@ function SearchInputInner() {
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 		if (isDirty) {
-			const confirm = window.confirm(
-				"Unsaved changes will be lost. Do you want to continue?",
-			);
+			const confirm = window.confirm(t("common.unsavedLeaveConfirm"));
 			if (!confirm) return;
 		}
 
@@ -84,7 +84,7 @@ function SearchInputInner() {
 				value={inputValue}
 				onChange={(val) => setInputValue(val)}
 				onClear={handleClear}
-				placeholder="Search keywords or #tags..."
+				placeholder={t("notes.searchKeywordsPlaceholder")}
 			/>
 		</form>
 	);

@@ -5,6 +5,7 @@ import { fetchDraftsByDate, fetchNotesByDate } from "@sitecue/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import NoteCard from "../../../studio/_components/NoteCard";
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function DiaryMaterialsPane({ date, onInsert }: Props) {
+	const { t } = useTranslation();
 	const { data: materials, isLoading } = useQuery({
 		queryKey: ["materials", date],
 		queryFn: async () => {
@@ -41,8 +43,11 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 			{/* 1. 固定ヘッダー (shrink-0) */}
 			<div className="p-4 border-b border-base-border shrink-0 bg-base-surface/50 h-14 flex items-center">
 				<h2 className="text-xs font-bold text-action uppercase tracking-widest font-mono flex items-center gap-2">
-					<Calendar className="w-3.5 h-3.5 text-neutral-400" />
-					Materials of the Day (
+					<Calendar
+						className="w-3.5 h-3.5 text-neutral-400"
+						aria-hidden="true"
+					/>
+					{t("diaryStudio.materialsOfDay")} (
 					{isLoading ? "..." : notes.length + drafts.length})
 				</h2>
 			</div>
@@ -73,7 +78,7 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 						</div>
 					) : !hasMaterials ? (
 						<div className="text-center text-neutral-400 py-16 font-mono text-xs">
-							No footprints collected today.
+							{t("diaryStudio.noFootprints")}
 						</div>
 					) : (
 						<>
@@ -81,7 +86,7 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 							{notes.length > 0 && (
 								<div className="space-y-2">
 									<h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-										Notes ({notes.length})
+										{t("searchModal.notes")} ({notes.length})
 									</h3>
 									<div className="space-y-2">
 										{notes.map((note) => (
@@ -100,7 +105,7 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 							{drafts.length > 0 && (
 								<div className="space-y-2">
 									<h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-										Drafts ({drafts.length})
+										{t("searchModal.drafts")} ({drafts.length})
 									</h3>
 									<div className="space-y-2">
 										{drafts.map((draft) => (
@@ -134,7 +139,7 @@ export function DiaryMaterialsPane({ date, onInsert }: Props) {
 															radius="full"
 															size="icon-sm"
 															variant="ghost"
-															title="Insert to Editor"
+															title={t("studio.insertToEditor")}
 														>
 															<ArrowLeft
 																className="w-3.5 h-3.5"

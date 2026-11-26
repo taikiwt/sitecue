@@ -101,7 +101,7 @@ describe("LaunchpadPage (/)", () => {
 
 		render(<LaunchpadPage />, { wrapper: TestWrapper });
 
-		expect(screen.getByText("Today's Focus")).toBeInTheDocument();
+		expect(screen.getByText("Today's Activity")).toBeInTheDocument();
 		expect(
 			screen.getByRole("button", { name: /\+ append to today's diary/i }),
 		).toBeInTheDocument();

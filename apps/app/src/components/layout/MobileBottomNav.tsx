@@ -4,6 +4,7 @@ import { Home, Library, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useTranslation } from "react-i18next";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button";
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -15,6 +16,7 @@ interface MobileBottomNavProps {
 }
 
 function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
+	const { t } = useTranslation();
 	const searchParams = useSearchParams();
 	const pathname = usePathname();
 	const { openGlobalNewModal } = useLayoutStore();
@@ -42,7 +44,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 						variant="ghost"
 						size="icon"
 						className="size-10 text-white/60 hover-safe:text-white hover-safe:bg-white/10 transition-all active:scale-95"
-						aria-label="Home"
+						aria-label={t("nav.home")}
 					>
 						<Home className="size-[18px]" aria-hidden="true" />
 					</Link>
@@ -61,7 +63,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 									? "bg-base-bg text-action scale-105"
 									: "text-gray-500 hover-safe:text-action hover-safe:bg-base-bg",
 							)}
-							aria-label="Notes"
+							aria-label={t("nav.notes")}
 						>
 							<Library className="size-6" aria-hidden="true" />
 						</Link>
@@ -74,11 +76,11 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 								openGlobalNewModal("gate");
 							}}
 							className="size-12 border-none p-0.5 transition-transform active:scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-transparent focus-visible:shadow-none focus-visible:border-transparent"
-							aria-label="New Note"
+							aria-label={t("nav.newNote")}
 						>
 							<Image
 								src="/logo.svg"
-								alt="New Note"
+								alt={t("nav.newNote")}
 								width={44}
 								height={44}
 								className="w-full h-full object-contain drop-shadow-sm"
@@ -91,7 +93,7 @@ function MobileBottomNavInner({ onSearchOpen }: MobileBottomNavProps) {
 							size="icon"
 							onClick={onSearchOpen}
 							className="size-12 text-gray-500 hover-safe:text-action hover-safe:bg-base-bg transition-colors"
-							aria-label="Search"
+							aria-label={t("nav.search")}
 						>
 							<Search className="size-6" aria-hidden="true" />
 						</Button>

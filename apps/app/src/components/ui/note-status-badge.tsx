@@ -1,4 +1,7 @@
+"use client";
+
 import { AlertTriangle, Check, Info, Lightbulb, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export type NoteType = "info" | "alert" | "idea";
@@ -37,6 +40,7 @@ export function NoteStatusBadge({
 	onClick,
 	className,
 }: NoteStatusBadgeProps) {
+	const { t } = useTranslation();
 	const {
 		icon: BaseIcon,
 		bgClass,
@@ -59,10 +63,10 @@ export function NoteStatusBadge({
 			)}
 			title={
 				onClick
-					? `Type: ${label} (Click to toggle)`
+					? t("notes.typeToggleTitle", { label })
 					: isResolved
-						? "Mark as unresolved"
-						: "Mark as resolved"
+						? t("notes.markUnresolved")
+						: t("notes.markResolved")
 			}
 		>
 			<div className="relative w-3.5 h-3.5 flex items-center justify-center shrink-0 overflow-hidden">

@@ -8,10 +8,12 @@ import {
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 import { SearchInputBase } from "@/components/ui/search-input-base";
 import { useFetchDiaries } from "@/hooks/useDiariesQuery";
 import { useFetchNoteContents, useSearchNotes } from "@/hooks/useNotesQuery";
+import { formatDiaryDayLabel, toIntlLocale } from "@/lib/dateFormat";
 import type { Note } from "../types";
 
 interface SearchModalProps {
@@ -19,28 +21,8 @@ interface SearchModalProps {
 	onClose: () => void;
 }
 
-const getScopeDisplayLabel = (scope: Note["scope"] | string): string => {
-	switch (scope) {
-		case "draft":
-			return "Studio Review";
-		case "inbox":
-			return "Inbox";
-		case "domain":
-			return "Domain";
-		case "exact":
-			return "Page";
-		default:
-			return "Note";
-	}
-};
-
-const getNoteSubLabel = (note: Note): string => {
-	if (note.scope === "draft") return "Review note in Studio";
-	if (note.scope === "inbox") return "Inbox";
-	return note.url_pattern;
-};
-
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const [inputValue, setInputValue] = useState("");
 	const [searchQuery, setSearchQuery] = useState("");
@@ -49,6 +31,27 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 	const { data: diariesData = [] } = useFetchDiaries();
 	const { mutate: fetchContents } = useFetchNoteContents();
 	const inputRef = useRef<HTMLInputElement>(null);
+
+	const getScopeDisplayLabel = (scope: Note["scope"] | string): string => {
+		switch (scope) {
+			case "draft":
+				return t("searchModal.studioReview");
+			case "inbox":
+				return t("common.inbox");
+			case "domain":
+				return t("common.domain");
+			case "exact":
+				return t("common.page");
+			default:
+				return t("capture.note");
+		}
+	};
+
+	const getNoteSubLabel = (note: Note): string => {
+		if (note.scope === "draft") return t("searchModal.reviewNoteInStudio");
+		if (note.scope === "inbox") return t("common.inbox");
+		return note.url_pattern;
+	};
 
 	// Auto focus on mount
 	useEffect(() => {
@@ -156,7 +159,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 						type="button"
 						onClick={onClose}
 						className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer bg-black/20 hover:bg-black/40 rounded-full"
-						aria-label="Close modal"
+						aria-label={t("common.close")}
 					>
 						<X className="w-6 h-6" aria-hidden="true" />
 					</button>
@@ -174,7 +177,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 								setSearchQuery(""); // 結果もクリア
 							}}
 							onSubmit={() => setSearchQuery(inputValue)}
-							placeholder="Search notes..."
+							placeholder={t("searchModal.placeholder")}
 							className="border-none bg-transparent focus-within:ring-0"
 						/>
 					</div>
@@ -182,21 +185,21 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 					<div className="overflow-y-auto p-2">
 						{isLoading ? (
 							<div className="p-4 text-center text-gray-400 animate-pulse">
-								Searching...
+								{t("searchModal.searching")}
 							</div>
 						) : searchQuery &&
 							data.notes.length === 0 &&
 							data.drafts.length === 0 &&
 							groupedResults.diaries.length === 0 ? (
 							<div className="p-8 text-center text-gray-400">
-								No results found for "{searchQuery}"
+								{t("searchModal.noResults", { query: searchQuery })}
 							</div>
 						) : (
 							<div className="space-y-4">
 								{groupedResults.domains.length > 0 && (
 									<div>
 										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-											Domains
+											{t("searchModal.domains")}
 										</h3>
 										<div className="space-y-1">
 											{groupedResults.domains.map((domain) => (
@@ -219,7 +222,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 								{groupedResults.pages.length > 0 && (
 									<div>
 										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-											Pages
+											{t("searchModal.pages")}
 										</h3>
 										<div className="space-y-1">
 											{groupedResults.pages.map((page) => (
@@ -246,7 +249,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 								{groupedResults.drafts.length > 0 && (
 									<div>
 										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-											Drafts
+											{t("searchModal.drafts")}
 										</h3>
 										<div className="space-y-1">
 											{groupedResults.drafts.map((draft) => (
@@ -263,14 +266,16 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 												>
 													<div className="flex items-center justify-between mb-1">
 														<span className="text-xs font-semibold text-gray-400 uppercase tracking-wider truncate mr-2">
-															{draft.title || "Untitled Draft"}
+															{draft.title || t("dashboard.untitledDraft")}
 														</span>
 														<span className="text-[10px] text-gray-400 shrink-0">
-															{new Date(draft.updated_at).toLocaleDateString()}
+															{new Date(draft.updated_at).toLocaleDateString(
+																toIntlLocale(i18n.language),
+															)}
 														</span>
 													</div>
 													<p className="text-sm text-action font-medium line-clamp-2">
-														{draft.content || "No content"}
+														{draft.content || t("searchModal.noContent")}
 													</p>
 												</button>
 											))}
@@ -281,7 +286,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 								{groupedResults.notes.length > 0 && (
 									<div>
 										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-											Notes
+											{t("searchModal.notes")}
 										</h3>
 										<div className="space-y-1">
 											{groupedResults.notes.map((note) => (
@@ -297,11 +302,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 															{note.note_type}
 														</span>
 														<span className="text-[10px] text-gray-400">
-															{new Date(note.created_at).toLocaleDateString()}
+															{new Date(note.created_at).toLocaleDateString(
+																toIntlLocale(i18n.language),
+															)}
 														</span>
 													</div>
 													<p className="text-sm text-action font-medium line-clamp-2 mb-1">
-														{note.content || "No content"}
+														{note.content || t("searchModal.noContent")}
 													</p>
 													<p className="text-[10px] text-gray-400 truncate">
 														{getNoteSubLabel(note)}
@@ -315,18 +322,18 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 								{groupedResults.diaries.length > 0 && (
 									<div>
 										<h3 className="px-3 text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">
-											Diaries
+											{t("searchModal.diaries")}
 										</h3>
 										<div className="space-y-1">
 											{groupedResults.diaries.map((diary) => {
 												const [yyyy, mm] = diary.date.split("-");
-												const diaryDate = new Date(diary.date);
-												const dayLabel = diaryDate.toLocaleDateString("en-US", {
-													day: "numeric",
-													weekday: "short",
-												});
+												const dayLabel = formatDiaryDayLabel(
+													diary.date,
+													i18n.language,
+												);
 												const firstLine =
-													diary.content.split("\n")[0] || "No content";
+													diary.content.split("\n")[0] ||
+													t("searchModal.noContent");
 												return (
 													<button
 														key={diary.date}
@@ -359,7 +366,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
 					{!searchQuery && (
 						<div className="p-4 text-center text-xs text-gray-400 border-t border-base-border">
-							Type and press Enter to search your notes across domains
+							{t("searchModal.footerHint")}
 						</div>
 					)}
 				</div>

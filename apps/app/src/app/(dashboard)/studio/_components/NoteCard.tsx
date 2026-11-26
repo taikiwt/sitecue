@@ -14,12 +14,14 @@ import {
 } from "lucide-react";
 import React, { memo, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import TextareaAutosize from "react-textarea-autosize";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Button } from "@/components/ui/button";
 import { FilterBadge } from "@/components/ui/filter-badge";
 import { NoteStatusBadge } from "@/components/ui/note-status-badge";
 import { useMarkdownAssist } from "@/hooks/useMarkdownAssist";
+import { toIntlLocale } from "@/lib/dateFormat";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -66,6 +68,7 @@ function NoteCardBase({
 	hideScopeSelect = false,
 	rightAction,
 }: NoteCardProps) {
+	const { t, i18n } = useTranslation();
 	const planState = useUserStore((state) => state.plan);
 	const userPlan = typeof planState === "string" ? planState : "free";
 	const maxNoteLength =
@@ -152,16 +155,18 @@ function NoteCardBase({
 	const handleCopy = () => {
 		navigator.clipboard.writeText(note.content);
 		setIsCopied(true);
-		toast("Copied to clipboard");
+		toast(t("toast.copiedToClipboard"));
 		setTimeout(() => setIsCopied(false), 2000);
 	};
 
 	const timeStr = note.created_at
-		? new Date(note.created_at).toLocaleTimeString("en-US", {
-				hour: "2-digit",
-				minute: "2-digit",
-				hour12: true,
-			})
+		? new Date(note.created_at).toLocaleTimeString(
+				toIntlLocale(i18n.language),
+				{
+					hour: "2-digit",
+					minute: "2-digit",
+				},
+			)
 		: "";
 
 	return (
@@ -178,7 +183,7 @@ function NoteCardBase({
 					<div className="sticky top-0 z-10 bg-base-bg rounded-t-xl flex flex-col gap-0 shrink-0 select-none border-b border-base-border/20 pb-2">
 						<div className="flex items-center justify-between w-full min-h-[36px]">
 							<span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
-								Editing note...
+								{t("studio.editingNote")}
 							</span>
 							<div className="flex items-center gap-1.5">
 								<Button
@@ -189,7 +194,7 @@ function NoteCardBase({
 									variant="ghost"
 								>
 									<X aria-hidden="true" className="w-3.5 h-3.5" />
-									Cancel
+									{t("common.cancel")}
 								</Button>
 								<Button
 									type="button"
@@ -200,7 +205,7 @@ function NoteCardBase({
 									variant="default"
 								>
 									<Check aria-hidden="true" className="w-3.5 h-3.5" />
-									Save
+									{t("common.save")}
 								</Button>
 							</div>
 						</div>
@@ -213,10 +218,10 @@ function NoteCardBase({
 										onChange={(e) => setEditScope(e.target.value as NoteScope)}
 										className="cursor-pointer appearance-none bg-transparent pr-4 py-0 text-xs font-bold text-neutral-800 focus:outline-none select-none border-none ring-0 focus:ring-0"
 									>
-										<option value="draft">Draft Note</option>
-										<option value="exact">Page Note</option>
-										<option value="domain">Domain Note</option>
-										<option value="inbox">Inbox Note</option>
+										<option value="draft">{t("studio.draftNote")}</option>
+										<option value="exact">{t("studio.pageNote")}</option>
+										<option value="domain">{t("studio.domainNote")}</option>
+										<option value="inbox">{t("studio.inboxNote")}</option>
 									</select>
 									<div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-[9px] select-none">
 										▼
@@ -232,21 +237,21 @@ function NoteCardBase({
 									onClick={() => setEditType("info")}
 									className="px-2 py-0.5 text-[10px] uppercase"
 								>
-									Info
+									{t("notes.typeInfo")}
 								</FilterBadge>
 								<FilterBadge
 									isActive={editType === "alert"}
 									onClick={() => setEditType("alert")}
 									className="px-2 py-0.5 text-[10px] uppercase"
 								>
-									Alert
+									{t("notes.typeAlert")}
 								</FilterBadge>
 								<FilterBadge
 									isActive={editType === "idea"}
 									onClick={() => setEditType("idea")}
 									className="px-2 py-0.5 text-[10px] uppercase"
 								>
-									Idea
+									{t("notes.typeIdea")}
 								</FilterBadge>
 							</div>
 						</div>
@@ -269,8 +274,8 @@ function NoteCardBase({
 								}
 							}}
 							onPaste={onPaste}
-							className="w-full border border-base-border rounded-xl p-2.5 text-sm bg-base-bg text-neutral-800 antialiased font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none"
-							placeholder="Edit note content..."
+							className="w-full border border-base-border rounded-xl p-2.5 text-base md:text-sm bg-base-bg text-neutral-800 antialiased font-mono leading-relaxed focus:outline-none focus:ring-0 resize-none"
+							placeholder={t("studio.editNotePlaceholder")}
 						/>
 					</div>
 
@@ -294,14 +299,14 @@ function NoteCardBase({
 									<div
 										{...dragHandleProps}
 										className="cursor-grab active:cursor-grabbing p-0.5 text-neutral-300 hover:text-neutral-600 rounded touch-none shrink-0"
-										title="Drag to reorder"
+										title={t("studio.dragToReorder")}
 									>
 										<GripVertical aria-hidden="true" className="w-4 h-4" />
 									</div>
 								)}
 								{isDraft ? (
 									<span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide bg-neutral-100 text-neutral-600 shrink-0">
-										Draft
+										{t("studio.draftLabel")}
 									</span>
 								) : (
 									<NoteStatusBadge
@@ -332,7 +337,7 @@ function NoteCardBase({
 										radius="full"
 										size="icon-sm"
 										variant="ghost"
-										title="Insert to Editor"
+										title={t("studio.insertToEditor")}
 									>
 										<ArrowLeft aria-hidden="true" className="w-3.5 h-3.5" />
 									</Button>
@@ -349,7 +354,7 @@ function NoteCardBase({
 										radius="full"
 										size="icon-sm"
 										variant="ghost"
-										title="Edit Note"
+										title={t("studio.editNote")}
 									>
 										<Pencil aria-hidden="true" className="w-3.5 h-3.5" />
 									</Button>
@@ -360,7 +365,7 @@ function NoteCardBase({
 									radius="full"
 									size="icon-sm"
 									variant="ghost"
-									title="Copy note"
+									title={t("studio.copyNote")}
 								>
 									{isCopied ? (
 										<Check
@@ -378,7 +383,7 @@ function NoteCardBase({
 										radius="full"
 										size="icon-sm"
 										variant="ghost"
-										title="Delete Note"
+										title={t("notes.deleteNote")}
 										className="hover-safe:text-red-500 hover-safe:bg-red-50"
 									>
 										<Trash2 aria-hidden="true" className="w-3.5 h-3.5" />
@@ -402,7 +407,7 @@ function NoteCardBase({
 										aria-hidden="true"
 										className="w-3.5 h-3.5 shrink-0 rotate-180"
 									/>
-									<span>Show less</span>
+									<span>{t("studio.showLess")}</span>
 								</button>
 							</div>
 						)}
@@ -444,7 +449,7 @@ function NoteCardBase({
 												aria-hidden="true"
 												className="w-3.5 h-3.5 shrink-0"
 											/>
-											<span>Read more</span>
+											<span>{t("studio.readMore")}</span>
 										</button>
 									</div>
 								</>

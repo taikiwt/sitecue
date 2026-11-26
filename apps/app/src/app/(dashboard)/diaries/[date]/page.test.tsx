@@ -12,6 +12,7 @@ vi.mock("@/hooks/useDiariesQuery", () => ({
 	useFetchDiaries: vi.fn(() => ({ data: [] })),
 	useFetchDiaryByDate: vi.fn(() => ({ data: null, isLoading: false })),
 	useUpdateDiary: () => ({ mutateAsync: vi.fn() }),
+	useDeleteDiary: () => ({ mutateAsync: vi.fn() }),
 }));
 
 vi.mock("./_components/DiaryMaterialsPane", () => ({
@@ -58,9 +59,9 @@ describe("DiaryStudioClient - AppShell Asset Reuse Validation", () => {
 			}),
 		);
 
-		expect(screen.getAllByText("Diary Studio")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("Diary")[0]).toBeInTheDocument();
 		expect(screen.getAllByText("2026-06-21")[0]).toBeInTheDocument();
-		expect(screen.getAllByText("Save Diary")[0]).toBeInTheDocument();
+		expect(screen.getAllByText("Save")[0]).toBeInTheDocument();
 		expect(screen.getAllByText("5 chars")[0]).toBeInTheDocument();
 	});
 

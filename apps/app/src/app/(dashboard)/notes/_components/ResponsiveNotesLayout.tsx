@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ export function ResponsiveNotesLayout({
 	selectedDraftId,
 	selectedDate,
 }: ResponsiveNotesLayoutProps) {
+	const { t } = useTranslation();
 	const isLargeDesktop = useMediaQuery("(min-width: 1024px)");
 	const isTabletPortrait = useMediaQuery(
 		"(min-width: 768px) and (max-width: 1023px)",
@@ -147,7 +149,7 @@ export function ResponsiveNotesLayout({
 						className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
 					>
 						<ArrowLeft aria-hidden="true" className="w-5 h-5" />
-						Notes
+						{t("common.notes")}
 					</Button>
 				</div>
 				<div className="flex-1 overflow-y-auto">{rightNode}</div>

@@ -1,5 +1,8 @@
+"use client";
+
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export const InlineCopyButton = ({
 	text,
@@ -8,6 +11,7 @@ export const InlineCopyButton = ({
 	text: string;
 	className?: string;
 }) => {
+	const { t } = useTranslation();
 	const [copied, setCopied] = useState(false);
 
 	const handleCopy = async () => {
@@ -26,8 +30,8 @@ export const InlineCopyButton = ({
 			type="button"
 			onClick={handleCopy}
 			className={`p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors cursor-pointer shrink-0 ${className || ""}`}
-			title="Copy to clipboard"
-			aria-label="Copy to clipboard"
+			title={t("common.copyToClipboard")}
+			aria-label={t("common.copyToClipboard")}
 		>
 			{copied ? (
 				<Check className="w-4 h-4 text-green-500" aria-hidden="true" />

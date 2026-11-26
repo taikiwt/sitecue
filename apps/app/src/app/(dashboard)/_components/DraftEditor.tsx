@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import {
 	Panel,
 	Group as PanelGroup,
@@ -67,6 +68,7 @@ export default function DraftEditor({
 	initialDraft,
 	template,
 }: DraftEditorProps) {
+	const { t } = useTranslation();
 	const { data: fetchedDraft, isLoading: isDraftLoading } = useFetchDraft(
 		draftId,
 		initialDraft,
@@ -213,9 +215,7 @@ export default function DraftEditor({
 
 	const handleBack = () => {
 		if (isDirty) {
-			const confirmLeave = window.confirm(
-				"You have unsaved changes. Are you sure you want to leave?",
-			);
+			const confirmLeave = window.confirm(t("common.unsavedLeaveConfirm"));
 			if (!confirmLeave) return;
 		}
 
@@ -228,14 +228,14 @@ export default function DraftEditor({
 
 	const handleDeleteDraft = async () => {
 		if (!targetDraftId) return;
-		if (!window.confirm("Are you sure you want to delete this draft?")) return;
+		if (!window.confirm(t("studio.deleteDraftConfirm"))) return;
 		try {
 			await deleteDraftMutation.mutateAsync(targetDraftId);
-			toast.success("Moved to Trash");
+			toast.success(t("toast.movedToTrash"));
 			router.push("/notes?view=drafts");
 		} catch (err) {
 			console.error("Failed to delete draft:", err);
-			toast.error("Failed to delete draft.");
+			toast.error(t("toast.deleteDraftFailed"));
 		}
 	};
 
@@ -600,8 +600,8 @@ export default function DraftEditor({
 							: "";
 				toast.error(
 					rawMsg
-						? `Failed to save the draft: ${rawMsg}`
-						: "Failed to save the draft.",
+						? `${t("toast.saveDraftFailed")}: ${rawMsg}`
+						: t("toast.saveDraftFailed"),
 				);
 			}
 			setStatus("error");
@@ -673,8 +673,8 @@ export default function DraftEditor({
 											<TextareaAutosize
 												placeholder={
 													activeTemplate?.name === "Zenn"
-														? "Enter article title..."
-														: "Title (optional)"
+														? t("studio.enterArticleTitle")
+														: t("studio.titleOptional")
 												}
 												value={title}
 												onChange={(e) => setTitle(e.target.value)}
@@ -729,7 +729,7 @@ export default function DraftEditor({
 													ref={editorRef}
 													value={content}
 													onChange={(val) => setContent(val)}
-													placeholder="Write down your thoughts..."
+													placeholder={t("studio.writeThoughts")}
 													isDirty={isDirty}
 													onGenerateHint={handleGenerateHint}
 												/>
@@ -739,8 +739,8 @@ export default function DraftEditor({
 									<div className="flex justify-between items-center pt-2 text-[10px] font-mono font-bold text-neutral-400">
 										<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
 											{activeTemplate
-												? `Template: ${activeTemplate.name}`
-												: "Blank Canvas"}
+												? `${t("studio.templateLabel")}: ${activeTemplate.name}`
+												: ""}
 										</span>
 										{isNearLimit ? (
 											<span
@@ -749,10 +749,12 @@ export default function DraftEditor({
 												)}
 											>
 												{charCount.toLocaleString()} /{" "}
-												{effectiveLimit.toLocaleString()} chars
+												{effectiveLimit.toLocaleString()} {t("common.chars")}
 											</span>
 										) : (
-											<span>{charCount.toLocaleString()} chars</span>
+											<span>
+												{charCount.toLocaleString()} {t("common.chars")}
+											</span>
 										)}
 									</div>
 								</div>
@@ -772,37 +774,37 @@ export default function DraftEditor({
 									type="button"
 									onClick={() => updatePane("outline")}
 									className={cn(
-										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 										activePane === "outline"
 											? "bg-action text-action-text shadow-sm"
 											: "text-neutral-500 hover-safe:text-action",
 									)}
 								>
-									OUTLINE
+									{t("studio.outline")}
 								</button>
 								<button
 									type="button"
 									onClick={() => updatePane("review")}
 									className={cn(
-										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 										activePane === "review"
 											? "bg-action text-action-text shadow-sm"
 											: "text-neutral-500 hover-safe:text-action",
 									)}
 								>
-									REVIEW
+									{t("studio.review")}
 								</button>
 								<button
 									type="button"
 									onClick={() => updatePane("materials")}
 									className={cn(
-										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+										"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 										activePane === "materials"
 											? "bg-action text-action-text shadow-sm"
 											: "text-neutral-500 hover-safe:text-action",
 									)}
 								>
-									MATERIALS
+									{t("studio.materials")}
 								</button>
 							</div>
 						</header>
@@ -881,8 +883,8 @@ export default function DraftEditor({
 											<TextareaAutosize
 												placeholder={
 													activeTemplate?.name === "Zenn"
-														? "Enter article title..."
-														: "Title (optional)"
+														? t("studio.enterArticleTitle")
+														: t("studio.titleOptional")
 												}
 												value={title}
 												onChange={(e) => setTitle(e.target.value)}
@@ -947,8 +949,8 @@ export default function DraftEditor({
 									<div className="flex justify-between items-center pt-2 text-[10px] font-mono font-bold text-neutral-400">
 										<span className="text-sm font-medium text-neutral-500 uppercase tracking-widest">
 											{activeTemplate
-												? `Template: ${activeTemplate.name}`
-												: "Blank Canvas"}
+												? `${t("studio.templateLabel")}: ${activeTemplate.name}`
+												: ""}
 										</span>
 										{isNearLimit ? (
 											<span
@@ -975,7 +977,7 @@ export default function DraftEditor({
 								type="button"
 								onClick={togglePanel}
 								className="fixed right-[380px] md:right-[400px] -mr-5 top-1/2 -translate-y-1/2 z-40 size-10 rounded-full bg-base-surface border border-base-border shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center select-none cursor-pointer active:bg-action active:text-action-text active:border-action"
-								title="Close right panel"
+								title={t("studio.closeRightPanel")}
 							>
 								<ChevronRight className="w-5 h-5 shrink-0" aria-hidden="true" />
 							</button>
@@ -985,15 +987,14 @@ export default function DraftEditor({
 								type="button"
 								onClick={togglePanel}
 								className="fixed right-0 top-1/2 -translate-y-1/2 z-40 w-[80px] h-[160px] rounded-l-full bg-base-surface border border-base-border border-r-0 shadow-md text-neutral-400 hover:text-action transition-all flex items-center justify-center gap-1 pl-2 select-none cursor-pointer group/knob active:bg-action active:text-action-text active:border-action"
-								title="Open right panel"
+								title={t("studio.openPanel")}
 							>
 								<ChevronLeft
 									className="w-5 h-5 shrink-0 transition-transform group-hover/knob:-translate-x-0.5"
 									aria-hidden="true"
 								/>
 								<div className="flex flex-col text-left font-mono text-xs font-black uppercase tracking-tight leading-none text-neutral-500 group-active:text-action-text">
-									<span>Open</span>
-									<span>Panel</span>
+									<span>{t("studio.openPanelShort")}</span>
 								</div>
 							</button>
 						))}
@@ -1014,37 +1015,37 @@ export default function DraftEditor({
 										type="button"
 										onClick={() => updatePane("outline")}
 										className={cn(
-											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 											activePane === "outline"
 												? "bg-action text-action-text shadow-sm"
 												: "text-neutral-500 hover-safe:text-action",
 										)}
 									>
-										OUTLINE
+										{t("studio.outline")}
 									</button>
 									<button
 										type="button"
 										onClick={() => updatePane("review")}
 										className={cn(
-											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 											activePane === "review"
 												? "bg-action text-action-text shadow-sm"
 												: "text-neutral-500 hover-safe:text-action",
 										)}
 									>
-										REVIEW
+										{t("studio.review")}
 									</button>
 									<button
 										type="button"
 										onClick={() => updatePane("materials")}
 										className={cn(
-											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+											"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 											activePane === "materials"
 												? "bg-action text-action-text shadow-sm"
 												: "text-neutral-500 hover-safe:text-action",
 										)}
 									>
-										MATERIALS
+										{t("studio.materials")}
 									</button>
 								</div>
 							</header>
@@ -1100,7 +1101,9 @@ export default function DraftEditor({
 									className="flex h-14 items-center justify-center gap-2 rounded-full bg-action px-6 text-action-text shadow-xl transition-transform hover:scale-105 active:scale-95 cursor-pointer"
 								>
 									<Sparkles className="h-5 w-5" aria-hidden="true" />
-									<span className="text-sm font-bold">Notes & AI</span>
+									<span className="text-sm font-bold">
+										{t("studio.notesAndAi")}
+									</span>
 								</button>
 							</DrawerTrigger>
 							<DrawerContent className="!mt-0 !h-[100dvh] !max-h-none rounded-t-2xl rounded-b-none p-0 flex flex-col overflow-hidden bg-base-bg border-none">
@@ -1121,7 +1124,7 @@ export default function DraftEditor({
 											className="gap-2 px-2 -ml-2 text-action hover-safe:bg-base-surface cursor-pointer"
 										>
 											<ArrowLeft aria-hidden="true" className="w-5 h-5" />
-											Editor
+											{t("studio.editor")}
 										</Button>
 									</div>
 									{/* Tab Navigation */}
@@ -1130,37 +1133,37 @@ export default function DraftEditor({
 											type="button"
 											onClick={() => updatePane("outline")}
 											className={cn(
-												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 												activePane === "outline"
 													? "bg-action text-action-text shadow-sm"
 													: "text-neutral-500 hover-safe:text-action",
 											)}
 										>
-											OUTLINE
+											{t("studio.outline")}
 										</button>
 										<button
 											type="button"
 											onClick={() => updatePane("review")}
 											className={cn(
-												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 												activePane === "review"
 													? "bg-action text-action-text shadow-sm"
 													: "text-neutral-500 hover-safe:text-action",
 											)}
 										>
-											REVIEW
+											{t("studio.review")}
 										</button>
 										<button
 											type="button"
 											onClick={() => updatePane("materials")}
 											className={cn(
-												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer",
+												"flex-1 rounded-full py-1.5 text-xs font-bold transition-all cursor-pointer whitespace-nowrap",
 												activePane === "materials"
 													? "bg-action text-action-text shadow-sm"
 													: "text-neutral-500 hover-safe:text-action",
 											)}
 										>
-											MATERIALS
+											{t("studio.materials")}
 										</button>
 									</div>
 								</div>

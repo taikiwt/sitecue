@@ -23,6 +23,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDeferredValue, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { NotesEditor } from "@/components/editor/NotesEditor";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import {
@@ -55,6 +56,11 @@ import {
 	useDeleteNote,
 	useUpdateNote,
 } from "@/hooks/useNotesQuery";
+import {
+	formatDiaryFullDate,
+	formatLongDateTime,
+	toIntlLocale,
+} from "@/lib/dateFormat";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useUserStore } from "@/store/useUserStore";
@@ -73,6 +79,7 @@ export function RightPaneDetail({
 	isNewNote,
 	isLoading = false,
 }: Props) {
+	const { t, i18n } = useTranslation();
 	const createNoteMutation = useCreateNote();
 	const updateNoteMutation = useUpdateNote();
 	const deleteNoteMutation = useDeleteNote();
@@ -277,9 +284,7 @@ export function RightPaneDetail({
 					className="w-12 h-12 text-base-border mb-6 animate-pulse"
 					aria-hidden="true"
 				/>
-				<p className="text-lg font-medium">
-					Please select a note or draft from the list
-				</p>
+				<p className="text-lg font-medium">{t("notes.selectNotePrompt")}</p>
 			</div>
 		);
 	}
@@ -290,14 +295,14 @@ export function RightPaneDetail({
 		try {
 			await deleteNoteMutation.mutateAsync(note.id);
 			setDeleteTarget(null);
-			toast.success("Moved to Trash");
+			toast.success(t("toast.movedToTrash"));
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("noteId");
 			router.replace(`/notes?${params.toString()}`);
 		} catch (err) {
 			console.error("Failed to delete note:", err);
-			toast.error("Failed to delete the note.");
+			toast.error(t("toast.deleteNoteFailed"));
 		} finally {
 			setIsSaving(false);
 		}
@@ -309,14 +314,14 @@ export function RightPaneDetail({
 		try {
 			await deleteDraftMutation.mutateAsync(draft.id);
 			setDeleteTarget(null);
-			toast.success("Moved to Trash");
+			toast.success(t("toast.movedToTrash"));
 
 			const params = new URLSearchParams(searchParams.toString());
 			params.delete("draftId");
 			router.replace(`/notes?${params.toString()}`);
 		} catch (err) {
 			console.error("Failed to delete draft:", err);
-			toast.error("Failed to delete the draft.");
+			toast.error(t("toast.deleteDraftFailed"));
 		} finally {
 			setIsSaving(false);
 		}
@@ -334,18 +339,16 @@ export function RightPaneDetail({
 			router.replace(`/notes?${params.toString()}`);
 		} catch (err) {
 			console.error("Failed to delete diary:", err);
-			toast.error("Failed to delete the diary.");
+			toast.error(t("toast.deleteDiaryFailed"));
 		} finally {
 			setIsSaving(false);
 		}
 	};
 
 	const deleteDescriptionMap: Record<"note" | "draft" | "diary", string> = {
-		note: "This note will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
-		draft:
-			"This draft will be moved to Trash and permanently deleted after 7 days (30 days for Pro).",
-		diary:
-			"This action cannot be undone. This will permanently delete your diary entry from our servers.",
+		note: t("notes.deleteNoteDesc"),
+		draft: t("notes.deleteDraftDesc"),
+		diary: t("notes.deleteDiaryDesc"),
 	};
 
 	const handleConfirmDelete = () => {
@@ -363,13 +366,15 @@ export function RightPaneDetail({
 		>
 			<AlertDialogContent>
 				<AlertDialogHeader>
-					<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+					<AlertDialogTitle>{t("notes.deleteConfirmTitle")}</AlertDialogTitle>
 					<AlertDialogDescription>
 						{deleteTarget ? deleteDescriptionMap[deleteTarget] : ""}
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
+					<AlertDialogCancel disabled={isSaving}>
+						{t("common.cancel")}
+					</AlertDialogCancel>
 					<AlertDialogAction
 						onClick={(e) => {
 							e.preventDefault();
@@ -379,10 +384,10 @@ export function RightPaneDetail({
 						disabled={isSaving}
 					>
 						{isSaving
-							? "Deleting..."
+							? t("notes.deleting")
 							: deleteTarget === "note" || deleteTarget === "draft"
-								? "Move to Trash"
-								: "Delete"}
+								? t("notes.moveToTrash")
+								: t("common.delete")}
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
@@ -420,8 +425,8 @@ export function RightPaneDetail({
 						setTotalMatches(0);
 					}
 				}}
-				placeholder="Find in note..."
-				aria-label="Find in note"
+				placeholder={t("notes.findInNote")}
+				aria-label={t("notes.findInNote")}
 				className="w-full min-w-0 bg-transparent text-base md:text-sm outline-none placeholder:text-neutral-400"
 			/>
 			{inNoteQuery && (
@@ -443,7 +448,7 @@ export function RightPaneDetail({
 							}
 						}}
 						disabled={totalMatches === 0}
-						aria-label="Previous match"
+						aria-label={t("notes.previousMatch")}
 						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
 					>
 						<ChevronUp className="size-3.5" aria-hidden="true" />
@@ -458,7 +463,7 @@ export function RightPaneDetail({
 							}
 						}}
 						disabled={totalMatches === 0}
-						aria-label="Next match"
+						aria-label={t("notes.nextMatch")}
 						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
 					>
 						<ChevronDown className="size-3.5" aria-hidden="true" />
@@ -472,7 +477,7 @@ export function RightPaneDetail({
 							setActiveMatchIndex(0);
 							setTotalMatches(0);
 						}}
-						aria-label="Clear find in note"
+						aria-label={t("notes.clearFind")}
 						className="size-7 p-0 rounded-full text-neutral-400 hover:text-action"
 					>
 						<X className="size-3.5" aria-hidden="true" />
@@ -484,13 +489,7 @@ export function RightPaneDetail({
 
 	// ② 日記コンテキスト（view === "diaries" かつ diary が存在するときのみ許容）
 	if (currentView === "diaries" && diary) {
-		const diaryDate = new Date(diary.date);
-		const formattedDiaryDate = diaryDate.toLocaleDateString("en-US", {
-			weekday: "long",
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-		});
+		const formattedDiaryDate = formatDiaryFullDate(diary.date, i18n.language);
 
 		return (
 			<div className="flex-1 flex flex-col h-full bg-base-bg overflow-hidden">
@@ -502,11 +501,14 @@ export function RightPaneDetail({
 								{formattedDiaryDate}
 							</h2>
 							<p className="text-xs text-gray-400 mt-1">
-								Last updated:{" "}
-								{new Date(diary.updated_at).toLocaleTimeString("en-US", {
-									hour: "2-digit",
-									minute: "2-digit",
-								})}
+								{t("notes.lastUpdated")}:{" "}
+								{new Date(diary.updated_at).toLocaleTimeString(
+									toIntlLocale(i18n.language),
+									{
+										hour: "2-digit",
+										minute: "2-digit",
+									},
+								)}
 							</p>
 						</div>
 						{inNoteSearchBar}
@@ -521,7 +523,7 @@ export function RightPaneDetail({
 								className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
 							>
 								<Pencil aria-hidden="true" className="size-4" />
-								Open Studio
+								{t("notes.openStudio")}
 							</Button>
 						</div>
 						{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
@@ -532,10 +534,10 @@ export function RightPaneDetail({
 								variant="default"
 								size="icon"
 								className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
-								title="Open Studio"
+								title={t("notes.openStudio")}
 							>
 								<Pencil aria-hidden="true" className="size-4" />
-								<span className="sr-only">Open Studio</span>
+								<span className="sr-only">{t("notes.openStudio")}</span>
 							</Button>
 						</div>
 						<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
@@ -546,7 +548,7 @@ export function RightPaneDetail({
 										variant="ghost"
 										size="icon"
 										className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-										aria-label="More options"
+										aria-label={t("studio.moreOptions")}
 									>
 										<MoreHorizontal
 											className="size-5 md:size-4"
@@ -559,7 +561,7 @@ export function RightPaneDetail({
 								<div className="space-y-3">
 									<div className="pt-2 border-t border-neutral-100">
 										<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-											Actions
+											{t("notes.actions")}
 										</div>
 										<div className="flex flex-col gap-1">
 											<Button
@@ -574,7 +576,7 @@ export function RightPaneDetail({
 												}}
 												className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 											>
-												Delete Diary
+												{t("notes.deleteDiary")}
 											</Button>
 										</div>
 									</div>
@@ -598,16 +600,8 @@ export function RightPaneDetail({
 		);
 	}
 
-	const formatDate = (dateStr: string) => {
-		const date = new Date(dateStr);
-		return date.toLocaleString("en-US", {
-			year: "numeric",
-			month: "long",
-			day: "numeric",
-			hour: "2-digit",
-			minute: "2-digit",
-		});
-	};
+	const formatDate = (dateStr: string) =>
+		formatLongDateTime(dateStr, i18n.language);
 
 	const createdAt = note ? note.created_at : draft?.created_at || "";
 	const updatedAt = note ? note.updated_at : draft?.updated_at || "";
@@ -740,7 +734,7 @@ export function RightPaneDetail({
 			if (errorMessage.includes("limit reached")) {
 				openPaywall(errorMessage.includes("draft") ? "drafts" : "notes");
 			} else {
-				toast.error("Failed to save the note.");
+				toast.error(t("toast.saveNoteFailed"));
 			}
 			setOptimisticContent(null);
 			setIsEditing(true);
@@ -832,10 +826,10 @@ export function RightPaneDetail({
 										variant="default"
 										size="icon"
 										className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover:bg-action-hover"
-										title="Edit"
+										title={t("common.edit")}
 									>
 										<Pencil className="size-4" aria-hidden="true" />
-										<span className="sr-only">Edit</span>
+										<span className="sr-only">{t("common.edit")}</span>
 									</Button>
 								</div>
 								<HoverSwapButton
@@ -853,7 +847,7 @@ export function RightPaneDetail({
 									className={cn(
 										"text-neutral-400 hover:text-neutral-900 cursor-pointer",
 									)}
-									title="Copy all content"
+									title={t("notes.copyAllContent")}
 								/>
 
 								<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
@@ -864,7 +858,7 @@ export function RightPaneDetail({
 												variant="ghost"
 												size="icon"
 												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-												aria-label="More options"
+												aria-label={t("studio.moreOptions")}
 											>
 												<MoreHorizontal
 													className="size-5 md:size-4"
@@ -877,7 +871,7 @@ export function RightPaneDetail({
 										<div className="space-y-3">
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Actions
+													{t("notes.actions")}
 												</div>
 												<div className="flex flex-col gap-1">
 													<Button
@@ -892,7 +886,7 @@ export function RightPaneDetail({
 														}}
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
-														Delete Note
+														{t("notes.deleteNote")}
 													</Button>
 												</div>
 											</div>
@@ -911,7 +905,7 @@ export function RightPaneDetail({
 									className="text-neutral-500 hover:text-neutral-900 cursor-pointer"
 									disabled={isSaving}
 								>
-									Cancel
+									{t("common.cancel")}
 								</Button>
 								<Button
 									type="button"
@@ -921,7 +915,7 @@ export function RightPaneDetail({
 									className="disabled:opacity-50 cursor-pointer shadow-sm"
 									disabled={isSaving || isOverLimit}
 								>
-									{isSaving ? "Saving..." : "Save"}
+									{isSaving ? t("common.saving") : t("common.save")}
 								</Button>
 							</div>
 						)}
@@ -937,7 +931,7 @@ export function RightPaneDetail({
 										className="cursor-pointer shadow-sm rounded-full gap-2 px-4 py-2 bg-action text-action-text font-bold hover-safe:bg-action-hover"
 									>
 										<Pencil aria-hidden="true" className="size-4" />
-										Edit in Studio
+										{t("notes.editInStudio")}
 									</Button>
 								</div>
 								{/* モバイル / iPad縦持ちサイズ（1023px以下）: 物理的正円アイコンボタン */}
@@ -948,10 +942,10 @@ export function RightPaneDetail({
 										variant="default"
 										size="icon"
 										className="cursor-pointer shadow-sm rounded-full size-10 bg-action text-action-text p-0 flex items-center justify-center hover-safe:bg-action-hover"
-										title="Edit in Studio"
+										title={t("notes.editInStudio")}
 									>
 										<Pencil aria-hidden="true" className="size-4" />
-										<span className="sr-only">Edit in Studio</span>
+										<span className="sr-only">{t("notes.editInStudio")}</span>
 									</Button>
 								</div>
 								<Popover open={isMoreMenuOpen} onOpenChange={setIsMoreMenuOpen}>
@@ -962,7 +956,7 @@ export function RightPaneDetail({
 												variant="ghost"
 												size="icon"
 												className="text-neutral-400 hover:text-neutral-900 cursor-pointer"
-												aria-label="More options"
+												aria-label={t("studio.moreOptions")}
 											>
 												<MoreHorizontal
 													className="size-5 md:size-4"
@@ -975,7 +969,7 @@ export function RightPaneDetail({
 										<div className="space-y-3">
 											<div className="pt-2 border-t border-neutral-100">
 												<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2 px-2">
-													Actions
+													{t("notes.actions")}
 												</div>
 												<div className="flex flex-col gap-1">
 													<Button
@@ -990,7 +984,7 @@ export function RightPaneDetail({
 														}}
 														className="flex items-center justify-start gap-2 w-full px-2 py-1.5 font-medium rounded-lg text-note-alert hover:bg-note-alert/10 cursor-pointer"
 													>
-														Delete Draft
+														{t("notes.deleteDraft")}
 													</Button>
 												</div>
 											</div>
@@ -1020,7 +1014,9 @@ export function RightPaneDetail({
 												? "text-neutral-800 bg-neutral-100"
 												: "text-neutral-300 hover:text-neutral-900",
 										)}
-										title={currentPinned ? "Unpin" : "Pin"}
+										title={
+											currentPinned ? t("notes.unpinNote") : t("notes.pinNote")
+										}
 									/>
 									<AnimatedIconButton
 										type="button"
@@ -1047,7 +1043,9 @@ export function RightPaneDetail({
 												: "text-neutral-300 hover:text-amber-400",
 										)}
 										title={
-											currentFavorite ? "Remove from Favorites" : "Favorite"
+											currentFavorite
+												? t("notes.unfavorite")
+												: t("notes.favorite")
 										}
 									/>
 								</>
@@ -1064,7 +1062,7 @@ export function RightPaneDetail({
 						<div className="mb-8 flex flex-col gap-2">
 							<div className="flex items-center justify-between px-1">
 								<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-									Draft Title
+									{t("notes.draftTitle")}
 								</div>
 								<InlineCopyButton text={draft.title} />
 							</div>
@@ -1080,7 +1078,7 @@ export function RightPaneDetail({
 							<div className="bg-base-surface p-4 rounded-xl border border-base-border space-y-4">
 								<div className="grid items-center gap-2 mb-4">
 									<Label className="text-xs font-bold uppercase text-neutral-500">
-										Note Type
+										{t("notes.noteType")}
 									</Label>
 									<div className="flex gap-2">
 										{(["info", "alert", "idea"] as const).map((type) => (
@@ -1104,7 +1102,7 @@ export function RightPaneDetail({
 
 								<div className="grid items-center gap-2 mb-1">
 									<Label className="text-xs font-bold uppercase text-neutral-500">
-										Scope & URL
+										{t("notes.scopeAndUrl")}
 									</Label>
 								</div>
 								<div className="flex flex-col gap-3">
@@ -1116,7 +1114,7 @@ export function RightPaneDetail({
 											onClick={() => setEditScope("inbox")}
 											className="cursor-pointer"
 										>
-											Inbox
+											{t("common.inbox")}
 										</Button>
 										<Button
 											type="button"
@@ -1125,7 +1123,7 @@ export function RightPaneDetail({
 											onClick={() => setEditScope("domain")}
 											className="cursor-pointer"
 										>
-											Domain
+											{t("common.domain")}
 										</Button>
 										<Button
 											type="button"
@@ -1134,7 +1132,7 @@ export function RightPaneDetail({
 											onClick={() => setEditScope("exact")}
 											className="cursor-pointer"
 										>
-											Page
+											{t("common.page")}
 										</Button>
 									</div>
 									{editScope !== "inbox" && (
@@ -1161,7 +1159,7 @@ export function RightPaneDetail({
 										<NotesEditor
 											value={editContent}
 											onChange={(val) => setEditContent(val)}
-											placeholder="What's on your mind?"
+											placeholder={t("capture.notePlaceholder")}
 											isDirty={editContent !== baseContent}
 											onSave={handleSave}
 										/>
@@ -1177,10 +1175,12 @@ export function RightPaneDetail({
 												)}
 											>
 												{charCount.toLocaleString()} /{" "}
-												{maxNoteLimit.toLocaleString()} chars
+												{maxNoteLimit.toLocaleString()} {t("common.chars")}
 											</span>
 										) : (
-											<span>{charCount.toLocaleString()} chars</span>
+											<span>
+												{charCount.toLocaleString()} {t("common.chars")}
+											</span>
 										)}
 									</div>
 								)}
@@ -1232,7 +1232,7 @@ export function RightPaneDetail({
 									{note && note.scope !== "inbox" && (
 										<div className="mb-10">
 											<div className="text-sm text-gray-400 mb-2 uppercase tracking-tight font-medium">
-												Source URL
+												{t("notes.sourceUrl")}
 											</div>
 											<div className="flex items-center gap-2 group">
 												{(() => {
@@ -1273,7 +1273,9 @@ export function RightPaneDetail({
 									>
 										<div className="flex items-center justify-between px-1">
 											<div className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-												{note ? "Note Content" : "Draft Content"}
+												{note
+													? t("notes.noteContent")
+													: t("notes.draftContent")}
 											</div>
 											{content && (
 												<InlineCopyButton
@@ -1297,10 +1299,10 @@ export function RightPaneDetail({
 					)}
 					<div className="mt-8 pt-4 border-t border-base-border text-xs text-neutral-400">
 						<dl className="grid grid-cols-[100px_1fr] gap-y-2">
-							<dt className="font-medium">Created</dt>
+							<dt className="font-medium">{t("notes.created")}</dt>
 							<dd>{formatDate(createdAt)}</dd>
 
-							<dt className="font-medium">Last updated</dt>
+							<dt className="font-medium">{t("notes.lastUpdated")}</dt>
 							<dd>{formatDate(updatedAt)}</dd>
 						</dl>
 					</div>

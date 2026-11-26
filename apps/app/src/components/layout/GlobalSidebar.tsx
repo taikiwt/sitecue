@@ -3,6 +3,7 @@
 import { Home, Library, Search } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { UserMenu } from "@/app/(dashboard)/_components/UserMenu";
 import { Button } from "@/components/ui/button"; // 👈 追加
 import { CustomLink as Link } from "@/components/ui/custom-link";
@@ -14,6 +15,7 @@ interface GlobalSidebarProps {
 }
 
 export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
+	const { t } = useTranslation();
 	const pathname = usePathname();
 	const { openGlobalNewModal } = useLayoutStore();
 
@@ -30,7 +32,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 					className="size-10 text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
 					href="/"
 					onClick={onClose}
-					title="Home"
+					title={t("nav.home")}
 				>
 					<Home aria-hidden="true" className="size-5" />
 				</Link>
@@ -47,7 +49,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 						onClose?.();
 					}}
 					className="size-10 p-0 transition-transform active:scale-95 focus:outline-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:ring-transparent focus-visible:shadow-none focus-visible:border-transparent"
-					title="New Note"
+					title={t("nav.newNote")}
 				>
 					<Image
 						alt="sitecue logo"
@@ -64,7 +66,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 					size="icon"
 					onClick={onSearchOpen}
 					className="size-10 text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
-					title="Search"
+					title={t("nav.search")}
 				>
 					<Search aria-hidden="true" className="size-5" />
 				</Button>
@@ -81,7 +83,7 @@ export function GlobalSidebar({ onSearchOpen, onClose }: GlobalSidebarProps) {
 								? "bg-base-bg text-action scale-105 hover-safe:bg-base-hover"
 								: "text-gray-500 hover-safe:text-action hover-safe:bg-base-hover"
 						}`}
-						title="Notes"
+						title={t("nav.notes")}
 					>
 						<Library aria-hidden="true" className="size-5" />
 					</Link>

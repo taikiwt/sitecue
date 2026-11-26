@@ -4,6 +4,7 @@ import type { PinnedSite } from "@sitecue/shared";
 import { Plus, Rocket, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import { useOptimistic, useState, useTransition } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { addPinnedSite, deletePinnedSite } from "../_actions/pinned-sites";
 
@@ -12,6 +13,7 @@ interface PinnedSitesManagerProps {
 }
 
 export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
+	const { t } = useTranslation();
 	const [isAdding, setIsAdding] = useState(false);
 	const [isPending, startTransition] = useTransition();
 	const [optimisticSites, addOptimisticAction] = useOptimistic<
@@ -80,7 +82,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				<div className="flex items-center gap-2">
 					<Rocket className="w-5 h-5 text-neutral-400" aria-hidden="true" />
 					<h2 className="text-xl text-action font-light tracking-tight">
-						Favorite Sites
+						{t("dashboard.favoriteSites")}
 					</h2>
 				</div>
 				<Button
@@ -89,15 +91,18 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 					size="sm"
 					onClick={() => setIsAdding(!isAdding)}
 					className="text-gray-500 hover:text-action cursor-pointer"
-					aria-label={isAdding ? "Close add form" : "Add pinned site"}
+					aria-label={
+						isAdding ? t("common.close") : t("dashboard.addPinnedSite")
+					}
 				>
 					{isAdding ? (
 						<>
-							<X className="w-4 h-4" /> Cancel
+							<X className="w-4 h-4" aria-hidden="true" /> {t("common.cancel")}
 						</>
 					) : (
 						<>
-							<Plus className="w-4 h-4" /> Add Site
+							<Plus className="w-4 h-4" aria-hidden="true" />{" "}
+							{t("dashboard.addSite")}
 						</>
 					)}
 				</Button>
@@ -114,15 +119,15 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								htmlFor="title"
 								className="text-xs font-semibold text-gray-500 uppercase tracking-wider"
 							>
-								Title
+								{t("dashboard.title")}
 							</label>
 							<input
 								type="text"
 								id="title"
 								name="title"
 								required
-								placeholder="e.g. My Blog"
-								className="w-full rounded-lg border border-base-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
+								placeholder={t("dashboard.titlePlaceholder")}
+								className="w-full rounded-lg border border-base-border px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
 							/>
 						</div>
 						<div className="space-y-2">
@@ -130,7 +135,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								htmlFor="url"
 								className="text-xs font-semibold text-gray-500 uppercase tracking-wider"
 							>
-								URL
+								{t("dashboard.url")}
 							</label>
 							<input
 								type="url"
@@ -138,7 +143,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 								name="url"
 								required
 								placeholder="https://example.com"
-								className="w-full rounded-lg border border-base-border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
+								className="w-full rounded-lg border border-base-border px-3 py-2 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-action transition-shadow"
 							/>
 						</div>
 					</div>
@@ -148,7 +153,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							disabled={isPending}
 							className="rounded-full px-6"
 						>
-							{isPending ? "Adding..." : "Add Pinned Site"}
+							{isPending ? t("dashboard.adding") : t("dashboard.addPinnedSite")}
 						</Button>
 					</div>
 				</form>
@@ -158,7 +163,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 				{optimisticSites.length === 0 && !isAdding && (
 					<div className="col-span-full py-8 flex flex-col items-center justify-center rounded-xl border border-dashed border-base-border bg-base-surface/50">
 						<p className="text-sm text-gray-400 italic">
-							No pinned sites yet. Add your favorite tools or references here.
+							{t("dashboard.noPinnedSites")}
 						</p>
 					</div>
 				)}
@@ -200,7 +205,7 @@ export function PinnedSitesManager({ initialSites }: PinnedSitesManagerProps) {
 							onClick={() => handleDelete(site.id)}
 							disabled={isPending}
 							className="md:opacity-0 group-hover:opacity-100 text-gray-400 hover:text-note-alert hover:bg-note-alert/10 cursor-pointer ml-2 shrink-0"
-							title="Delete"
+							title={t("common.delete")}
 						>
 							<Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
 						</Button>

@@ -3,6 +3,7 @@
 import type { VariantProps } from "class-variance-authority";
 import Link from "next/link";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/store/useEditorStore";
 import { buttonVariants } from "./button";
@@ -12,15 +13,14 @@ type CustomLinkProps = React.ComponentProps<typeof Link> &
 
 export const CustomLink = React.forwardRef<HTMLAnchorElement, CustomLinkProps>(
 	({ onClick, href, variant, size, radius, className, ...props }, ref) => {
+		const { t } = useTranslation();
 		const isDirty = useEditorStore((state) => state.isDirty);
 
 		const handleClick = (
 			e: React.MouseEvent<HTMLAnchorElement, MouseEvent>,
 		) => {
 			if (isDirty) {
-				const confirmLeave = window.confirm(
-					"You have unsaved changes. Are you sure you want to leave?",
-				);
+				const confirmLeave = window.confirm(t("common.unsavedLeaveConfirm"));
 				if (!confirmLeave) {
 					e.preventDefault();
 					return;
